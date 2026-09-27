@@ -1,0 +1,327 @@
+{
+  "repository": "deepseek-ai/deepseek-harness",
+  "number": 1977,
+  "title": "feat(llm-pi-ai): per-model reasoning efforts, dialect switches, and modelOverrides in settings.yaml",
+  "merge_sha": "915a56208d80bf35bacdaa86ad424a36b7290561",
+  "base_sha": "f50521ac4cf3c21e20af9411fe62a21564b3e08e",
+  "head_sha": "c480796db4d8ca94f8766f268d09ddf02fc93df3",
+  "merged_at": "2026-08-08T14:23:07+08:00",
+  "commits": [
+    {
+      "sha": "0490f8bb0621cb681c9b7c219ffef1c79247db94",
+      "parents": [
+        "698d65de2da6f8c9abfa16cba4ac16f7c02040c0"
+      ],
+      "authored_at": "2026-08-08T00:51:54+08:00",
+      "subject": "feat(llm-pi-ai): per-model reasoningEfforts and reasoning-dispatch compat switches",
+      "body": "A model entry's reasoningEfforts dict declares its selectable thinking\nlevels — key = offered level, value = the wire spelling dispatch sends;\nonly off may leave the value empty (supported, send nothing). false\nstrips reasoning from a catalog model; every level is materialized\nexplicitly into pi-ai's thinkingLevelMap so nobody has to know pi-ai's\nasymmetric absent-key defaulting. compat.thinkingFormat and\ncompat.supportsReasoningEffort become configurable on the route and per\nmodel (model > route > catalog entry > pi-ai's URL-derived guess),\nopenai-completions only, so a private gateway speaking the DeepSeek\nreasoning dialect no longer depends on its URL being recognizable.\nRecord-typed drift gates pin both enums to pi-ai's, and an unserviceable\ndeclaration is refused at the write that produced it, naming route,\nmodel, and level.",
+      "message": "feat(llm-pi-ai): per-model reasoningEfforts and reasoning-dispatch compat switches\n\nA model entry's reasoningEfforts dict declares its selectable thinking\nlevels — key = offered level, value = the wire spelling dispatch sends;\nonly off may leave the value empty (supported, send nothing). false\nstrips reasoning from a catalog model; every level is materialized\nexplicitly into pi-ai's thinkingLevelMap so nobody has to know pi-ai's\nasymmetric absent-key defaulting. compat.thinkingFormat and\ncompat.supportsReasoningEffort become configurable on the route and per\nmodel (model > route > catalog entry > pi-ai's URL-derived guess),\nopenai-completions only, so a private gateway speaking the DeepSeek\nreasoning dialect no longer depends on its URL being recognizable.\nRecord-typed drift gates pin both enums to pi-ai's, and an unserviceable\ndeclaration is refused at the write that produced it, naming route,\nmodel, and level."
+    },
+    {
+      "sha": "756304322a22400e651f5be7ba1ccd294dd77ad7",
+      "parents": [
+        "0490f8bb0621cb681c9b7c219ffef1c79247db94"
+      ],
+      "authored_at": "2026-08-08T00:57:41+08:00",
+      "subject": "feat(llm-pi-ai): modelOverrides reshapes catalog models without replacing the catalog",
+      "body": "A route's modelOverrides dict customizes individual installed-catalog\nmodels — key = catalog model id, value = the same fields a models entry\ntakes — while the rest of the catalog keeps serving, which a models list\ncannot express because declaring one replaces the served set. An\noverride becomes the catalog entry's configuration and resolves through\nthe existing entry path, so capacities, reasoningEfforts, compat, and\nrequest-default semantics are identical to a models entry's. Unlike\nPi's config layer, which ignores unknown ids, every override that lands\nnowhere is refused at the write that produced it: beside a models list,\non a hand-declared route, naming a model the catalog does not describe,\nor smuggling an id through the schema's unknown-key tolerance.",
+      "message": "feat(llm-pi-ai): modelOverrides reshapes catalog models without replacing the catalog\n\nA route's modelOverrides dict customizes individual installed-catalog\nmodels — key = catalog model id, value = the same fields a models entry\ntakes — while the rest of the catalog keeps serving, which a models list\ncannot express because declaring one replaces the served set. An\noverride becomes the catalog entry's configuration and resolves through\nthe existing entry path, so capacities, reasoningEfforts, compat, and\nrequest-default semantics are identical to a models entry's. Unlike\nPi's config layer, which ignores unknown ids, every override that lands\nnowhere is refused at the write that produced it: beside a models list,\non a hand-declared route, naming a model the catalog does not describe,\nor smuggling an id through the schema's unknown-key tolerance."
+    },
+    {
+      "sha": "8ccb17690579970ff2430448860f847799c13b78",
+      "parents": [
+        "756304322a22400e651f5be7ba1ccd294dd77ad7"
+      ],
+      "authored_at": "2026-08-08T01:17:10+08:00",
+      "subject": "docs: per-model reasoning guide, config catalog, and the feature's Agent Note",
+      "body": "The user guide's model-catalog section teaches the three new knobs at\ntask altitude — declare levels per model, pick the reasoning dialect,\nreshape catalog models with modelOverrides — with the settings.yaml\nexample exercising all of them, plus an UNSUPPORTED_REASONING_EFFORT\ntroubleshooting row. The generated plugin config catalog picks up the\nnew Config fields, and the bilingual Agent Note records the decision,\nthe alternatives considered, and the schemastery materialization\nconstraint that chose false over {} as the disable spelling.",
+      "message": "docs: per-model reasoning guide, config catalog, and the feature's Agent Note\n\nThe user guide's model-catalog section teaches the three new knobs at\ntask altitude — declare levels per model, pick the reasoning dialect,\nreshape catalog models with modelOverrides — with the settings.yaml\nexample exercising all of them, plus an UNSUPPORTED_REASONING_EFFORT\ntroubleshooting row. The generated plugin config catalog picks up the\nnew Config fields, and the bilingual Agent Note records the decision,\nthe alternatives considered, and the schemastery materialization\nconstraint that chose false over {} as the disable spelling."
+    },
+    {
+      "sha": "86fbc5fc15034fd014317506d510247c529d1ae1",
+      "parents": [
+        "8ccb17690579970ff2430448860f847799c13b78",
+        "8158a0e63ac20369f6fb7a64595c5090065610a3"
+      ],
+      "authored_at": "2026-08-08T10:32:22+08:00",
+      "subject": "Merge remote-tracking branch 'origin/master' into worktree/pi-ai-per-model-reasoning",
+      "body": "# Conflicts:\n#\tdocs/config-catalog.md\n#\tdocs/user/guide/providers.i18n.yaml\n#\tpackages/llm/llm-pi-ai/README.i18n.yaml\n#\tpackages/llm/llm-pi-ai/README.md\n#\tpackages/llm/llm-pi-ai/README.zh.md\n#\tpackages/llm/llm-pi-ai/tests/config.spec.ts",
+      "message": "Merge remote-tracking branch 'origin/master' into worktree/pi-ai-per-model-reasoning\n\n# Conflicts:\n#\tdocs/config-catalog.md\n#\tdocs/user/guide/providers.i18n.yaml\n#\tpackages/llm/llm-pi-ai/README.i18n.yaml\n#\tpackages/llm/llm-pi-ai/README.md\n#\tpackages/llm/llm-pi-ai/README.zh.md\n#\tpackages/llm/llm-pi-ai/tests/config.spec.ts"
+    },
+    {
+      "sha": "ae9d31d098f473fe3ed369043c5d9fedc0e8839d",
+      "parents": [
+        "86fbc5fc15034fd014317506d510247c529d1ae1"
+      ],
+      "authored_at": "2026-08-08T10:46:58+08:00",
+      "subject": "review: pin off-value wire contract, scope compat inheritance to the entry's api, update the superseded note",
+      "body": "Review findings on #1977, each verified before acting: the 2026-08-03\ndeclared-provider-catalog note is updated in place and cross-linked both\nways now that reasoningEfforts/compat reopened half of its rejected\nalternative; resolveModelCompat inherits the catalog entry's compat only\nwhile the resolved api still is the entry's own, so a route-level api\nrepoint no longer merges another protocol's shape as a completions base;\nthe off-with-value promise gains a request-boundary test proving pi-ai\nreads thinkingLevelMap.off when the reasoning option is absent (and the\ncatalog-level test name stops overclaiming); the cannot-stop-thinking\nwording narrows to what is actually enforced (no Off offered, explicit\nOff refused — an effortless request goes out bare); the z.const(null)\ncomment attributes null passthrough to schemastery's nullable\nshort-circuit; the baseten drift-gate claim names its verification\nsource; and the layered-merge delete gap for dict keys is documented\nunder Known Limitations with the atomic-leaf follow-up in #2003.",
+      "message": "review: pin off-value wire contract, scope compat inheritance to the entry's api, update the superseded note\n\nReview findings on #1977, each verified before acting: the 2026-08-03\ndeclared-provider-catalog note is updated in place and cross-linked both\nways now that reasoningEfforts/compat reopened half of its rejected\nalternative; resolveModelCompat inherits the catalog entry's compat only\nwhile the resolved api still is the entry's own, so a route-level api\nrepoint no longer merges another protocol's shape as a completions base;\nthe off-with-value promise gains a request-boundary test proving pi-ai\nreads thinkingLevelMap.off when the reasoning option is absent (and the\ncatalog-level test name stops overclaiming); the cannot-stop-thinking\nwording narrows to what is actually enforced (no Off offered, explicit\nOff refused — an effortless request goes out bare); the z.const(null)\ncomment attributes null passthrough to schemastery's nullable\nshort-circuit; the baseten drift-gate claim names its verification\nsource; and the layered-merge delete gap for dict keys is documented\nunder Known Limitations with the atomic-leaf follow-up in #2003."
+    },
+    {
+      "sha": "e5d0089d5be77ac193defdd8a43c849222f28c95",
+      "parents": [
+        "ae9d31d098f473fe3ed369043c5d9fedc0e8839d"
+      ],
+      "authored_at": "2026-08-08T10:55:11+08:00",
+      "subject": "cleanup(llm-pi-ai): share the model-entry field schemas between models and modelOverrides",
+      "body": "The duplication gate caught the two schema literals diverging only by\nthe id field; the shared dict is now the single home, with the id added\nwhere it lives (the entry) and omitted where the dict key carries it.",
+      "message": "cleanup(llm-pi-ai): share the model-entry field schemas between models and modelOverrides\n\nThe duplication gate caught the two schema literals diverging only by\nthe id field; the shared dict is now the single home, with the id added\nwhere it lives (the entry) and omitted where the dict key carries it."
+    },
+    {
+      "sha": "c480796db4d8ca94f8766f268d09ddf02fc93df3",
+      "parents": [
+        "e5d0089d5be77ac193defdd8a43c849222f28c95"
+      ],
+      "authored_at": "2026-08-08T11:06:29+08:00",
+      "subject": "docs(llm-pi-ai): state the composition-base assumption for the dict-merge limitation",
+      "body": "Maintainer ruling on the review's merge-semantics warning: per-model\nreasoning fields belong to the settings document, not cordis.yml entry\nconfig (the shipped composition mounts the adapter dormant), so the\nrecursive-merge delete gap is a documented posture rather than a tracked\nfix; the Known Limitations entry now states the assumption instead of\npointing at the closed #2003.",
+      "message": "docs(llm-pi-ai): state the composition-base assumption for the dict-merge limitation\n\nMaintainer ruling on the review's merge-semantics warning: per-model\nreasoning fields belong to the settings document, not cordis.yml entry\nconfig (the shipped composition mounts the adapter dormant), so the\nrecursive-merge delete gap is a documented posture rather than a tracked\nfix; the Known Limitations entry now states the assumption instead of\npointing at the closed #2003."
+    }
+  ],
+  "files": [
+    {
+      "filename": ".agents/notes/implemented/architecture/2026-08-03-pi-ai-declared-provider-catalog.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": ".agents/notes/implemented/architecture/2026-08-03-pi-ai-declared-provider-catalog.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": ".agents/notes/implemented/architecture/2026-08-03-pi-ai-declared-provider-catalog.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": ".agents/notes/implemented/feature/2026-08-08-pi-ai-per-model-reasoning-declarations.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": ".agents/notes/implemented/feature/2026-08-08-pi-ai-per-model-reasoning-declarations.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": ".agents/notes/implemented/feature/2026-08-08-pi-ai-per-model-reasoning-declarations.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "apps/web/tests/declared-reasoning.e2e.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "apps/web/tests/declared-reasoning.overlay.yml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "apps/web/tests/snapshots/declared-reasoning/ui.expected.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "apps/web/tsconfig.json",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/config-catalog.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/user/guide/providers.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/user/guide/providers.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/user/guide/providers.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/llm-pi-ai/README.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/llm-pi-ai/README.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/llm-pi-ai/README.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/llm-pi-ai/src/catalog.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/llm-pi-ai/src/config.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/llm-pi-ai/src/index.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/llm-pi-ai/tests/adapter.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/llm-pi-ai/tests/catalog.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/llm-pi-ai/tests/config.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "tsconfig.host.json",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    }
+  ],
+  "linked_issue_numbers": [
+    2003
+  ],
+  "quality": {
+    "score": 0.98,
+    "tier": "strong",
+    "reasons": [
+      "merged pull request",
+      "descriptive title",
+      "3 implementation files",
+      "6 test files",
+      "explicit closing issue reference",
+      "7 PR commits"
+    ],
+    "implementation_files": 3,
+    "test_files": 6,
+    "docs_files": 11,
+    "generated_files": 0
+  },
+  "provenance": {
+    "kind": "local_merge_commit",
+    "repository_path": "/home/chenyujia/tritonToLlvm/deepseek-harness",
+    "merge_subject": "Merge pull request #1977 from deepseek-harness/worktree/pi-ai-per-model-reasoning",
+    "merge_body": "feat(llm-pi-ai): per-model reasoning efforts, dialect switches, and modelOverrides in settings.yaml",
+    "file_set": "first_parent_to_merge_result",
+    "commit_set": "first_parent_to_second_parent"
+  }
+}

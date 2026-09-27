@@ -1,0 +1,135 @@
+{
+  "repository": "NousResearch/hermes-agent",
+  "number": 115857,
+  "title": "fix(api-server): chained /v1/responses turns store each message once instead of doubling history every turn (#95137, #101644, salvage #85678)",
+  "merge_sha": "c99d01638899d38c2223974d773a11fd42365a57",
+  "base_sha": "ada97e3bac36f915adb7745ff9d7229eebad3a97",
+  "head_sha": "6b415f87547a4d22a4ee957cba91cc1b66c1af4d",
+  "merged_at": "2026-09-19T11:11:48-07:00",
+  "commits": [
+    {
+      "sha": "3305af8d992b5b7dda3877077dadbc734f66fc93",
+      "parents": [
+        "afaa53e5fe8c99d52bb0df512638a3223e30da99"
+      ],
+      "authored_at": "2026-09-19T00:22:44-07:00",
+      "subject": "fix(api-server): chained /v1/responses turns store each message once",
+      "body": "_response_messages_turn_start_index compared the agent's result[\"messages\"]\nprefix against the API layer's bare {\"role\", \"content\"} dicts with whole-dict\nequality. The agent's copies carry timestamp / _db_persisted (append_message)\nand reasoning / finish_reason on assistant rows, so the check failed every\nturn, turn_start fell to 0, and the fallback re-appended the full prior\ntranscript on top of itself: stored conversation_history grew 3 -> 8 -> 17\ninstead of 2 -> 4 -> 6, and that duplicated transcript was what the model was\nreplayed on the next turn.\n\nCompare the prefix by what each message says (role, content, tool_calls,\ntool_call_id) instead. The turn-only result shape and the compressed\ntranscript path are unchanged; a genuinely divergent transcript still falls\nback to appending.\n\nFixes #95137\nFixes #101644\nRefs #82513 (the doubling was the measured size driver; byte-capping stored tool\noutputs is a separate design call since the stored history is replayed to the model)\n\nCo-authored-by: berkantay <berkantay.5@gmail.com>",
+      "message": "fix(api-server): chained /v1/responses turns store each message once\n\n_response_messages_turn_start_index compared the agent's result[\"messages\"]\nprefix against the API layer's bare {\"role\", \"content\"} dicts with whole-dict\nequality. The agent's copies carry timestamp / _db_persisted (append_message)\nand reasoning / finish_reason on assistant rows, so the check failed every\nturn, turn_start fell to 0, and the fallback re-appended the full prior\ntranscript on top of itself: stored conversation_history grew 3 -> 8 -> 17\ninstead of 2 -> 4 -> 6, and that duplicated transcript was what the model was\nreplayed on the next turn.\n\nCompare the prefix by what each message says (role, content, tool_calls,\ntool_call_id) instead. The turn-only result shape and the compressed\ntranscript path are unchanged; a genuinely divergent transcript still falls\nback to appending.\n\nFixes #95137\nFixes #101644\nRefs #82513 (the doubling was the measured size driver; byte-capping stored tool\noutputs is a separate design call since the stored history is replayed to the model)\n\nCo-authored-by: berkantay <berkantay.5@gmail.com>"
+    },
+    {
+      "sha": "064756ca45c08a564781ca30c2b336113aeceb54",
+      "parents": [
+        "3305af8d992b5b7dda3877077dadbc734f66fc93"
+      ],
+      "authored_at": "2026-09-19T00:44:22-07:00",
+      "subject": "feat(api-server): opt-in cap on tool outputs in the stored /v1/responses history",
+      "body": "The persisted conversation_history snapshot embeds the cumulative transcript\nwith every tool output verbatim, so a few large tool outputs made a single\nresponse_store.db write ~677 KB (2.7x the configured rotation threshold)\nwhile the response.completed payload for the same turn was already trimmed.\n\nAdd gateway.api_server.history_tool_output_max_chars (default 0 = store\nverbatim, current behaviour). When set, tool rows and string tool-call\narguments longer than N chars are cut to the head plus the same\n\"...[K more chars]\" marker _trim_tool_items uses, in a copied row, before the\nsnapshot is stored; user/assistant text and the agent's own in-memory\ntranscript are untouched. Opt-in rather than default because the stored\nhistory is exactly what the model is replayed on the next chained turn.\n\nLive (200 KB tool output, temp HERMES_HOME): stored row 200,659 B off ->\n4,681 B with the cap at 4000.",
+      "message": "feat(api-server): opt-in cap on tool outputs in the stored /v1/responses history\n\nThe persisted conversation_history snapshot embeds the cumulative transcript\nwith every tool output verbatim, so a few large tool outputs made a single\nresponse_store.db write ~677 KB (2.7x the configured rotation threshold)\nwhile the response.completed payload for the same turn was already trimmed.\n\nAdd gateway.api_server.history_tool_output_max_chars (default 0 = store\nverbatim, current behaviour). When set, tool rows and string tool-call\narguments longer than N chars are cut to the head plus the same\n\"...[K more chars]\" marker _trim_tool_items uses, in a copied row, before the\nsnapshot is stored; user/assistant text and the agent's own in-memory\ntranscript are untouched. Opt-in rather than default because the stored\nhistory is exactly what the model is replayed on the next chained turn.\n\nLive (200 KB tool output, temp HERMES_HOME): stored row 200,659 B off ->\n4,681 B with the cap at 4000."
+    },
+    {
+      "sha": "6b415f87547a4d22a4ee957cba91cc1b66c1af4d",
+      "parents": [
+        "064756ca45c08a564781ca30c2b336113aeceb54",
+        "51dd1970afaf058d2e3609dc2678f2012f333c9c"
+      ],
+      "authored_at": "2026-09-19T10:51:28-07:00",
+      "subject": "chore: merge origin/main (resolve gateway/platforms/api_server_openai_routes.py)",
+      "body": "",
+      "message": "chore: merge origin/main (resolve gateway/platforms/api_server_openai_routes.py)"
+    }
+  ],
+  "files": [
+    {
+      "filename": "contributors/emails/berkantay.5@gmail.com",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "gateway/platforms/api_server.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "gateway/platforms/api_server_openai_routes.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "hermes_cli/config_defaults.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "tests/gateway/test_api_server_responses_history_cap.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "tests/gateway/test_api_server_responses_history_dedupe.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "website/docs/user-guide/features/api-server.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    }
+  ],
+  "linked_issue_numbers": [
+    95137,
+    101644
+  ],
+  "quality": {
+    "score": 0.98,
+    "tier": "strong",
+    "reasons": [
+      "merged pull request",
+      "descriptive title",
+      "3 implementation files",
+      "2 test files",
+      "explicit closing issue reference",
+      "3 PR commits"
+    ],
+    "implementation_files": 3,
+    "test_files": 2,
+    "docs_files": 1,
+    "generated_files": 0
+  },
+  "provenance": {
+    "kind": "local_merge_commit",
+    "repository_path": "/home/chenyujia/tritonToLlvm/hermes-agent",
+    "merge_subject": "Merge pull request #115857 from NousResearch/fix/boa-response-store-api-server",
+    "merge_body": "fix(api-server): chained /v1/responses turns store each message once instead of doubling history every turn (#95137, #101644, salvage #85678)",
+    "file_set": "first_parent_to_merge_result",
+    "commit_set": "first_parent_to_second_parent"
+  }
+}

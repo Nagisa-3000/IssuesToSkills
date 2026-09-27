@@ -1,0 +1,23 @@
+{
+  "case_id": "pi-compaction-budget",
+  "case_version": "1.0.0",
+  "extracted_at": "2026-09-26",
+  "repository": {"name":"pi-agent","path":"/home/chenyujia/tritonToLlvm/pi-agent","remote":"https://github.com/badlogic/pi-mono.git"},
+  "git_provenance": {"commits":["46bde88a1cd752966aa2a357d292e83aff98b132","56700d42ed65a94a80af7376adb19a9298065164","a6f720e6caf1cf429e382011156c015fa204c512","75ac0cb0e637f752e4a4395f00e5094609c6527d"]},
+  "evidence_units": [
+    {"id":"EU-PI-POLICY","kind":"implementation_and_test","source":"packages/coding-agent/src/core/settings-manager.ts; packages/coding-agent/test/settings-manager-compaction.test.ts","claim":"Per-model reserveTokens/keepRecentTokens are resolved, validated, and tested."},
+    {"id":"EU-PI-RECONFIG","kind":"implementation_and_test","source":"packages/coding-agent/src/core/agent-session.ts; packages/coding-agent/test/agent-session-compaction-model-overrides.test.ts","claim":"Resolved settings are applied across model switching and compaction paths."},
+    {"id":"EU-PI-BOUNDARY","kind":"implementation_and_test","source":"packages/coding-agent/test/suite/agent-session-compaction.test.ts","claim":"Compaction is placed before a real next model request and avoids terminal tool-result compaction."},
+    {"id":"EU-PI-CONTEXT","kind":"implementation_and_test","source":"packages/coding-agent/src/core/agent-session.ts","claim":"Custom context-visible entries contribute to compaction budget and cut points."}
+  ],
+  "case_actions":[
+    {"id":"CA1","kind":"resolve","semantic_goal":"Resolve model-specific compaction policy with fallback and safe validation.","evidence_units":["EU-PI-POLICY"]},
+    {"id":"CA2","kind":"propagate","semantic_goal":"Replay the resolved policy across all runtime compaction paths.","evidence_units":["EU-PI-RECONFIG"]},
+    {"id":"CA3","kind":"schedule","semantic_goal":"Place pressure checks at the next real request boundary.","evidence_units":["EU-PI-BOUNDARY"]},
+    {"id":"CA4","kind":"measure","semantic_goal":"Account for all context-visible session artifacts.","evidence_units":["EU-PI-CONTEXT"]}
+  ],
+  "case_workflow":{"id":"CW1","goal":"Keep model-dependent compaction behavior consistent and correctly timed.","steps":["CA1","CA2","CA4","CA3"],"conditional_branches":["If the next tool result terminates the turn, do not prepare a new assistant request."]},
+  "atomic_candidate_ids":["resolve-model-specific-policy-with-fallback","replay-policy-across-runtime-reconfiguration","place-pressure-check-at-next-request-boundary","account-for-all-context-visible-artifacts"],
+  "alignment_decision":"partial_alignment",
+  "validation_status":{"status":"candidate","cross_repository_validation":false,"notes":"Policy propagation aligns with the residual-budget family; timing and accounting are separate mechanisms."}
+}

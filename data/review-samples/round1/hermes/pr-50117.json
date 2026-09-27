@@ -1,0 +1,96 @@
+{
+  "repository": "NousResearch/hermes-agent",
+  "number": 50117,
+  "title": "fix(cron): layer enabled MCP servers onto per-job enabled_toolsets (#23997)",
+  "merge_sha": "0e87c0a41b6d468c541a0932c6465e0f8b209c23",
+  "base_sha": "aa83213c530dc0a70fc525358c810b749888c7af",
+  "head_sha": "5bd3dae9e21611f50f94f21c1d03a1682b4bd3bc",
+  "merged_at": "2026-06-22T16:03:54+05:30",
+  "commits": [
+    {
+      "sha": "74a5905aea6f29374e624bbfd030357026d468cf",
+      "parents": [
+        "04a1d9efd76db1c5860bd5b928da95e37babb8b7"
+      ],
+      "authored_at": "2026-06-21T16:39:57+05:30",
+      "subject": "fix(cron): layer enabled MCP servers onto per-job enabled_toolsets",
+      "body": "A cron job that sets `enabled_toolsets` to a list of *native* toolsets (e.g.\n`[\"web\", \"terminal\"]`) silently got ZERO MCP tools, while a job with no\nper-job list got every globally-enabled MCP server. `_resolve_cron_enabled_\ntoolsets` returned the per-job list verbatim, bypassing the MCP-merge that the\nplatform-fallback branch performs via `_get_platform_tools`. So\n`discover_mcp_tools()` registered the MCP tools into the registry, but\n`get_tool_definitions(enabled_toolsets=...)` kept only the named native\ntoolsets — the agent then rejected every `mcp_*` call as \"Unknown tool\". (R2\nof #23997.)\n\nFix: `_merge_mcp_into_per_job_toolsets` layers MCP membership onto a per-job\nallowlist with the SAME semantics as `_get_platform_tools`:\n  * `no_mcp` sentinel present -> no MCP servers (sentinel stripped)\n  * one or more MCP server names already listed -> treat as an allowlist\n  * otherwise -> union in every globally-enabled MCP server\n\nTo avoid duplicating the \"which MCP servers are enabled\" computation (it\nalready existed inline in `_get_platform_tools`), this extracts a shared\n`enabled_mcp_server_names(config)` helper in `hermes_cli.tools_config` and has\nBOTH the gateway/CLI platform resolver and the cron per-job resolver call it —\nso every path agrees on MCP membership (extend, don't duplicate).\n\nNote: the issue's *headline* — bare MCP server names rejected, registry never\nincludes them — was already fixed on main (commits c10fea8d2 + 04918345e,\nboth before the issue was filed). This PR closes the remaining cron-specific\ngap (R2). The `server:*` / `mcp:server` alias-notation rejection (R1) and the\nquiet-mode silent-drop (R3) are tracked separately.\n\nSalvaged from #32788 by sherman-yang (credited below). Reworked to reuse the\nshared `enabled_mcp_server_names` helper instead of re-implementing the MCP\nmembership set in cron/scheduler.py.\n\nFixes #23997\n\nCo-authored-by: sherman-yang <58446328+sherman-yang@users.noreply.github.com>",
+      "message": "fix(cron): layer enabled MCP servers onto per-job enabled_toolsets\n\nA cron job that sets `enabled_toolsets` to a list of *native* toolsets (e.g.\n`[\"web\", \"terminal\"]`) silently got ZERO MCP tools, while a job with no\nper-job list got every globally-enabled MCP server. `_resolve_cron_enabled_\ntoolsets` returned the per-job list verbatim, bypassing the MCP-merge that the\nplatform-fallback branch performs via `_get_platform_tools`. So\n`discover_mcp_tools()` registered the MCP tools into the registry, but\n`get_tool_definitions(enabled_toolsets=...)` kept only the named native\ntoolsets — the agent then rejected every `mcp_*` call as \"Unknown tool\". (R2\nof #23997.)\n\nFix: `_merge_mcp_into_per_job_toolsets` layers MCP membership onto a per-job\nallowlist with the SAME semantics as `_get_platform_tools`:\n  * `no_mcp` sentinel present -> no MCP servers (sentinel stripped)\n  * one or more MCP server names already listed -> treat as an allowlist\n  * otherwise -> union in every globally-enabled MCP server\n\nTo avoid duplicating the \"which MCP servers are enabled\" computation (it\nalready existed inline in `_get_platform_tools`), this extracts a shared\n`enabled_mcp_server_names(config)` helper in `hermes_cli.tools_config` and has\nBOTH the gateway/CLI platform resolver and the cron per-job resolver call it —\nso every path agrees on MCP membership (extend, don't duplicate).\n\nNote: the issue's *headline* — bare MCP server names rejected, registry never\nincludes them — was already fixed on main (commits c10fea8d2 + 04918345e,\nboth before the issue was filed). This PR closes the remaining cron-specific\ngap (R2). The `server:*` / `mcp:server` alias-notation rejection (R1) and the\nquiet-mode silent-drop (R3) are tracked separately.\n\nSalvaged from #32788 by sherman-yang (credited below). Reworked to reuse the\nshared `enabled_mcp_server_names` helper instead of re-implementing the MCP\nmembership set in cron/scheduler.py.\n\nFixes #23997\n\nCo-authored-by: sherman-yang <58446328+sherman-yang@users.noreply.github.com>"
+    },
+    {
+      "sha": "5bd3dae9e21611f50f94f21c1d03a1682b4bd3bc",
+      "parents": [
+        "74a5905aea6f29374e624bbfd030357026d468cf"
+      ],
+      "authored_at": "2026-06-21T16:48:23+05:30",
+      "subject": "chore(release): add sherman-yang to AUTHOR_MAP",
+      "body": "",
+      "message": "chore(release): add sherman-yang to AUTHOR_MAP"
+    }
+  ],
+  "files": [
+    {
+      "filename": "cron/scheduler.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "hermes_cli/tools_config.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "scripts/release.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "tests/cron/test_scheduler.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    }
+  ],
+  "linked_issue_numbers": [
+    23997
+  ],
+  "quality": {
+    "score": 0.98,
+    "tier": "strong",
+    "reasons": [
+      "merged pull request",
+      "descriptive title",
+      "3 implementation files",
+      "1 test files",
+      "explicit closing issue reference",
+      "2 PR commits"
+    ],
+    "implementation_files": 3,
+    "test_files": 1,
+    "docs_files": 0,
+    "generated_files": 0
+  },
+  "provenance": {
+    "kind": "local_merge_commit",
+    "repository_path": "/home/chenyujia/tritonToLlvm/hermes-agent",
+    "merge_subject": "Merge pull request #50117 from NousResearch/salvage/f5-cron-mcp-per-job",
+    "merge_body": "fix(cron): layer enabled MCP servers onto per-job enabled_toolsets (#23997)",
+    "file_set": "first_parent_to_merge_result",
+    "commit_set": "first_parent_to_second_parent"
+  }
+}

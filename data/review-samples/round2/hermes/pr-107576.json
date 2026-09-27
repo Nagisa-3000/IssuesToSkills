@@ -1,0 +1,98 @@
+{
+  "repository": "NousResearch/hermes-agent",
+  "number": 107576,
+  "title": "fix(desktop): settle the login-shell PATH probe and kill the probe child on timeout",
+  "merge_sha": "872bafd58d21727a63b4e179000dc3afec2742c4",
+  "base_sha": "f98cb00a8beb7f8c8a305d7c377c9c5f777c85ae",
+  "head_sha": "8762a08b67cf444ca2ec6bb53b85904279a8b09f",
+  "merged_at": "2026-09-10T20:48:35+02:00",
+  "commits": [
+    {
+      "sha": "00c0259bbcdca97ab2126b7c29813eed2a3a256a",
+      "parents": [
+        "8defaaad4830620ba55e1779e1fe424e80888004"
+      ],
+      "authored_at": "2026-09-10T05:08:38+00:00",
+      "subject": "fix(desktop): force-settle the login-shell PATH probe past its timeout",
+      "body": "execFile's `timeout` only SIGTERMs the direct shell child. A profile\nthat spawns a daemon (e.g. Powerlevel10k's gitstatusd under a non-TTY\nGUI launch) can leave a grandchild holding the stdout pipe open, so\nthe execFile callback never fires and runProbe's promise hangs\nforever — pinning desktop boot at \"Resolving Hermes backend\"\nindefinitely.\n\nAdd a hard deadline that force-resolves the probe past its timeout and\nkills the whole process group (shell + any daemons it spawned) so a\nhung profile can never park boot.\n\nFixes #107109",
+      "message": "fix(desktop): force-settle the login-shell PATH probe past its timeout\n\nexecFile's `timeout` only SIGTERMs the direct shell child. A profile\nthat spawns a daemon (e.g. Powerlevel10k's gitstatusd under a non-TTY\nGUI launch) can leave a grandchild holding the stdout pipe open, so\nthe execFile callback never fires and runProbe's promise hangs\nforever — pinning desktop boot at \"Resolving Hermes backend\"\nindefinitely.\n\nAdd a hard deadline that force-resolves the probe past its timeout and\nkills the whole process group (shell + any daemons it spawned) so a\nhung profile can never park boot.\n\nFixes #107109"
+    },
+    {
+      "sha": "4b16a99f71d38cc96f57841296fc70de73c5ad86",
+      "parents": [
+        "00c0259bbcdca97ab2126b7c29813eed2a3a256a"
+      ],
+      "authored_at": "2026-09-10T07:13:40+00:00",
+      "subject": "fix(desktop): preserve a sentinel already captured when force-settling",
+      "body": "Mirror execFile's stdout into a buffer so the hard-timer path can still\nextract a PATH sentinel that printed before a wedged descendant kept\nthe callback from firing, instead of discarding it as null.",
+      "message": "fix(desktop): preserve a sentinel already captured when force-settling\n\nMirror execFile's stdout into a buffer so the hard-timer path can still\nextract a PATH sentinel that printed before a wedged descendant kept\nthe callback from firing, instead of discarding it as null."
+    },
+    {
+      "sha": "f2b33fb4a29e75803e8e6692c0502cb8e3f14a27",
+      "parents": [
+        "4b16a99f71d38cc96f57841296fc70de73c5ad86"
+      ],
+      "authored_at": "2026-09-10T13:28:23+08:00",
+      "subject": "fix(desktop): kill the PATH probe child on timeout",
+      "body": "",
+      "message": "fix(desktop): kill the PATH probe child on timeout"
+    },
+    {
+      "sha": "8762a08b67cf444ca2ec6bb53b85904279a8b09f",
+      "parents": [
+        "f2b33fb4a29e75803e8e6692c0502cb8e3f14a27"
+      ],
+      "authored_at": "2026-09-10T20:08:03+02:00",
+      "subject": "test(desktop): verify PATH probe child kill on timeout",
+      "body": "",
+      "message": "test(desktop): verify PATH probe child kill on timeout"
+    }
+  ],
+  "files": [
+    {
+      "filename": "apps/desktop/electron/shell-path.test.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "apps/desktop/electron/shell-path.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    }
+  ],
+  "linked_issue_numbers": [
+    107109
+  ],
+  "quality": {
+    "score": 0.98,
+    "tier": "strong",
+    "reasons": [
+      "merged pull request",
+      "descriptive title",
+      "1 implementation files",
+      "1 test files",
+      "explicit closing issue reference",
+      "4 PR commits"
+    ],
+    "implementation_files": 1,
+    "test_files": 1,
+    "docs_files": 0,
+    "generated_files": 0
+  },
+  "provenance": {
+    "kind": "local_merge_commit",
+    "repository_path": "/home/chenyujia/tritonToLlvm/hermes-agent",
+    "merge_subject": "Merge pull request #107576 from NousResearch/fix/107109-probe-settle",
+    "merge_body": "fix(desktop): settle the login-shell PATH probe and kill the probe child on timeout",
+    "file_set": "first_parent_to_merge_result",
+    "commit_set": "first_parent_to_second_parent"
+  }
+}

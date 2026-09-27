@@ -1,0 +1,212 @@
+{
+  "repository": "deepseek-ai/deepseek-harness",
+  "number": 2586,
+  "title": "fix(pty): keep the controlled prompt so persistent bash settles fast",
+  "merge_sha": "7841e0a93eb118363d38ac6356ab565fdda8d4c8",
+  "base_sha": "c5759d3506bf3661e32897b96b88aaca946573fd",
+  "head_sha": "a8dc6f9776d20d2e846e8373628ffd1a03808c84",
+  "merged_at": "2026-08-17T11:34:34+08:00",
+  "commits": [
+    {
+      "sha": "a8dc6f9776d20d2e846e8373628ffd1a03808c84",
+      "parents": [
+        "5bb600f9fb17c31f26089ada6c25eaf900104e71"
+      ],
+      "authored_at": "2026-08-15T11:06:57+08:00",
+      "subject": "fix(pty): keep the controlled prompt so persistent bash settles fast",
+      "body": "tool-bash-persistent overwrote the backend's PS1, so terminal-bash prompt\nreadiness never matched and every send degraded to the 3.5s silence tier\n(idleSilenceMs + handoffGraceMs) under production defaults.\n\nThe controlled PROMPT_COMMAND now re-asserts PS1 before every prompt, so an\nin-shell override never survives to the next prompt. The tool initializes\nwith stty -echo alone and detects the no-end-marker fallback through the\nseam's stdin_read wait reason instead of matching its own prompt text.\n\nTool calls drop from 7180/3560/3566 ms to 355/88/91 ms (spawn+init+echo,\necho, pwd; darwin, production defaults). The loader composition suite now\npins the fast path by pushing idleSilenceMs beyond the send bound, and a\nreal-PTY case proves PS1 self-healing.\n\nFixes #2585",
+      "message": "fix(pty): keep the controlled prompt so persistent bash settles fast\n\ntool-bash-persistent overwrote the backend's PS1, so terminal-bash prompt\nreadiness never matched and every send degraded to the 3.5s silence tier\n(idleSilenceMs + handoffGraceMs) under production defaults.\n\nThe controlled PROMPT_COMMAND now re-asserts PS1 before every prompt, so an\nin-shell override never survives to the next prompt. The tool initializes\nwith stty -echo alone and detects the no-end-marker fallback through the\nseam's stdin_read wait reason instead of matching its own prompt text.\n\nTool calls drop from 7180/3560/3566 ms to 355/88/91 ms (spawn+init+echo,\necho, pwd; darwin, production defaults). The loader composition suite now\npins the fast path by pushing idleSilenceMs beyond the send bound, and a\nreal-PTY case proves PS1 self-healing.\n\nFixes #2585"
+    }
+  ],
+  "files": [
+    {
+      "filename": ".agents/notes/implemented/bug-fix/2026-08-15-persistent-bash-keeps-controlled-prompt.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": ".agents/notes/implemented/bug-fix/2026-08-15-persistent-bash-keeps-controlled-prompt.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": ".agents/notes/implemented/bug-fix/2026-08-15-persistent-bash-keeps-controlled-prompt.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/config-catalog.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/config-catalog.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/config-catalog.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/shell/tool-bash-persistent/README.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/shell/tool-bash-persistent/README.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/shell/tool-bash-persistent/README.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/shell/tool-bash-persistent/src/index.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/shell/tool-bash-persistent/tests/loader-composition.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/shell/tool-bash-persistent/tests/tools.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/terminal/terminal-bash/README.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/terminal/terminal-bash/README.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/terminal/terminal-bash/README.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/terminal/terminal-bash/src/index.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/terminal/terminal-bash/tests/index.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/terminal/terminal-bash/tests/local.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    }
+  ],
+  "linked_issue_numbers": [
+    2585
+  ],
+  "quality": {
+    "score": 0.98,
+    "tier": "strong",
+    "reasons": [
+      "merged pull request",
+      "descriptive title",
+      "2 implementation files",
+      "4 test files",
+      "explicit closing issue reference",
+      "1 PR commits"
+    ],
+    "implementation_files": 2,
+    "test_files": 4,
+    "docs_files": 9,
+    "generated_files": 0
+  },
+  "provenance": {
+    "kind": "local_merge_commit",
+    "repository_path": "/home/chenyujia/tritonToLlvm/deepseek-harness",
+    "merge_subject": "Merge pull request #2586 from deepseek-harness/worktree/minimal-mode-bash-issues-0c3ac2",
+    "merge_body": "fix(pty): keep the controlled prompt so persistent bash settles fast",
+    "file_set": "first_parent_to_merge_result",
+    "commit_set": "first_parent_to_second_parent"
+  }
+}

@@ -1,0 +1,2213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arex.local/schemas/generalized-skill-family-v2.schema.json",
+  "title": "AREX Generalized Multi-level Skill Family Bundle v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "bundle_id",
+    "task_family",
+    "extraction",
+    "evidence_units",
+    "case_actions",
+    "case_workflows",
+    "atomic_skills",
+    "workflow_skills",
+    "patterns",
+    "transfer_records",
+    "bindings",
+    "agent_skill_packages",
+    "relations",
+    "rejected_alignments",
+    "quality_report"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0"
+    },
+    "bundle_id": {
+      "$ref": "#/$defs/id"
+    },
+    "task_family": {
+      "$ref": "#/$defs/taskFamily"
+    },
+    "extraction": {
+      "$ref": "#/$defs/extraction"
+    },
+    "evidence_units": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/evidence"
+      }
+    },
+    "case_actions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/caseAction"
+      }
+    },
+    "case_workflows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/caseWorkflow"
+      }
+    },
+    "atomic_skills": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/atomicSkill"
+      }
+    },
+    "workflow_skills": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/workflowSkill"
+      }
+    },
+    "patterns": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/pattern"
+      }
+    },
+    "transfer_records": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/transferRecord"
+      }
+    },
+    "bindings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/binding"
+      }
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/relation"
+      }
+    },
+    "rejected_alignments": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/rejectedAlignment"
+      }
+    },
+    "quality_report": {
+      "$ref": "#/$defs/qualityReport"
+    },
+    "agent_skill_packages": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/agentSkillPackage"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]*:[A-Za-z0-9._:@/+~-]+$",
+      "minLength": 3,
+      "maxLength": 240
+    },
+    "idList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/id"
+      },
+      "uniqueItems": true
+    },
+    "nonEmpty": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{64}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "lifecycle": {
+      "enum": [
+        "candidate",
+        "reviewed",
+        "validated",
+        "deprecated"
+      ]
+    },
+    "epistemicStatus": {
+      "enum": [
+        "observed",
+        "inferred",
+        "generalized",
+        "hypothesized"
+      ]
+    },
+    "assertion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "text",
+        "epistemic_status",
+        "evidence_ids",
+        "rationale",
+        "confidence"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "epistemic_status": {
+          "$ref": "#/$defs/epistemicStatus"
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "assertionList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/assertion"
+      }
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_coverage",
+        "causal_clarity",
+        "boundary_clarity",
+        "transferability",
+        "validation_strength",
+        "overall"
+      ],
+      "properties": {
+        "evidence_coverage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "causal_clarity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "boundary_clarity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "transferability": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "validation_strength": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "overall": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "viewSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "routing",
+        "execution",
+        "audit"
+      ],
+      "properties": {
+        "routing": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "text",
+            "keywords",
+            "semantic_roles",
+            "predicate_summary"
+          ],
+          "properties": {
+            "text": {
+              "type": "string",
+              "minLength": 1
+            },
+            "keywords": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "semantic_roles": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "predicate_summary": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "execution": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "instructions",
+            "binding_questions",
+            "validation_guidance"
+          ],
+          "properties": {
+            "instructions": {
+              "type": "string",
+              "minLength": 1
+            },
+            "binding_questions": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "validation_guidance": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "audit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "realization_ids",
+            "evidence_ids",
+            "review_notes"
+          ],
+          "properties": {
+            "realization_ids": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/id"
+              },
+              "uniqueItems": true
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/id"
+              },
+              "uniqueItems": true
+            },
+            "review_notes": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "taskFamily": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "definition",
+        "inclusion_criteria",
+        "exclusion_criteria"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "definition": {
+          "$ref": "#/$defs/assertion"
+        },
+        "inclusion_criteria": {
+          "$ref": "#/$defs/assertionList"
+        },
+        "exclusion_criteria": {
+          "$ref": "#/$defs/assertionList"
+        }
+      }
+    },
+    "extraction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "method",
+        "llm_semantic_reading_required",
+        "context_manifest_sha256",
+        "created_at",
+        "notes"
+      ],
+      "properties": {
+        "run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "method": {
+          "const": "llm_code_reading_with_deterministic_validation"
+        },
+        "llm_semantic_reading_required": {
+          "const": true
+        },
+        "context_manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "created_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "locator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "path",
+        "symbol",
+        "line_start",
+        "line_end",
+        "external_number",
+        "raw_pointer"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "symbol": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "line_start": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "line_end": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "external_number": {
+          "type": [
+            "integer",
+            "string",
+            "null"
+          ]
+        },
+        "raw_pointer": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "repository",
+        "locator",
+        "summary",
+        "content_sha256",
+        "capture_method",
+        "trust",
+        "captured_at"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "issue",
+            "pull_request",
+            "review",
+            "commit",
+            "diff_hunk",
+            "file_snapshot",
+            "symbol",
+            "call_site",
+            "configuration",
+            "test",
+            "test_result",
+            "benchmark",
+            "trace",
+            "log"
+          ]
+        },
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "locator": {
+          "$ref": "#/$defs/locator"
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "capture_method": {
+          "enum": [
+            "git",
+            "api",
+            "filesystem",
+            "manual",
+            "runtime"
+          ]
+        },
+        "trust": {
+          "enum": [
+            "verified",
+            "reviewed",
+            "unverified"
+          ]
+        },
+        "captured_at": {
+          "$ref": "#/$defs/timestamp"
+        }
+      }
+    },
+    "stateTransformation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "before_state",
+        "operation",
+        "after_state",
+        "preserved_invariants"
+      ],
+      "properties": {
+        "before_state": {
+          "$ref": "#/$defs/assertionList"
+        },
+        "operation": {
+          "$ref": "#/$defs/assertion"
+        },
+        "after_state": {
+          "$ref": "#/$defs/assertionList"
+        },
+        "preserved_invariants": {
+          "$ref": "#/$defs/assertionList"
+        }
+      }
+    },
+    "caseAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "repository",
+        "revision",
+        "title",
+        "problem_manifestation",
+        "transformation",
+        "changed_artifacts",
+        "validation_observations",
+        "evidence_ids",
+        "lineage_group"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "problem_manifestation": {
+          "$ref": "#/$defs/assertion"
+        },
+        "transformation": {
+          "$ref": "#/$defs/stateTransformation"
+        },
+        "changed_artifacts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "symbols",
+              "role"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "symbols": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "role": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "validation_observations": {
+          "$ref": "#/$defs/assertionList"
+        },
+        "evidence_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "lineage_group": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "dagEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source_id",
+        "target_id",
+        "relation",
+        "rationale"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "target_id": {
+          "$ref": "#/$defs/id"
+        },
+        "relation": {
+          "enum": [
+            "requires",
+            "enables",
+            "precedes",
+            "validates",
+            "repairs",
+            "alternative_to",
+            "supersedes"
+          ]
+        },
+        "rationale": {
+          "$ref": "#/$defs/assertion"
+        }
+      }
+    },
+    "caseWorkflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "repository",
+        "anchor",
+        "title",
+        "entry_state",
+        "exit_state",
+        "case_action_ids",
+        "edges",
+        "decision_points",
+        "failed_or_reverted_action_ids",
+        "acceptance_evidence_ids"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "anchor": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "identifier",
+            "revision"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "issue",
+                "pull_request",
+                "episode"
+              ]
+            },
+            "identifier": {
+              "type": "string",
+              "minLength": 1
+            },
+            "revision": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "entry_state": {
+          "$ref": "#/$defs/assertionList"
+        },
+        "exit_state": {
+          "$ref": "#/$defs/assertionList"
+        },
+        "case_action_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dagEdge"
+          }
+        },
+        "decision_points": {
+          "$ref": "#/$defs/assertionList"
+        },
+        "failed_or_reverted_action_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "acceptance_evidence_ids": {
+          "$ref": "#/$defs/idList"
+        }
+      }
+    },
+    "semanticRole": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "responsibility",
+        "recognition_cues",
+        "constraints"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "responsibility": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recognition_cues": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "parameterSlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "semantic_type",
+        "required",
+        "constraints",
+        "discovery"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "semantic_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "discovery": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "variationPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "allowed_variants",
+        "selection_rule",
+        "invariant_preserved"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "allowed_variants": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "selection_rule": {
+          "type": "string",
+          "minLength": 1
+        },
+        "invariant_preserved": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "abstractionCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "rationale",
+        "supporting_realization_ids"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "pass",
+            "fail",
+            "not_run"
+          ]
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "supporting_realization_ids": {
+          "$ref": "#/$defs/idList"
+        }
+      }
+    },
+    "abstractionAssessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "symbol_substitution",
+        "repository_independence",
+        "implementation_variability",
+        "counterfactual_transfer",
+        "atomic_minimality",
+        "causal_sufficiency",
+        "counterexample_discrimination"
+      ],
+      "properties": {
+        "symbol_substitution": {
+          "$ref": "#/$defs/abstractionCheck"
+        },
+        "repository_independence": {
+          "$ref": "#/$defs/abstractionCheck"
+        },
+        "implementation_variability": {
+          "$ref": "#/$defs/abstractionCheck"
+        },
+        "counterfactual_transfer": {
+          "$ref": "#/$defs/abstractionCheck"
+        },
+        "atomic_minimality": {
+          "$ref": "#/$defs/abstractionCheck"
+        },
+        "causal_sufficiency": {
+          "$ref": "#/$defs/abstractionCheck"
+        },
+        "counterexample_discrimination": {
+          "$ref": "#/$defs/abstractionCheck"
+        }
+      }
+    },
+    "realization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "realization_id",
+        "repository",
+        "role_bindings",
+        "parameter_bindings",
+        "evidence_ids",
+        "independent"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "realization_id": {
+          "$ref": "#/$defs/id"
+        },
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role_bindings": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "parameter_bindings": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "evidence_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "independent": {
+          "type": "boolean"
+        }
+      }
+    },
+    "atomicSkill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "title",
+        "name",
+        "description",
+        "problem_signature",
+        "observable_cues",
+        "exclusions",
+        "required_inputs",
+        "produced_outputs",
+        "solution_principle",
+        "procedure",
+        "decision_rules",
+        "side_effects",
+        "validation_oracles",
+        "boundary_partition",
+        "delivery",
+        "lifecycle",
+        "objective",
+        "problem_mechanism",
+        "semantic_roles",
+        "preconditions",
+        "parameter_slots",
+        "operator",
+        "postconditions",
+        "preserved_invariants",
+        "variation_points",
+        "failure_modes",
+        "validation_principles",
+        "counterexamples",
+        "non_goals",
+        "realizations",
+        "transfer_record_ids",
+        "abstraction_assessment",
+        "repository_specific_literals",
+        "views",
+        "quality"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lifecycle": {
+          "$ref": "#/$defs/lifecycle"
+        },
+        "objective": {
+          "$ref": "#/$defs/assertion"
+        },
+        "problem_mechanism": {
+          "$ref": "#/$defs/assertion"
+        },
+        "semantic_roles": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/semanticRole"
+          }
+        },
+        "preconditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/assertion"
+          }
+        },
+        "parameter_slots": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/parameterSlot"
+          }
+        },
+        "operator": {
+          "$ref": "#/$defs/stateTransformation"
+        },
+        "postconditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/assertion"
+          }
+        },
+        "preserved_invariants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/assertion"
+          }
+        },
+        "variation_points": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/variationPoint"
+          }
+        },
+        "failure_modes": {
+          "$ref": "#/$defs/assertionList"
+        },
+        "validation_principles": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/assertion"
+          }
+        },
+        "counterexamples": {
+          "$ref": "#/$defs/assertionList"
+        },
+        "non_goals": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realizations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/realization"
+          }
+        },
+        "transfer_record_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "abstraction_assessment": {
+          "$ref": "#/$defs/abstractionAssessment"
+        },
+        "repository_specific_literals": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "views": {
+          "$ref": "#/$defs/viewSet"
+        },
+        "quality": {
+          "$ref": "#/$defs/quality"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "maxLength": 64
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "problem_signature": {
+          "$ref": "#/$defs/assertion"
+        },
+        "observable_cues": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "exclusions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/assertion"
+          }
+        },
+        "required_inputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "produced_outputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "solution_principle": {
+          "$ref": "#/$defs/assertion"
+        },
+        "procedure": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "decision_rules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "side_effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "validation_oracles": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "boundary_partition": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "delivery": {
+          "$ref": "#/$defs/deliveryProjection"
+        }
+      }
+    },
+    "workflowStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "semantic_goal",
+        "requires",
+        "uses_atomic_skill_ids",
+        "procedure_summary",
+        "produces",
+        "guard",
+        "on_success",
+        "on_failure",
+        "validation",
+        "mandatory"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "diagnose",
+            "decide",
+            "transform",
+            "bind",
+            "validate",
+            "recover"
+          ]
+        },
+        "semantic_goal": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "requires": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "uses_atomic_skill_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "procedure_summary": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "produces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "guard": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "on_success": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "on_failure": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "validation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mandatory": {
+          "type": "boolean"
+        }
+      }
+    },
+    "workflowSkill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "title",
+        "name",
+        "description",
+        "goal",
+        "trigger_scenarios",
+        "entry_conditions",
+        "exit_conditions",
+        "facts_to_collect",
+        "classification_rules",
+        "guards",
+        "branches",
+        "loops",
+        "stopping_conditions",
+        "semantic_roles",
+        "binding_questions",
+        "workflow_variants",
+        "selection_rules",
+        "rollback",
+        "acceptance_contract",
+        "deliverables",
+        "report_contract",
+        "delivery",
+        "lifecycle",
+        "intent",
+        "problem_mechanism",
+        "applicability",
+        "exclusions",
+        "steps",
+        "edges",
+        "decision_points",
+        "validation_ladder",
+        "failure_recovery",
+        "realizations",
+        "transfer_record_ids",
+        "abstraction_assessment",
+        "repository_specific_literals",
+        "views",
+        "quality"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lifecycle": {
+          "$ref": "#/$defs/lifecycle"
+        },
+        "intent": {
+          "$ref": "#/$defs/assertion"
+        },
+        "problem_mechanism": {
+          "$ref": "#/$defs/assertion"
+        },
+        "applicability": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/assertion"
+          }
+        },
+        "exclusions": {
+          "$ref": "#/$defs/assertionList"
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/workflowStep"
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dagEdge"
+          }
+        },
+        "decision_points": {
+          "$ref": "#/$defs/assertionList"
+        },
+        "validation_ladder": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "failure_recovery": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realizations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/realization"
+          }
+        },
+        "transfer_record_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "abstraction_assessment": {
+          "$ref": "#/$defs/abstractionAssessment"
+        },
+        "repository_specific_literals": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "views": {
+          "$ref": "#/$defs/viewSet"
+        },
+        "quality": {
+          "$ref": "#/$defs/quality"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "maxLength": 64
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "goal": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "trigger_scenarios": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "entry_conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "exit_conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "facts_to_collect": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "classification_rules": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "guards": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "branches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "loops": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "stopping_conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "semantic_roles": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/semanticRole"
+          }
+        },
+        "binding_questions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "workflow_variants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "selection_rules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "rollback": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "acceptance_contract": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "deliverables": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "report_contract": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "delivery": {
+          "$ref": "#/$defs/deliveryProjection"
+        }
+      }
+    },
+    "workflowVariant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "workflow_skill_id",
+        "when_to_choose",
+        "tradeoffs"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workflow_skill_id": {
+          "$ref": "#/$defs/id"
+        },
+        "when_to_choose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tradeoffs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "pattern": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "title",
+        "intent",
+        "context",
+        "consequences",
+        "anti_patterns",
+        "delivery",
+        "lifecycle",
+        "causal_mechanism",
+        "forces",
+        "applicability",
+        "exclusions",
+        "invariant",
+        "workflow_variants",
+        "decision_rules",
+        "alternatives",
+        "failure_modes",
+        "counterexamples",
+        "supporting_case_workflow_ids",
+        "transfer_record_ids",
+        "abstraction_assessment",
+        "repository_specific_literals",
+        "views",
+        "quality"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lifecycle": {
+          "$ref": "#/$defs/lifecycle"
+        },
+        "causal_mechanism": {
+          "$ref": "#/$defs/assertion"
+        },
+        "forces": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/assertion"
+          }
+        },
+        "applicability": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/assertion"
+          }
+        },
+        "exclusions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/assertion"
+          }
+        },
+        "invariant": {
+          "$ref": "#/$defs/assertion"
+        },
+        "workflow_variants": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/workflowVariant"
+          }
+        },
+        "decision_rules": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "alternatives": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "failure_modes": {
+          "$ref": "#/$defs/assertionList"
+        },
+        "counterexamples": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/assertion"
+          }
+        },
+        "supporting_case_workflow_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        },
+        "transfer_record_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "abstraction_assessment": {
+          "$ref": "#/$defs/abstractionAssessment"
+        },
+        "repository_specific_literals": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "views": {
+          "$ref": "#/$defs/viewSet"
+        },
+        "quality": {
+          "$ref": "#/$defs/quality"
+        },
+        "intent": {
+          "$ref": "#/$defs/assertion"
+        },
+        "context": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/assertion"
+          }
+        },
+        "consequences": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "anti_patterns": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "delivery": {
+          "$ref": "#/$defs/deliveryProjection"
+        }
+      }
+    },
+    "transferRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "knowledge_node_id",
+        "target_repository",
+        "target_case",
+        "isolation_level",
+        "target_solution_hidden",
+        "retrieved_version",
+        "predicted_plan",
+        "performed_actions",
+        "validation_oracle",
+        "result",
+        "leakage_audit",
+        "evidence_ids"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "knowledge_node_id": {
+          "$ref": "#/$defs/id"
+        },
+        "target_repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_case": {
+          "type": "string",
+          "minLength": 1
+        },
+        "isolation_level": {
+          "enum": [
+            "none",
+            "partial",
+            "solution_hidden",
+            "task_isolated"
+          ]
+        },
+        "target_solution_hidden": {
+          "type": "boolean"
+        },
+        "retrieved_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "predicted_plan": {
+          "type": "string",
+          "minLength": 1
+        },
+        "performed_actions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "validation_oracle": {
+          "type": "string",
+          "minLength": 1
+        },
+        "result": {
+          "enum": [
+            "not_run",
+            "pass",
+            "fail",
+            "rejected_as_inapplicable",
+            "inconclusive"
+          ]
+        },
+        "leakage_audit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_ids": {
+          "$ref": "#/$defs/idList"
+        }
+      }
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "knowledge_node_id",
+        "repository",
+        "revision",
+        "tree_fingerprint",
+        "role_bindings",
+        "parameter_bindings",
+        "probe_evidence_ids",
+        "status",
+        "invalidation_conditions"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "knowledge_node_id": {
+          "$ref": "#/$defs/id"
+        },
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tree_fingerprint": {
+          "$ref": "#/$defs/sha256"
+        },
+        "role_bindings": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "parameter_bindings": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "probe_evidence_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "status": {
+          "enum": [
+            "fresh",
+            "stale",
+            "rejected"
+          ]
+        },
+        "invalidation_conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source_id",
+        "target_id",
+        "relation",
+        "confidence",
+        "rationale",
+        "evidence_ids"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "target_id": {
+          "$ref": "#/$defs/id"
+        },
+        "relation": {
+          "enum": [
+            "grounds",
+            "part_of",
+            "realizes",
+            "uses",
+            "implements",
+            "binds",
+            "validated_by",
+            "requires",
+            "enables",
+            "precedes",
+            "validates",
+            "alternative_to",
+            "specializes",
+            "composes_with",
+            "conflicts_with"
+          ]
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_ids": {
+          "$ref": "#/$defs/idList"
+        }
+      }
+    },
+    "rejectedAlignment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "candidate_ids",
+        "rejection_reason",
+        "mechanism_difference",
+        "evidence_ids"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "candidate_ids": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        },
+        "rejection_reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mechanism_difference": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_ids": {
+          "$ref": "#/$defs/idList"
+        }
+      }
+    },
+    "qualityReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instance_counts",
+        "knowledge_counts",
+        "package_count",
+        "promotion_failures",
+        "warnings",
+        "reviewed_by"
+      ],
+      "properties": {
+        "instance_counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "evidence_units",
+            "case_actions",
+            "case_workflows"
+          ],
+          "properties": {
+            "evidence_units": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "case_actions": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "case_workflows": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "knowledge_counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "atomic_skills",
+            "workflow_skills",
+            "patterns"
+          ],
+          "properties": {
+            "atomic_skills": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "workflow_skills": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "patterns": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "promotion_failures": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "reviewed_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "package_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "deliveryProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "default_export",
+        "preferred_disclosure_level",
+        "reference_topics",
+        "script_opportunities"
+      ],
+      "properties": {
+        "default_export": {
+          "enum": [
+            "standalone_skill",
+            "workflow_reference",
+            "pattern_reference",
+            "graph_only"
+          ]
+        },
+        "preferred_disclosure_level": {
+          "enum": [
+            "metadata",
+            "instructions",
+            "resource"
+          ]
+        },
+        "reference_topics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "script_opportunities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        }
+      }
+    },
+    "packageResource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "purpose",
+        "load_when"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^(references|scripts|assets)/.+$"
+        },
+        "purpose": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "load_when": {
+          "$ref": "#/$defs/nonEmpty"
+        }
+      }
+    },
+    "packageEval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "kind",
+        "prompt",
+        "expected_behavior"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "kind": {
+          "enum": [
+            "positive",
+            "boundary",
+            "negative",
+            "regression"
+          ]
+        },
+        "prompt": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "expected_behavior": {
+          "$ref": "#/$defs/nonEmpty"
+        }
+      }
+    },
+    "agentSkillPackage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "description",
+        "primary_node_id",
+        "primary_node_level",
+        "export_policy",
+        "skill_md_sections",
+        "resources",
+        "evals"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "primary_node_id": {
+          "$ref": "#/$defs/id"
+        },
+        "primary_node_level": {
+          "enum": [
+            "atomic",
+            "workflow",
+            "pattern"
+          ]
+        },
+        "export_policy": {
+          "enum": [
+            "default",
+            "explicit_only",
+            "reference_only"
+          ]
+        },
+        "skill_md_sections": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "enum": [
+              "purpose",
+              "use_when",
+              "do_not_use_when",
+              "preflight",
+              "workflow",
+              "decision_rules",
+              "invariants",
+              "validation",
+              "failure_recovery",
+              "stopping_conditions",
+              "resources"
+            ]
+          }
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/packageResource"
+          }
+        },
+        "evals": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "$ref": "#/$defs/packageEval"
+          }
+        }
+      }
+    }
+  }
+}

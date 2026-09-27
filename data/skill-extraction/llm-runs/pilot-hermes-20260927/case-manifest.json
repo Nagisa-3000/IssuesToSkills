@@ -1,0 +1,104 @@
+[
+  {
+    "case_id": "hermes-compaction-reservation",
+    "case_version": "1.0.0",
+    "extracted_at": "2026-09-26",
+    "repository": {
+      "name": "hermes-agent",
+      "path": "/home/chenyujia/tritonToLlvm/hermes-agent",
+      "commit": "623b21bf24ea3f2f2c2d90de3ae872b8a0a000c4",
+      "remote": "https://github.com/NousResearch/hermes-agent.git"
+    },
+    "evidence_units": [
+      {
+        "id": "EU-HERMES-DIFF",
+        "kind": "implementation_diff",
+        "source": "agent/context_compressor.py",
+        "claim": "Threshold calculation receives and normalizes max_tokens reservation."
+      },
+      {
+        "id": "EU-HERMES-BIND",
+        "kind": "call_site",
+        "source": "agent/agent_init.py",
+        "claim": "agent.max_tokens is threaded into ContextCompressor construction."
+      },
+      {
+        "id": "EU-HERMES-ORACLE",
+        "kind": "test",
+        "source": "tests/agent/test_context_compressor.py",
+        "claim": "Tests cover residual arithmetic, small effective windows, invalid reservations, reconfiguration safety, and positive thresholds."
+      }
+    ],
+    "case_actions": [
+      {
+        "id": "CA1",
+        "kind": "diagnose",
+        "semantic_goal": "Detect nominal-capacity accounting when downstream output consumes the same window.",
+        "evidence_units": [
+          "EU-HERMES-DIFF"
+        ]
+      },
+      {
+        "id": "CA2",
+        "kind": "normalize",
+        "semantic_goal": "Normalize optional or malformed output reservations before arithmetic.",
+        "evidence_units": [
+          "EU-HERMES-DIFF",
+          "EU-HERMES-ORACLE"
+        ]
+      },
+      {
+        "id": "CA3",
+        "kind": "transform",
+        "semantic_goal": "Derive threshold and safety guards from effective input capacity.",
+        "evidence_units": [
+          "EU-HERMES-DIFF",
+          "EU-HERMES-ORACLE"
+        ]
+      },
+      {
+        "id": "CA4",
+        "kind": "propagate",
+        "semantic_goal": "Carry reservation state through construction and model switching.",
+        "evidence_units": [
+          "EU-HERMES-BIND",
+          "EU-HERMES-DIFF"
+        ]
+      },
+      {
+        "id": "CA5",
+        "kind": "validate",
+        "semantic_goal": "Partition boundary states and preserve a positive safe behavior.",
+        "evidence_units": [
+          "EU-HERMES-ORACLE"
+        ]
+      }
+    ],
+    "case_workflow": {
+      "id": "CW1",
+      "goal": "Repair compaction threshold accounting when output reservation shares the context window.",
+      "steps": [
+        "CA1",
+        "CA2",
+        "CA3",
+        "CA4",
+        "CA5"
+      ],
+      "conditional_branches": [
+        "If reservation is absent or invalid, preserve full-window compatibility.",
+        "If reservation leaves no positive residual capacity, use the documented safe fallback."
+      ]
+    },
+    "atomic_candidate_ids": [
+      "derive-policy-from-residual-capacity",
+      "normalize-optional-capacity-reservation",
+      "replay-policy-parameter-across-reconfiguration",
+      "validate-shared-capacity-boundaries"
+    ],
+    "validation_status": {
+      "status": "candidate",
+      "cross_repository_validation": false,
+      "notes": "Evidence is verified from one local commit and its tests; no cross-case promotion."
+    }
+  }
+]

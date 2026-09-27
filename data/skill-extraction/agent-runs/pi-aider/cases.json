@@ -1,0 +1,486 @@
+{
+  "bundle_id": "agent-run:pi-aider:bounded-context-pressure",
+  "schema_version": "case-dag-1.0",
+  "extracted_at": "2026-09-26",
+  "repositories": [
+    {
+      "name": "pi-agent",
+      "path": "/home/chenyujia/tritonToLlvm/pi-agent",
+      "remote": "https://github.com/badlogic/pi-mono.git",
+      "provenance": "local git history; issue/PR references recorded only when present"
+    },
+    {
+      "name": "aider-agent",
+      "path": "/home/chenyujia/tritonToLlvm/aider-agent",
+      "remote": "https://github.com/Aider-AI/aider.git",
+      "provenance": "local git history; reviewed commits contain no issue/PR marker"
+    }
+  ],
+  "evidence_units": [
+    {
+      "id": "eu:pi:policy-resolution",
+      "repository": "pi-agent",
+      "provenance": {
+        "commit": "46bde88a1cd752966aa2a357d292e83aff98b132",
+        "issue": "#8133"
+      },
+      "kind": "implementation_and_tests",
+      "paths": [
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/coding-agent/test/settings-manager-compaction.test.ts",
+        "packages/coding-agent/test/suite/agent-session-compaction-model-overrides.test.ts"
+      ],
+      "symbols": [
+        "SettingsManager.getCompactionTokenSetting",
+        "SettingsManager.getCompactionSettings",
+        "AgentSession._checkCompaction",
+        "AgentSession._runAutoCompaction"
+      ],
+      "claim": "The active provider/model resolves validated compaction settings, and the same resolved object is consumed by manual, threshold, overflow, and post-run paths.",
+      "oracle": "Exact override/fallback/invalid-value assertions and model-switch/entry-point characterization tests."
+    },
+    {
+      "id": "eu:pi:request-boundary",
+      "repository": "pi-agent",
+      "provenance": {
+        "commit": "56700d42ed65a94a80af7376adb19a9298065164",
+        "issue": "#8782",
+        "closes": "#6879"
+      },
+      "kind": "implementation_and_tests",
+      "paths": [
+        "packages/agent/src/agent-loop.ts",
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/coding-agent/test/suite/agent-session-compaction.test.ts"
+      ],
+      "symbols": [
+        "runLoop",
+        "AgentSession._compactBeforeNextAssistantResponse"
+      ],
+      "claim": "Next-turn preparation is evaluated only when the loop continues toward a real assistant request; terminating tool results do not trigger compaction.",
+      "oracle": "Continuation tests observe compaction before provider; terminating-tool test observes no compaction event or compaction entry."
+    },
+    {
+      "id": "eu:pi:oversized-tail",
+      "repository": "pi-agent",
+      "provenance": {
+        "commit": "8bdcd4498a925301bcd8b9053386797727eae3b0",
+        "issue": "#9740"
+      },
+      "kind": "implementation_and_tests",
+      "paths": [
+        "packages/coding-agent/src/core/compaction/compaction.ts",
+        "packages/coding-agent/test/compaction.test.ts",
+        "packages/coding-agent/test/suite/agent-session-compaction.test.ts"
+      ],
+      "symbols": [
+        "findCutPoint",
+        "prepareCompaction"
+      ],
+      "claim": "When trailing tool results exceed the retained budget, compaction falls back to the latest valid cut point instead of losing the current tool-call boundary.",
+      "oracle": "Regression test asserts exact first-kept index/id, split-turn index, summarized history, and retained turn prefix."
+    },
+    {
+      "id": "eu:pi:complete-accounting",
+      "repository": "pi-agent",
+      "provenance": {
+        "commit": "a6f720e6caf1cf429e382011156c015fa204c512",
+        "issue": "#6326"
+      },
+      "kind": "implementation_and_tests",
+      "paths": [
+        "packages/coding-agent/src/core/compaction/compaction.ts",
+        "packages/coding-agent/test/compaction.test.ts"
+      ],
+      "symbols": [
+        "findCutPoint"
+      ],
+      "claim": "Context-visible custom entries contribute to budget accounting and can change the selected cut point.",
+      "oracle": "The custom-message budget test asserts different cut points for tiny versus fitting budgets."
+    },
+    {
+      "id": "eu:aider:budget-propagation",
+      "repository": "aider-agent",
+      "provenance": {
+        "commits": [
+          "ff41f9bd9a29585176c16445d2064f426864ec7c",
+          "64470955d4799b92a4b8174856e8699b5ba41568"
+        ]
+      },
+      "kind": "implementation",
+      "paths": [
+        "aider/models.py",
+        "aider/coders/base_coder.py"
+      ],
+      "symbols": [
+        "Model.__init__",
+        "Coder.create"
+      ],
+      "claim": "Aider derives a bounded chat-history budget from model input capability and passes an explicit caller-selected value into ChatSummary.",
+      "oracle": "ChatSummary is initialized with an explicit max_tokens value; Model stores max_chat_history_tokens derived from max_input_tokens."
+    },
+    {
+      "id": "eu:aider:fit-prefix",
+      "repository": "aider-agent",
+      "provenance": {
+        "commit": "e61857ef09db263ee8de89ac2cb16e1bb3ffa36e"
+      },
+      "kind": "implementation_and_tests",
+      "paths": [
+        "aider/history.py",
+        "aider/coders/base_coder.py",
+        "tests/basic/test_history.py"
+      ],
+      "symbols": [
+        "ChatSummary.summarize_real",
+        "ChatSummary.tokenize",
+        "Coder.summarize_start",
+        "TestChatSummary.test_summarize"
+      ],
+      "claim": "Aider selects older messages that fit the summarizer input budget, summarizes that prefix, retains the recent tail, and recursively rechecks the combined result.",
+      "oracle": "test_too_big checks the gate, test_tokenize checks measured inputs, and test_summarize checks the result is smaller than the original."
+    },
+    {
+      "id": "eu:aider:fallback",
+      "repository": "aider-agent",
+      "provenance": {
+        "commit": "5c866c67b507c6508012e7d7fbdec0e358556a4e"
+      },
+      "kind": "implementation_and_tests",
+      "paths": [
+        "aider/coders/base_coder.py",
+        "aider/history.py",
+        "tests/basic/test_history.py"
+      ],
+      "symbols": [
+        "Coder.create",
+        "Coder.summarize_worker",
+        "ChatSummary.summarize_all",
+        "TestChatSummary.test_fallback_to_second_model"
+      ],
+      "claim": "Summarizer failure does not silently discard the original history: Aider keeps it and warns; the multi-model summarizer can also try the next configured model.",
+      "oracle": "test_fallback_to_second_model asserts both attempts and the second summary; the exact coder-switch warning path is implementation-evidenced but lacks a dedicated checked-in test."
+    }
+  ],
+  "case_actions": [
+    {
+      "id": "ca:pi:resolve-policy",
+      "repository": "pi-agent",
+      "kind": "resolve_and_validate",
+      "semantic_goal": "Resolve model-specific compaction policy with explicit precedence and safe integer validation.",
+      "evidence_ids": [
+        "eu:pi:policy-resolution"
+      ],
+      "realization_of": [
+        "atomic:resolve-policy-for-active-model"
+      ]
+    },
+    {
+      "id": "ca:pi:propagate-policy",
+      "repository": "pi-agent",
+      "kind": "propagate",
+      "semantic_goal": "Use the active model's resolved policy at every compaction entry point.",
+      "evidence_ids": [
+        "eu:pi:policy-resolution"
+      ],
+      "realization_of": [
+        "atomic:resolve-policy-for-active-model"
+      ]
+    },
+    {
+      "id": "ca:pi:gate-at-next-request",
+      "repository": "pi-agent",
+      "kind": "schedule",
+      "semantic_goal": "Run pressure preparation at the next real assistant/provider request boundary and skip terminal turns.",
+      "evidence_ids": [
+        "eu:pi:request-boundary"
+      ],
+      "realization_of": [
+        "atomic:gate-pressure-at-real-next-request"
+      ]
+    },
+    {
+      "id": "ca:pi:repair-oversized-tail",
+      "repository": "pi-agent",
+      "kind": "repair_boundary",
+      "semantic_goal": "Choose the latest safe cut point before an oversized trailing tool result.",
+      "evidence_ids": [
+        "eu:pi:oversized-tail"
+      ],
+      "realization_of": [
+        "atomic:preserve-latest-safe-boundary"
+      ]
+    },
+    {
+      "id": "ca:pi:account-visible-entries",
+      "repository": "pi-agent",
+      "kind": "measure",
+      "semantic_goal": "Include every context-visible session entry in budget and cut-point accounting.",
+      "evidence_ids": [
+        "eu:pi:complete-accounting"
+      ],
+      "realization_of": [
+        "atomic:account-context-visible-input"
+      ]
+    },
+    {
+      "id": "ca:aider:derive-history-budget",
+      "repository": "aider-agent",
+      "kind": "derive",
+      "semantic_goal": "Derive a bounded summarizer/history budget from model input capability and an explicit caller override.",
+      "evidence_ids": [
+        "eu:aider:budget-propagation"
+      ],
+      "realization_of": [
+        "atomic:derive-and-propagate-history-budget"
+      ]
+    },
+    {
+      "id": "ca:aider:select-fitting-prefix",
+      "repository": "aider-agent",
+      "kind": "select_and_summarize",
+      "semantic_goal": "Select a maximal older prefix that fits, retain a recent tail, and recheck the combined result.",
+      "evidence_ids": [
+        "eu:aider:fit-prefix"
+      ],
+      "realization_of": [
+        "atomic:derive-and-propagate-history-budget"
+      ]
+    },
+    {
+      "id": "ca:aider:preserve-on-failure",
+      "repository": "aider-agent",
+      "kind": "recover",
+      "semantic_goal": "Keep original history and warn when a summarization path fails.",
+      "evidence_ids": [
+        "eu:aider:fallback"
+      ],
+      "realization_of": [
+        "atomic:preserve-context-on-summary-failure"
+      ]
+    }
+  ],
+  "case_workflows": [
+    {
+      "id": "workflow:pi:request-boundary-compaction",
+      "repository": "pi-agent",
+      "goal": "Keep active-model compaction policy effective at the actual next-request boundary while preserving a valid session boundary under oversized input.",
+      "nodes": [
+        "ca:pi:resolve-policy",
+        "ca:pi:propagate-policy",
+        "ca:pi:account-visible-entries",
+        "ca:pi:repair-oversized-tail",
+        "ca:pi:gate-at-next-request"
+      ],
+      "edges": [
+        {
+          "from": "ca:pi:resolve-policy",
+          "to": "ca:pi:propagate-policy",
+          "type": "enables"
+        },
+        {
+          "from": "ca:pi:account-visible-entries",
+          "to": "ca:pi:repair-oversized-tail",
+          "type": "requires"
+        },
+        {
+          "from": "ca:pi:repair-oversized-tail",
+          "to": "ca:pi:gate-at-next-request",
+          "type": "enables"
+        },
+        {
+          "from": "ca:pi:propagate-policy",
+          "to": "ca:pi:gate-at-next-request",
+          "type": "requires"
+        }
+      ],
+      "guards": [
+        "If the tool result terminates the turn, do not prepare a next request.",
+        "If trailing results exceed keepRecentTokens, choose the latest valid boundary rather than dropping the current tool-call turn."
+      ],
+      "validation_oracles": [
+        "model override characterization",
+        "continuation-before-provider ordering",
+        "no-compaction-after-termination",
+        "#9740 cut-point regression"
+      ]
+    },
+    {
+      "id": "workflow:aider:budgeted-history-recovery",
+      "repository": "aider-agent",
+      "goal": "Fit historical context into a summarizer budget while avoiding destructive loss when summarization fails.",
+      "nodes": [
+        "ca:aider:derive-history-budget",
+        "ca:aider:select-fitting-prefix",
+        "ca:aider:preserve-on-failure"
+      ],
+      "edges": [
+        {
+          "from": "ca:aider:derive-history-budget",
+          "to": "ca:aider:select-fitting-prefix",
+          "type": "enables"
+        },
+        {
+          "from": "ca:aider:select-fitting-prefix",
+          "to": "ca:aider:preserve-on-failure",
+          "type": "alternative_to"
+        }
+      ],
+      "guards": [
+        "Only summarize when the measured history exceeds the configured limit.",
+        "If summarization raises the handled failure, keep the original messages and emit a visible warning."
+      ],
+      "validation_oracles": [
+        "budget gate",
+        "tokenization",
+        "smaller-result characterization",
+        "fallback-to-second-model test"
+      ]
+    }
+  ],
+  "atomic_candidates": [
+    {
+      "id": "atomic:resolve-policy-for-active-model",
+      "problem_mechanism": "A runtime can resolve a compaction policy once and then apply stale or wrong settings after model selection changes.",
+      "operator": "Resolve ordinary settings and exact provider/model overrides with validation, then pass one resolved policy through every compaction entry point.",
+      "postconditions": [
+        "The active model selects the intended policy.",
+        "Invalid values fail explicitly.",
+        "Manual, automatic, overflow, and switched-model paths agree."
+      ],
+      "realization_case_actions": [
+        "ca:pi:resolve-policy",
+        "ca:pi:propagate-policy"
+      ],
+      "alignment": "direct_within_pi; not established by Aider"
+    },
+    {
+      "id": "atomic:gate-pressure-at-real-next-request",
+      "problem_mechanism": "Preparing compaction after a terminating tool result performs work for a request that will never be sent, while preparing too late lets the next request start under pressure.",
+      "operator": "Place the pressure check in the continuation path immediately before a real next assistant/provider request and skip terminal outcomes.",
+      "postconditions": [
+        "No compaction after termination.",
+        "Compaction precedes the next provider request when required."
+      ],
+      "realization_case_actions": [
+        "ca:pi:gate-at-next-request"
+      ],
+      "alignment": "direct_pi; Aider only partial/adjacent"
+    },
+    {
+      "id": "atomic:preserve-latest-safe-boundary",
+      "problem_mechanism": "A trailing tool result can exceed the retained budget before a normal cut point is found.",
+      "operator": "When pressure is reached, choose the nearest valid cut point at/after the pressure index, otherwise fall back to the latest valid cut point before the oversized tail.",
+      "postconditions": [
+        "The current tool-call/result relationship remains representable.",
+        "Older history is compactable without discarding the active turn prefix."
+      ],
+      "realization_case_actions": [
+        "ca:pi:repair-oversized-tail"
+      ],
+      "alignment": "direct_pi; no Aider realization"
+    },
+    {
+      "id": "atomic:account-context-visible-input",
+      "problem_mechanism": "Budget measurement can omit custom/session entries that are visible to the provider.",
+      "operator": "Use one context-visible projection for both token accounting and cut-point selection.",
+      "postconditions": [
+        "Every visible entry influences pressure and boundary selection."
+      ],
+      "realization_case_actions": [
+        "ca:pi:account-visible-entries"
+      ],
+      "alignment": "direct_pi; Aider has a related message-tokenizer but not the same session-entry projection"
+    },
+    {
+      "id": "atomic:derive-and-propagate-history-budget",
+      "problem_mechanism": "A summarizer can use a budget inconsistent with the main model or caller-selected limit, causing under-fitting or unnecessary history loss.",
+      "operator": "Derive a bounded history budget from input capacity, allow an explicit caller budget, and pass that value into prefix selection.",
+      "postconditions": [
+        "Selected history prefix fits the input budget.",
+        "Recent tail is retained.",
+        "Budget source is inspectable."
+      ],
+      "realization_case_actions": [
+        "ca:aider:derive-history-budget",
+        "ca:aider:select-fitting-prefix"
+      ],
+      "alignment": "direct_within_aider; adjacent to Pi policy propagation"
+    },
+    {
+      "id": "atomic:preserve-context-on-summary-failure",
+      "problem_mechanism": "A failed summary can otherwise replace usable history with missing or partial context.",
+      "operator": "Catch the handled summarizer failure, retain original messages, and emit a visible warning; if configured, try a fallback summarizer model.",
+      "postconditions": [
+        "Original context remains available after failure.",
+        "Failure is observable."
+      ],
+      "realization_case_actions": [
+        "ca:aider:preserve-on-failure"
+      ],
+      "alignment": "direct_within_aider; partial cross-repository alignment with Pi overflow/cancellation recovery"
+    }
+  ],
+  "cross_repository_evidence_matrix": [
+    {
+      "mechanism": "policy/budget propagation",
+      "pi": "active provider/model overrides flow through all compaction paths; tested",
+      "aider": "model input capacity and explicit max_chat_history_tokens flow into ChatSummary; implementation/tests",
+      "alignment": "partial",
+      "reason": "Both preserve a single resolved budget, but Pi resolves runtime compaction settings and Aider resolves summarizer history input capacity."
+    },
+    {
+      "mechanism": "fit/select safe retained context",
+      "pi": "findCutPoint preserves session turn boundaries, including oversized trailing-tool repair; exact regression oracle",
+      "aider": "summarize_real selects a fitting older prefix and retains a tail; smaller-result oracle",
+      "alignment": "partial",
+      "reason": "Both select under pressure, but Pi selects a session boundary while Aider selects message history for a summarizer."
+    },
+    {
+      "mechanism": "request boundary",
+      "pi": "runLoop continuation gate and terminating-tool negative oracle",
+      "aider": "no reviewed equivalent; summarize_start is a background history-summary trigger, not a provider-request boundary",
+      "alignment": "adjacent_only",
+      "reason": "Do not merge into one request-boundary Atomic."
+    },
+    {
+      "mechanism": "non-destructive recovery",
+      "pi": "oversized-tail boundary and compaction cancellation/overflow paths; direct code/tests for selected boundary",
+      "aider": "retain original history and warn on ValueError; second-model fallback test",
+      "alignment": "partial",
+      "reason": "Shared safety goal, different failure state and recovery seam."
+    }
+  ],
+  "rejected_alignments": [
+    {
+      "claim": "Aider proves Pi's residual output reservation or provider shared-capacity arithmetic",
+      "decision": "rejected",
+      "reason": "No reviewed Aider code charges downstream output reservation against the same provider context window."
+    },
+    {
+      "claim": "Pi's reserveTokens is identical to Aider's max_chat_history_tokens",
+      "decision": "rejected",
+      "reason": "They are different settings with different callers and different test oracles."
+    },
+    {
+      "claim": "All compaction/context commits are one workflow because their subjects contain context or budget",
+      "decision": "rejected",
+      "reason": "The DAG is split at distinct causal seams: policy resolution, request gating, safe boundary repair, history fitting, and failure recovery."
+    }
+  ],
+  "promotion_decision": {
+    "status": "candidate",
+    "promote": [
+      "atomic:resolve-policy-for-active-model",
+      "atomic:gate-pressure-at-real-next-request",
+      "atomic:preserve-latest-safe-boundary",
+      "atomic:account-context-visible-input",
+      "atomic:derive-and-propagate-history-budget",
+      "atomic:preserve-context-on-summary-failure"
+    ],
+    "workflow_status": "candidate",
+    "pattern_status": "not_promoted",
+    "reason": "Real provenance, implementation/call-point reading, and checked-in oracles support candidate Atomics and two repository-local workflow DAGs. There is no held-out transfer evaluation in this run, and cross-repository alignment is partial rather than proof of one shared pattern."
+  }
+}

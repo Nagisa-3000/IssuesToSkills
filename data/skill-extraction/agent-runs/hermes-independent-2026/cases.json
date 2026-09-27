@@ -1,0 +1,216 @@
+{
+  "schema_version": "agent-run.hermes-independent.v1",
+  "run_id": "hermes-independent-2026-09-26",
+  "repository": {
+    "name": "hermes-agent",
+    "remote": "https://github.com/NousResearch/hermes-agent.git",
+    "analysis_head": "9a6108fdf"
+  },
+  "independence": {
+    "other_agents_called": false,
+    "other_run_conclusions_used_as_evidence": false,
+    "duplicate_check": "Existing hermes run was inspected only to avoid selecting the same SHA/mechanism; all case evidence below was re-read from Git commit^/commit diffs and tests."
+  },
+  "scope": "Real compaction/context-pressure/shared-capacity changes with before/after code, call sites and committed tests. Four mechanisms are kept distinct.",
+  "cases": [
+    {
+      "case_id": "hermes-independent:aux-request-headroom",
+      "case_action": "When an auxiliary model's context window binds the compaction threshold, subtract the actual tool-schema estimate plus a conservative system/flush reserve before installing the threshold; clamp to the minimum viable context.",
+      "commit": "f92006ce1cda1a40249fa4d5dd9c663f70a9de8d",
+      "parent": "b35d692f45d5f8c4d2ba567a64daa38ebba96a1a",
+      "date": "2026-04-25",
+      "subject": "fix(compression): reserve system+tools headroom when aux binds threshold (#15631)",
+      "modified_files": [
+        "run_agent.py",
+        "tests/run_agent/test_compression_feasibility.py"
+      ],
+      "call_points": [
+        "AIAgent._check_compression_model_feasibility",
+        "agent.model_metadata.estimate_request_tokens_rough",
+        "self.context_compressor.threshold_tokens",
+        "first run_conversation status_callback replay of _compression_warning",
+        "auxiliary compression summarizer and flush_memories request path"
+      ],
+      "before_after": {
+        "before": "new_threshold = aux_context",
+        "after": "tool_overhead = estimate_request_tokens_rough([], tools=self.tools); headroom = tool_overhead + 12000; new_threshold = max(aux_context - headroom, MINIMUM_CONTEXT_LENGTH)"
+      },
+      "problem": "The raw message threshold and the auxiliary provider request shared one finite context window, but system prompt, tool schemas and flush instructions were omitted from the threshold.",
+      "evidence": [
+        "Commit message reports 25-30K token overhead with 50+ tools and HTTP 400 on compression/flush.",
+        "Diff replaces direct aux_context assignment with tool estimate + 12K reserve + minimum floor.",
+        "Regression test asserts threshold < 128000 with 50 tool schemas and threshold >= MINIMUM_CONTEXT_LENGTH.",
+        "Floor test asserts heavy tools do not push installed threshold below MINIMUM_CONTEXT_LENGTH.",
+        "Existing expected thresholds change 80000->68000 and 99999->87999, showing static reserve applies even with empty tools."
+      ],
+      "tests": [
+        "tests/run_agent/test_compression_feasibility.py::test_auto_lowered_threshold_reserves_headroom_for_tools_and_system",
+        "tests/run_agent/test_compression_feasibility.py::test_headroom_floors_at_minimum_context",
+        "tests/run_agent/test_compression_feasibility.py::test_auto_corrects_threshold_when_aux_context_below_threshold",
+        "tests/run_agent/test_compression_feasibility.py::test_just_below_threshold_auto_corrects",
+        "tests/run_agent/test_compression_feasibility.py::test_feasibility_warning_replayed_on_first_conversation"
+      ],
+      "mechanism_class": "provider-admission-reservation",
+      "distinct_from": ["delegation fan-out budget", "usage provenance", "anti-thrashing progress"]
+    },
+    {
+      "case_id": "hermes-independent:delegation-fanout-budget",
+      "case_action": "Before child results enter the parent transcript, divide the parent's residual input headroom across the batch, combine that dynamic cap with a static safety ceiling, and spill the full text so trimming is lossless.",
+      "commit": "35a0803a3b64a0b43e49dbbc809c4986be3ae331",
+      "parent": "3b2bb30c5d46017f2654d5836fadd99776e1aadc",
+      "date": "2026-06-30",
+      "subject": "fix(delegation): budget subagent summaries against parent context headroom",
+      "related_reference": "PR #9126 (named in the new test module docstring)",
+      "modified_files": [
+        "hermes_cli/config.py",
+        "scripts/release.py",
+        "tests/tools/test_delegate_summary_budget.py",
+        "tools/credential_files.py",
+        "tools/delegate_tool.py"
+      ],
+      "call_points": [
+        "tools.delegate_tool.delegate_task",
+        "delegate_task results.sort followed by _apply_summary_budget(results, parent_agent)",
+        "_parent_summary_char_budget",
+        "_trim_summary_with_footer",
+        "parent context injection after summary budgeting",
+        "credential_files._CACHE_DIRS for remote-readable spill"
+      ],
+      "before_after": {
+        "before": "Each child final_response was returned verbatim; no batch-wide parent headroom calculation or lossless spill.",
+        "after": "headroom_tokens = context_length - used_tokens - reserved; batch_token_budget = fraction * headroom; per_summary_tokens = batch_token_budget // n; effective cap = min(dynamic cap, delegation.max_summary_chars); oversized summaries become head+tail+read_file footer with full text spilled."
+      },
+      "problem": "N child summaries could be inserted simultaneously and overflow the parent's context, causing compression/429 death spirals.",
+      "evidence": [
+        "Commit message reports 60K+ fan-out output and explains that full text is preserved in cache.",
+        "Config adds delegation.max_summary_chars=24000 with 0 disabling only the static ceiling.",
+        "delegate_task invokes _apply_summary_budget for both single-task and batch results.",
+        "The trim path preserves both opening and closing content and gives an exact read_file offset."
+      ],
+      "tests": [
+        "tests/tools/test_delegate_summary_budget.py::test_small_summaries_pass_through_untouched",
+        "tests/tools/test_delegate_summary_budget.py::test_batch_overflow_trimmed_and_spilled_losslessly",
+        "tests/tools/test_delegate_summary_budget.py::test_dynamic_budget_shrinks_as_batch_grows",
+        "tests/tools/test_delegate_summary_budget.py::test_floor_enforced_when_parent_over_budget",
+        "tests/tools/test_delegate_summary_budget.py::test_unknown_context_falls_back_to_static_ceiling",
+        "tests/tools/test_delegate_summary_budget.py::test_disabled_static_ceiling_and_unknown_context_leaves_summary_intact",
+        "tests/tools/test_delegate_summary_budget.py::test_empty_results_is_noop"
+      ],
+      "mechanism_class": "recipient-context-fanout-budget",
+      "distinct_from": ["aux request fixed overhead", "current-prompt provenance", "compaction threshold floor"]
+    },
+    {
+      "case_id": "hermes-independent:delegation-usage-provenance",
+      "case_action": "Make dynamic summary budgeting consume the receiving aggregator's current prompt usage, reject unknown usage as unknown (static ceiling only), and avoid cumulative session or MoA-advisor tokens.",
+      "commits": [
+        {
+          "commit": "903b9bf1873fa52daf9d0000c83ac7ffeb28fc4a",
+          "parent": "b51c055a12220f8c7c18660e8599365012e19532",
+          "date": "2026-09-05",
+          "subject": "fix(delegate): nested orchestrators get their workers' results back — no 420 s deadline on delegate_task, summary budget uses the current prompt not the session sum"
+        },
+        {
+          "commit": "09138852500bc02062008a565942c0c9176b2fc3",
+          "parent": "903b9bf1873fa52daf9d0000c83ac7ffeb28fc4a",
+          "date": "2026-09-05",
+          "subject": "fix(delegation): summary headroom uses the aggregator's own prompt size; unknown usage means the static ceiling, never zero context"
+        }
+      ],
+      "modified_files": [
+        "agent/tool_executor.py",
+        "agent/turn_usage.py",
+        "tools/delegate_tool_results.py",
+        "tests/agent/test_sequential_deadline_delegate_exempt.py",
+        "tests/tools/test_delegate_summary_budget.py"
+      ],
+      "call_points": [
+        "record_response_usage -> agent._last_prompt_size_tokens",
+        "delegate_task -> _apply_summary_budget",
+        "_apply_summary_budget -> _parent_summary_char_budget",
+        "_parent_summary_char_budget -> _parent_prompt_size_tokens",
+        "_parent_prompt_size_tokens fallback from _last_turn_usage"
+      ],
+      "before_after": {
+        "before": "Budget read session_prompt_tokens / cumulative session sum; first no-usage state was treated as 0; MoA folded advisor usage could represent tokens not present in aggregator context.",
+        "after": "record_response_usage stores aggregator_usage.prompt_tokens as _last_prompt_size_tokens; _parent_prompt_size_tokens prefers that, falls back to last provider prompt usage, and returns None when unknown; None makes caller use static ceiling only."
+      },
+      "problem": "A budget formula can be numerically correct yet unsafe if its usage input is cumulative, foreign to the receiver, or falsely known as zero.",
+      "evidence": [
+        "903 commit reports 1,393 child summaries all collapsed to 2,000-char floor when session sum exceeded any context window.",
+        "091 commit gives a concrete 190K/200K parent with no usage row receiving an approximately 384K-char dynamic budget under the old zero default.",
+        "091 adds _last_prompt_size_tokens from aggregator_usage before MoA folding and keeps last-turn fallback.",
+        "Unknown usage now returns None, preserving the static ceiling instead of inventing zero used tokens."
+      ],
+      "tests": [
+        "tests/tools/test_delegate_summary_budget.py::test_budget_uses_current_prompt_size_not_the_session_sum",
+        "tests/tools/test_delegate_summary_budget.py::test_unknown_parent_usage_means_static_ceiling_not_zero_context",
+        "tests/tools/test_delegate_summary_budget.py::test_moa_fold_does_not_inflate_the_parents_prompt_size",
+        "tests/agent/test_sequential_deadline_delegate_exempt.py::test_delegate_task_is_exempt_from_the_sequential_deadline",
+        "tests/agent/test_sequential_deadline_delegate_exempt.py::test_exemption_is_narrow"
+      ],
+      "mechanism_class": "capacity-measurement-provenance",
+      "scope_note": "The same 903 commit also exempts nested delegate_task from a generic sequential deadline. That liveness fix is recorded as adjacent evidence, not treated as the context-capacity mechanism."
+    },
+    {
+      "case_id": "hermes-independent:anti-thrashing-compaction-progress",
+      "case_action": "For small windows, raise only the implicit compaction trigger floor, remove the summary wire hard cap that truncates thinking output, strip recursive reasoning traces, and block repeated no-op compactions until progress is possible.",
+      "commit": "76381e2a8e3a21fbbd0a192b4b5f7356a7ca47b8",
+      "parent": "8e734810dfcb4f19eac2f442cb75b3962dfec728",
+      "date": "2026-07-08",
+      "subject": "fix(compression): stop compaction thrash — 75% trigger floor under 512K, no summary output cap, reasoning-trace exclusion (#60989)",
+      "modified_files": [
+        "agent/context_compressor.py",
+        "cli-config.yaml.example",
+        "hermes_cli/config.py",
+        "tests/agent/test_compression_small_ctx_threshold_floor.py",
+        "tests/agent/test_context_compressor.py",
+        "tests/run_agent/test_infinite_compaction_loop.py"
+      ],
+      "call_points": [
+        "ContextCompressor.__init__ -> _effective_threshold_percent -> threshold_tokens",
+        "ContextCompressor.update_model -> rederive from _configured_threshold_percent",
+        "ContextCompressor.should_compress",
+        "ContextCompressor.compress -> summary serializer/LLM -> _previous_summary",
+        "_ineffective_compression_count and cooldown guards"
+      ],
+      "before_after": {
+        "before": "Sub-512K models used the default 50% trigger; summary ceiling was 12000 and wire max_tokens could truncate thinking summaries; inline reasoning traces could be re-fed into iterative summaries.",
+        "after": "For context_length < 512000, effective threshold percent is max(configured, 0.75); summary ceiling is 10000 with no summary max_tokens wire cap; inline/native reasoning is excluded before serialization and output trace is stripped before storage; repeated no-op compression is guarded."
+      },
+      "problem": "Compression fired every 1-2 turns because the incompressible floor consumed reclaimed headroom, and summary truncation/trace feedback made the compression result fail to reduce future pressure.",
+      "evidence": [
+        "Commit message explicitly identifies the 50% trigger plus system/tools/protected tail/rolling summary as the thrash mechanism.",
+        "_effective_threshold_percent is raise-only and re-applied in both construction and model switching.",
+        "Diff removes max_tokens from summary wire kwargs and lowers the summary envelope to 1K-10K.",
+        "Infinite-loop tests require meaningful compressible middle and suppress should_compress after two ineffective passes."
+      ],
+      "tests": [
+        "tests/agent/test_compression_small_ctx_threshold_floor.py::TestSmallContextThresholdFloor::test_sub_512k_floors_to_75_percent",
+        "tests/agent/test_compression_small_ctx_threshold_floor.py::TestSmallContextThresholdFloor::test_512k_and_above_keep_configured_percent",
+        "tests/agent/test_compression_small_ctx_threshold_floor.py::TestSmallContextThresholdFloor::test_raise_only_higher_config_wins",
+        "tests/agent/test_compression_small_ctx_threshold_floor.py::TestSmallContextThresholdFloor::test_update_model_rederives_floor_both_directions",
+        "tests/agent/test_compression_small_ctx_threshold_floor.py::TestSummaryBudgetEnvelope::test_no_max_tokens_wire_cap_on_summary_call",
+        "tests/agent/test_compression_small_ctx_threshold_floor.py::TestReasoningExcludedFromSummarizer::test_serializer_drops_inline_think_blocks",
+        "tests/run_agent/test_infinite_compaction_loop.py::TestCompressNoOpRegistersIneffective::test_two_no_ops_block_should_compress",
+        "tests/run_agent/test_infinite_compaction_loop.py::TestTailCutRawBudgetFallback::test_proactive_fix_prevents_no_op_window"
+      ],
+      "mechanism_class": "compression-progress-and-liveness"
+    }
+  ],
+  "cross_case_relations": [
+    {"from": "hermes-independent:aux-request-headroom", "to": "hermes-independent:delegation-fanout-budget", "relation": "both derive an upstream limit from capacity consumed by downstream material, but consumers differ"},
+    {"from": "hermes-independent:delegation-fanout-budget", "to": "hermes-independent:delegation-usage-provenance", "relation": "the latter repairs the input measurement used by the former"},
+    {"from": "hermes-independent:aux-request-headroom", "to": "hermes-independent:anti-thrashing-compaction-progress", "relation": "admission safety versus post-compression progress"}
+  ],
+  "excluded_similar_cases": [
+    {"commit": "15cfd2082083099bff7e6d7f61544f802ad06170", "reason": "UI percentage cap and provider-usage estimator; display/telemetry contract rather than capacity admission or compaction progress"},
+    {"commit": "6e369a37622be1785c94640663752cdb655a1f2a", "reason": "delegation worker concurrency capacity, not model context capacity"},
+    {"commits": ["c68091c04", "40051c2a1", "3f7e0fd07"], "reason": "compression generation/ownership race and concurrent publication, not shared-capacity arithmetic"},
+    {"commit": "22b6942fc2fb00d44f4f7c77d85c2a7ce144845c", "reason": "lossless tool-output densification; reduces representation size but does not implement a pressure policy"}
+  ],
+  "validation": {
+    "status": "not_validated",
+    "reason": "All evidence is from one repository and committed tests; no cross-repository transfer or held-out evaluation was run.",
+    "test_execution_in_this_run": "not rerun against current HEAD; selected historical test paths are not present at the current physical checkout layout"
+  }
+}

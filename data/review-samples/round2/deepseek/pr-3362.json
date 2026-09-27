@@ -1,0 +1,353 @@
+{
+  "repository": "deepseek-ai/deepseek-harness",
+  "number": 3362,
+  "title": "feat(session-persistence-jsonl): cross-process write lock (flock / named semaphore)",
+  "merge_sha": "7acc038beb83030940bd4547da877b5c49dd705d",
+  "base_sha": "645c68daf25136e3a5719cb02e92ede4aaea1d9a",
+  "head_sha": "c58097a8267ef299e03494f26801d76c1ba73ca9",
+  "merged_at": "2026-09-04T14:45:03+08:00",
+  "commits": [
+    {
+      "sha": "c58097a8267ef299e03494f26801d76c1ba73ca9",
+      "parents": [
+        "b6b2ec4a9082d12df95b80ef222bac362de2da29"
+      ],
+      "authored_at": "2026-08-31T14:45:31+08:00",
+      "subject": "feat(session-persistence-jsonl): cross-process write-ownership lease",
+      "body": "Write handles now hold a durable lease (session.lock.json beside the\nlog): a random owner token, diagnostic pid, and an expiry. Acquisition\nwins by exclusive create; a second process's create or write open rejects\nwhile the record is unrenewed for less than leaseTtlMs (default 5 min),\nand takes over after that — a crashed holder is waited out, never\nreclaimed by pid. The holder renews every leaseRenewIntervalMs (default\n4 min); a renewal that finds a foreign, vanished, or expired record — or\nfails outright — marks the lease lost permanently, so every later\nappend/flush rejects with SessionOwnershipLostError while reads continue.\nClose releases the record; read handles never touch it. Takeover of an\nexpired record is eventually exclusive: a replaced holder stops within\none renewal interval.\n\nRefs #3245",
+      "message": "feat(session-persistence-jsonl): cross-process write-ownership lease\n\nWrite handles now hold a durable lease (session.lock.json beside the\nlog): a random owner token, diagnostic pid, and an expiry. Acquisition\nwins by exclusive create; a second process's create or write open rejects\nwhile the record is unrenewed for less than leaseTtlMs (default 5 min),\nand takes over after that — a crashed holder is waited out, never\nreclaimed by pid. The holder renews every leaseRenewIntervalMs (default\n4 min); a renewal that finds a foreign, vanished, or expired record — or\nfails outright — marks the lease lost permanently, so every later\nappend/flush rejects with SessionOwnershipLostError while reads continue.\nClose releases the record; read handles never touch it. Takeover of an\nexpired record is eventually exclusive: a replaced holder stops within\none renewal interval.\n\nRefs #3245"
+    }
+  ],
+  "files": [
+    {
+      "filename": ".agents/notes/implemented/feature/2026-08-31-cross-process-session-write-lease.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": ".agents/notes/implemented/feature/2026-08-31-cross-process-session-write-lease.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": ".agents/notes/implemented/feature/2026-08-31-cross-process-session-write-lease.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "THIRD_PARTY_NOTICES.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "apps/cli/tests/profiles/headless/tests/session-format-guard.expected.e2e.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/config-catalog.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/config-catalog.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/subsystems/persistence.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/subsystems/persistence.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/subsystems/persistence.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/core/agent-loop/tests/resume.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/experimental/webworker-runtime/src/module-proxies.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/experimental/webworker-runtime/src/node/builtins.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/experimental/webworker-runtime/src/node/external_packages/fs-ext.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/experimental/webworker-runtime/src/node/external_packages/replaced-externals.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session/session-persistence-jsonl/README.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session/session-persistence-jsonl/README.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session/session-persistence-jsonl/README.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session/session-persistence-jsonl/package.json",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session/session-persistence-jsonl/src/index.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session/session-persistence-jsonl/src/lease.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session/session-persistence-jsonl/src/storage.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session/session-persistence-jsonl/src/win32.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session/session-persistence-jsonl/tests/fixtures/lease-holder.mjs",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session/session-persistence-jsonl/tests/jsonl.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session/session-persistence-jsonl/tests/lease.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session/session-persistence-jsonl/tests/lease.two-process.e2e.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session/session-persistence-jsonl/tests/win32.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session/session-persistence/tests/live-write-contract.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/subagent/subagent/tests/continuation.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "pnpm-lock.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "pnpm-workspace.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "scripts/gen-third-party-notices.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "vitest.config.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    }
+  ],
+  "linked_issue_numbers": [],
+  "quality": {
+    "score": 0.9,
+    "tier": "strong",
+    "reasons": [
+      "merged pull request",
+      "descriptive title",
+      "10 implementation files",
+      "9 test files",
+      "1 PR commits"
+    ],
+    "implementation_files": 10,
+    "test_files": 9,
+    "docs_files": 10,
+    "generated_files": 1
+  },
+  "provenance": {
+    "kind": "local_merge_commit",
+    "repository_path": "/home/chenyujia/tritonToLlvm/deepseek-harness",
+    "merge_subject": "Merge pull request #3362 from deepseek-harness/refactor/session-persistence-write-lease",
+    "merge_body": "feat(session-persistence-jsonl): cross-process write lock (flock / named semaphore)",
+    "file_set": "first_parent_to_merge_result",
+    "commit_set": "first_parent_to_second_parent"
+  }
+}

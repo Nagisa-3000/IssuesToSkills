@@ -1,0 +1,166 @@
+{
+  "repository": "NousResearch/hermes-agent",
+  "number": 115759,
+  "title": "fix(codex_app_server): SOUL.md and the Hermes system prompt reach the model; built-in personality disabled (#74712, #72104, #26035, salvage #74726 #72106 #27998)",
+  "merge_sha": "85cb1dc74b301cff555d7d789365839fb74c9e1d",
+  "base_sha": "4749025d03f2e292fb2a8140efd76ca6b628ddf2",
+  "head_sha": "bf6977fe16830dab89253ff462a7cd8f6ce216b0",
+  "merged_at": "2026-09-19T11:07:28-07:00",
+  "commits": [
+    {
+      "sha": "5cf6dcddccc5d916d2685daaf5f5c3601cc0b49c",
+      "parents": [
+        "afaa53e5fe8c99d52bb0df512638a3223e30da99"
+      ],
+      "authored_at": "2026-09-18T23:36:17-07:00",
+      "subject": "feat(codex_app_server): accept developer_instructions and send them on thread/start",
+      "body": "CodexAppServerSession(developer_instructions=...) forwards Hermes' composed\nsystem prompt as thread/start.developerInstructions when non-empty. Codex keeps\nits own base instructions and inserts the text as the first developer message\nof every model request, so SOUL.md / memory / channel overrides finally reach\nthe model on this runtime.\n\nHand-ported from #27998 (the developerInstructions half only; the SOUL-only\nbaseInstructions hunk is dropped because baseInstructions REPLACES codex's base\ntool guidance, and #74712's own probe table shows the `instructions` spelling is\naccepted but ignored).\n\nPart of #74712 #26035",
+      "message": "feat(codex_app_server): accept developer_instructions and send them on thread/start\n\nCodexAppServerSession(developer_instructions=...) forwards Hermes' composed\nsystem prompt as thread/start.developerInstructions when non-empty. Codex keeps\nits own base instructions and inserts the text as the first developer message\nof every model request, so SOUL.md / memory / channel overrides finally reach\nthe model on this runtime.\n\nHand-ported from #27998 (the developerInstructions half only; the SOUL-only\nbaseInstructions hunk is dropped because baseInstructions REPLACES codex's base\ntool guidance, and #74712's own probe table shows the `instructions` spelling is\naccepted but ignored).\n\nPart of #74712 #26035"
+    },
+    {
+      "sha": "2a12555b3c5441903cf11fb2b1dbb351f151fb7a",
+      "parents": [
+        "5cf6dcddccc5d916d2685daaf5f5c3601cc0b49c"
+      ],
+      "authored_at": "2026-09-18T23:36:33-07:00",
+      "subject": "fix(codex_app_server): disable codex's built-in personality on thread/start",
+      "body": "Hermes supplies its own agent identity and personality through the system\nprompt. Sending personality: \"none\" on thread/start strips codex's built-in\n\"# Personality\" section from the base instructions (verified against codex\n0.147: the section disappears from the outgoing model request and thread/start\nis accepted without error), so it can no longer compete with SOUL.md.\n\nHand-ported from #72106 (its test hunk is folded into the lane's own invariant\ntest commit).\n\nFixes #72104",
+      "message": "fix(codex_app_server): disable codex's built-in personality on thread/start\n\nHermes supplies its own agent identity and personality through the system\nprompt. Sending personality: \"none\" on thread/start strips codex's built-in\n\"# Personality\" section from the base instructions (verified against codex\n0.147: the section disappears from the outgoing model request and thread/start\nis accepted without error), so it can no longer compete with SOUL.md.\n\nHand-ported from #72106 (its test hunk is folded into the lane's own invariant\ntest commit).\n\nFixes #72104"
+    },
+    {
+      "sha": "ab2861fb06c62e18b7cb3bbabbc18bf6a3bbf429",
+      "parents": [
+        "2a12555b3c5441903cf11fb2b1dbb351f151fb7a"
+      ],
+      "authored_at": "2026-09-18T23:36:59-07:00",
+      "subject": "fix(codex_runtime): hand Hermes' composed system prompt to the codex thread",
+      "body": "The codex_app_server early-return forked away from the standard loop before any\nprompt assembly was used: the codex thread received only cwd and the raw user\ntext, so SOUL.md, MEMORY.md/USER.md and channel_overrides.system_prompt were\ncomposed, persisted to sessions.system_prompt, and then silently discarded.\n\n_ensure_codex_session now composes the prompt exactly as turn_context does\n(agent._cached_system_prompt + \"\\n\\n\" + agent.ephemeral_system_prompt) and\npasses it to CodexAppServerSession(developer_instructions=...) once per thread.\nSessions are created lazily per turn only when none exists, so the prompt is\nnever duplicated per turn and a retired session re-sends the current one.\n\nHand-ported from #74726: same composition, but the session kwarg is spelled\ndeveloper_instructions -> thread/start.developerInstructions because the\n`instructions` field #74726 used is accepted and ignored by codex.\n\nFixes #74712\nFixes #26035",
+      "message": "fix(codex_runtime): hand Hermes' composed system prompt to the codex thread\n\nThe codex_app_server early-return forked away from the standard loop before any\nprompt assembly was used: the codex thread received only cwd and the raw user\ntext, so SOUL.md, MEMORY.md/USER.md and channel_overrides.system_prompt were\ncomposed, persisted to sessions.system_prompt, and then silently discarded.\n\n_ensure_codex_session now composes the prompt exactly as turn_context does\n(agent._cached_system_prompt + \"\\n\\n\" + agent.ephemeral_system_prompt) and\npasses it to CodexAppServerSession(developer_instructions=...) once per thread.\nSessions are created lazily per turn only when none exists, so the prompt is\nnever duplicated per turn and a retired session re-sends the current one.\n\nHand-ported from #74726: same composition, but the session kwarg is spelled\ndeveloper_instructions -> thread/start.developerInstructions because the\n`instructions` field #74726 used is accepted and ignored by codex.\n\nFixes #74712\nFixes #26035"
+    },
+    {
+      "sha": "d046c4e40875faa80795d867fdd0eaa6b0ad4025",
+      "parents": [
+        "ab2861fb06c62e18b7cb3bbabbc18bf6a3bbf429"
+      ],
+      "authored_at": "2026-09-18T23:39:50-07:00",
+      "subject": "test(codex_app_server): invariants for the Hermes prompt handoff; docs",
+      "body": "Session: thread/start carries developerInstructions + personality \"none\", and\nomits developerInstructions when the prompt is blank (folds #72106's assertion\ninto the rewritten cwd-only test). Runtime: _ensure_codex_session composes\n_cached_system_prompt + ephemeral_system_prompt exactly like turn_context and\nsends it once per thread across turns; no field when the agent has no prompt.\n\nDocs state that SOUL.md / system prompt / channel overrides now reach the model\nas developer instructions and that conversation history is still not projected\ninto the codex thread. Contributor mapping for @Momentum96 (#27998 port).",
+      "message": "test(codex_app_server): invariants for the Hermes prompt handoff; docs\n\nSession: thread/start carries developerInstructions + personality \"none\", and\nomits developerInstructions when the prompt is blank (folds #72106's assertion\ninto the rewritten cwd-only test). Runtime: _ensure_codex_session composes\n_cached_system_prompt + ephemeral_system_prompt exactly like turn_context and\nsends it once per thread across turns; no field when the agent has no prompt.\n\nDocs state that SOUL.md / system prompt / channel overrides now reach the model\nas developer instructions and that conversation history is still not projected\ninto the codex thread. Contributor mapping for @Momentum96 (#27998 port)."
+    },
+    {
+      "sha": "ee69433c57d98f35a707ab0fd2896411045ec5d5",
+      "parents": [
+        "d046c4e40875faa80795d867fdd0eaa6b0ad4025"
+      ],
+      "authored_at": "2026-09-19T01:23:16-07:00",
+      "subject": "fix(codex_app_server): retire the thread when the composed prompt changes mid-session",
+      "body": "_ensure_codex_session records the developerInstructions composition it sent; when the\nTUI/Desktop gateway mutates the live agent's prompt in place (/personality, prompt\nmirror) the next turn closes the stale thread and starts one carrying the new prompt,\nmatching what the standard loop applies on its next API call. Sessions attached\nwithout a recorded composition are kept. Docs sentence updated.",
+      "message": "fix(codex_app_server): retire the thread when the composed prompt changes mid-session\n\n_ensure_codex_session records the developerInstructions composition it sent; when the\nTUI/Desktop gateway mutates the live agent's prompt in place (/personality, prompt\nmirror) the next turn closes the stale thread and starts one carrying the new prompt,\nmatching what the standard loop applies on its next API call. Sessions attached\nwithout a recorded composition are kept. Docs sentence updated."
+    },
+    {
+      "sha": "bf6977fe16830dab89253ff462a7cd8f6ce216b0",
+      "parents": [
+        "ee69433c57d98f35a707ab0fd2896411045ec5d5",
+        "51dd1970afaf058d2e3609dc2678f2012f333c9c"
+      ],
+      "authored_at": "2026-09-19T10:47:48-07:00",
+      "subject": "chore: merge origin/main (resolve website/docs/user-guide/features/codex-app-server-runtime.md)",
+      "body": "",
+      "message": "chore: merge origin/main (resolve website/docs/user-guide/features/codex-app-server-runtime.md)"
+    }
+  ],
+  "files": [
+    {
+      "filename": "agent/codex_runtime.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "agent/transports/codex_app_server_session.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "contributors/emails/wjsrjsdn12@gmail.com",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "tests/agent/test_codex_app_server_persist.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "tests/agent/test_codex_runtime_prompt_handoff.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "tests/agent/transports/test_codex_app_server_session.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "website/docs/user-guide/features/codex-app-server-runtime.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    }
+  ],
+  "linked_issue_numbers": [
+    26035,
+    72104,
+    74712
+  ],
+  "quality": {
+    "score": 0.98,
+    "tier": "strong",
+    "reasons": [
+      "merged pull request",
+      "descriptive title",
+      "2 implementation files",
+      "3 test files",
+      "explicit closing issue reference",
+      "6 PR commits"
+    ],
+    "implementation_files": 2,
+    "test_files": 3,
+    "docs_files": 1,
+    "generated_files": 0
+  },
+  "provenance": {
+    "kind": "local_merge_commit",
+    "repository_path": "/home/chenyujia/tritonToLlvm/hermes-agent",
+    "merge_subject": "Merge pull request #115759 from NousResearch/fix/boa-codex-app-server-lifecycle-prompt-handoff",
+    "merge_body": "fix(codex_app_server): SOUL.md and the Hermes system prompt reach the model; built-in personality disabled (#74712, #72104, #26035, salvage #74726 #72106 #27998)",
+    "file_set": "first_parent_to_merge_result",
+    "commit_set": "first_parent_to_second_parent"
+  }
+}

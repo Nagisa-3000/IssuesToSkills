@@ -1,0 +1,68 @@
+{
+  "repository": "NousResearch/hermes-agent",
+  "number": 81046,
+  "title": "fix(vision): stream image and video downloads with chunk-by-chunk size cap",
+  "merge_sha": "83a1ca686207ef797e4eb86a46725dfe7d9a2f10",
+  "base_sha": "5c6aff1430678628004db7e331dc964ebc5939d3",
+  "head_sha": "b7eb97a835a8add7258f2748cce7b88406b9e141",
+  "merged_at": "2026-08-07T19:02:25+05:30",
+  "commits": [
+    {
+      "sha": "b7eb97a835a8add7258f2748cce7b88406b9e141",
+      "parents": [
+        "23dce021a5fd5540f88e6845014c44a05866d1a5"
+      ],
+      "authored_at": "2026-08-07T18:50:39+05:30",
+      "subject": "fix(vision): stream image and video downloads with chunk-by-chunk size cap",
+      "body": "_download_image() and _download_video() both used client.get() +\nresponse.content, buffering the entire media body into memory before\nchecking the size cap. A server that omits Content-Length could send\nan arbitrarily large payload, causing OOM.\n\nExtract _stream_download_to_file() shared helper: streams via\nclient.stream() + aiter_bytes(), writes chunks to a temp file, enforces\nthe running byte count against the cap after each chunk, and atomically\nreplaces onto the destination on success. Cleans up the temp file on\nfailure. Uses utils.atomic_replace() for cross-device/symlink safety.\n\nMalformed Content-Length values are now caught and ignored instead of\ncrashing with ValueError; the streaming cap is the authoritative guard.\n\nApproach adapted from PR #10440 by @WuKongAI-CMU (closed as stale —\n14923 commits behind, reverted 32 commits of vision_tools.py evolution\nincluding SSRF-safe client, retry classification, and lazy imports).\n\nCloses #10440",
+      "message": "fix(vision): stream image and video downloads with chunk-by-chunk size cap\n\n_download_image() and _download_video() both used client.get() +\nresponse.content, buffering the entire media body into memory before\nchecking the size cap. A server that omits Content-Length could send\nan arbitrarily large payload, causing OOM.\n\nExtract _stream_download_to_file() shared helper: streams via\nclient.stream() + aiter_bytes(), writes chunks to a temp file, enforces\nthe running byte count against the cap after each chunk, and atomically\nreplaces onto the destination on success. Cleans up the temp file on\nfailure. Uses utils.atomic_replace() for cross-device/symlink safety.\n\nMalformed Content-Length values are now caught and ignored instead of\ncrashing with ValueError; the streaming cap is the authoritative guard.\n\nApproach adapted from PR #10440 by @WuKongAI-CMU (closed as stale —\n14923 commits behind, reverted 32 commits of vision_tools.py evolution\nincluding SSRF-safe client, retry classification, and lazy imports).\n\nCloses #10440"
+    }
+  ],
+  "files": [
+    {
+      "filename": "tests/tools/test_vision_tools.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "tools/vision_tools.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    }
+  ],
+  "linked_issue_numbers": [
+    10440
+  ],
+  "quality": {
+    "score": 0.98,
+    "tier": "strong",
+    "reasons": [
+      "merged pull request",
+      "descriptive title",
+      "1 implementation files",
+      "1 test files",
+      "explicit closing issue reference",
+      "1 PR commits"
+    ],
+    "implementation_files": 1,
+    "test_files": 1,
+    "docs_files": 0,
+    "generated_files": 0
+  },
+  "provenance": {
+    "kind": "local_merge_commit",
+    "repository_path": "/home/chenyujia/tritonToLlvm/hermes-agent",
+    "merge_subject": "Merge pull request #81046 from kshitijk4poor/fix/vision-stream-download-size-cap",
+    "merge_body": "fix(vision): stream image and video downloads with chunk-by-chunk size cap",
+    "file_set": "first_parent_to_merge_result",
+    "commit_set": "first_parent_to_second_parent"
+  }
+}

@@ -1,0 +1,452 @@
+{
+  "repository": "deepseek-ai/deepseek-harness",
+  "number": 1873,
+  "title": "fix(tools): collapse code-mode executor to run_code for model-direct calls",
+  "merge_sha": "0a0737f33bb4096f45092d1ea460a4df3d9ff7f7",
+  "base_sha": "38f99f04f14cc45e43d6ae944cf5660c521d7c65",
+  "head_sha": "db4e3e39a54223e9315d2e49275e01e09d745176",
+  "merged_at": "2026-08-11T23:22:54+08:00",
+  "commits": [
+    {
+      "sha": "4806fdabab13bf8ca9130848e7461d5be1f7e316",
+      "parents": [
+        "564a853a04f4cd8b69f9ff10657b563ac1192b5e"
+      ],
+      "authored_at": "2026-08-10T23:13:28+08:00",
+      "subject": "fix(tools): collapse code-mode executor to run_code for model-direct calls",
+      "body": "wireSchemas() already advertised only run_code under mode: 'code', but the\nexecutor resolved every call through get(), which returns the full visible\nmap plus the reserved transport. A model could name a native tool directly\nand bypass run_code entirely. Route the execution-path lookups through a\nnew private resolveExecution() that applies the mode collapse at the\noperation boundary: model-direct calls under 'code' may only name run_code\n(UNKNOWN_TOOL otherwise), while SDK sub-dispatches (parent token set) keep\nevery visible tool. get()/schemas() public semantics are unchanged.\n\nThe denial happens at createExecution, before the extensible policy\npipeline — pre-execute listeners, approval ask, and guards never observe\na call that is deterministically denied. A collapsed call honors the\npre-dispatch cancellation contract, routes aborted results through the\nvisible tool's finalizeContent, and captures the finalizer before\nargument materialization.\n\nUnder code mode, a system-prompt/assemble listener filters out tool:*\nguidance sections that told the model to call native tools directly.\nThe tools:sdk section and SDK types remain so programs can still use\nall tools through run_code.\n\nFixes #1815",
+      "message": "fix(tools): collapse code-mode executor to run_code for model-direct calls\n\nwireSchemas() already advertised only run_code under mode: 'code', but the\nexecutor resolved every call through get(), which returns the full visible\nmap plus the reserved transport. A model could name a native tool directly\nand bypass run_code entirely. Route the execution-path lookups through a\nnew private resolveExecution() that applies the mode collapse at the\noperation boundary: model-direct calls under 'code' may only name run_code\n(UNKNOWN_TOOL otherwise), while SDK sub-dispatches (parent token set) keep\nevery visible tool. get()/schemas() public semantics are unchanged.\n\nThe denial happens at createExecution, before the extensible policy\npipeline — pre-execute listeners, approval ask, and guards never observe\na call that is deterministically denied. A collapsed call honors the\npre-dispatch cancellation contract, routes aborted results through the\nvisible tool's finalizeContent, and captures the finalizer before\nargument materialization.\n\nUnder code mode, a system-prompt/assemble listener filters out tool:*\nguidance sections that told the model to call native tools directly.\nThe tools:sdk section and SDK types remain so programs can still use\nall tools through run_code.\n\nFixes #1815"
+    },
+    {
+      "sha": "75a09efd519e8862d8c41394d5eebd7d464b048a",
+      "parents": [
+        "4806fdabab13bf8ca9130848e7461d5be1f7e316"
+      ],
+      "authored_at": "2026-08-10T23:33:01+08:00",
+      "subject": "fix(tools): use @deepseek-ai/cordis and @deepseek-ai/schemastery imports",
+      "body": "",
+      "message": "fix(tools): use @deepseek-ai/cordis and @deepseek-ai/schemastery imports"
+    },
+    {
+      "sha": "6f6defd64a7016e889815c28eb1f9837577f1bc9",
+      "parents": [
+        "75a09efd519e8862d8c41394d5eebd7d464b048a"
+      ],
+      "authored_at": "2026-08-11T00:58:45+08:00",
+      "subject": "fix(tools): collapse code-mode executor to run_code for model-direct calls",
+      "body": "wireSchemas() already advertised only run_code under mode: 'code', but the\nexecutor resolved every call through get(), which returns the full visible\nmap plus the reserved transport. A model could name a native tool directly\nand bypass run_code entirely. Route the execution-path lookups through a\nnew private resolveExecution() that applies the mode collapse at the\noperation boundary: model-direct calls under 'code' may only name run_code\n(UNKNOWN_TOOL otherwise), while SDK sub-dispatches (parent token set) keep\nevery visible tool. get()/schemas() public semantics are unchanged.\n\nThe denial happens at createExecution, before the extensible policy\npipeline — pre-execute listeners, approval ask, and guards never observe\na call that is deterministically denied. A collapsed call honors the\npre-dispatch cancellation contract, routes aborted results through the\nvisible tool's finalizeContent, and captures the finalizer before\nargument materialization.\n\nUnder code mode, a system-prompt/assemble listener filters out tool:*\nguidance sections that told the model to call native tools directly.\nThe tools:sdk section and SDK types remain so programs can still use\nall tools through run_code.\n\nRegenerated docs, catalogs, graphs, scoped events, and re-recorded\ntranslation pairs.\n\nFixes #1815",
+      "message": "fix(tools): collapse code-mode executor to run_code for model-direct calls\n\nwireSchemas() already advertised only run_code under mode: 'code', but the\nexecutor resolved every call through get(), which returns the full visible\nmap plus the reserved transport. A model could name a native tool directly\nand bypass run_code entirely. Route the execution-path lookups through a\nnew private resolveExecution() that applies the mode collapse at the\noperation boundary: model-direct calls under 'code' may only name run_code\n(UNKNOWN_TOOL otherwise), while SDK sub-dispatches (parent token set) keep\nevery visible tool. get()/schemas() public semantics are unchanged.\n\nThe denial happens at createExecution, before the extensible policy\npipeline — pre-execute listeners, approval ask, and guards never observe\na call that is deterministically denied. A collapsed call honors the\npre-dispatch cancellation contract, routes aborted results through the\nvisible tool's finalizeContent, and captures the finalizer before\nargument materialization.\n\nUnder code mode, a system-prompt/assemble listener filters out tool:*\nguidance sections that told the model to call native tools directly.\nThe tools:sdk section and SDK types remain so programs can still use\nall tools through run_code.\n\nRegenerated docs, catalogs, graphs, scoped events, and re-recorded\ntranslation pairs.\n\nFixes #1815"
+    },
+    {
+      "sha": "b558afc373e05c077b073df9dea55a59be869dc1",
+      "parents": [
+        "6f6defd64a7016e889815c28eb1f9837577f1bc9"
+      ],
+      "authored_at": "2026-08-11T01:34:47+08:00",
+      "subject": "fix(tools): use @deepseek-ai/cordis import in README type blocks",
+      "body": "",
+      "message": "fix(tools): use @deepseek-ai/cordis import in README type blocks"
+    },
+    {
+      "sha": "2aef2d83fa27d46e00a2ce440d0958ee5ecadff5",
+      "parents": [
+        "b558afc373e05c077b073df9dea55a59be869dc1"
+      ],
+      "authored_at": "2026-08-11T02:32:24+08:00",
+      "subject": "fix(tools): remove tool:* prompt filtering per review feedback",
+      "body": "LegGasai noted that filtering prompt sections by tool:* prefix is a poor\nheuristic: it conflates section naming convention with presentation\nsemantics and would incorrectly drop tool:structured_output. The executor\ncollapse already enforces the boundary — a model-direct native call is\nrejected as UNKNOWN_TOOL regardless of what the prompt says, so filtering\nthe prompt adds no security and only risks losing useful guidance.\n\nThe tool:read/tool:bash/etc sections describe capability usage patterns\nthat apply to both native and code presentations, and keeping them does\nnot reopen the native direct-call path because the executor blocks it.",
+      "message": "fix(tools): remove tool:* prompt filtering per review feedback\n\nLegGasai noted that filtering prompt sections by tool:* prefix is a poor\nheuristic: it conflates section naming convention with presentation\nsemantics and would incorrectly drop tool:structured_output. The executor\ncollapse already enforces the boundary — a model-direct native call is\nrejected as UNKNOWN_TOOL regardless of what the prompt says, so filtering\nthe prompt adds no security and only risks losing useful guidance.\n\nThe tool:read/tool:bash/etc sections describe capability usage patterns\nthat apply to both native and code presentations, and keeping them does\nnot reopen the native direct-call path because the executor blocks it."
+    },
+    {
+      "sha": "24dd48b1331457e046ef35a669116ada9e91073c",
+      "parents": [
+        "2aef2d83fa27d46e00a2ce440d0958ee5ecadff5"
+      ],
+      "authored_at": "2026-08-11T03:01:14+08:00",
+      "subject": "fix(tools): collapse code-mode executor to run_code for model-direct calls",
+      "body": "wireSchemas() already advertised only run_code under mode: 'code', but the\nexecutor resolved every call through get(), which returns the full visible\nmap plus the reserved transport. A model could name a native tool directly\nand bypass run_code entirely. Route the execution-path lookups through a\nnew private resolveExecution() that applies the mode collapse at the\noperation boundary: model-direct calls under 'code' may only name run_code\n(UNKNOWN_TOOL otherwise), while SDK sub-dispatches (parent token set) keep\nevery visible tool. get()/schemas() public semantics are unchanged.\n\nThe denial happens at createExecution, before the extensible policy\npipeline — pre-execute listeners, approval ask, and guards never observe\na call that is deterministically denied. A collapsed call honors the\npre-dispatch cancellation contract, routes aborted results through the\nvisible tool's finalizeContent, and captures the finalizer before\nargument materialization.\n\nRegenerated docs, catalogs, graphs, scoped events, re-recorded\ntranslation pairs, and updated test assertions.\n\nFixes #1815",
+      "message": "fix(tools): collapse code-mode executor to run_code for model-direct calls\n\nwireSchemas() already advertised only run_code under mode: 'code', but the\nexecutor resolved every call through get(), which returns the full visible\nmap plus the reserved transport. A model could name a native tool directly\nand bypass run_code entirely. Route the execution-path lookups through a\nnew private resolveExecution() that applies the mode collapse at the\noperation boundary: model-direct calls under 'code' may only name run_code\n(UNKNOWN_TOOL otherwise), while SDK sub-dispatches (parent token set) keep\nevery visible tool. get()/schemas() public semantics are unchanged.\n\nThe denial happens at createExecution, before the extensible policy\npipeline — pre-execute listeners, approval ask, and guards never observe\na call that is deterministically denied. A collapsed call honors the\npre-dispatch cancellation contract, routes aborted results through the\nvisible tool's finalizeContent, and captures the finalizer before\nargument materialization.\n\nRegenerated docs, catalogs, graphs, scoped events, re-recorded\ntranslation pairs, and updated test assertions.\n\nFixes #1815"
+    },
+    {
+      "sha": "1e785138062869207c6ac80e2b912d97cec5916f",
+      "parents": [
+        "24dd48b1331457e046ef35a669116ada9e91073c"
+      ],
+      "authored_at": "2026-08-11T03:06:01+08:00",
+      "subject": "fix(tools): add collapses() method and fix createExecution collapse logic",
+      "body": "",
+      "message": "fix(tools): add collapses() method and fix createExecution collapse logic"
+    },
+    {
+      "sha": "846969900a0b83c03686d3bb2b9a8cf739dfdcc7",
+      "parents": [
+        "1e785138062869207c6ac80e2b912d97cec5916f"
+      ],
+      "authored_at": "2026-08-11T03:32:00+08:00",
+      "subject": "ci: retrigger",
+      "body": "",
+      "message": "ci: retrigger"
+    },
+    {
+      "sha": "6d0a7c12e12dcd160ec6a5d6e5be2a012a49ebea",
+      "parents": [
+        "846969900a0b83c03686d3bb2b9a8cf739dfdcc7"
+      ],
+      "authored_at": "2026-08-11T11:10:24+08:00",
+      "subject": "test(tools): add coverage for collapsed model-direct call under code mode",
+      "body": "Add two executor-level tests covering the previously uncovered branches\nin createExecution:\n- collapsed call (non-aborted signal) returns UNKNOWN_TOOL\n- collapsed call (pre-aborted signal) returns ABORTED_BEFORE_DISPATCH",
+      "message": "test(tools): add coverage for collapsed model-direct call under code mode\n\nAdd two executor-level tests covering the previously uncovered branches\nin createExecution:\n- collapsed call (non-aborted signal) returns UNKNOWN_TOOL\n- collapsed call (pre-aborted signal) returns ABORTED_BEFORE_DISPATCH"
+    },
+    {
+      "sha": "610dc74ea82001ac20e48db799dd3ecd047199e0",
+      "parents": [
+        "6d0a7c12e12dcd160ec6a5d6e5be2a012a49ebea"
+      ],
+      "authored_at": "2026-08-11T14:49:01+08:00",
+      "subject": "test(tools): fix error code assertions for collapsed call tests",
+      "body": "The error code lives on ToolFailure.info.code, not ToolFailure.code.",
+      "message": "test(tools): fix error code assertions for collapsed call tests\n\nThe error code lives on ToolFailure.info.code, not ToolFailure.code."
+    },
+    {
+      "sha": "47f108bf50c17d1b7074d12393b613d7bac39594",
+      "parents": [
+        "610dc74ea82001ac20e48db799dd3ecd047199e0"
+      ],
+      "authored_at": "2026-08-11T15:36:10+08:00",
+      "subject": "test(tools): use type-safe error assertions instead of any casts",
+      "body": "oxlint's no-unsafe-member-access rejects member access through an any\ncast; the error info is reachable through the declared optional chain.",
+      "message": "test(tools): use type-safe error assertions instead of any casts\n\noxlint's no-unsafe-member-access rejects member access through an any\ncast; the error info is reachable through the declared optional chain."
+    },
+    {
+      "sha": "428aec44e6db55ab35354b69c83b4a6e7a533af4",
+      "parents": [
+        "47f108bf50c17d1b7074d12393b613d7bac39594"
+      ],
+      "authored_at": "2026-08-11T16:41:16+08:00",
+      "subject": "ci: retrigger windows native runner",
+      "body": "",
+      "message": "ci: retrigger windows native runner"
+    },
+    {
+      "sha": "5d2c943d388bfc3c843666573415c6197a6e4dc2",
+      "parents": [
+        "428aec44e6db55ab35354b69c83b4a6e7a533af4"
+      ],
+      "authored_at": "2026-08-11T22:44:34+08:00",
+      "subject": "fix(tools): state the code-mode collapse in the prompt and the denial",
+      "body": "The executor collapse landed without telling the model it exists. Every\ntool contributes its own guidance section naming its tool, none of them\nqualify how that tool is reached, and they all render before the SDK\n(orders 100-199 against SDK_SECTION_ORDER 150), so the prompt said \"Use\nthe read tool\" eleven times and never said only run_code is callable.\n\nA real session shows the consequence: the model emitted a native call,\nread `unknown tool \"read\"` for a tool the same prompt declares, and\nconcluded the deployment was inconsistent rather than routing through\nrun_code.\n\nThe registry now contributes `tools:code-only` at order 99 -- ahead of\nthe guidance band -- stating the rule, registered wherever `tools:sdk`\nis and rendering empty outside an effective `code`. `both` renders it\nempty because its native calls do execute, which is also why\nboth-mode-turn no longer shares code-mode-turn's expected prompt. The\ndenial itself now names the route back, since a bare UNKNOWN_TOOL for a\ndeclared tool is what misled the model.",
+      "message": "fix(tools): state the code-mode collapse in the prompt and the denial\n\nThe executor collapse landed without telling the model it exists. Every\ntool contributes its own guidance section naming its tool, none of them\nqualify how that tool is reached, and they all render before the SDK\n(orders 100-199 against SDK_SECTION_ORDER 150), so the prompt said \"Use\nthe read tool\" eleven times and never said only run_code is callable.\n\nA real session shows the consequence: the model emitted a native call,\nread `unknown tool \"read\"` for a tool the same prompt declares, and\nconcluded the deployment was inconsistent rather than routing through\nrun_code.\n\nThe registry now contributes `tools:code-only` at order 99 -- ahead of\nthe guidance band -- stating the rule, registered wherever `tools:sdk`\nis and rendering empty outside an effective `code`. `both` renders it\nempty because its native calls do execute, which is also why\nboth-mode-turn no longer shares code-mode-turn's expected prompt. The\ndenial itself now names the route back, since a bare UNKNOWN_TOOL for a\ndeclared tool is what misled the model."
+    },
+    {
+      "sha": "e258cf7a2ddee25aae08b968877690d39e1b9239",
+      "parents": [
+        "5d2c943d388bfc3c843666573415c6197a6e4dc2"
+      ],
+      "authored_at": "2026-08-11T22:53:17+08:00",
+      "subject": "fix(tools): resolve the collapse through the scope, not the deployment default",
+      "body": "`collapses()` read `defaultMode`, so the collapse only applied when the\nDEPLOYMENT was `code`. An agent handed `code` by an agent preset under a\nnative default announced `[run_code]` on the wire and still executed a\nmodel-direct native call -- the bypass this collapse exists to close,\nreopened for exactly the composition `dsh-agent-tool-mode` produces.\n\n`modeFor(scope)` is the same resolution `wireSchemas` and the SDK section\nalready use, so presentation and execution cannot disagree, and a mode\ninherited from a standing preset scope collapses like a declared one.\n\nThe per-agent and preset tests asserted only the wire, which is why the\nregression passed them. They now assert through the executor: the body\nnever runs, the call resolves UNKNOWN_TOOL, and the native sibling beside\nit still executes.",
+      "message": "fix(tools): resolve the collapse through the scope, not the deployment default\n\n`collapses()` read `defaultMode`, so the collapse only applied when the\nDEPLOYMENT was `code`. An agent handed `code` by an agent preset under a\nnative default announced `[run_code]` on the wire and still executed a\nmodel-direct native call -- the bypass this collapse exists to close,\nreopened for exactly the composition `dsh-agent-tool-mode` produces.\n\n`modeFor(scope)` is the same resolution `wireSchemas` and the SDK section\nalready use, so presentation and execution cannot disagree, and a mode\ninherited from a standing preset scope collapses like a declared one.\n\nThe per-agent and preset tests asserted only the wire, which is why the\nregression passed them. They now assert through the executor: the body\nnever runs, the call resolves UNKNOWN_TOOL, and the native sibling beside\nit still executes."
+    },
+    {
+      "sha": "261349c95ebab042c61f5982210419536e950a9d",
+      "parents": [
+        "e258cf7a2ddee25aae08b968877690d39e1b9239"
+      ],
+      "authored_at": "2026-08-11T22:55:53+08:00",
+      "subject": "test(acp): refresh both-mode expected prompt onto the merged base",
+      "body": "",
+      "message": "test(acp): refresh both-mode expected prompt onto the merged base"
+    },
+    {
+      "sha": "db4e3e39a54223e9315d2e49275e01e09d745176",
+      "parents": [
+        "261349c95ebab042c61f5982210419536e950a9d"
+      ],
+      "authored_at": "2026-08-11T23:11:12+08:00",
+      "subject": "docs: refresh generated source references after the collapse-section constants",
+      "body": "Adding COLLAPSE_SECTION_ORDER and CODE_ONLY_INSTRUCTION shifted every\nlater line in packages/core/tools/src/index.ts by 14, and three generated\nartifacts cite those lines: the subsystems cordis-surface region, the\nevent producer/consumer matrix, and the Agent Note pair record left\ninconsistent by the cherry-pick resolution.",
+      "message": "docs: refresh generated source references after the collapse-section constants\n\nAdding COLLAPSE_SECTION_ORDER and CODE_ONLY_INSTRUCTION shifted every\nlater line in packages/core/tools/src/index.ts by 14, and three generated\nartifacts cite those lines: the subsystems cordis-surface region, the\nevent producer/consumer matrix, and the Agent Note pair record left\ninconsistent by the cherry-pick resolution."
+    }
+  ],
+  "files": [
+    {
+      "filename": ".agents/notes/implemented/bug-fix/2026-08-07-code-mode-executor-collapse.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": ".agents/notes/implemented/bug-fix/2026-08-07-code-mode-executor-collapse.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": ".agents/notes/implemented/bug-fix/2026-08-07-code-mode-executor-collapse.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/config-catalog.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/config-catalog.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/config-catalog.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/event-producer-consumer.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/event-producer-consumer.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/event-producer-consumer.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/subsystems/tools.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/subsystems/tools.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/subsystems/tools.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "examples/acp-agent/tests/acp.snapshot.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "examples/acp-agent/tests/snapshots/both-mode-turn/system-prompt.expected.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "examples/acp-agent/tests/snapshots/code-mode-turn/system-prompt.expected.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/core/agent-loop/tests/tool-calls.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/core/agent-tool-mode/README.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/core/agent-tool-mode/README.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/core/agent-tool-mode/README.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/core/tools/README.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/core/tools/README.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/core/tools/README.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/core/tools/src/index.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/core/tools/tests/code-mode.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/core/tools/tests/scoped.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/core/tools/tests/tools.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/subagent/subagent-inprocess/tests/subagent-inprocess.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/subagent/subagent-spawn/tests/subagent-spawn.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    }
+  ],
+  "linked_issue_numbers": [
+    1815
+  ],
+  "quality": {
+    "score": 0.98,
+    "tier": "strong",
+    "reasons": [
+      "merged pull request",
+      "descriptive title",
+      "1 implementation files",
+      "9 test files",
+      "explicit closing issue reference",
+      "16 PR commits"
+    ],
+    "implementation_files": 1,
+    "test_files": 9,
+    "docs_files": 17,
+    "generated_files": 0
+  },
+  "provenance": {
+    "kind": "local_merge_commit",
+    "repository_path": "/home/chenyujia/tritonToLlvm/deepseek-harness",
+    "merge_subject": "Merge pull request #1873 from deepseek-harness/fix/code-mode-executor-collapse",
+    "merge_body": "fix(tools): collapse code-mode executor to run_code for model-direct calls",
+    "file_set": "first_parent_to_merge_result",
+    "commit_set": "first_parent_to_second_parent"
+  }
+}

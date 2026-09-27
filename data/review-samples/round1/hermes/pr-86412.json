@@ -1,0 +1,106 @@
+{
+  "repository": "NousResearch/hermes-agent",
+  "number": 86412,
+  "title": "fix(approval): oversized approvals.timeout crashes parallel tool batches — clamp at config read (salvage #83225/#83298, #85125 2b)",
+  "merge_sha": "f45477b4a8e03600a13fc3ca14c75d277558d526",
+  "base_sha": "23d0e45b09218b88753e26dbbe9dc14745d23d61",
+  "head_sha": "446423d96e13d8a3bff748b9f24a538a0530ccdc",
+  "merged_at": "2026-08-27T14:26:38+05:30",
+  "commits": [
+    {
+      "sha": "0dd0f6e648a6f525b679f4afb7a545e40d8d211e",
+      "parents": [
+        "ec5e369fe68f4abb3188767c751d6166d2139f0a"
+      ],
+      "authored_at": "2026-08-10T20:44:31+07:00",
+      "subject": "fix(agent): clamp authorization gate lock timeout to prevent OverflowError on macOS",
+      "body": "The _ConcurrentToolAuthorizationGate uses threading.Lock.acquire(timeout=...)\nwhere timeout comes from human_wait_ceiling() (approvals.timeout + 60s).\nWhen approvals.timeout is set very large (e.g. 999999999999 to effectively\ndisable timeouts), this overflows macOS timespec and raises:\n  OverflowError: timestamp out of range for platform time_t\n\nThe gate only needs to serialize parallel dispatch — it should never wait\nlonger than the wedged-holder bound (_AUTHORIZATION_GATE_LOCK_TIMEOUT_S =\n360s). Clamp the return value with min() so unbounded approvals.timeout\ncannot overflow the lock acquire.\n\nFixes #83220",
+      "message": "fix(agent): clamp authorization gate lock timeout to prevent OverflowError on macOS\n\nThe _ConcurrentToolAuthorizationGate uses threading.Lock.acquire(timeout=...)\nwhere timeout comes from human_wait_ceiling() (approvals.timeout + 60s).\nWhen approvals.timeout is set very large (e.g. 999999999999 to effectively\ndisable timeouts), this overflows macOS timespec and raises:\n  OverflowError: timestamp out of range for platform time_t\n\nThe gate only needs to serialize parallel dispatch — it should never wait\nlonger than the wedged-holder bound (_AUTHORIZATION_GATE_LOCK_TIMEOUT_S =\n360s). Clamp the return value with min() so unbounded approvals.timeout\ncannot overflow the lock acquire.\n\nFixes #83220"
+    },
+    {
+      "sha": "4341cf1df7f6397dfb0fc0899bbe537b1d7eb314",
+      "parents": [
+        "0dd0f6e648a6f525b679f4afb7a545e40d8d211e"
+      ],
+      "authored_at": "2026-08-15T03:45:18+05:30",
+      "subject": "fix(approval): clamp approvals.timeout at the config-read chokepoint (#83220)",
+      "body": "Widen the salvaged gate-site clamp to the bug class. The gate min() from\nthe contributor PR capped the gate bound at 360s, which would break the\n#79719 contract (gate must extend while a legitimate >360s approval\nprompt is answerable) and left the sibling overflow sites live: the CLI\nprompt thread.join, the gateway poll deadline, and human_wait_ceiling\nall consume the same config value.\n\nClamp once in _get_approval_timeout() via agent.deadline.MAX_SAFE_TIMEOUT_S\n(1 year - semantically unbounded, platform-safe). The gate keeps its\napprovals.timeout-tracking behavior above 360s; 7 regression tests pin\nlock-acquire/thread-join safety and the gate-extension contract.\n\nBilateral E2E: with approvals.timeout=1e20 in a real config.yaml, main\ncrashes every consumer with OverflowError; this branch survives all 5\nprobes.",
+      "message": "fix(approval): clamp approvals.timeout at the config-read chokepoint (#83220)\n\nWiden the salvaged gate-site clamp to the bug class. The gate min() from\nthe contributor PR capped the gate bound at 360s, which would break the\n#79719 contract (gate must extend while a legitimate >360s approval\nprompt is answerable) and left the sibling overflow sites live: the CLI\nprompt thread.join, the gateway poll deadline, and human_wait_ceiling\nall consume the same config value.\n\nClamp once in _get_approval_timeout() via agent.deadline.MAX_SAFE_TIMEOUT_S\n(1 year - semantically unbounded, platform-safe). The gate keeps its\napprovals.timeout-tracking behavior above 360s; 7 regression tests pin\nlock-acquire/thread-join safety and the gate-extension contract.\n\nBilateral E2E: with approvals.timeout=1e20 in a real config.yaml, main\ncrashes every consumer with OverflowError; this branch survives all 5\nprobes."
+    },
+    {
+      "sha": "446423d96e13d8a3bff748b9f24a538a0530ccdc",
+      "parents": [
+        "4341cf1df7f6397dfb0fc0899bbe537b1d7eb314"
+      ],
+      "authored_at": "2026-08-24T16:17:28+05:30",
+      "subject": "fix(approval): fail closed when the deadline import is unavailable; log clamp engagement",
+      "body": "Review round (#86412):\n- the except-import fallback returned the RAW oversized value, re-opening\n  the exact macOS time_t overflow this fix prevents; it now fails closed\n  to a finite ~1-year cap matching agent.deadline.MAX_SAFE_TIMEOUT_S\n- clamp engagement logs a WARNING so operators see the semantic change\n- new tests: float-form oversized value (YAML 1e18), warning emission,\n  and the import-failure fail-closed path (blocked-import probe proving\n  the result stays Lock.acquire-safe)",
+      "message": "fix(approval): fail closed when the deadline import is unavailable; log clamp engagement\n\nReview round (#86412):\n- the except-import fallback returned the RAW oversized value, re-opening\n  the exact macOS time_t overflow this fix prevents; it now fails closed\n  to a finite ~1-year cap matching agent.deadline.MAX_SAFE_TIMEOUT_S\n- clamp engagement logs a WARNING so operators see the semantic change\n- new tests: float-form oversized value (YAML 1e18), warning emission,\n  and the import-failure fail-closed path (blocked-import probe proving\n  the result stays Lock.acquire-safe)"
+    }
+  ],
+  "files": [
+    {
+      "filename": "agent/tool_executor.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "contributors/emails/92573950+RelaxJonh@users.noreply.github.com",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "tests/tools/test_approval_timeout_overflow.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "tools/approval.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    }
+  ],
+  "linked_issue_numbers": [
+    83220
+  ],
+  "quality": {
+    "score": 0.98,
+    "tier": "strong",
+    "reasons": [
+      "merged pull request",
+      "descriptive title",
+      "2 implementation files",
+      "1 test files",
+      "explicit closing issue reference",
+      "3 PR commits"
+    ],
+    "implementation_files": 2,
+    "test_files": 1,
+    "docs_files": 0,
+    "generated_files": 0
+  },
+  "provenance": {
+    "kind": "local_merge_commit",
+    "repository_path": "/home/chenyujia/tritonToLlvm/hermes-agent",
+    "merge_subject": "Merge pull request #86412 from kshitijk4poor/salvage/83225-overflow-clamp",
+    "merge_body": "fix(approval): oversized approvals.timeout crashes parallel tool batches — clamp at config read (salvage #83225/#83298, #85125 2b)",
+    "file_set": "first_parent_to_merge_result",
+    "commit_set": "first_parent_to_second_parent"
+  }
+}

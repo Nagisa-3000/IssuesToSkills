@@ -1,0 +1,125 @@
+{
+  "schema_version": "agent-run.hermes.v1",
+  "run_id": "hermes:agent-run:compaction-pressure-2026-09-26",
+  "repository": {
+    "name": "hermes-agent",
+    "path": "/home/chenyujia/tritonToLlvm/hermes-agent",
+    "remote": "https://github.com/NousResearch/hermes-agent.git"
+  },
+  "scope": "Four real Hermes changes selected for semantic similarity around capacity-aware compaction pressure; existing cases and synthesis were not modified.",
+  "cases": [
+    {
+      "case_id": "hermes:case:output-reservation-threshold",
+      "commit": "623b21bf24ea3f2f2c2d90de3ae872b8a0a000c4",
+      "parent": "065946d84f9ce31b7eb51380c9641c5038f291c4",
+      "subject": "fix(compress): reserve output tokens in the compaction threshold",
+      "modified_files": ["agent/agent_init.py", "agent/context_compressor.py", "tests/agent/test_context_compressor.py"],
+      "evidence_units": ["EU-623-D1", "EU-623-D2", "EU-623-T"],
+      "problem": "The provider's output reservation and the compressor's input threshold use the same context window, but the threshold was derived from the nominal window.",
+      "before_after": {
+        "before": "threshold = policy(context_length)",
+        "after": "effective_input = context_length - normalized_positive_max_tokens; threshold = policy(effective_input), with safe handling of non-positive effective input"
+      },
+      "case_actions": [
+        {"id": "CA-623-1", "kind": "diagnose", "goal": "Identify that downstream output capacity is carved from the same shared window", "evidence": ["EU-623-D1"]},
+        {"id": "CA-623-2", "kind": "normalize", "goal": "Convert optional or malformed max_tokens at the boundary", "evidence": ["EU-623-D1", "EU-623-T"]},
+        {"id": "CA-623-3", "kind": "derive", "goal": "Apply threshold and small-window guards to residual input capacity", "evidence": ["EU-623-D1", "EU-623-T"]},
+        {"id": "CA-623-4", "kind": "propagate", "goal": "Carry the reservation from agent construction and through update_model", "evidence": ["EU-623-D2"]},
+        {"id": "CA-623-5", "kind": "validate", "goal": "Partition no reservation, valid reservation, malformed input, and reservation>=window", "evidence": ["EU-623-T"]}
+      ],
+      "case_workflow": {"id": "CW-623", "steps": ["CA-623-1", "CA-623-2", "CA-623-3", "CA-623-4", "CA-623-5"], "guards": ["If max_tokens is absent or invalid, preserve no-reservation compatibility", "If residual capacity is non-positive, do not install a non-positive threshold"], "validation_oracles": ["exact numeric residual-budget assertions", "constructor does not crash for malformed forwarded values", "reconfiguration keeps derived values coherent"]},
+      "atomic_skill_mappings": [
+        {"skill_id": "hermes:atomic:derive-policy-from-residual-capacity", "realized_by": ["CA-623-1", "CA-623-3"], "status": "candidate"},
+        {"skill_id": "hermes:atomic:normalize-capacity-reservation-boundaries", "realized_by": ["CA-623-2", "CA-623-5"], "status": "candidate"},
+        {"skill_id": "hermes:atomic:replay-policy-input-across-reconfiguration", "realized_by": ["CA-623-4"], "status": "candidate"}
+      ]
+    },
+    {
+      "case_id": "hermes:case:minimum-window-threshold-floor",
+      "commit": "4252aecc2ed88dc69e9b0f60af796612f1feeada",
+      "parent": "a42aee9585dd8d3a4bfb329a0db44ba6cbe3a294",
+      "subject": "fix(agent): cap compaction threshold floor at 85% of the context window",
+      "modified_files": ["agent/context_compressor.py", "tests/agent/test_context_compressor.py"],
+      "evidence_units": ["EU-4252-D", "EU-4252-T"],
+      "problem": "A minimum-context floor can bind below the nominal-window equality case and leave only a sliver of output room, so reactive overflow protection may never run or may be too late.",
+      "before_after": {
+        "before": "Only floor>=effective_window triggered the 85% fallback; at 65536 the floor 64000 passed through.",
+        "after": "When the floor, rather than explicit percentage, is binding, cap it at 85% of effective input; preserve explicit threshold_percent above 85% as user intent."
+      },
+      "case_actions": [
+        {"id": "CA-4252-1", "kind": "diagnose", "goal": "Partition floor-bound, percentage-bound, and degenerate-window regimes", "evidence": ["EU-4252-D"]},
+        {"id": "CA-4252-2", "kind": "constrain", "goal": "Apply a safety cap only to the implicit minimum floor", "evidence": ["EU-4252-D"]},
+        {"id": "CA-4252-3", "kind": "preserve-intent", "goal": "Do not override an explicit user percentage above the cap", "evidence": ["EU-4252-D", "EU-4252-T"]},
+        {"id": "CA-4252-4", "kind": "validate", "goal": "Test near-minimum, below-cap-floor, and explicit-high cases", "evidence": ["EU-4252-T"]}
+      ],
+      "case_workflow": {"id": "CW-4252", "steps": ["CA-4252-1", "CA-4252-2", "CA-4252-3", "CA-4252-4"], "guards": ["Apply cap only if the floor is the binding term", "Keep a positive threshold even when effective capacity is tiny"], "validation_oracles": ["65536->55705", "70000->59500", "100000->64000", "372000@0.90->334800"]},
+      "atomic_skill_mappings": [
+        {"skill_id": "hermes:atomic:partition-policy-binding-regimes", "realized_by": ["CA-4252-1", "CA-4252-3"], "status": "candidate"},
+        {"skill_id": "hermes:atomic:cap-implicit-pressure-policy-before-capacity-exhaustion", "realized_by": ["CA-4252-2"], "status": "candidate"},
+        {"skill_id": "hermes:atomic:validate-policy-boundary-partitions", "realized_by": ["CA-4252-4"], "status": "candidate"}
+      ]
+    },
+    {
+      "case_id": "hermes:case:retained-tail-window-share",
+      "commit": "b7803a1763558f3125834282cf17810ab2b4aa73",
+      "parent": "25d88ad0c44ccf0dcf8228f184b5a495c16b9f9f",
+      "subject": "fix(compression): cap the protected tail at 20% of the context window",
+      "modified_files": ["agent/context_compressor.py", "hermes_cli/config_defaults.py", "tests/agent/test_compression_small_ctx_threshold_floor.py", "website/docs/developer-guide/context-compression-and-caching.md", "website/docs/user-guide/configuration.md"],
+      "evidence_units": ["EU-B780-D", "EU-B780-T"],
+      "problem": "A fixed minimum protected tail plus a 1.5x whole-row overrun can consume the entire small context window, leaving no reclaimable middle.",
+      "before_after": {
+        "before": "Fixed lean floor/cap and 1.5*tail budget were independent of context_length.",
+        "after": "Optional tail budget and soft ceiling are bounded by TAIL_MAX_CONTEXT_FRACTION=0.20 of the active context; required anchors/tool groups may explicitly overrun."
+      },
+      "case_actions": [
+        {"id": "CA-B780-1", "kind": "diagnose", "goal": "Detect that fixed retention consumes a disproportionate share on small windows", "evidence": ["EU-B780-D"]},
+        {"id": "CA-B780-2", "kind": "bound", "goal": "Scale optional retained-tail budget by active context capacity", "evidence": ["EU-B780-D"]},
+        {"id": "CA-B780-3", "kind": "bound", "goal": "Apply the same envelope to boundary walking and pressure demotion", "evidence": ["EU-B780-D"]},
+        {"id": "CA-B780-4", "kind": "protect", "goal": "Allow required anchors and atomic tool groups to remain intact", "evidence": ["EU-B780-D"]},
+        {"id": "CA-B780-5", "kind": "validate", "goal": "Prove a real compressible middle on small contexts and compatibility on large contexts", "evidence": ["EU-B780-T"]}
+      ],
+      "case_workflow": {"id": "CW-B780", "steps": ["CA-B780-1", "CA-B780-2", "CA-B780-3", "CA-B780-4", "CA-B780-5"], "guards": ["Do not violate required anchor/tool-group atomicity", "Do not change large-window behavior where the old clamp already fits"], "validation_oracles": ["tail<=20% on 8K/16K/32K unit cases", "8K tool-heavy transcript leaves compressible middle", "131072 keeps old 10K floor"]},
+      "atomic_skill_mappings": [
+        {"skill_id": "hermes:atomic:scale-optional-retention-to-active-capacity", "realized_by": ["CA-B780-1", "CA-B780-2"], "status": "candidate"},
+        {"skill_id": "hermes:atomic:enforce-shared-capacity-envelope-at-all-pressure-seams", "realized_by": ["CA-B780-3"], "status": "candidate"},
+        {"skill_id": "hermes:atomic:preserve-atomic-required-context-groups", "realized_by": ["CA-B780-4"], "status": "candidate"}
+      ]
+    },
+    {
+      "case_id": "hermes:case:single-trigger-derivation",
+      "commit": "af0be164c1d287ebc742d1b8376d82e5fb42fda5",
+      "parent": "9a18c8de43cf7e513c4d402b5003fd1c4e7f3082",
+      "subject": "refactor(compression): one trigger derivation for update_model and the switch-guard preview",
+      "modified_files": ["agent/agent_init.py", "agent/context_compressor.py", "hermes_cli/config_defaults.py", "tests/hermes_cli/test_context_switch_guard.py", "tools/delegate_tool.py"],
+      "evidence_units": ["EU-AF0-D", "EU-AF0-B"],
+      "problem": "A preview path and the state-installation path duplicated trigger math, allowing a warning to quote a number different from the threshold actually installed after a model/provider switch.",
+      "before_after": {
+        "before": "preview_threshold_tokens and update_model independently resolved percentage, floor, threshold, and cap.",
+        "after": "Pure _derive_trigger is shared; preview projects its threshold and update_model installs all returned derived values. Runtime-only auxiliary cap remains a separate seam."
+      },
+      "case_actions": [
+        {"id": "CA-AF0-1", "kind": "compare", "goal": "Find duplicated policy derivation across preview and installation paths", "evidence": ["EU-AF0-D"]},
+        {"id": "CA-AF0-2", "kind": "centralize", "goal": "Create one pure derivation seam for shared inputs", "evidence": ["EU-AF0-D"]},
+        {"id": "CA-AF0-3", "kind": "separate", "goal": "Keep runtime-specific auxiliary summarizer feasibility outside model trigger derivation", "evidence": ["EU-AF0-D"]},
+        {"id": "CA-AF0-4", "kind": "validate", "goal": "Check switch guard text and cap-binding presentation against installed threshold", "evidence": ["EU-AF0-B"]}
+      ],
+      "case_workflow": {"id": "CW-AF0", "steps": ["CA-AF0-1", "CA-AF0-2", "CA-AF0-3", "CA-AF0-4"], "guards": ["Only centralize values with identical model/window inputs", "Do not force runtime-dependent auxiliary caps into a pure model policy"], "validation_oracles": ["switch guard quotes cap when cap binds", "no cap note when ratio is lower", "preview equals update_model-installed trigger"]},
+      "atomic_skill_mappings": [
+        {"skill_id": "hermes:atomic:centralize-derived-policy-at-a-pure-seam", "realized_by": ["CA-AF0-1", "CA-AF0-2"], "status": "candidate"},
+        {"skill_id": "hermes:atomic:replay-policy-after-runtime-reconfiguration", "realized_by": ["CA-AF0-3", "CA-AF0-4"], "status": "candidate"}
+      ]
+    }
+  ],
+  "cross_case_relations": [
+    {"from": "hermes:case:output-reservation-threshold", "to": "hermes:case:minimum-window-threshold-floor", "relation": "shares-effective-capacity-policy"},
+    {"from": "hermes:case:minimum-window-threshold-floor", "to": "hermes:case:retained-tail-window-share", "relation": "shares-before-exhaustion-safety-goal"},
+    {"from": "hermes:case:output-reservation-threshold", "to": "hermes:case:single-trigger-derivation", "relation": "shares-derived-policy-reconfiguration-concern"}
+  ],
+  "rejected_alignments": [
+    {"candidate": "provider-overflow-recovery", "reason": "recovery cooldown and fallback ladder change failure handling, not capacity derivation"},
+    {"candidate": "stale-generation-race-protection", "reason": "concurrency/ownership invariant, not context pressure"},
+    {"candidate": "summary-refusal-preservation", "reason": "content validity/failure classification, not capacity pressure"}
+  ],
+  "validation": {"json_parse": "pending-run", "upstream_tests": "not yet run in this extraction run", "source_worktree_modified": false}
+}
+

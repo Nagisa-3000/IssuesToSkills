@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arex.local/schemas/skill-lifecycle-v1.schema.json",
+  "title": "AREX Skill Lifecycle and Admission Events v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "skill_lifecycle", "dedup_proposals", "usage_events", "failure_incidents"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "skill_lifecycle": {"type": "array", "items": {"$ref": "#/$defs/skill"}},
+    "dedup_proposals": {"type": "array", "items": {"$ref": "#/$defs/dedupProposal"}},
+    "usage_events": {"type": "array", "items": {"$ref": "#/$defs/usageEvent"}},
+    "failure_incidents": {"type": "array", "items": {"$ref": "#/$defs/failureIncident"}}
+  },
+  "$defs": {
+    "id": {"type": "string", "minLength": 3},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "skillLevel": {"enum": ["atomic", "workflow", "pattern"]},
+    "skillStatus": {"enum": ["candidate", "active", "suspect", "quarantined", "deprecated", "retired", "merged", "superseded"]},
+    "skill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["skill_id", "level", "version", "status", "canonical_id", "title", "summary", "evidence_ids", "parent_ids", "created_at", "updated_at"],
+      "properties": {
+        "skill_id": {"$ref": "#/$defs/id"},
+        "level": {"$ref": "#/$defs/skillLevel"},
+        "version": {"type": "integer", "minimum": 1},
+        "status": {"$ref": "#/$defs/skillStatus"},
+        "canonical_id": {"$ref": "#/$defs/id"},
+        "title": {"type": "string", "minLength": 1},
+        "summary": {"type": "string", "minLength": 1},
+        "aliases": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "supersedes": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "merged_from": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "evidence_ids": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "parent_ids": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "created_at": {"$ref": "#/$defs/timestamp"},
+        "updated_at": {"$ref": "#/$defs/timestamp"},
+        "quarantine_reason": {"type": ["string", "null"]},
+        "usage": {"$ref": "#/$defs/usageStats"}
+      }
+    },
+    "dedupDecision": {"enum": ["exact_duplicate", "mergeable", "specialization", "generalization", "related_but_distinct", "conflicting", "no_match"]},
+    "dedupProposal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate_id", "peer_id", "decision", "confidence", "rationale", "reviewer", "evidence_ids"],
+      "properties": {
+        "candidate_id": {"$ref": "#/$defs/id"},
+        "peer_id": {"$ref": "#/$defs/id"},
+        "decision": {"$ref": "#/$defs/dedupDecision"},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "rationale": {"type": "string", "minLength": 1},
+        "reviewer": {"type": "string", "minLength": 1},
+        "evidence_ids": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "merged_payload": {"type": ["object", "null"]}
+      }
+    },
+    "usageResult": {"enum": ["success", "failure", "not_applicable", "aborted"]},
+    "failureKind": {"enum": ["retrieval_failure", "applicability_failure", "precondition_failure", "composition_failure", "skill_logic_failure", "stale_skill", "execution_failure", "validation_failure"]},
+    "usageStats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attempts", "successes", "failures", "not_applicable", "independent_failure_contexts", "failure_by_kind"],
+      "properties": {
+        "attempts": {"type": "integer", "minimum": 0},
+        "successes": {"type": "integer", "minimum": 0},
+        "failures": {"type": "integer", "minimum": 0},
+        "not_applicable": {"type": "integer", "minimum": 0},
+        "independent_failure_contexts": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "failure_by_kind": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+        "last_used_at": {"type": ["string", "null"], "format": "date-time"},
+        "last_failure_at": {"type": ["string", "null"], "format": "date-time"}
+      }
+    },
+    "usageEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["event_id", "skill_id", "skill_version", "task_id", "result", "occurred_at"],
+      "properties": {
+        "event_id": {"$ref": "#/$defs/id"},
+        "skill_id": {"$ref": "#/$defs/id"},
+        "skill_version": {"type": "integer", "minimum": 1},
+        "task_id": {"$ref": "#/$defs/id"},
+        "result": {"$ref": "#/$defs/usageResult"},
+        "failure_kind": {"anyOf": [{"$ref": "#/$defs/failureKind"}, {"type": "null"}]},
+        "independent_context_id": {"anyOf": [{"$ref": "#/$defs/id"}, {"type": "null"}]},
+        "validation_passed": {"type": ["boolean", "null"]},
+        "token_cost": {"type": ["integer", "null"], "minimum": 0},
+        "notes": {"type": "string"},
+        "occurred_at": {"$ref": "#/$defs/timestamp"}
+      }
+    },
+    "failureIncident": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["incident_id", "skill_id", "task_id", "kind", "independent_context_id", "severity", "evidence_ids", "occurred_at"],
+      "properties": {
+        "incident_id": {"$ref": "#/$defs/id"},
+        "skill_id": {"$ref": "#/$defs/id"},
+        "task_id": {"$ref": "#/$defs/id"},
+        "kind": {"$ref": "#/$defs/failureKind"},
+        "independent_context_id": {"$ref": "#/$defs/id"},
+        "severity": {"enum": ["low", "medium", "high", "critical"]},
+        "evidence_ids": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "root_cause": {"type": ["string", "null"]},
+        "correction_candidate_id": {"type": ["string", "null"]},
+        "occurred_at": {"$ref": "#/$defs/timestamp"}
+      }
+    }
+  }
+}

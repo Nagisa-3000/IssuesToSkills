@@ -1,0 +1,587 @@
+[
+  {
+    "case_id": "deepseek-compaction-reservation",
+    "case_version": "1.0.0",
+    "extracted_at": "2026-09-26",
+    "repository": {
+      "name": "deepseek-harness",
+      "path": "/home/chenyujia/tritonToLlvm/deepseek-harness",
+      "remote": "https://github.com/deepseek-ai/deepseek-harness.git",
+      "scope_note": "Single-repository case only; Hermes results and cross-repository Workflow/Pattern aggregation are excluded."
+    },
+    "design_basis": {
+      "path": "/home/chenyujia/tritonToLlvm/arex-skill-graph/design/agent-skill-aligned-hierarchy-v2.md",
+      "version": "2.1.0",
+      "read_before_extraction": true,
+      "semantic_layers": [
+        "Evidence Unit",
+        "Case Action",
+        "Case Workflow",
+        "Atomic candidate"
+      ]
+    },
+    "git_provenance": {
+      "pull_request": 4530,
+      "merge_commit": "bc45bd821a63619c39a4cf0686d94743093cd990",
+      "first_parent": "0fa88d48756a0a05ab6ffc55de0e18faa8a3144f",
+      "second_parent": "ec7030afd3643773a96198f9d1c8e9c7fc5e3da1",
+      "merge_title": "Merge pull request #4530 from deepseek-harness/fix/compaction-threshold-reserves-completion",
+      "series_verified_from_local_git": true,
+      "series_commits": [
+        {
+          "order": 1,
+          "hash": "0fadb08fbdd3316c4605fc4e6be96cb9990b56c6",
+          "parent": "0fa88d48756a0a05ab6ffc55de0e18faa8a3144f",
+          "subject": "fix(compaction): gate pressure on the message budget, not the whole window"
+        },
+        {
+          "order": 2,
+          "hash": "a1cebebd4086836fe487006dca87ea18afbe57f4",
+          "parent": "0fadb08fbdd3316c4605fc4e6be96cb9990b56c6",
+          "subject": "refactor(compaction): drop the spec's reservedCompletionTokens field"
+        },
+        {
+          "order": 3,
+          "hash": "b02b20d7135ebd0f3d1848ef3af5b25aef852e27",
+          "parent": "a1cebebd4086836fe487006dca87ea18afbe57f4",
+          "subject": "fix(compaction): pin output caps and cover proactive reserve replay"
+        },
+        {
+          "order": 4,
+          "hash": "555b664b08db05e1cf8eeebb7eb00960ddf785b7",
+          "parent": "b02b20d7135ebd0f3d1848ef3af5b25aef852e27",
+          "subject": "fix(compaction): reserve configurable 64K pressure headroom"
+        },
+        {
+          "order": 5,
+          "hash": "9b016b642503ff798faec65c860e948cc14f99cc",
+          "parent": "555b664b08db05e1cf8eeebb7eb00960ddf785b7",
+          "subject": "refactor(compaction): require an explicit output reservation"
+        },
+        {
+          "order": 6,
+          "hash": "ec7030afd3643773a96198f9d1c8e9c7fc5e3da1",
+          "parent": "9b016b642503ff798faec65c860e948cc14f99cc",
+          "subject": "fix(compaction): default summary output cap to headroom"
+        }
+      ]
+    },
+    "evidence_units": [
+      {
+        "id": "EU-PR-GRAPH",
+        "kind": "git-provenance",
+        "claim": "PR #4530 is a two-parent merge whose second-parent ancestry is exactly the six verified commits listed in git_provenance.series_commits.",
+        "sources": [
+          "git cat-file -p bc45bd821a63619c39a4cf0686d94743093cd990",
+          "git rev-list --reverse --ancestry-path 0fa88d48756a0a05ab6ffc55de0e18faa8a3144f..ec7030afd3643773a96198f9d1c8e9c7fc5e3da1"
+        ],
+        "strength": "direct"
+      },
+      {
+        "id": "EU-PARENT-NOMINAL",
+        "kind": "parent-before-code",
+        "claim": "Before PR #4530, proactive pressure and ratio retention were scaled from the full context window and the pressure call site passed only contextWindow.",
+        "sources": [
+          "0fa88d48756a0a05ab6ffc55de0e18faa8a3144f:packages/compaction/compaction-basic/src/config.ts",
+          "0fa88d48756a0a05ab6ffc55de0e18faa8a3144f:packages/compaction/compaction-basic/src/index.ts",
+          "0fa88d48756a0a05ab6ffc55de0e18faa8a3144f:packages/compaction/compaction-basic/tests/compaction-basic.spec.ts"
+        ],
+        "strength": "direct"
+      },
+      {
+        "id": "EU-FAILURE-MECHANISM",
+        "kind": "commit-rationale",
+        "claim": "With W=1,048,576 and O=256,000, provider-admissible message capacity is 792,576 while the old threshold was 838,860 at ratio 0.8; the pressure gate could miss the provider rejection boundary.",
+        "sources": [
+          "0fadb08fbdd3316c4605fc4e6be96cb9990b56c6 commit message"
+        ],
+        "strength": "direct"
+      },
+      {
+        "id": "EU-RESERVATION-BINDING",
+        "kind": "implementation-call-point",
+        "claim": "The pressure path derives the effective output reservation from the latest durable request header, falling back to adapter defaultMaxTokens and then zero, and passes it explicitly to resolveCompactSpec.",
+        "sources": [
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/packages/compaction/compaction-basic/src/index.ts:48-68",
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/packages/compaction/compaction-basic/src/index.ts:289-319",
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/packages/llm/llm-deepseek/src/model-info.ts:61-78",
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/packages/llm/llm-deepseek/src/serialize.ts:140-143"
+        ],
+        "strength": "direct"
+      },
+      {
+        "id": "EU-RESIDUAL-FORMULA",
+        "kind": "implementation-semantics",
+        "claim": "The resolved budgets use M=W-O, P=M-B, T=floor(min(W*r,P)), and ratio retention floor(M*retainRatio); explicit retention remains explicit and is checked against T.",
+        "sources": [
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/packages/compaction/compaction-basic/src/config.ts:141-216",
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/packages/compaction/compaction-basic/src/types.ts:70-79"
+        ],
+        "strength": "direct"
+      },
+      {
+        "id": "EU-HEADROOM-CONFIG",
+        "kind": "configuration-propagation",
+        "claim": "headroomTokens is a validated top-level and exact-target policy field, defaults to 65,536, and also supplies the default summarization maxTokens unless an explicit cap overrides it.",
+        "sources": [
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/packages/compaction/compaction-basic/src/config.ts:25-50",
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/packages/compaction/compaction-basic/src/config.ts:68-109",
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/packages/compaction/compaction-basic/src/config.ts:118-138",
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/packages/compaction/compaction-basic/src/types.ts:8-28"
+        ],
+        "strength": "direct"
+      },
+      {
+        "id": "EU-BOUNDARY-GUARDS",
+        "kind": "validation-guard",
+        "claim": "The resolver rejects invalid W and O, no-message-budget, no-pressure-budget, and retainTokens >= threshold cases with target-specific errors.",
+        "sources": [
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/packages/compaction/compaction-basic/src/config.ts:158-204",
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/packages/compaction/compaction-basic/tests/compaction-basic.spec.ts:401-445"
+        ],
+        "strength": "direct"
+      },
+      {
+        "id": "EU-UNIT-ORACLE",
+        "kind": "test-oracle",
+        "claim": "Unit tests assert numeric residual-budget values, explicit-header gating, adapter-default fallback, and degenerate reserve rejection.",
+        "sources": [
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/packages/compaction/compaction-basic/tests/compaction-basic.spec.ts:308-445",
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/packages/compaction/compaction-basic/tests/compaction-basic.spec.ts:627-680"
+        ],
+        "strength": "direct"
+      },
+      {
+        "id": "EU-INTEGRATION-ORACLE",
+        "kind": "integration-test-oracle",
+        "claim": "Loader composition, headless e2e configuration, and real-model patches preserve the capacity/cap relationship and exact-target overrides.",
+        "sources": [
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/packages/compaction/compaction-basic/tests/loader-composition.spec.ts:60-95",
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/apps/cli/tests/profiles/headless/tests/compaction.e2e.ts:28-50",
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/apps/cli/tests/profiles/headless/real-model.patch.yml:10-21"
+        ],
+        "strength": "direct"
+      },
+      {
+        "id": "EU-REPLAY-OUTPUT-RESERVE",
+        "kind": "deterministic-session-oracle",
+        "claim": "The authored compaction-output-reserve replay proves proactive compaction under a bounded message budget and preserves the durable compaction event bracket and next-step continuation.",
+        "sources": [
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/snapshots/session/compaction-output-reserve/cordis.yml",
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/snapshots/session/compaction-output-reserve/session.v3.jsonl",
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/snapshots/session/compaction-output-reserve/snapshot.yml"
+        ],
+        "strength": "direct"
+      },
+      {
+        "id": "EU-REPLAY-SUMMARY-HEADROOM",
+        "kind": "deterministic-session-oracle",
+        "claim": "The authored compaction-summary-headroom replay proves that omitted summary maxTokens resolves to headroomTokens while explicit request output reservation remains separate.",
+        "sources": [
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/snapshots/session/compaction-summary-headroom/cordis.yml",
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/snapshots/session/compaction-summary-headroom/session.v3.jsonl",
+          "/home/chenyujia/tritonToLlvm/deepseek-harness/snapshots/session/compaction-summary-headroom/snapshot.yml"
+        ],
+        "strength": "direct"
+      }
+    ],
+    "case_actions": [
+      {
+        "id": "CA1",
+        "kind": "diagnose",
+        "semantic_goal": "Detect that pressure is derived from nominal shared capacity while a downstream request output cap consumes the same capacity.",
+        "evidence_units": [
+          "EU-PARENT-NOMINAL",
+          "EU-FAILURE-MECHANISM"
+        ],
+        "realization": {
+          "commit": "0fadb08fbdd3316c4605fc4e6be96cb9990b56c6",
+          "locations": [
+            "packages/compaction/compaction-basic/src/config.ts",
+            "packages/compaction/compaction-basic/src/index.ts"
+          ]
+        },
+        "produces": [
+          "shared capacity W",
+          "request reservation O",
+          "nominal-threshold mismatch",
+          "provider rejection boundary"
+        ]
+      },
+      {
+        "id": "CA2",
+        "kind": "bind",
+        "semantic_goal": "Bind the policy calculation to the effective routed request envelope rather than to an unrelated policy field or model catalog entry.",
+        "evidence_units": [
+          "EU-RESERVATION-BINDING"
+        ],
+        "realization": {
+          "commits": [
+            "0fadb08fbdd3316c4605fc4e6be96cb9990b56c6",
+            "9b016b642503ff798faec65c860e948cc14f99cc"
+          ],
+          "locations": [
+            "packages/compaction/compaction-basic/src/index.ts",
+            "packages/llm/llm-deepseek/src/model-info.ts",
+            "packages/llm/llm-deepseek/src/serialize.ts"
+          ]
+        },
+        "produces": [
+          "effective O",
+          "explicit resolver input",
+          "route-aware fallback chain"
+        ]
+      },
+      {
+        "id": "CA3",
+        "kind": "transform",
+        "semantic_goal": "Replace nominal capacity scaling with residual message and pressure budgets while retaining explicit policy forms.",
+        "evidence_units": [
+          "EU-RESIDUAL-FORMULA"
+        ],
+        "realization": {
+          "commits": [
+            "0fadb08fbdd3316c4605fc4e6be96cb9990b56c6",
+            "555b664b08db05e1cf8eeebb7eb00960ddf785b7"
+          ],
+          "locations": [
+            "packages/compaction/compaction-basic/src/config.ts"
+          ]
+        },
+        "produces": [
+          "message budget M",
+          "pressure budget P",
+          "threshold T",
+          "retention budget"
+        ]
+      },
+      {
+        "id": "CA4",
+        "kind": "transform",
+        "semantic_goal": "Introduce configurable headroom and keep the auxiliary summary output cap bounded by the same policy unless explicitly overridden.",
+        "evidence_units": [
+          "EU-HEADROOM-CONFIG",
+          "EU-REPLAY-SUMMARY-HEADROOM"
+        ],
+        "realization": {
+          "commits": [
+            "555b664b08db05e1cf8eeebb7eb00960ddf785b7",
+            "ec7030afd3643773a96198f9d1c8e9c7fc5e3da1"
+          ],
+          "locations": [
+            "packages/compaction/compaction-basic/src/config.ts",
+            "packages/compaction/compaction-basic/src/types.ts"
+          ]
+        },
+        "produces": [
+          "validated B",
+          "default summary maxTokens",
+          "explicit-cap override behavior"
+        ]
+      },
+      {
+        "id": "CA5",
+        "kind": "validate",
+        "semantic_goal": "Reject boundary states that would make the residual budget meaningless instead of clamping silently.",
+        "evidence_units": [
+          "EU-BOUNDARY-GUARDS",
+          "EU-UNIT-ORACLE"
+        ],
+        "realization": {
+          "commits": [
+            "0fadb08fbdd3316c4605fc4e6be96cb9990b56c6",
+            "555b664b08db05e1cf8eeebb7eb00960ddf785b7",
+            "9b016b642503ff798faec65c860e948cc14f99cc"
+          ],
+          "locations": [
+            "packages/compaction/compaction-basic/src/config.ts",
+            "packages/compaction/compaction-basic/tests/compaction-basic.spec.ts"
+          ]
+        },
+        "produces": [
+          "target-specific configuration errors",
+          "stopping decision for invalid residual budget"
+        ]
+      },
+      {
+        "id": "CA6",
+        "kind": "validate",
+        "semantic_goal": "Prove the behavior across direct unit arithmetic, loader composition, live-provider harness configuration, and deterministic session replay.",
+        "evidence_units": [
+          "EU-UNIT-ORACLE",
+          "EU-INTEGRATION-ORACLE",
+          "EU-REPLAY-OUTPUT-RESERVE",
+          "EU-REPLAY-SUMMARY-HEADROOM"
+        ],
+        "realization": {
+          "commits": [
+            "b02b20d7135ebd0f3d1848ef3af5b25aef852e27",
+            "555b664b08db05e1cf8eeebb7eb00960ddf785b7",
+            "ec7030afd3643773a96198f9d1c8e9c7fc5e3da1"
+          ],
+          "locations": [
+            "packages/compaction/compaction-basic/tests",
+            "apps/cli/tests/profiles/headless",
+            "snapshots/session/compaction-output-reserve",
+            "snapshots/session/compaction-summary-headroom"
+          ]
+        },
+        "produces": [
+          "numeric oracle",
+          "event-sequence oracle",
+          "continuation oracle",
+          "live-capacity binding oracle"
+        ]
+      }
+    ],
+    "case_workflow": {
+      "id": "CW-deepseek-4530",
+      "title": "Repair and validate shared-capacity pressure in DeepSeek Harness compaction",
+      "status": "case-realization",
+      "not_a_commit_timeline": true,
+      "entry_conditions": [
+        "A proactive pressure policy and a downstream request share one finite context capacity.",
+        "The request's output reservation is charged to that capacity.",
+        "The current threshold is derived from nominal capacity or the reservation is not bound at the pressure call site."
+      ],
+      "exit_conditions": [
+        "Pressure threshold does not exceed the configured residual pressure budget.",
+        "Ratio retention and explicit retention satisfy the threshold relation.",
+        "Invalid residual states fail with an actionable target-specific error.",
+        "Unit, loader, deterministic replay, and applicable live-provider harness oracles pass."
+      ],
+      "exclusions": [
+        "Provider-confirmed overflow recovery as a substitute for proactive pressure accounting.",
+        "Physically isolated capacity pools.",
+        "Treating the summarization output cap as the routed request output reservation.",
+        "Cross-repository aggregation or Hermes-derived workflow design."
+      ],
+      "nodes": [
+        {
+          "id": "S1",
+          "kind": "diagnose",
+          "semantic_goal": "Establish the shared capacity owner, durable routed target, current threshold formula, and request output reservation source.",
+          "requires": [
+            "repository history",
+            "pressure entry point",
+            "provider metadata contract"
+          ],
+          "uses_case_actions": [
+            "CA1"
+          ],
+          "procedure_summary": "Compare parent and post-PR code; inspect the pressure call site and provider serialization; record W, O, B, and current ratio semantics.",
+          "produces": [
+            "capacity owner W",
+            "reservation source O",
+            "headroom candidate B",
+            "pressure call point",
+            "failure mechanism classification"
+          ],
+          "guard": "If pools are isolated or output is not charged to the same pool, reject this case workflow.",
+          "on_success": "S2",
+          "on_failure": "STOP-OUT-OF-SCOPE",
+          "validation": "The diagnosis must explain why the parent threshold can exceed provider-admissible message capacity.",
+          "mandatory": true
+        },
+        {
+          "id": "S2",
+          "kind": "bind",
+          "semantic_goal": "Bind the effective routed output reservation and capacity metadata to one policy-resolution seam.",
+          "requires": [
+            "durable routed provider/model",
+            "request header maxTokens or adapter defaultMaxTokens",
+            "contextWindow"
+          ],
+          "uses_case_actions": [
+            "CA2"
+          ],
+          "procedure_summary": "Use the durable request header cap first, otherwise adapter defaultMaxTokens, otherwise zero; obtain capacity for the current provider/model route; pass O explicitly.",
+          "produces": [
+            "resolved target policy",
+            "effective O",
+            "resolved W",
+            "route-aware parameter handoff"
+          ],
+          "guard": "If no durable route exists, do not substitute AgentOptions for this pressure calculation; return the repository-defined no-target result.",
+          "on_success": "S3",
+          "on_failure": "S6",
+          "validation": "Explicit header cap and adapter default fallback must independently trigger the expected gating behavior; same model id across provider switches must re-resolve.",
+          "mandatory": true
+        },
+        {
+          "id": "S3",
+          "kind": "transform",
+          "semantic_goal": "Derive pressure and retention from residual message capacity, preserving the meaning of explicit versus ratio retention.",
+          "requires": [
+            "W",
+            "O",
+            "thresholdRatio",
+            "retention policy"
+          ],
+          "uses_case_actions": [
+            "CA3"
+          ],
+          "procedure_summary": "Compute M=W-O; compute P=M-B; set T=floor(min(W*thresholdRatio,P)); scale ratio retention from M; retain explicit retainTokens but require it to be below T.",
+          "produces": [
+            "M",
+            "P",
+            "T",
+            "retainTokens",
+            "immutable compact spec"
+          ],
+          "guard": "Do not calculate from W alone; do not silently subtract B from ratio retention because this realization defines B as pressure headroom, not retained-tail capacity.",
+          "on_success": "S4",
+          "on_failure": "S5",
+          "validation": "For W=1,048,576, O=256,000, ratio=.8, retainRatio=.16, expect T=634,060 and retainTokens=126,812.",
+          "mandatory": true
+        },
+        {
+          "id": "S4",
+          "kind": "transform",
+          "semantic_goal": "Normalize pressure headroom and auxiliary summary output-cap defaults without conflating their roles.",
+          "requires": [
+            "policy config",
+            "exact-target override table",
+            "resolved B"
+          ],
+          "uses_case_actions": [
+            "CA4"
+          ],
+          "procedure_summary": "Validate B as non-negative; default B to 65,536; default summary maxTokens to B; preserve explicit global/per-target summary caps; propagate target override fields.",
+          "produces": [
+            "validated B",
+            "summary maxTokens",
+            "explicit override precedence"
+          ],
+          "guard": "If B is zero, require a positive explicit summary cap; never use summary maxTokens as O.",
+          "on_success": "S5",
+          "on_failure": "S6",
+          "validation": "The summary-headroom replay must record maxTokens equal to B when no explicit summary cap is configured.",
+          "mandatory": true
+        },
+        {
+          "id": "S5",
+          "kind": "validate",
+          "semantic_goal": "Validate residual-budget boundaries and preserve target-specific failure semantics.",
+          "requires": [
+            "W",
+            "O",
+            "B",
+            "T",
+            "retainTokens"
+          ],
+          "uses_case_actions": [
+            "CA5"
+          ],
+          "procedure_summary": "Reject invalid W/O, M<=0, P<=0, and retainTokens>=T; surface TargetPressureConfigError keyed to provider/model.",
+          "produces": [
+            "valid or rejected compact spec",
+            "failure classification"
+          ],
+          "guard": "A boundary error must not be replaced by silent clamping or global pressure disablement.",
+          "on_success": "S6",
+          "on_failure": "RECOVER-CONFIG-AND-RETURN-S2",
+          "validation": "Negative/non-integer O and exhausted message/pressure budgets must match the repository error oracles.",
+          "mandatory": true
+        },
+        {
+          "id": "S6",
+          "kind": "validate",
+          "semantic_goal": "Validate end-to-end behavior and durable continuation after proactive compaction.",
+          "requires": [
+            "compact spec",
+            "unit oracle",
+            "loader oracle",
+            "session replay oracle",
+            "applicable live harness"
+          ],
+          "uses_case_actions": [
+            "CA6"
+          ],
+          "procedure_summary": "Run numeric unit checks, dynamic header/default fallback checks, loader composition, deterministic output-reserve and summary-headroom replays, then the guarded real-model smoke.",
+          "produces": [
+            "acceptance result",
+            "event-sequence evidence",
+            "continuation evidence"
+          ],
+          "guard": "If only deterministic replay is available, report live-provider smoke as not executed rather than treating replay as equivalent.",
+          "on_success": "DONE",
+          "on_failure": "RECOVER-TO-S2-OR-S4",
+          "validation": "Require threshold/retention numeric equality, compaction start-summary-end bracket, replacement checkpoint, next-step continuation, and no unintended cap drift.",
+          "mandatory": true
+        }
+      ],
+      "edges": [
+        {
+          "from": "S1",
+          "to": "S2",
+          "condition": "shared-capacity mechanism confirmed"
+        },
+        {
+          "from": "S2",
+          "to": "S3",
+          "condition": "effective O and W are bound"
+        },
+        {
+          "from": "S3",
+          "to": "S4",
+          "condition": "residual formula produces a candidate spec"
+        },
+        {
+          "from": "S3",
+          "to": "S5",
+          "condition": "budget or retention invariant fails"
+        },
+        {
+          "from": "S4",
+          "to": "S5",
+          "condition": "headroom and summary-cap normalization complete"
+        },
+        {
+          "from": "S4",
+          "to": "S6",
+          "condition": "configuration-only replay can validate the default-cap branch"
+        },
+        {
+          "from": "S5",
+          "to": "S6",
+          "condition": "valid compact spec accepted"
+        },
+        {
+          "from": "S5",
+          "to": "S2",
+          "condition": "binding or route-specific capacity must be corrected"
+        },
+        {
+          "from": "S6",
+          "to": "S2",
+          "condition": "reservation provenance or route-switch oracle fails"
+        },
+        {
+          "from": "S6",
+          "to": "S4",
+          "condition": "summary-cap/headroom oracle fails"
+        }
+      ],
+      "stopping_conditions": [
+        "DONE only after all mandatory nodes succeed or an unavailable live-provider check is explicitly recorded as not executed.",
+        "STOP-OUT-OF-SCOPE when the capacity pools are not shared or the downstream reservation is not mandatory.",
+        "Do not promote a candidate beyond provisional Atomic status from this case alone."
+      ]
+    },
+    "atomic_candidate_ids": [
+      "AC-derive-residual-pressure-budget",
+      "AC-bind-effective-output-reservation",
+      "AC-default-summary-cap-to-headroom"
+    ],
+    "validation_status": {
+      "source_review": "complete",
+      "git_provenance_review": "complete",
+      "parent_after_code_review": "complete",
+      "call_point_review": "complete",
+      "test_oracle_review": "complete",
+      "repository_tests_executed_by_extraction": false,
+      "test_execution_note": "The local checkout did not contain node_modules/.bin/vitest at extraction time; repository test commands are recorded as validation oracles, not as executed results."
+    }
+  }
+]

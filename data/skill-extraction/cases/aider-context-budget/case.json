@@ -1,0 +1,19 @@
+{
+  "case_id":"aider-context-budget","case_version":"1.0.0","extracted_at":"2026-09-26",
+  "repository":{"name":"aider-agent","path":"/home/chenyujia/tritonToLlvm/aider-agent","remote":"https://github.com/Aider-AI/aider.git"},
+  "git_provenance":{"commits":["e61857ef09db263ee8de89ac2cb16e1bb3ffa36e","64470955d4799b92a4b8174856e8699b5ba41568","ff41f9bd9a29585176c16445d2064f426864ec7c","5c866c67b507c6508012e7d7fbdec0e358556a4e"]},
+  "evidence_units":[
+    {"id":"EU-AIDER-BUDGET","kind":"implementation","source":"aider history/summarizer implementation","claim":"History budget is derived from model input capability and passed into summarization."},
+    {"id":"EU-AIDER-FIT","kind":"implementation","source":"commit e61857ef","claim":"Older messages are selected to fit the summarizer context while retaining recent messages."},
+    {"id":"EU-AIDER-FALLBACK","kind":"implementation","source":"commit 5c866c67","claim":"Summary failure preserves original messages and warns."}
+  ],
+  "case_actions":[
+    {"id":"CA1","kind":"derive","semantic_goal":"Derive history budget from model input capability.","evidence_units":["EU-AIDER-BUDGET"]},
+    {"id":"CA2","kind":"select","semantic_goal":"Select a maximal fitting history prefix while preserving recent context.","evidence_units":["EU-AIDER-FIT"]},
+    {"id":"CA3","kind":"recover","semantic_goal":"Preserve original context on summarizer failure.","evidence_units":["EU-AIDER-FALLBACK"]}
+  ],
+  "case_workflow":{"id":"CW1","goal":"Summarize history within model input limits without losing context on failure.","steps":["CA1","CA2","CA3"]},
+  "atomic_candidate_ids":["derive-history-budget-from-model-input-capability","select-history-prefix-by-available-summarizer-budget","preserve-original-context-on-summary-failure"],
+  "alignment_decision":"adjacent_family",
+  "validation_status":{"status":"candidate","cross_repository_validation":false,"notes":"Neighboring budget-aware summarization family; excluded from residual-output-reservation Pattern."}
+}

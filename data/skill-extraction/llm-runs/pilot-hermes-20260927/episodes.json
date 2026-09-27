@@ -1,0 +1,130 @@
+[
+  {
+    "episode_id": "hermes-compaction-reservation",
+    "repository": "hermes-agent",
+    "revision": "2026-09-26",
+    "title": "Repair compaction threshold accounting when output reservation shares the context window.",
+    "before": "The prepared artifact does not include a separately captured before snapshot; use the pre-change claims and provenance in the evidence below.",
+    "after": "The prepared artifact does not include a separately captured after snapshot; use the post-change mechanisms and validation claims in the evidence below.",
+    "diff": "# Evidence: Hermes compaction threshold reserves output capacity\n\n## Scope and provenance\n\n- Repository: `/home/chenyujia/tritonToLlvm/hermes-agent`\n- Commit: `623b21bf24ea3f2f2c2d90de3ae872b8a0a000c4`\n- Subject: `fix(compress): reserve output tokens in the compaction threshold (#23767, #43547)`\n- Parent: `623b21bf^`\n- Files read from the verified diff:\n  - `agent/agent_init.py`\n  - `agent/context_compressor.py`\n  - `tests/agent/test_context_compressor.py`\n\nThis is one repository case. It is evidence for Case Actions and single-case Atomic candidates, not by itself a cross-repository Pattern.\n\n## Observed failure mechanism\n\nThe old compaction threshold used the nominal `context_length * threshold_percent`. The provider charges `max_tokens` output from the same context window, so the input-side budget is smaller. The fix changes the calculation to use the effective input budget, conceptually:\n\n```text\nW = context_length\nO = normalized positive max_tokens reservation\nM = W - O, when M > 0\nthreshold = policy(M), not policy(W)\n```\n\nThe small-window 85% guard is applied to the effective budget. When a reservation is absent, invalid, non-positive, or leaves no positive effective budget, the implementation preserves a safe positive fallback rather than emitting a non-positive threshold.\n\n## Implementation evidence\n\n1. `agent/agent_init.py` threads `agent.max_tokens` into `ContextCompressor` construction.\n2. `ContextCompressor._coerce_max_tokens()` turns `None`, non-numeric, and non-positive values into no reservation; positive values become the reservation.\n3. `_compute_threshold_tokens(context_length, threshold_percent, max_tokens)` derives the threshold from the effective budget and applies the small-window guard there.\n4. `update_model()` retains the existing reservation when a model switch does not supply a new value and recalculates thresholds after context changes; an explicitly supplied value replaces it.\n5. Tests cover no reservation, `200000 - 65536` at 50% (`67232`), small effective windows, reservation exceeding the window, invalid values, and positive-threshold/no-crash behavior.\n\n## Case Actions\n\n- `CA1`: diagnose a shared-capacity accounting mismatch between input pressure and downstream output reservation.\n- `CA2`: normalize optional reservation inputs before arithmetic.\n- `CA3`: derive a policy threshold from residual input capacity and apply all guards to that same capacity.\n- `CA4`: propagate the reservation through construction and model/runtime reconfiguration.\n- `CA5`: validate boundary partitions: absent/invalid/non-positive reservation, positive reservation, reservation near capacity, and reservation exceeding capacity.\n- `CA6`: verify the behavior with numeric unit oracles and reconfiguration regression tests.\n\n## What this case does not prove\n\n- It does not prove configurable headroom separate from output reservation.\n- It does not prove a full compaction workflow or a cross-repository Pattern.\n- It does not justify naming a repository-specific class or function as a reusable Skill.\n",
+    "call_sites": [
+      "agent.max_tokens is threaded into ContextCompressor construction."
+    ],
+    "tests": [
+      "Tests cover residual arithmetic, small effective windows, invalid reservations, reconfiguration safety, and positive thresholds."
+    ],
+    "evidence_ids": [
+      "EU-HERMES-DIFF",
+      "EU-HERMES-BIND",
+      "EU-HERMES-ORACLE"
+    ],
+    "metadata": {
+      "case": {
+        "case_id": "hermes-compaction-reservation",
+        "case_version": "1.0.0",
+        "extracted_at": "2026-09-26",
+        "repository": {
+          "name": "hermes-agent",
+          "path": "/home/chenyujia/tritonToLlvm/hermes-agent",
+          "commit": "623b21bf24ea3f2f2c2d90de3ae872b8a0a000c4",
+          "remote": "https://github.com/NousResearch/hermes-agent.git"
+        },
+        "evidence_units": [
+          {
+            "id": "EU-HERMES-DIFF",
+            "kind": "implementation_diff",
+            "source": "agent/context_compressor.py",
+            "claim": "Threshold calculation receives and normalizes max_tokens reservation."
+          },
+          {
+            "id": "EU-HERMES-BIND",
+            "kind": "call_site",
+            "source": "agent/agent_init.py",
+            "claim": "agent.max_tokens is threaded into ContextCompressor construction."
+          },
+          {
+            "id": "EU-HERMES-ORACLE",
+            "kind": "test",
+            "source": "tests/agent/test_context_compressor.py",
+            "claim": "Tests cover residual arithmetic, small effective windows, invalid reservations, reconfiguration safety, and positive thresholds."
+          }
+        ],
+        "case_actions": [
+          {
+            "id": "CA1",
+            "kind": "diagnose",
+            "semantic_goal": "Detect nominal-capacity accounting when downstream output consumes the same window.",
+            "evidence_units": [
+              "EU-HERMES-DIFF"
+            ]
+          },
+          {
+            "id": "CA2",
+            "kind": "normalize",
+            "semantic_goal": "Normalize optional or malformed output reservations before arithmetic.",
+            "evidence_units": [
+              "EU-HERMES-DIFF",
+              "EU-HERMES-ORACLE"
+            ]
+          },
+          {
+            "id": "CA3",
+            "kind": "transform",
+            "semantic_goal": "Derive threshold and safety guards from effective input capacity.",
+            "evidence_units": [
+              "EU-HERMES-DIFF",
+              "EU-HERMES-ORACLE"
+            ]
+          },
+          {
+            "id": "CA4",
+            "kind": "propagate",
+            "semantic_goal": "Carry reservation state through construction and model switching.",
+            "evidence_units": [
+              "EU-HERMES-BIND",
+              "EU-HERMES-DIFF"
+            ]
+          },
+          {
+            "id": "CA5",
+            "kind": "validate",
+            "semantic_goal": "Partition boundary states and preserve a positive safe behavior.",
+            "evidence_units": [
+              "EU-HERMES-ORACLE"
+            ]
+          }
+        ],
+        "case_workflow": {
+          "id": "CW1",
+          "goal": "Repair compaction threshold accounting when output reservation shares the context window.",
+          "steps": [
+            "CA1",
+            "CA2",
+            "CA3",
+            "CA4",
+            "CA5"
+          ],
+          "conditional_branches": [
+            "If reservation is absent or invalid, preserve full-window compatibility.",
+            "If reservation leaves no positive residual capacity, use the documented safe fallback."
+          ]
+        },
+        "atomic_candidate_ids": [
+          "derive-policy-from-residual-capacity",
+          "normalize-optional-capacity-reservation",
+          "replay-policy-parameter-across-reconfiguration",
+          "validate-shared-capacity-boundaries"
+        ],
+        "validation_status": {
+          "status": "candidate",
+          "cross_repository_validation": false,
+          "notes": "Evidence is verified from one local commit and its tests; no cross-case promotion."
+        }
+      },
+      "candidate_skills_markdown": "# Candidate Atomics: Hermes compaction reservation\n\nThese are candidates extracted from one case. They remain `candidate` until compared with independent realizations.\n\n## A1 — derive-policy-from-residual-capacity\n\n**Small problem.** A policy threshold is computed from nominal shared capacity even though a downstream stage reserves part of that capacity.\n\n**Solution paradigm.** Identify every capacity consumer, compute the residual budget at the policy seam, and apply the policy and its safety guards to the residual budget. Do not merely lower the final threshold after computing from the nominal value.\n\n**Inputs:** nominal capacity `W`, downstream reservation `O`, policy parameters, safety guard.\n**Output:** threshold and any derived retain/pressure budgets.\n**Preconditions:** both consumers are charged against the same capacity; reservation semantics are known.\n**Exclusions:** independent capacities; a reservation that is not enforced by the provider/runtime.\n**Invariant:** policy threshold must not authorize more upstream work than the residual capacity can support.\n**Oracle:** boundary tests where the nominal threshold is below `W` but above `W-O`; threshold changes exactly when `O` changes; no non-positive result.\n**Failure modes:** silently clamping invalid reservation; applying the guard to `W` instead of `W-O`; mixing units.\n\n## A2 — normalize-optional-capacity-reservation\n\n**Small problem.** Optional or malformed reservation values reach arithmetic and cause crashes or unsafe thresholds.\n\n**Solution paradigm.** Normalize at the boundary into either a positive integer reservation or an explicit “no reservation” state, then keep downstream arithmetic typed and deterministic.\n\n**Inputs:** `None`, numeric, string-like, mocked, zero, and negative values.\n**Output:** `positive integer | no reservation`.\n**Invariant:** invalid input cannot make the policy arithmetic throw or produce a non-positive threshold.\n**Exclusions:** semantic validation of provider-specific maximums beyond the local policy contract.\n**Oracle:** partitioned input tests and no-crash assertions.\n\n## A3 — replay-policy-parameter-across-reconfiguration\n\n**Small problem.** A capacity policy is correct at construction but becomes stale after model/provider/context switching.\n\n**Solution paradigm.** Make the policy parameter part of the runtime state, define explicit “preserve” versus “replace” semantics, and recompute all derived budgets after reconfiguration.\n\n**Inputs:** current policy state, new model/context, optional replacement reservation.\n**Output:** recalibrated threshold and derived budgets.\n**Invariant:** the active model and active reservation are reflected in every derived budget.\n**Exclusions:** configuration precedence across multiple independent user scopes unless specified by the host system.\n**Oracle:** switch tests with omitted and explicit replacement values.\n\n## A4 — validate-shared-capacity-boundaries\n\n**Small problem.** Degenerate residual budgets are allowed to flow into normal policy logic.\n\n**Solution paradigm.** Partition boundary states and choose an explicit policy: reject impossible configurations, or use a documented safe fallback only where the runtime contract requires compatibility.\n\nThis candidate is a validation companion to A1, not a second threshold algorithm.\n\n## Candidate-to-case mapping\n\n- `CA1 -> A1`\n- `CA2 -> A2`\n- `CA3 -> A1`\n- `CA4 -> A3`\n- `CA5 -> A4`\n- `CA6 -> A1, A2, A3, A4` (validation only)\n\nNo candidate is promoted to a generalized Pattern from this case alone.\n",
+      "evidence_markdown": "# Evidence: Hermes compaction threshold reserves output capacity\n\n## Scope and provenance\n\n- Repository: `/home/chenyujia/tritonToLlvm/hermes-agent`\n- Commit: `623b21bf24ea3f2f2c2d90de3ae872b8a0a000c4`\n- Subject: `fix(compress): reserve output tokens in the compaction threshold (#23767, #43547)`\n- Parent: `623b21bf^`\n- Files read from the verified diff:\n  - `agent/agent_init.py`\n  - `agent/context_compressor.py`\n  - `tests/agent/test_context_compressor.py`\n\nThis is one repository case. It is evidence for Case Actions and single-case Atomic candidates, not by itself a cross-repository Pattern.\n\n## Observed failure mechanism\n\nThe old compaction threshold used the nominal `context_length * threshold_percent`. The provider charges `max_tokens` output from the same context window, so the input-side budget is smaller. The fix changes the calculation to use the effective input budget, conceptually:\n\n```text\nW = context_length\nO = normalized positive max_tokens reservation\nM = W - O, when M > 0\nthreshold = policy(M), not policy(W)\n```\n\nThe small-window 85% guard is applied to the effective budget. When a reservation is absent, invalid, non-positive, or leaves no positive effective budget, the implementation preserves a safe positive fallback rather than emitting a non-positive threshold.\n\n## Implementation evidence\n\n1. `agent/agent_init.py` threads `agent.max_tokens` into `ContextCompressor` construction.\n2. `ContextCompressor._coerce_max_tokens()` turns `None`, non-numeric, and non-positive values into no reservation; positive values become the reservation.\n3. `_compute_threshold_tokens(context_length, threshold_percent, max_tokens)` derives the threshold from the effective budget and applies the small-window guard there.\n4. `update_model()` retains the existing reservation when a model switch does not supply a new value and recalculates thresholds after context changes; an explicitly supplied value replaces it.\n5. Tests cover no reservation, `200000 - 65536` at 50% (`67232`), small effective windows, reservation exceeding the window, invalid values, and positive-threshold/no-crash behavior.\n\n## Case Actions\n\n- `CA1`: diagnose a shared-capacity accounting mismatch between input pressure and downstream output reservation.\n- `CA2`: normalize optional reservation inputs before arithmetic.\n- `CA3`: derive a policy threshold from residual input capacity and apply all guards to that same capacity.\n- `CA4`: propagate the reservation through construction and model/runtime reconfiguration.\n- `CA5`: validate boundary partitions: absent/invalid/non-positive reservation, positive reservation, reservation near capacity, and reservation exceeding capacity.\n- `CA6`: verify the behavior with numeric unit oracles and reconfiguration regression tests.\n\n## What this case does not prove\n\n- It does not prove configurable headroom separate from output reservation.\n- It does not prove a full compaction workflow or a cross-repository Pattern.\n- It does not justify naming a repository-specific class or function as a reusable Skill.\n",
+      "evidence_only": true,
+      "source_checkout_present": false
+    }
+  }
+]

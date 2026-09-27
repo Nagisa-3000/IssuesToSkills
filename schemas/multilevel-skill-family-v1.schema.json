@@ -1,0 +1,2547 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arex.local/schemas/multilevel-skill-family-v1.schema.json",
+  "title": "AREX Multi-level Skill Family Bundle v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "bundle_id",
+    "task_family",
+    "extraction",
+    "candidate_episodes",
+    "evidence_units",
+    "validations",
+    "atomic_skills",
+    "workflows",
+    "patterns",
+    "bindings",
+    "relations",
+    "rejected_candidates",
+    "quality_report"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "bundle_id": {
+      "$ref": "#/$defs/id"
+    },
+    "task_family": {
+      "$ref": "#/$defs/taskFamily"
+    },
+    "extraction": {
+      "$ref": "#/$defs/extraction"
+    },
+    "candidate_episodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/candidateEpisode"
+      }
+    },
+    "evidence_units": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/evidence"
+      }
+    },
+    "validations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/validation"
+      }
+    },
+    "atomic_skills": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/atomicSkill"
+      }
+    },
+    "workflows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/workflow"
+      }
+    },
+    "patterns": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/pattern"
+      }
+    },
+    "bindings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/binding"
+      }
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/relation"
+      }
+    },
+    "rejected_candidates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/rejectedCandidate"
+      }
+    },
+    "quality_report": {
+      "$ref": "#/$defs/qualityReport"
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]*:[A-Za-z0-9._:@/+~-]+$",
+      "minLength": 3,
+      "maxLength": 240
+    },
+    "idList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/id"
+      },
+      "uniqueItems": true
+    },
+    "nonEmpty": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{64}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "lifecycle": {
+      "enum": [
+        "candidate",
+        "reviewed",
+        "validated",
+        "deprecated"
+      ]
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "claim_type",
+        "statement",
+        "epistemic_status",
+        "evidence_ids",
+        "rationale",
+        "confidence",
+        "uncertainty"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "claim_type": {
+          "enum": [
+            "intent",
+            "trigger",
+            "state",
+            "transformation",
+            "invariant",
+            "applicability",
+            "ordering",
+            "validation",
+            "failure_mode",
+            "generalization"
+          ]
+        },
+        "statement": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "epistemic_status": {
+          "enum": [
+            "observed",
+            "inferred",
+            "generalized"
+          ]
+        },
+        "evidence_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "rationale": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "uncertainty": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "epistemic_status": {
+                "const": "observed"
+              }
+            },
+            "required": [
+              "epistemic_status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "evidence_ids": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "epistemic_status": {
+                "const": "generalized"
+              }
+            },
+            "required": [
+              "epistemic_status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "evidence_ids": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "applicability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requires_all",
+        "requires_any",
+        "excludes",
+        "unknown_policy"
+      ],
+      "properties": {
+        "requires_all": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          }
+        },
+        "requires_any": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          }
+        },
+        "excludes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          }
+        },
+        "unknown_policy": {
+          "enum": [
+            "reject",
+            "defer",
+            "allow_with_warning"
+          ]
+        }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_coverage",
+        "semantic_coherence",
+        "boundary_clarity",
+        "validation_strength",
+        "cross_repository_support",
+        "overall",
+        "aggregation_method",
+        "override_rationale"
+      ],
+      "properties": {
+        "evidence_coverage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "semantic_coherence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "boundary_clarity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "validation_strength": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "cross_repository_support": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "overall": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "aggregation_method": {
+          "enum": [
+            "min_dimensions",
+            "conservative_override"
+          ]
+        },
+        "override_rationale": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "aggregation_method": {
+                "const": "conservative_override"
+              }
+            },
+            "required": [
+              "aggregation_method"
+            ]
+          },
+          "then": {
+            "properties": {
+              "override_rationale": {
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "views": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "routing",
+        "execution",
+        "audit"
+      ],
+      "properties": {
+        "routing": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "text",
+            "keywords",
+            "module_roles",
+            "artifact_types",
+            "predicate_summary"
+          ],
+          "properties": {
+            "text": {
+              "$ref": "#/$defs/nonEmpty"
+            },
+            "keywords": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/nonEmpty"
+              },
+              "uniqueItems": true
+            },
+            "module_roles": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/nonEmpty"
+              },
+              "uniqueItems": true
+            },
+            "artifact_types": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/nonEmpty"
+              },
+              "uniqueItems": true
+            },
+            "predicate_summary": {
+              "type": "string"
+            }
+          }
+        },
+        "execution": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "instructions",
+            "step_ids",
+            "decision_guidance",
+            "validation_ids",
+            "budget_notes"
+          ],
+          "properties": {
+            "instructions": {
+              "$ref": "#/$defs/nonEmpty"
+            },
+            "step_ids": {
+              "$ref": "#/$defs/idList"
+            },
+            "decision_guidance": {
+              "type": "string"
+            },
+            "validation_ids": {
+              "$ref": "#/$defs/idList"
+            },
+            "budget_notes": {
+              "type": "string"
+            }
+          }
+        },
+        "audit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "claim_ids",
+            "evidence_ids",
+            "extraction_run_id",
+            "review_notes"
+          ],
+          "properties": {
+            "claim_ids": {
+              "$ref": "#/$defs/idList"
+            },
+            "evidence_ids": {
+              "$ref": "#/$defs/idList"
+            },
+            "extraction_run_id": {
+              "$ref": "#/$defs/id"
+            },
+            "review_notes": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "taskFamily": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "definition",
+        "inclusion_criteria",
+        "exclusion_criteria",
+        "positive_example_evidence_ids",
+        "negative_example_evidence_ids"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "definition": {
+          "$ref": "#/$defs/claim"
+        },
+        "inclusion_criteria": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          },
+          "minItems": 1
+        },
+        "exclusion_criteria": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          }
+        },
+        "positive_example_evidence_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "negative_example_evidence_ids": {
+          "$ref": "#/$defs/idList"
+        }
+      }
+    },
+    "contextItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "pointer",
+        "sha256",
+        "included_for"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "issue",
+            "pull_request",
+            "review",
+            "commit",
+            "diff",
+            "file",
+            "symbol",
+            "test",
+            "test_result",
+            "runtime_trace",
+            "documentation",
+            "metadata"
+          ]
+        },
+        "pointer": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "included_for": {
+          "$ref": "#/$defs/nonEmpty"
+        }
+      }
+    },
+    "extraction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "method",
+        "provider",
+        "model",
+        "prompt_version",
+        "schema_version",
+        "extractor_version",
+        "generated_at",
+        "temperature",
+        "seed",
+        "context_manifest",
+        "context_manifest_sha256",
+        "isolation_key",
+        "leakage_policy",
+        "human_review"
+      ],
+      "properties": {
+        "run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "method": {
+          "const": "llm_code_reading"
+        },
+        "provider": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "model": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "prompt_version": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "extractor_version": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "generated_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "temperature": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "seed": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "context_manifest": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/contextItem"
+          },
+          "minItems": 1
+        },
+        "context_manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "isolation_key": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "leakage_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "target_patch_access",
+            "hidden_test_access",
+            "posthoc_access_rewrites_runtime_evidence"
+          ],
+          "properties": {
+            "target_patch_access": {
+              "enum": [
+                "prohibited",
+                "not_provided",
+                "provided_for_extraction"
+              ]
+            },
+            "hidden_test_access": {
+              "enum": [
+                "prohibited",
+                "not_provided",
+                "provided_for_evaluation_only"
+              ]
+            },
+            "posthoc_access_rewrites_runtime_evidence": {
+              "const": false
+            }
+          }
+        },
+        "human_review": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "reviewer",
+            "reviewed_at",
+            "notes"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "not_reviewed",
+                "in_review",
+                "approved",
+                "changes_requested"
+              ]
+            },
+            "reviewer": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "reviewed_at": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/timestamp"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "anchor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "repository",
+        "external_id",
+        "revision",
+        "linkage_status",
+        "evidence_ids"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "issue",
+            "pull_request",
+            "orphan_episode"
+          ]
+        },
+        "repository": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "external_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "revision": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "linkage_status": {
+          "enum": [
+            "verified",
+            "repository_observed",
+            "inferred",
+            "unverified"
+          ]
+        },
+        "evidence_ids": {
+          "$ref": "#/$defs/idList"
+        }
+      }
+    },
+    "candidateEpisode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "anchor",
+        "included_revisions",
+        "excluded_revisions",
+        "selection_rationale",
+        "evidence_ids",
+        "status"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "anchor": {
+          "$ref": "#/$defs/anchor"
+        },
+        "included_revisions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "excluded_revisions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          },
+          "uniqueItems": true
+        },
+        "selection_rationale": {
+          "$ref": "#/$defs/claim"
+        },
+        "evidence_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "status": {
+          "enum": [
+            "candidate",
+            "accepted",
+            "rejected",
+            "split",
+            "merged"
+          ]
+        }
+      }
+    },
+    "locator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision"
+      ],
+      "properties": {
+        "revision": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "commit_sha": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-fA-F0-9]{7,64}$"
+        },
+        "path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "old_start": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "old_end": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "new_start": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "new_end": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "symbol": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "test_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "external_number": {
+          "type": [
+            "integer",
+            "string",
+            "null"
+          ]
+        },
+        "raw_pointer": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "repository",
+        "locator",
+        "summary",
+        "content_sha256",
+        "capture_method",
+        "trust",
+        "captured_at",
+        "metadata"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "issue",
+            "pull_request",
+            "review",
+            "commit",
+            "hunk",
+            "file",
+            "symbol",
+            "test",
+            "test_result",
+            "runtime_trace",
+            "documentation"
+          ]
+        },
+        "repository": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "locator": {
+          "$ref": "#/$defs/locator"
+        },
+        "summary": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "content_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "capture_method": {
+          "enum": [
+            "git",
+            "filesystem",
+            "github_api",
+            "test_runner",
+            "runtime_probe",
+            "manual",
+            "other"
+          ]
+        },
+        "trust": {
+          "enum": [
+            "verified",
+            "repository_observed",
+            "externally_observed",
+            "unverified"
+          ]
+        },
+        "captured_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "metadata": {
+          "type": "object"
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "purpose",
+        "level",
+        "procedure",
+        "oracle",
+        "environment",
+        "scope",
+        "independence",
+        "result",
+        "result_evidence_ids",
+        "claim",
+        "lifecycle"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "purpose": {
+          "enum": [
+            "reproduce",
+            "regression",
+            "compatibility",
+            "performance",
+            "safety",
+            "static"
+          ]
+        },
+        "level": {
+          "enum": [
+            "unit",
+            "integration",
+            "e2e",
+            "repository",
+            "runtime"
+          ]
+        },
+        "procedure": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "oracle": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "environment": {
+          "type": "object"
+        },
+        "scope": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          },
+          "minItems": 1
+        },
+        "independence": {
+          "enum": [
+            "source_patch_test",
+            "derived_test",
+            "held_out_test",
+            "external_suite"
+          ]
+        },
+        "result": {
+          "enum": [
+            "not_run",
+            "pass",
+            "fail",
+            "error",
+            "inconclusive"
+          ]
+        },
+        "result_evidence_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "claim": {
+          "$ref": "#/$defs/claim"
+        },
+        "lifecycle": {
+          "$ref": "#/$defs/lifecycle"
+        }
+      }
+    },
+    "parameterSlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "description",
+        "value_type",
+        "constraints",
+        "binding_strategy"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "description": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "value_type": {
+          "enum": [
+            "path",
+            "symbol",
+            "type",
+            "integer",
+            "number",
+            "boolean",
+            "string",
+            "enum",
+            "command",
+            "predicate",
+            "artifact"
+          ]
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "binding_strategy": {
+          "enum": [
+            "static",
+            "symbol_search",
+            "call_graph",
+            "config_probe",
+            "test_probe",
+            "llm_assisted",
+            "manual"
+          ]
+        }
+      }
+    },
+    "transformation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "before_state",
+        "operation",
+        "target_module_roles",
+        "parameter_slots",
+        "after_state"
+      ],
+      "properties": {
+        "before_state": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          },
+          "minItems": 1
+        },
+        "operation": {
+          "$ref": "#/$defs/claim"
+        },
+        "target_module_roles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "parameter_slots": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/parameterSlot"
+          }
+        },
+        "after_state": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "atomicSkill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "title",
+        "summary",
+        "repository",
+        "lifecycle",
+        "intent",
+        "observable_triggers",
+        "applicability",
+        "transformation",
+        "invariants_preserved",
+        "outputs",
+        "side_effects",
+        "validation_contract_ids",
+        "evidence_ids",
+        "source_episode_ids",
+        "views",
+        "quality",
+        "deprecation"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "title": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "summary": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "lifecycle": {
+          "$ref": "#/$defs/lifecycle"
+        },
+        "intent": {
+          "$ref": "#/$defs/claim"
+        },
+        "observable_triggers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          },
+          "minItems": 1
+        },
+        "applicability": {
+          "$ref": "#/$defs/applicability"
+        },
+        "transformation": {
+          "$ref": "#/$defs/transformation"
+        },
+        "invariants_preserved": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          }
+        },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          },
+          "minItems": 1
+        },
+        "side_effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          }
+        },
+        "validation_contract_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "evidence_ids": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/idList"
+            },
+            {
+              "minItems": 1
+            }
+          ]
+        },
+        "source_episode_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "views": {
+          "$ref": "#/$defs/views"
+        },
+        "quality": {
+          "$ref": "#/$defs/quality"
+        },
+        "deprecation": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "reason",
+                "replacement_id",
+                "effective_version"
+              ],
+              "properties": {
+                "reason": {
+                  "$ref": "#/$defs/nonEmpty"
+                },
+                "replacement_id": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/id"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "effective_version": {
+                  "$ref": "#/$defs/nonEmpty"
+                }
+              }
+            }
+          ]
+        },
+        "repository": {
+          "$ref": "#/$defs/nonEmpty"
+        }
+      }
+    },
+    "workflowStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "role",
+        "goal",
+        "input_state",
+        "output_state",
+        "atomic_skill_ids",
+        "branch_condition",
+        "validation_ids",
+        "evidence_ids",
+        "mandatory",
+        "confidence"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "role": {
+          "enum": [
+            "diagnose",
+            "reproduce",
+            "discover",
+            "design",
+            "implement",
+            "integrate",
+            "validate",
+            "repair",
+            "rollback",
+            "release"
+          ]
+        },
+        "goal": {
+          "$ref": "#/$defs/claim"
+        },
+        "input_state": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          },
+          "minItems": 1
+        },
+        "output_state": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          },
+          "minItems": 1
+        },
+        "atomic_skill_ids": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/idList"
+            },
+            {
+              "minItems": 1
+            }
+          ]
+        },
+        "branch_condition": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/claim"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "validation_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "evidence_ids": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/idList"
+            },
+            {
+              "minItems": 1
+            }
+          ]
+        },
+        "mandatory": {
+          "type": "boolean"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "workflowEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source_step_id",
+        "target_step_id",
+        "relation",
+        "rationale",
+        "condition",
+        "confidence",
+        "evidence_ids"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "source_step_id": {
+          "$ref": "#/$defs/id"
+        },
+        "target_step_id": {
+          "$ref": "#/$defs/id"
+        },
+        "relation": {
+          "enum": [
+            "requires",
+            "enables",
+            "precedes",
+            "validates",
+            "repairs",
+            "alternative_to"
+          ]
+        },
+        "rationale": {
+          "$ref": "#/$defs/claim"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/claim"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "evidence_ids": {
+          "$ref": "#/$defs/idList"
+        }
+      }
+    },
+    "decisionPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "question",
+        "condition",
+        "branches",
+        "evidence_ids"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "question": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "condition": {
+          "$ref": "#/$defs/claim"
+        },
+        "branches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "step_ids",
+              "when"
+            ],
+            "properties": {
+              "label": {
+                "$ref": "#/$defs/nonEmpty"
+              },
+              "step_ids": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/idList"
+                  },
+                  {
+                    "minItems": 1
+                  }
+                ]
+              },
+              "when": {
+                "$ref": "#/$defs/claim"
+              }
+            }
+          },
+          "minItems": 2
+        },
+        "evidence_ids": {
+          "$ref": "#/$defs/idList"
+        }
+      }
+    },
+    "workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "title",
+        "summary",
+        "lifecycle",
+        "repository",
+        "anchor",
+        "goal",
+        "entry_state",
+        "exit_state",
+        "steps",
+        "edges",
+        "decision_points",
+        "repair_loops",
+        "reverted_or_superseded",
+        "unresolved_or_deferred",
+        "acceptance_validation_ids",
+        "source_revisions",
+        "evidence_ids",
+        "views",
+        "quality",
+        "deprecation"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "title": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "summary": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "lifecycle": {
+          "$ref": "#/$defs/lifecycle"
+        },
+        "repository": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "anchor": {
+          "$ref": "#/$defs/anchor"
+        },
+        "goal": {
+          "$ref": "#/$defs/claim"
+        },
+        "entry_state": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          },
+          "minItems": 1
+        },
+        "exit_state": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          },
+          "minItems": 1
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/workflowStep"
+          },
+          "minItems": 1
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/workflowEdge"
+          }
+        },
+        "decision_points": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/decisionPoint"
+          }
+        },
+        "repair_loops": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "failed_step_id",
+              "repair_step_id",
+              "outcome"
+            ],
+            "properties": {
+              "failed_step_id": {
+                "$ref": "#/$defs/id"
+              },
+              "repair_step_id": {
+                "$ref": "#/$defs/id"
+              },
+              "outcome": {
+                "$ref": "#/$defs/claim"
+              }
+            }
+          }
+        },
+        "reverted_or_superseded": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          }
+        },
+        "unresolved_or_deferred": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          }
+        },
+        "acceptance_validation_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "source_revisions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "evidence_ids": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/idList"
+            },
+            {
+              "minItems": 1
+            }
+          ]
+        },
+        "views": {
+          "$ref": "#/$defs/views"
+        },
+        "quality": {
+          "$ref": "#/$defs/quality"
+        },
+        "deprecation": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/deprecation"
+            }
+          ]
+        }
+      }
+    },
+    "realization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workflow_id",
+        "workflow_step_ids",
+        "atomic_skill_ids",
+        "mapping_rationale"
+      ],
+      "properties": {
+        "workflow_id": {
+          "$ref": "#/$defs/id"
+        },
+        "workflow_step_ids": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/idList"
+            },
+            {
+              "minItems": 1
+            }
+          ]
+        },
+        "atomic_skill_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "mapping_rationale": {
+          "$ref": "#/$defs/claim"
+        }
+      }
+    },
+    "patternStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "intent",
+        "required_inputs",
+        "produced_outputs",
+        "module_role_constraints",
+        "operation_template",
+        "parameter_refs",
+        "applicability",
+        "mandatory",
+        "branch_key",
+        "acceptable_variants",
+        "validation_template_ids",
+        "realizations",
+        "confidence"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "intent": {
+          "$ref": "#/$defs/claim"
+        },
+        "required_inputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          }
+        },
+        "produced_outputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          },
+          "minItems": 1
+        },
+        "module_role_constraints": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "operation_template": {
+          "$ref": "#/$defs/claim"
+        },
+        "parameter_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "uniqueItems": true
+        },
+        "applicability": {
+          "$ref": "#/$defs/applicability"
+        },
+        "mandatory": {
+          "type": "boolean"
+        },
+        "branch_key": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "acceptable_variants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          }
+        },
+        "validation_template_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "realizations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/realization"
+          },
+          "minItems": 2
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "patternEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source_step_id",
+        "target_step_id",
+        "relation",
+        "rationale",
+        "condition",
+        "confidence"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "source_step_id": {
+          "$ref": "#/$defs/id"
+        },
+        "target_step_id": {
+          "$ref": "#/$defs/id"
+        },
+        "relation": {
+          "enum": [
+            "requires",
+            "enables",
+            "precedes",
+            "validates",
+            "alternative_to"
+          ]
+        },
+        "rationale": {
+          "$ref": "#/$defs/claim"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/claim"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "heldOutResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "task_id",
+        "repository",
+        "split",
+        "executed_at",
+        "target_solution_access",
+        "hidden_test_access",
+        "success",
+        "metrics",
+        "evidence_ids",
+        "notes"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "task_id": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "repository": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "split": {
+          "enum": [
+            "development",
+            "held_out",
+            "time_split",
+            "cross_repository_held_out"
+          ]
+        },
+        "executed_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "target_solution_access": {
+          "enum": [
+            "prohibited",
+            "not_provided",
+            "provided_for_posthoc_audit"
+          ]
+        },
+        "hidden_test_access": {
+          "enum": [
+            "not_provided",
+            "evaluation_only",
+            "provided_during_execution"
+          ]
+        },
+        "success": {
+          "type": "boolean"
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tests_passed",
+            "tests_total",
+            "input_tokens",
+            "output_tokens",
+            "wall_time_seconds",
+            "cost_usd"
+          ],
+          "properties": {
+            "tests_passed": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "tests_total": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "input_tokens": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "output_tokens": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "wall_time_seconds": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "cost_usd": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            }
+          }
+        },
+        "evidence_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "diversity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repositories",
+        "workflow_ids",
+        "episode_ids",
+        "earliest_revision_time",
+        "latest_revision_time"
+      ],
+      "properties": {
+        "repositories": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "workflow_ids": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/idList"
+            },
+            {
+              "minItems": 2
+            }
+          ]
+        },
+        "episode_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "earliest_revision_time": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "latest_revision_time": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "deprecation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reason",
+        "replacement_id",
+        "effective_version"
+      ],
+      "properties": {
+        "reason": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "replacement_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "effective_version": {
+          "$ref": "#/$defs/nonEmpty"
+        }
+      }
+    },
+    "pattern": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "title",
+        "summary",
+        "lifecycle",
+        "cross_repository_claim",
+        "task_family_id",
+        "intent",
+        "parameters",
+        "applicability",
+        "steps",
+        "edges",
+        "decision_points",
+        "invariants",
+        "validation_ladder_ids",
+        "known_failure_modes",
+        "counterexamples",
+        "supporting_workflow_ids",
+        "held_out_results",
+        "evidence_diversity",
+        "views",
+        "quality",
+        "promotion_history",
+        "deprecation"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "title": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "summary": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "lifecycle": {
+          "$ref": "#/$defs/lifecycle"
+        },
+        "cross_repository_claim": {
+          "type": "boolean"
+        },
+        "task_family_id": {
+          "$ref": "#/$defs/id"
+        },
+        "intent": {
+          "$ref": "#/$defs/claim"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/parameterSlot"
+          }
+        },
+        "applicability": {
+          "$ref": "#/$defs/applicability"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/patternStep"
+          },
+          "minItems": 1
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/patternEdge"
+          }
+        },
+        "decision_points": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/decisionPoint"
+          }
+        },
+        "invariants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          },
+          "minItems": 1
+        },
+        "validation_ladder_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "known_failure_modes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          }
+        },
+        "counterexamples": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          }
+        },
+        "supporting_workflow_ids": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/idList"
+            },
+            {
+              "minItems": 2
+            }
+          ]
+        },
+        "held_out_results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/heldOutResult"
+          }
+        },
+        "evidence_diversity": {
+          "$ref": "#/$defs/diversity"
+        },
+        "views": {
+          "$ref": "#/$defs/views"
+        },
+        "quality": {
+          "$ref": "#/$defs/quality"
+        },
+        "promotion_history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "from",
+              "to",
+              "at",
+              "actor",
+              "reason",
+              "evidence_ids"
+            ],
+            "properties": {
+              "from": {
+                "enum": [
+                  "none",
+                  "candidate",
+                  "reviewed",
+                  "validated",
+                  "deprecated"
+                ]
+              },
+              "to": {
+                "$ref": "#/$defs/lifecycle"
+              },
+              "at": {
+                "$ref": "#/$defs/timestamp"
+              },
+              "actor": {
+                "$ref": "#/$defs/nonEmpty"
+              },
+              "reason": {
+                "$ref": "#/$defs/nonEmpty"
+              },
+              "evidence_ids": {
+                "$ref": "#/$defs/idList"
+              }
+            }
+          }
+        },
+        "deprecation": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/deprecation"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "cross_repository_claim": {
+                "const": true
+              }
+            },
+            "required": [
+              "cross_repository_claim"
+            ]
+          },
+          "then": {
+            "properties": {
+              "evidence_diversity": {
+                "properties": {
+                  "repositories": {
+                    "minItems": 2
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "lifecycle": {
+                "const": "validated"
+              }
+            },
+            "required": [
+              "lifecycle"
+            ]
+          },
+          "then": {
+            "properties": {
+              "held_out_results": {
+                "minItems": 1,
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "split": {
+                      "enum": [
+                        "held_out",
+                        "time_split",
+                        "cross_repository_held_out"
+                      ]
+                    },
+                    "target_solution_access": {
+                      "enum": [
+                        "prohibited",
+                        "not_provided"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "split",
+                    "target_solution_access"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "bindingValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "abstract_name",
+        "kind",
+        "concrete_value",
+        "locator",
+        "confidence",
+        "evidence_ids"
+      ],
+      "properties": {
+        "abstract_name": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "kind": {
+          "enum": [
+            "module_role",
+            "parameter"
+          ]
+        },
+        "concrete_value": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "locator": {
+          "$ref": "#/$defs/locator"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "evidence_ids": {
+          "$ref": "#/$defs/idList"
+        }
+      }
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "repository",
+        "revision",
+        "tree_fingerprint",
+        "target_ids",
+        "values",
+        "probe_procedure",
+        "probe_result",
+        "probe_evidence_ids",
+        "status",
+        "invalidation_conditions",
+        "created_at"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "repository": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "revision": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "tree_fingerprint": {
+          "$ref": "#/$defs/sha256"
+        },
+        "target_ids": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/idList"
+            },
+            {
+              "minItems": 1
+            }
+          ]
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/bindingValue"
+          },
+          "minItems": 1
+        },
+        "probe_procedure": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "probe_result": {
+          "enum": [
+            "applicable",
+            "partially_applicable",
+            "incompatible",
+            "unknown"
+          ]
+        },
+        "probe_evidence_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "status": {
+          "enum": [
+            "fresh",
+            "stale",
+            "rejected"
+          ]
+        },
+        "invalidation_conditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          },
+          "minItems": 1
+        },
+        "created_at": {
+          "$ref": "#/$defs/timestamp"
+        }
+      }
+    },
+    "relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source_id",
+        "target_id",
+        "relation",
+        "weight",
+        "confidence",
+        "evidence_ids",
+        "rationale",
+        "condition"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "target_id": {
+          "$ref": "#/$defs/id"
+        },
+        "relation": {
+          "enum": [
+            "declares_step",
+            "instantiates",
+            "has_step",
+            "realizes",
+            "executed_by",
+            "conforms_to",
+            "evidenced_by",
+            "supported_by",
+            "applicable_when",
+            "verifies",
+            "grounds",
+            "requires",
+            "enables",
+            "precedes",
+            "validates",
+            "repairs",
+            "alternative_to",
+            "specializes",
+            "composes_with",
+            "requires_pattern"
+          ]
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "evidence_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "rationale": {
+          "$ref": "#/$defs/claim"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/claim"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "rejectedCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "candidate_type",
+        "candidate_pointer",
+        "reason_code",
+        "reason",
+        "evidence_ids",
+        "review_status"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "candidate_type": {
+          "enum": [
+            "episode",
+            "atomic_skill",
+            "workflow",
+            "pattern",
+            "relation",
+            "binding"
+          ]
+        },
+        "candidate_pointer": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "reason_code": {
+          "enum": [
+            "insufficient_evidence",
+            "not_reusable",
+            "noise_only",
+            "duplicate",
+            "wrong_family",
+            "semantic_mismatch",
+            "leakage_risk",
+            "invalid_linkage",
+            "failed_quality_gate",
+            "other"
+          ]
+        },
+        "reason": {
+          "$ref": "#/$defs/claim"
+        },
+        "evidence_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "review_status": {
+          "enum": [
+            "automatic",
+            "llm_rejected",
+            "human_confirmed"
+          ]
+        }
+      }
+    },
+    "qualityReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_valid",
+        "semantic_valid",
+        "checked_at",
+        "validator_version",
+        "errors",
+        "warnings",
+        "statistics"
+      ],
+      "properties": {
+        "schema_valid": {
+          "type": "boolean"
+        },
+        "semantic_valid": {
+          "type": "boolean"
+        },
+        "checked_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "validator_version": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmpty"
+          }
+        },
+        "statistics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "evidence_count",
+            "atomic_skill_count",
+            "workflow_count",
+            "pattern_count",
+            "binding_count",
+            "claim_count"
+          ],
+          "properties": {
+            "evidence_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "atomic_skill_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "workflow_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "pattern_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "binding_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "claim_count": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    }
+  }
+}

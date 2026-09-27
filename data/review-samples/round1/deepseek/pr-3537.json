@@ -1,0 +1,210 @@
+{
+  "repository": "deepseek-ai/deepseek-harness",
+  "number": 3537,
+  "title": "perf: read embedded Assistant streams per compact record",
+  "merge_sha": "81dcacbb44fd8b5211d32019dfdb8462eb6d910c",
+  "base_sha": "53c2ed99167ceec7aaf2e41cf28d9aad0204fa95",
+  "head_sha": "07245b9e88f9aae1b3508af9933060cb956d5709",
+  "merged_at": "2026-09-06T13:17:51+08:00",
+  "commits": [
+    {
+      "sha": "165cc31eb8f65a364253c9b1369805e52c37ba8e",
+      "parents": [
+        "450d98b39848032e70066a05b7b313f50c3d8e2f"
+      ],
+      "authored_at": "2026-09-06T12:41:25+08:00",
+      "subject": "perf(llm,host): read embedded Assistant streams per compact record",
+      "body": "Session format v2 embeds each attempt's compact stream in\nassistant/message and assistant/attempt, but Host and client consumers\nstill expanded it into per-member TimedStreamChunk arrays and did\nper-member work; expandAssistantStream materializes the full array before\nfind/toReversed/break can answer. Session Stats (the projection phase of\nevery Session open), the token meter's usage and provider-assembly folds,\nthe subagent output fold, and the Session Controller image lookup still\npaid O(members) allocation and time per settlement.\n\nThe Chat and Trajectory definitions were already settled from\nmessage.content on master; the remaining per-member folds stay.\n\ndsh-llm now exports record-level readers (first token, visible content,\nvisible text, last raw chunk of a type, raw chunks of a type, joined\ntext, run-aware assembly, per-run first-token/first-visible times) that\nscan the compact records once with early exit. Session Stats reads\nassistantStreamFirstTokenTime, the token meter reads\nlastAssistantStreamChunk(stream, 'usage') and assembles through\nassembleAssistantStream, the subagent output fold appends\njoinAssistantStreamText, and the Session Controller scans\nassistantStreamChunks(stream, 'block-end').\n\nexpandAssistantStream is deliberately not memoized: retaining expansions\ncosts roughly ten times the compact stream for the Session's lifetime.\nIt remains the validating path at durable boundaries.\n\nSynthetic 200-turn v0 migration benchmark, median of five: first-open\nprojection 28.0 ms -> 5.4 ms, first-open total 76.9 -> 50.0 ms, peak RSS\n137.2 -> 94.9 MB; reopen projection 17.8 -> 5.6 ms; all phase budgets and\nthe 128 MB heap constraint keep passing.",
+      "message": "perf(llm,host): read embedded Assistant streams per compact record\n\nSession format v2 embeds each attempt's compact stream in\nassistant/message and assistant/attempt, but Host and client consumers\nstill expanded it into per-member TimedStreamChunk arrays and did\nper-member work; expandAssistantStream materializes the full array before\nfind/toReversed/break can answer. Session Stats (the projection phase of\nevery Session open), the token meter's usage and provider-assembly folds,\nthe subagent output fold, and the Session Controller image lookup still\npaid O(members) allocation and time per settlement.\n\nThe Chat and Trajectory definitions were already settled from\nmessage.content on master; the remaining per-member folds stay.\n\ndsh-llm now exports record-level readers (first token, visible content,\nvisible text, last raw chunk of a type, raw chunks of a type, joined\ntext, run-aware assembly, per-run first-token/first-visible times) that\nscan the compact records once with early exit. Session Stats reads\nassistantStreamFirstTokenTime, the token meter reads\nlastAssistantStreamChunk(stream, 'usage') and assembles through\nassembleAssistantStream, the subagent output fold appends\njoinAssistantStreamText, and the Session Controller scans\nassistantStreamChunks(stream, 'block-end').\n\nexpandAssistantStream is deliberately not memoized: retaining expansions\ncosts roughly ten times the compact stream for the Session's lifetime.\nIt remains the validating path at durable boundaries.\n\nSynthetic 200-turn v0 migration benchmark, median of five: first-open\nprojection 28.0 ms -> 5.4 ms, first-open total 76.9 -> 50.0 ms, peak RSS\n137.2 -> 94.9 MB; reopen projection 17.8 -> 5.6 ms; all phase budgets and\nthe 128 MB heap constraint keep passing."
+    },
+    {
+      "sha": "07245b9e88f9aae1b3508af9933060cb956d5709",
+      "parents": [
+        "165cc31eb8f65a364253c9b1369805e52c37ba8e"
+      ],
+      "authored_at": "2026-09-06T12:46:19+08:00",
+      "subject": "docs(llm): scope the record readers' early-exit claims; state that readers trust the static record type",
+      "body": "Reflect the review feedback on the reader list: assistantStreamFirstTokenTime and the has-visible readers stop at the first qualifying member, while lastAssistantStreamChunk, assistantStreamChunks, and joinAssistantStreamText scan the whole stream; assembleAssistantStream feeds a BlockAssembler one joined delta per run. Record-level readers trust the static record type; expandAssistantStream is the validating path.",
+      "message": "docs(llm): scope the record readers' early-exit claims; state that readers trust the static record type\n\nReflect the review feedback on the reader list: assistantStreamFirstTokenTime and the has-visible readers stop at the first qualifying member, while lastAssistantStreamChunk, assistantStreamChunks, and joinAssistantStreamText scan the whole stream; assembleAssistantStream feeds a BlockAssembler one joined delta per run. Record-level readers trust the static record type; expandAssistantStream is the validating path."
+    }
+  ],
+  "files": [
+    {
+      "filename": ".agents/notes/implemented/architecture/2026-09-06-embedded-stream-record-readers.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": ".agents/notes/implemented/architecture/2026-09-06-embedded-stream-record-readers.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": ".agents/notes/implemented/architecture/2026-09-06-embedded-stream-record-readers.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/subsystems/llm-streaming.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/subsystems/llm-streaming.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/subsystems/llm-streaming.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/api/session-controller/src/commands.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/llm/README.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/llm/README.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/llm/README.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/llm/src/assistant-stream.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/llm/tests/assistant-stream.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/token-meter/src/index.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/token-meter/src/turn-usage.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/token-meter/src/usage-projection.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session/session-stats/src/projection.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/subagent/subagent/src/assistant-output.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    }
+  ],
+  "linked_issue_numbers": [],
+  "quality": {
+    "score": 0.9,
+    "tier": "strong",
+    "reasons": [
+      "merged pull request",
+      "descriptive title",
+      "7 implementation files",
+      "1 test files",
+      "2 PR commits"
+    ],
+    "implementation_files": 7,
+    "test_files": 1,
+    "docs_files": 7,
+    "generated_files": 0
+  },
+  "provenance": {
+    "kind": "local_merge_commit",
+    "repository_path": "/home/chenyujia/tritonToLlvm/deepseek-harness",
+    "merge_subject": "Merge pull request #3537 from deepseek-harness/perf/03-client-stream-fold",
+    "merge_body": "perf: read embedded Assistant streams per compact record",
+    "file_set": "first_parent_to_merge_result",
+    "commit_set": "first_parent_to_second_parent"
+  }
+}

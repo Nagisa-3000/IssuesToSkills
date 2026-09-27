@@ -1,0 +1,68 @@
+{
+  "repository": "NousResearch/hermes-agent",
+  "number": 52134,
+  "title": "fix(agent): deepcopy plugin context engine to prevent parent corruption on delegate_task (#42449)",
+  "merge_sha": "7d2c1f3f84d93997438da6c0e03ede024c60b36c",
+  "base_sha": "77d2b50751f3e73010bb6e4ddacf9832ddcee25c",
+  "head_sha": "8d1f6debfdb1ab58891c3d8f484f9e241a77ee11",
+  "merged_at": "2026-06-25T02:28:37+05:30",
+  "commits": [
+    {
+      "sha": "8d1f6debfdb1ab58891c3d8f484f9e241a77ee11",
+      "parents": [
+        "77d2b50751f3e73010bb6e4ddacf9832ddcee25c"
+      ],
+      "authored_at": "2026-06-25T02:06:54+05:30",
+      "subject": "fix(agent): deepcopy plugin context engine to prevent parent corruption on delegate_task (#42449)",
+      "body": "When delegate_task spawns a child agent with a different model/provider, the\nchild's init_agent loaded the plugin context-engine GLOBAL singleton by\nreference (`_selected_engine = _candidate`) and then called update_model() on\nit with the child's (smaller) context_length. Because parent and child shared\nthe same object, this mutated the PARENT's compressor: e.g. DeepSeek 1M ctx\nsilently dropped to 204800 and the compression threshold from 200K to 40K\nafter any delegate_task with a different model.\n\nDeepcopy the singleton before assigning/mutating it (agent_init.py) so the\nchild gets its own instance and the parent's compressor is untouched.\n\nSalvaged from #42452 by @liuhao1024 (authorship preserved). Added a\nsource-pin regression test that fails if the production line reverts to the\nbare alias, plus an end-to-end test driving get_plugin_context_engine() and a\nStubEngine.update_model() — the original PR's tests exercised copy.deepcopy in\nisolation but did not guard the actual agent_init code path.\n\nCloses #42449. Supersedes #42469, #42474 (same one-line fix, no test).",
+      "message": "fix(agent): deepcopy plugin context engine to prevent parent corruption on delegate_task (#42449)\n\nWhen delegate_task spawns a child agent with a different model/provider, the\nchild's init_agent loaded the plugin context-engine GLOBAL singleton by\nreference (`_selected_engine = _candidate`) and then called update_model() on\nit with the child's (smaller) context_length. Because parent and child shared\nthe same object, this mutated the PARENT's compressor: e.g. DeepSeek 1M ctx\nsilently dropped to 204800 and the compression threshold from 200K to 40K\nafter any delegate_task with a different model.\n\nDeepcopy the singleton before assigning/mutating it (agent_init.py) so the\nchild gets its own instance and the parent's compressor is untouched.\n\nSalvaged from #42452 by @liuhao1024 (authorship preserved). Added a\nsource-pin regression test that fails if the production line reverts to the\nbare alias, plus an end-to-end test driving get_plugin_context_engine() and a\nStubEngine.update_model() — the original PR's tests exercised copy.deepcopy in\nisolation but did not guard the actual agent_init code path.\n\nCloses #42449. Supersedes #42469, #42474 (same one-line fix, no test)."
+    }
+  ],
+  "files": [
+    {
+      "filename": "agent/agent_init.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "tests/agent/test_context_engine.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    }
+  ],
+  "linked_issue_numbers": [
+    42449
+  ],
+  "quality": {
+    "score": 0.98,
+    "tier": "strong",
+    "reasons": [
+      "merged pull request",
+      "descriptive title",
+      "1 implementation files",
+      "1 test files",
+      "explicit closing issue reference",
+      "1 PR commits"
+    ],
+    "implementation_files": 1,
+    "test_files": 1,
+    "docs_files": 0,
+    "generated_files": 0
+  },
+  "provenance": {
+    "kind": "local_merge_commit",
+    "repository_path": "/home/chenyujia/tritonToLlvm/hermes-agent",
+    "merge_subject": "Merge pull request #52134 from NousResearch/salvage/42449-deepcopy-ctx-engine",
+    "merge_body": "fix(agent): deepcopy plugin context engine to prevent parent corruption on delegate_task (#42449)",
+    "file_set": "first_parent_to_merge_result",
+    "commit_set": "first_parent_to_second_parent"
+  }
+}

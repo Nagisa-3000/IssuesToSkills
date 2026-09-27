@@ -1,0 +1,77 @@
+{
+  "repository": "NousResearch/hermes-agent",
+  "number": 50781,
+  "title": "fix(compress): reserve output tokens in the compaction threshold (#23767, #43547)",
+  "merge_sha": "a904ff17245a57f32cf5ffc4ea108b2fe0010539",
+  "base_sha": "75a70d98f322378b978695f832813af9c05ced83",
+  "head_sha": "623b21bf24ea3f2f2c2d90de3ae872b8a0a000c4",
+  "merged_at": "2026-06-22T17:33:09+05:30",
+  "commits": [
+    {
+      "sha": "623b21bf24ea3f2f2c2d90de3ae872b8a0a000c4",
+      "parents": [
+        "065946d84f9ce31b7eb51380c9641c5038f291c4"
+      ],
+      "authored_at": "2026-06-22T17:15:26+05:30",
+      "subject": "fix(compress): reserve output tokens in the compaction threshold (#23767, #43547)",
+      "body": "The compaction trigger compared estimated input against context_length *\nthreshold, but the provider reserves max_tokens of OUTPUT out of the same\nwindow. With a large max_tokens (e.g. 65536 on a custom provider) the usable\ninput budget is materially smaller than the raw window, so sessions hit a\nprovider 400 before compaction ever fired.\n\n_compute_threshold_tokens now subtracts the output reservation\n(context_length - max_tokens) before applying the percentage and the\nsmall-window 85% guard. max_tokens is stored on the compressor (threaded from\nagent.max_tokens at construction) and reused across update_model() switches;\nNone = provider default = no reservation (full-window behavior, unchanged).\n\nReimplemented on the current _compute_threshold_tokens surface (the inline\nthreshold calc the original PR targeted was since refactored for the\nsmall-window #14690 fix); composes with that 85% guard on the effective budget.\n\nCredit: @kyssta-exe (#43651) — original design for the output-token\nreservation in the compaction threshold.\n\nCloses #43547.",
+      "message": "fix(compress): reserve output tokens in the compaction threshold (#23767, #43547)\n\nThe compaction trigger compared estimated input against context_length *\nthreshold, but the provider reserves max_tokens of OUTPUT out of the same\nwindow. With a large max_tokens (e.g. 65536 on a custom provider) the usable\ninput budget is materially smaller than the raw window, so sessions hit a\nprovider 400 before compaction ever fired.\n\n_compute_threshold_tokens now subtracts the output reservation\n(context_length - max_tokens) before applying the percentage and the\nsmall-window 85% guard. max_tokens is stored on the compressor (threaded from\nagent.max_tokens at construction) and reused across update_model() switches;\nNone = provider default = no reservation (full-window behavior, unchanged).\n\nReimplemented on the current _compute_threshold_tokens surface (the inline\nthreshold calc the original PR targeted was since refactored for the\nsmall-window #14690 fix); composes with that 85% guard on the effective budget.\n\nCredit: @kyssta-exe (#43651) — original design for the output-token\nreservation in the compaction threshold.\n\nCloses #43547."
+    }
+  ],
+  "files": [
+    {
+      "filename": "agent/agent_init.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "agent/context_compressor.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "tests/agent/test_context_compressor.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    }
+  ],
+  "linked_issue_numbers": [
+    43547
+  ],
+  "quality": {
+    "score": 0.98,
+    "tier": "strong",
+    "reasons": [
+      "merged pull request",
+      "descriptive title",
+      "2 implementation files",
+      "1 test files",
+      "explicit closing issue reference",
+      "1 PR commits"
+    ],
+    "implementation_files": 2,
+    "test_files": 1,
+    "docs_files": 0,
+    "generated_files": 0
+  },
+  "provenance": {
+    "kind": "local_merge_commit",
+    "repository_path": "/home/chenyujia/tritonToLlvm/hermes-agent",
+    "merge_subject": "Merge pull request #50781 from NousResearch/salvage/output-token-reservation-threshold",
+    "merge_body": "fix(compress): reserve output tokens in the compaction threshold (#23767, #43547)",
+    "file_set": "first_parent_to_merge_result",
+    "commit_set": "first_parent_to_second_parent"
+  }
+}

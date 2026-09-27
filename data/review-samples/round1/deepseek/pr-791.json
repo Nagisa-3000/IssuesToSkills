@@ -1,0 +1,709 @@
+{
+  "repository": "deepseek-ai/deepseek-harness",
+  "number": 791,
+  "title": "feat: persisted projection cache — durable checkpoints, tail reads, and cold listing columns",
+  "merge_sha": "eb38a365dcb083d6561f47cb7caba5bf6d50084d",
+  "base_sha": "29f76080a29f293e6a915ce783d9e0c7d54cf36e",
+  "head_sha": "b4bc4f382e3f194f9ed4da51c18e605d0fe52809",
+  "merged_at": "2026-07-28T22:55:30+08:00",
+  "commits": [
+    {
+      "sha": "a79de44c3b470ebc8cec301c4b3c8f1c087e0fd7",
+      "parents": [
+        "29f76080a29f293e6a915ce783d9e0c7d54cf36e"
+      ],
+      "authored_at": "2026-07-28T00:41:58+08:00",
+      "subject": "feat(session-persistence): readFrom(seq) primitive for watermark tail reads",
+      "body": "SessionPersistence grows readFrom(id, fromSeq, signal?): the non-mutating\nread-from-seq primitive for checkpoint consumers (the persisted projection\ncache folds only the tail past its watermark). Coordinator owns validation,\nper-id serialization, and the sequential fallback (loadStored + forward\nskip); SQLite implements the optional seek-capable loadStoredFrom hook\n(WHERE seq >= ?), JSONL stays sequential by contract. Contract suite covers\nsuffix exactness, empty-tail, non-mutation, and cancellation; seam README\n(both languages) documents the method and the hook.",
+      "message": "feat(session-persistence): readFrom(seq) primitive for watermark tail reads\n\nSessionPersistence grows readFrom(id, fromSeq, signal?): the non-mutating\nread-from-seq primitive for checkpoint consumers (the persisted projection\ncache folds only the tail past its watermark). Coordinator owns validation,\nper-id serialization, and the sequential fallback (loadStored + forward\nskip); SQLite implements the optional seek-capable loadStoredFrom hook\n(WHERE seq >= ?), JSONL stays sequential by contract. Contract suite covers\nsuffix exactness, empty-tail, non-mutation, and cancellation; seam README\n(both languages) documents the method and the hook."
+    },
+    {
+      "sha": "fc4b573ff0c81467ddf7114c9db6a9e90027ae3d",
+      "parents": [
+        "a79de44c3b470ebc8cec301c4b3c8f1c087e0fd7"
+      ],
+      "authored_at": "2026-07-28T01:12:39+08:00",
+      "subject": "feat(session-projection): checkpoint/restore faces for the persisted projection cache",
+      "body": "The registry grows the state-level read ladder the persisted cache builds\non: checkpoint(session) snapshots every unit's {stateVersion, observedSeq,\nstate} row from the watermark cache; restoreFloor(checkpoint) anchors the\ntail read one event below the lowest usable watermark (so a shrunk log is\nprovable); restore(checkpoint, events, baseSeq) refolds each unit from its\nusable row (or from init over a full read), rejects rows a tail read cannot\nfix (version mismatch / overreach with baseSeq > 0 => re-read from 0), and\nreturns both the snapshot and the refreshed rows for durable write-back.\nProjectionCheckpointRow/ProjectionCheckpoint are the persisted-row types\nminus the record keys.",
+      "message": "feat(session-projection): checkpoint/restore faces for the persisted projection cache\n\nThe registry grows the state-level read ladder the persisted cache builds\non: checkpoint(session) snapshots every unit's {stateVersion, observedSeq,\nstate} row from the watermark cache; restoreFloor(checkpoint) anchors the\ntail read one event below the lowest usable watermark (so a shrunk log is\nprovable); restore(checkpoint, events, baseSeq) refolds each unit from its\nusable row (or from init over a full read), rejects rows a tail read cannot\nfix (version mismatch / overreach with baseSeq > 0 => re-read from 0), and\nreturns both the snapshot and the refreshed rows for durable write-back.\nProjectionCheckpointRow/ProjectionCheckpoint are the persisted-row types\nminus the record keys."
+    },
+    {
+      "sha": "c330c1cd3ec627a2020ff6f80fad8765e358fec5",
+      "parents": [
+        "fc4b573ff0c81467ddf7114c9db6a9e90027ae3d"
+      ],
+      "authored_at": "2026-07-28T01:26:19+08:00",
+      "subject": "feat: dsh-session-projection-cache — durable projection checkpoints and the cold-read ladder",
+      "body": "New package on the domain data form: one session_projcache record per\nsession (key → {stateVersion, observedSeq, state}), landing beside\nworkspace.json under the shipped json backend. Write policy: two mandatory\npoints (turn/end + session disposal) with count/interval throttling between\nthem (both Config fields required — flush cadence is a deployment choice);\nevery background write is fail-soft (log + stay stale, self-heal on the\nnext write or cold read). coldSnapshot(id) runs the read ladder — cached\nrows + persistence readFrom from the registry's anchored restore floor +\nregistry restore + fail-soft write-back — detecting crash-repair-shrunk\nlogs via the one-below anchor and degrading to a single full re-read.\nMounted in apps/cli/cordis.yml (writeEveryEvents 200 / writeIntervalMs\n5000).",
+      "message": "feat: dsh-session-projection-cache — durable projection checkpoints and the cold-read ladder\n\nNew package on the domain data form: one session_projcache record per\nsession (key → {stateVersion, observedSeq, state}), landing beside\nworkspace.json under the shipped json backend. Write policy: two mandatory\npoints (turn/end + session disposal) with count/interval throttling between\nthem (both Config fields required — flush cadence is a deployment choice);\nevery background write is fail-soft (log + stay stale, self-heal on the\nnext write or cold read). coldSnapshot(id) runs the read ladder — cached\nrows + persistence readFrom from the registry's anchored restore floor +\nregistry restore + fail-soft write-back — detecting crash-repair-shrunk\nlogs via the one-below anchor and degrading to a single full re-read.\nMounted in apps/cli/cordis.yml (writeEveryEvents 200 / writeIntervalMs\n5000)."
+    },
+    {
+      "sha": "003b22a1572569a3cf77efde193ade8cfebc75a0",
+      "parents": [
+        "c330c1cd3ec627a2020ff6f80fad8765e358fec5"
+      ],
+      "authored_at": "2026-07-28T01:38:15+08:00",
+      "subject": "feat(apiproxy): projection column on session.list — cold titles with zero log loads",
+      "body": "SessionSummary grows an optional projections column (whole value per key,\nsame passthrough posture as the history-tail block): attached rows cut the\nlive registry watermark cache; cold rows view the persisted projection\ncache's stored rows via the new registry viewCheckpoint face (version-\nmatching keys only, zero I/O) — the RFC's motivating scenario, every\nsession's title across a listing without loading one event log. The column\nis fail-soft and absence-coded: no registry, no cache row, or a throwing\nread serve the row without the column, never breaking the listing.",
+      "message": "feat(apiproxy): projection column on session.list — cold titles with zero log loads\n\nSessionSummary grows an optional projections column (whole value per key,\nsame passthrough posture as the history-tail block): attached rows cut the\nlive registry watermark cache; cold rows view the persisted projection\ncache's stored rows via the new registry viewCheckpoint face (version-\nmatching keys only, zero I/O) — the RFC's motivating scenario, every\nsession's title across a listing without loading one event log. The column\nis fail-soft and absence-coded: no registry, no cache row, or a throwing\nread serve the row without the column, never breaking the listing."
+    },
+    {
+      "sha": "a6e35c27d48817e7da17c846ee6a57d27cf86147",
+      "parents": [
+        "003b22a1572569a3cf77efde193ade8cfebc75a0"
+      ],
+      "authored_at": "2026-07-28T01:43:05+08:00",
+      "subject": "fix(session-projection): checkpoint hands out detached state clones, never live cell references",
+      "body": "The watermark cache is the registry's authoritative mutable state; a\ncheckpoint consumer holding the live reference could corrupt every\nsubsequent snapshot and frame through it. structuredClone at the read face\n(total, by the unit plain-JSON contract) pins the boundary; a mutation test\nproves the cache is unreachable through handed-out rows. restore and\nviewCheckpoint only touch caller-owned rows — no other leak path.",
+      "message": "fix(session-projection): checkpoint hands out detached state clones, never live cell references\n\nThe watermark cache is the registry's authoritative mutable state; a\ncheckpoint consumer holding the live reference could corrupt every\nsubsequent snapshot and frame through it. structuredClone at the read face\n(total, by the unit plain-JSON contract) pins the boundary; a mutation test\nproves the cache is unreachable through handed-out rows. restore and\nviewCheckpoint only touch caller-owned rows — no other leak path."
+    },
+    {
+      "sha": "c0eec9d9e20bd00d254c24ab0113c520861f8969",
+      "parents": [
+        "a6e35c27d48817e7da17c846ee6a57d27cf86147"
+      ],
+      "authored_at": "2026-07-28T01:59:51+08:00",
+      "subject": "docs: bilingual counterparts for the projection-cache README and the touched pair records",
+      "body": "The base's bilingual gate now covers this branch's new README: add the\nChinese counterpart of the session-projection-cache package README, the\ncache row on the group README's Chinese side, and re-record the touched\npairs (group, cache, session-persistence — whose English side gained the\nreadFrom rows earlier on this branch). verify-translation-pairing: 541\npairs consistent.",
+      "message": "docs: bilingual counterparts for the projection-cache README and the touched pair records\n\nThe base's bilingual gate now covers this branch's new README: add the\nChinese counterpart of the session-projection-cache package README, the\ncache row on the group README's Chinese side, and re-record the touched\npairs (group, cache, session-persistence — whose English side gained the\nreadFrom rows earlier on this branch). verify-translation-pairing: 541\npairs consistent."
+    },
+    {
+      "sha": "9ae3e1a9ad4e220d04516651bdd3361cccb63148",
+      "parents": [
+        "c0eec9d9e20bd00d254c24ab0113c520861f8969"
+      ],
+      "authored_at": "2026-07-28T02:11:31+08:00",
+      "subject": "docs: regenerate catalogs and graphs for the projection-cache seam; classify its types",
+      "body": "gen-cordis-catalog/api, config and persistence catalogs, and doc graphs\nregenerated over the new sessionProjectionCache service and the registry's\ncheckpoint faces. Classifications: ProjectionCheckpoint joins the type-link\nexemptions (owned by the projection package source), Partial joins the\nfoundation names, the cache service gets its capability-seam role row, and\nthe package takes the one-sentence Model Experience contract (host-side\nread-model accelerator, no model surface).",
+      "message": "docs: regenerate catalogs and graphs for the projection-cache seam; classify its types\n\ngen-cordis-catalog/api, config and persistence catalogs, and doc graphs\nregenerated over the new sessionProjectionCache service and the registry's\ncheckpoint faces. Classifications: ProjectionCheckpoint joins the type-link\nexemptions (owned by the projection package source), Partial joins the\nfoundation names, the cache service gets its capability-seam role row, and\nthe package takes the one-sentence Model Experience contract (host-side\nread-model accelerator, no model surface)."
+    },
+    {
+      "sha": "54c893d7af3c6a1e8c54a9d892d6a9533e0920b3",
+      "parents": [
+        "9ae3e1a9ad4e220d04516651bdd3361cccb63148"
+      ],
+      "authored_at": "2026-07-28T11:07:23+08:00",
+      "subject": "docs: RFC — storage root placement and derived-medium recovery",
+      "body": "The projection cache surfaced two substrate gaps, both properties of the\ndomain-KV stack it landed on. (1) The json backend's root is relative and\njoined per-open against process.cwd(): sessions are patched global\n(~/.dsh/sessions) but workspace.json/session_projcache.json land under\n<launch dir>/.storages, splitting derived media from their source of\ntruth. Proposal: patch storage-json.root to ~/.dsh/storages beside the\nsession root (profile key storageRoot, mirroring persistenceRoot) and\nresolve-once at backend construction, adopting the JSONL backend's\nrecorded rationale. (2) A damaged cache medium (truncated / version-bumped\n/ schema-drifted) bricks fail-loud boot even though its content is fully\nrebuildable from session logs. Proposal: DomainSpec grows\nrecovery: 'reject' | 'reset'; the facility, on exactly the damage-class\nerrors, destroys a declared-reset medium once and reopens empty —\nworkspace stays authoritative and loud. Bilingual pair recorded.",
+      "message": "docs: RFC — storage root placement and derived-medium recovery\n\nThe projection cache surfaced two substrate gaps, both properties of the\ndomain-KV stack it landed on. (1) The json backend's root is relative and\njoined per-open against process.cwd(): sessions are patched global\n(~/.dsh/sessions) but workspace.json/session_projcache.json land under\n<launch dir>/.storages, splitting derived media from their source of\ntruth. Proposal: patch storage-json.root to ~/.dsh/storages beside the\nsession root (profile key storageRoot, mirroring persistenceRoot) and\nresolve-once at backend construction, adopting the JSONL backend's\nrecorded rationale. (2) A damaged cache medium (truncated / version-bumped\n/ schema-drifted) bricks fail-loud boot even though its content is fully\nrebuildable from session logs. Proposal: DomainSpec grows\nrecovery: 'reject' | 'reset'; the facility, on exactly the damage-class\nerrors, destroys a declared-reset medium once and reopens empty —\nworkspace stays authoritative and loud. Bilingual pair recorded."
+    },
+    {
+      "sha": "1ef7c9473ce34c03b600659ca7320a8f87606a29",
+      "parents": [
+        "54c893d7af3c6a1e8c54a9d892d6a9533e0920b3"
+      ],
+      "authored_at": "2026-07-28T11:44:19+08:00",
+      "subject": "fix(session-projection-cache): coldSnapshot honors not-found with zero registered units",
+      "body": "Review finding (PR #791): with no projection definitions registered,\nrestoreFloor() is undefined and the fast path returned a successful empty\nsnapshot without touching persistence — a nonexistent session 'succeeded',\nviolating the documented not-found contract in that supported topology.\nThe no-unit branch now probes readFrom(id, 0): an absent log rejects with\nthe seam's not-found, a present one dates the empty cut at its stored end.",
+      "message": "fix(session-projection-cache): coldSnapshot honors not-found with zero registered units\n\nReview finding (PR #791): with no projection definitions registered,\nrestoreFloor() is undefined and the fast path returned a successful empty\nsnapshot without touching persistence — a nonexistent session 'succeeded',\nviolating the documented not-found contract in that supported topology.\nThe no-unit branch now probes readFrom(id, 0): an absent log rejects with\nthe seam's not-found, a present one dates the empty cut at its stored end."
+    },
+    {
+      "sha": "27198d309198a1fed552a5357474c431e827c56c",
+      "parents": [
+        "1ef7c9473ce34c03b600659ca7320a8f87606a29"
+      ],
+      "authored_at": "2026-07-28T12:09:45+08:00",
+      "subject": "fix(session-projection-cache): bind records to the log lifecycle; flush before checkpoint",
+      "body": "Review finding (PR #791): rows carried only version/watermark/state, so a\nrecreated session id, or a persistence store replaced under a surviving\ncache, could pass every watermark check and seed state folded from an\nunrelated log; a checkpoint racing ahead of an eager log flush could\nlikewise expose values no stored log contains. Records now store the\nheader identity (createdAt, cwd) they were folded from — reads validate it\nagainst the live header (listing) or the tail's stored header (cold read)\nand discard unrelated records whole (domain version 2 discards v1 media by\nthe pre-release stance). A live checkpoint additionally flushes the\nsession's buffered events durably before the cache row lands: the cache\ncan trail the log, never lead it. cachedValues is reshaped into\ncachedSnapshot(meta): the identity witness plus the {asOfSeq, values} cut\nthe list carrier serves.",
+      "message": "fix(session-projection-cache): bind records to the log lifecycle; flush before checkpoint\n\nReview finding (PR #791): rows carried only version/watermark/state, so a\nrecreated session id, or a persistence store replaced under a surviving\ncache, could pass every watermark check and seed state folded from an\nunrelated log; a checkpoint racing ahead of an eager log flush could\nlikewise expose values no stored log contains. Records now store the\nheader identity (createdAt, cwd) they were folded from — reads validate it\nagainst the live header (listing) or the tail's stored header (cold read)\nand discard unrelated records whole (domain version 2 discards v1 media by\nthe pre-release stance). A live checkpoint additionally flushes the\nsession's buffered events durably before the cache row lands: the cache\ncan trail the log, never lead it. cachedValues is reshaped into\ncachedSnapshot(meta): the identity witness plus the {asOfSeq, values} cut\nthe list carrier serves."
+    },
+    {
+      "sha": "c46419cf5c9348d7a64f794d393116f1c3fd26f7",
+      "parents": [
+        "27198d309198a1fed552a5357474c431e827c56c"
+      ],
+      "authored_at": "2026-07-28T12:10:04+08:00",
+      "subject": "fix(apiproxy,client): the list projection column becomes a seedable watermarked block",
+      "body": "Review finding (PR #791): the column carried bare values (no seq), so the\nclient could not seed its value store without risking a stale list block\noutranking newer push frames — and nothing consumed the column at all,\nleaving cold titles absent after a restart. SessionSummary.projections is\nnow the same SessionProjectionsBlock as the history tail (values +\nasOfSeq; attached rows cut the live registry, cold rows serve the cache's\nidentity-checked cachedSnapshot whose asOfSeq is the lowest served-row\nwatermark). SessionManager.refreshList seeds each row's block into the\nper-session projection store via per-key apply — partial-baseline\nsemantics: an absent key never clears, and higher-seq-wins keeps stale\nlist blocks beneath push frames and tail baselines — so cold titles\nsurface in the sidebar without opening a session.",
+      "message": "fix(apiproxy,client): the list projection column becomes a seedable watermarked block\n\nReview finding (PR #791): the column carried bare values (no seq), so the\nclient could not seed its value store without risking a stale list block\noutranking newer push frames — and nothing consumed the column at all,\nleaving cold titles absent after a restart. SessionSummary.projections is\nnow the same SessionProjectionsBlock as the history tail (values +\nasOfSeq; attached rows cut the live registry, cold rows serve the cache's\nidentity-checked cachedSnapshot whose asOfSeq is the lowest served-row\nwatermark). SessionManager.refreshList seeds each row's block into the\nper-session projection store via per-key apply — partial-baseline\nsemantics: an absent key never clears, and higher-seq-wins keeps stale\nlist blocks beneath push frames and tail baselines — so cold titles\nsurface in the sidebar without opening a session."
+    },
+    {
+      "sha": "ee79b7a73aaadf10e442ac64d689bb620a38a9e3",
+      "parents": [
+        "c46419cf5c9348d7a64f794d393116f1c3fd26f7"
+      ],
+      "authored_at": "2026-07-28T12:14:17+08:00",
+      "subject": "docs: regenerate the cordis catalogs for the reshaped cache read faces",
+      "body": "cachedSnapshot/coldSnapshot signature and JSDoc changes from the review\nfixes flow into the generated service catalog and model-facing api-catalog.",
+      "message": "docs: regenerate the cordis catalogs for the reshaped cache read faces\n\ncachedSnapshot/coldSnapshot signature and JSDoc changes from the review\nfixes flow into the generated service catalog and model-facing api-catalog."
+    },
+    {
+      "sha": "019dd7d8949d0cfcbab3a72a9089afc903ddbe45",
+      "parents": [
+        "ee79b7a73aaadf10e442ac64d689bb620a38a9e3"
+      ],
+      "authored_at": "2026-07-28T12:51:03+08:00",
+      "subject": "test,chore: clear the static and coverage lanes for the cache stack",
+      "body": "Static: the cache package.json files array matches the workspace\nconstraint shape, the unused dsh-storage-json devDependency is dropped\n(tests run on the memory backend), and docs/module-graph.md is\nregenerated for the new package edge.\n\nCoverage: two unreachable branches deleted rather than tested —\ncoldSnapshot's floor-0 tail reuse (a baseSeq-0 restore never throws and\nan unrelated record still carries a usable watermark) and flushSoft's\nnon-mandatory clean-skip (throttle triggers only fire dirty). New tests\nclose the real gaps: write() on a never-dirty session and the non-JSON\nunit-state rejection, plugin disposal clearing armed interval timers,\ncachedSnapshot's all-version-mismatched and cwd-identity arms, the\nzero-units empty-log cut, the coordinator seek-hook ladder (suffix /\nnot-found / plain failure / abort-reason relay), and the superseded-\nretirement race proving forget()'s exact-entry guard.",
+      "message": "test,chore: clear the static and coverage lanes for the cache stack\n\nStatic: the cache package.json files array matches the workspace\nconstraint shape, the unused dsh-storage-json devDependency is dropped\n(tests run on the memory backend), and docs/module-graph.md is\nregenerated for the new package edge.\n\nCoverage: two unreachable branches deleted rather than tested —\ncoldSnapshot's floor-0 tail reuse (a baseSeq-0 restore never throws and\nan unrelated record still carries a usable watermark) and flushSoft's\nnon-mandatory clean-skip (throttle triggers only fire dirty). New tests\nclose the real gaps: write() on a never-dirty session and the non-JSON\nunit-state rejection, plugin disposal clearing armed interval timers,\ncachedSnapshot's all-version-mismatched and cwd-identity arms, the\nzero-units empty-log cut, the coordinator seek-hook ladder (suffix /\nnot-found / plain failure / abort-reason relay), and the superseded-\nretirement race proving forget()'s exact-entry guard."
+    },
+    {
+      "sha": "931dd934e36107901a871d95b7d58ebdf518a7ba",
+      "parents": [
+        "019dd7d8949d0cfcbab3a72a9089afc903ddbe45"
+      ],
+      "authored_at": "2026-07-28T13:02:21+08:00",
+      "subject": "style: clear the lint lane — drop redundant assertions and non-thenable awaits",
+      "body": "eslint --fix removed the no-unnecessary-type-assertion hits the review\nknives introduced; the two await-thenable errors were vi.runAllTicks()\nawaits in the cache spec, replaced with advanceTimersByTimeAsync(0) (the\nfake-timer-safe microtask drain). Repo-wide eslint, dual-aggregate tsc,\nand the focused 100% coverage set all green.",
+      "message": "style: clear the lint lane — drop redundant assertions and non-thenable awaits\n\neslint --fix removed the no-unnecessary-type-assertion hits the review\nknives introduced; the two await-thenable errors were vi.runAllTicks()\nawaits in the cache spec, replaced with advanceTimersByTimeAsync(0) (the\nfake-timer-safe microtask drain). Repo-wide eslint, dual-aggregate tsc,\nand the focused 100% coverage set all green."
+    },
+    {
+      "sha": "b4bc4f382e3f194f9ed4da51c18e605d0fe52809",
+      "parents": [
+        "931dd934e36107901a871d95b7d58ebdf518a7ba"
+      ],
+      "authored_at": "2026-07-28T22:45:35+08:00",
+      "subject": "refactor(session-projection): compact checkpoint row fields to ver/seq/val",
+      "body": "The persisted row (sessionId, key, stateVersion, observedSeq, state)\nbecomes (sessionId, key, ver, seq, val) — the cache medium repeats these\nthree names for every unit of every session, so the long forms dominated\nthe JSON payload. ProjectionCheckpointRow and the checkpointRow zod spec\nrename together; the domain spec bumps to v3 (cache semantics: the old\nmedium is discarded, not migrated). The unit-facing declaration keeps\nstateVersion — only the persisted/checkpoint row shape changes.",
+      "message": "refactor(session-projection): compact checkpoint row fields to ver/seq/val\n\nThe persisted row (sessionId, key, stateVersion, observedSeq, state)\nbecomes (sessionId, key, ver, seq, val) — the cache medium repeats these\nthree names for every unit of every session, so the long forms dominated\nthe JSON payload. ProjectionCheckpointRow and the checkpointRow zod spec\nrename together; the domain spec bumps to v3 (cache semantics: the old\nmedium is discarded, not migrated). The unit-facing declaration keeps\nstateVersion — only the persisted/checkpoint row shape changes."
+    }
+  ],
+  "files": [
+    {
+      "filename": ".agents/notes/proposed/architecture/2026-07-27-session-projection-and-command-log.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": ".agents/notes/proposed/architecture/2026-07-27-session-projection-and-command-log.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": ".agents/notes/proposed/architecture/2026-07-27-session-projection-and-command-log.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": ".agents/notes/proposed/architecture/2026-07-28-storage-root-and-derived-medium-recovery.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": ".agents/notes/proposed/architecture/2026-07-28-storage-root-and-derived-medium-recovery.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": ".agents/notes/proposed/architecture/2026-07-28-storage-root-and-derived-medium-recovery.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "apps/cli/cordis.yml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "apps/cli/package.json",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/capability-seams.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/config-catalog.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/cordis-catalog/services.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/event-producer-consumer.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "docs/module-graph.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/client/runtime/src/client/sessions/manager.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/client/runtime/tests/manager.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/cordis/tool-cordis/src/api-catalog.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/host/apiproxy/package.json",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/host/apiproxy/src/api-proxy.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/host/apiproxy/src/api/sessions.schema.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/host/apiproxy/src/api/sessions.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/host/apiproxy/tests/api-proxy-projections.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/host/apiproxy/tsconfig.json",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-persistence/session-checkpoint-policy/tests/session-checkpoint-policy.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-persistence/session-persistence-jsonl/src/index.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-persistence/session-persistence-sqlite/src/index.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-persistence/session-persistence-sqlite/src/schema.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-persistence/session-persistence/README.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-persistence/session-persistence/README.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-persistence/session-persistence/README.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-persistence/session-persistence/src/coordinator.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-persistence/session-persistence/src/index.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-persistence/session-persistence/tests/contract.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-persistence/session-persistence/tests/persistence.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-projection/README.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-projection/README.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-projection/README.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-projection/session-projection-cache/README.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-projection/session-projection-cache/README.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-projection/session-projection-cache/README.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-projection/session-projection-cache/package.json",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-projection/session-projection-cache/src/index.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-projection/session-projection-cache/src/invariant.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-projection/session-projection-cache/src/spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-projection/session-projection-cache/tests/cache.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-projection/session-projection-cache/tsconfig.json",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-projection/session-projection/README.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-projection/session-projection/README.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-projection/session-projection/README.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-projection/session-projection/src/index.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-projection/session-projection/tests/registry.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-query/session-query-sqlite/tests/sqlite.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-query/session-query/tests/session-query.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/session-query/session-query/tests/tracing.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "pnpm-lock.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "scripts/gen-cordis-catalog.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "scripts/gen-doc-graphs.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "scripts/verify-package-readme-model-experience.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "tsconfig.host.json",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    }
+  ],
+  "linked_issue_numbers": [],
+  "quality": {
+    "score": 0.9,
+    "tier": "strong",
+    "reasons": [
+      "merged pull request",
+      "descriptive title",
+      "17 implementation files",
+      "10 test files",
+      "15 PR commits"
+    ],
+    "implementation_files": 17,
+    "test_files": 10,
+    "docs_files": 17,
+    "generated_files": 1
+  },
+  "provenance": {
+    "kind": "local_merge_commit",
+    "repository_path": "/home/chenyujia/tritonToLlvm/deepseek-harness",
+    "merge_subject": "Merge pull request #791 from deepseek-harness/worktree-projcache",
+    "merge_body": "feat: persisted projection cache — durable checkpoints, tail reads, and cold listing columns",
+    "file_set": "first_parent_to_merge_result",
+    "commit_set": "first_parent_to_second_parent"
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "schema_version": "pattern-semantic-review-v1",
+  "reviewed_at": "2026-09-27",
+  "reviewer_model": "Codex LLM governance session",
+  "review_mode": "evidence-grounded semantic adjudication; no keyword, similarity, or threshold decision",
+  "source_transcript": "llm-transcript.json",
+  "source_pattern_call_index": 66,
+  "raw_pattern_extraction_response_sha256": "ab0c9b04a5a52f0942c668898d21621afbd6ef84809f62860ce09789c6b0d7c0",
+  "pattern_id": "shared-capacity-reservation:derive-policies-from-residual-capacity",
+  "pattern_decision": "retain_narrowed_membership",
+  "rationale": "The residual-capacity mechanism is supported by the DeepSeek and Hermes workflows, which both charge upstream and mandatory downstream work against one finite capacity and derive proactive policy from the remaining capacity. Aider shares context-budget concerns but explicitly lacks shared downstream reservation arithmetic. Pi shares model-aware policy propagation and request-boundary pressure checks, but its evidence explicitly does not establish residual-capacity arithmetic. The Pattern is therefore retained only for the two workflows with the common causal mechanism.",
+  "supported_workflow_ids": [
+    "deepseek-compaction-reservation:deepseek-compaction-reservation:repair-shared-capacity-compaction-pressure",
+    "hermes-compaction-reservation:hermes-compaction-reservation:repair-shared-capacity-threshold-accounting"
+  ],
+  "workflow_reviews": [
+    {
+      "workflow_id": "deepseek-compaction-reservation:deepseek-compaction-reservation:repair-shared-capacity-compaction-pressure",
+      "classification": "same_pattern",
+      "confidence": 0.97,
+      "rationale": "Directly establishes a mandatory routed output reservation, residual shared-capacity pressure arithmetic, normalization, boundary guards, and recomputation across route/configuration changes.",
+      "evidence_ids": [
+        "EU-RESERVATION-BINDING",
+        "EU-RESIDUAL-FORMULA",
+        "EU-BOUNDARY-GUARDS",
+        "EU-REPLAY-OUTPUT-RESERVE"
+      ]
+    },
+    {
+      "workflow_id": "hermes-compaction-reservation:hermes-compaction-reservation:repair-shared-capacity-threshold-accounting",
+      "classification": "same_pattern",
+      "confidence": 0.96,
+      "rationale": "Independently establishes residual-capacity threshold accounting, normalized optional reservation handling, and recomputation on reconfiguration under the same finite-capacity invariant.",
+      "evidence_ids": [
+        "EU-HERMES-BIND",
+        "EU-HERMES-DIFF",
+        "EU-HERMES-ORACLE",
+        "EU-PI-RECONFIG"
+      ]
+    },
+    {
+      "workflow_id": "aider-context-budget:aider-context-budget:summarize-history-within-model-input-limits-with-safe-fallback",
+      "classification": "related_but_distinct",
+      "confidence": 0.98,
+      "rationale": "It derives an input-history budget and preserves context on summarization failure, but its explicit exclusions state that it does not reserve downstream output tokens against a shared provider context window and does not establish residual-output-reservation semantics.",
+      "evidence_ids": [
+        "EU-AIDER-BUDGET",
+        "EU-AIDER-FALLBACK",
+        "EU-AIDER-FIT"
+      ]
+    },
+    {
+      "workflow_id": "pi-compaction-budget:pi-compaction-budget:maintain-model-aware-compaction-at-request-boundaries",
+      "classification": "partial_alignment",
+      "confidence": 0.91,
+      "rationale": "It overlaps on model-aware policy propagation, reconfiguration, and pressure timing, but its explicit exclusions say residual-capacity arithmetic is not established by the episode. It should remain a related workflow rather than Pattern support.",
+      "evidence_ids": [
+        "EU-PI-BOUNDARY",
+        "EU-PI-CONTEXT",
+        "EU-PI-POLICY",
+        "EU-PI-RECONFIG"
+      ]
+    }
+  ],
+  "specialization_reviews": [],
+  "audit_notes": [
+    "The original extraction response already named only DeepSeek and Hermes in supported_by; the prior graph materialization widened membership because the admission fallback used all workflows when workflow_ids was absent.",
+    "The original transcript and graph are preserved unchanged; this review produces a separate corrected graph snapshot.",
+    "No held-out transfer or end-task success evaluation was run; the Pattern remains a pilot-level abstraction."
+  ]
+}

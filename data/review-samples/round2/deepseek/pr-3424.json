@@ -1,0 +1,168 @@
+{
+  "repository": "deepseek-ai/deepseek-harness",
+  "number": 3424,
+  "title": "fix(llm): keep streamed tool-call identity across empty deltas",
+  "merge_sha": "bbae7318f0e5089e61a346df6954190a343ecb96",
+  "base_sha": "a6311155976fadcec48dc6478369cbe5d97351b3",
+  "head_sha": "b03261caada890105f0c9c3dafb9c6b01604887e",
+  "merged_at": "2026-09-02T13:35:55+08:00",
+  "commits": [
+    {
+      "sha": "a1271a49033b7dfac6e59a5163d10072ce8dfc40",
+      "parents": [
+        "3efd4b51e00b319c673902ff822f9e778520ea45"
+      ],
+      "authored_at": "2026-09-01T22:22:51+08:00",
+      "subject": "fix(llm): keep streamed tool-call identity across empty deltas",
+      "body": "A continuation SSE delta that repeats a tool call's `id` or `name` as an\nempty string — or as `null`, which some OpenAI-compatible gateways send —\nerased the identity established by the call's first delta. The assembled\nblock reached the loop with an empty name and failed as `unknown tool \"\"`,\nand the empty `callId` persisted into `tool/result`, which the session\nreader refuses on reopen.\n\n`acceptIdentity` accepts only a non-empty string, so a repeated empty or\nnull field means \"no update\". A tool call still missing `id` or `name` at\n`[DONE]` ends the response with the new retryable `MALFORMED_TOOL_CALL`\ncode instead of closing an unusable block.",
+      "message": "fix(llm): keep streamed tool-call identity across empty deltas\n\nA continuation SSE delta that repeats a tool call's `id` or `name` as an\nempty string — or as `null`, which some OpenAI-compatible gateways send —\nerased the identity established by the call's first delta. The assembled\nblock reached the loop with an empty name and failed as `unknown tool \"\"`,\nand the empty `callId` persisted into `tool/result`, which the session\nreader refuses on reopen.\n\n`acceptIdentity` accepts only a non-empty string, so a repeated empty or\nnull field means \"no update\". A tool call still missing `id` or `name` at\n`[DONE]` ends the response with the new retryable `MALFORMED_TOOL_CALL`\ncode instead of closing an unusable block."
+    },
+    {
+      "sha": "96cbd8d9e6911645daab961ae56667acfad22fd3",
+      "parents": [
+        "a1271a49033b7dfac6e59a5163d10072ce8dfc40"
+      ],
+      "authored_at": "2026-09-02T09:36:54+08:00",
+      "subject": "fix(llm): refresh web and packed-fixture expectations for the new retry code",
+      "body": "Adding `MALFORMED_TOOL_CALL` to the default retryable set changes two\nexpected outputs the session snapshot lane does not own: the shipped Web\ncomposition's inline snapshot, and the canonical packed layout of the\nrefreshed `empty-response-retry` fixture.",
+      "message": "fix(llm): refresh web and packed-fixture expectations for the new retry code\n\nAdding `MALFORMED_TOOL_CALL` to the default retryable set changes two\nexpected outputs the session snapshot lane does not own: the shipped Web\ncomposition's inline snapshot, and the canonical packed layout of the\nrefreshed `empty-response-retry` fixture."
+    },
+    {
+      "sha": "e91c28d3fdbec83f967bd1d985dcffdf7c39f11a",
+      "parents": [
+        "96cbd8d9e6911645daab961ae56667acfad22fd3"
+      ],
+      "authored_at": "2026-09-02T10:01:56+08:00",
+      "subject": "fix(llm): cover the malformed tool-call path and correct its records",
+      "body": "The `MALFORMED_TOOL_CALL` JSDoc claimed nothing durable is written, but the\nloop appends an `assistant/chunk` for every yielded chunk; only the assistant\nmessage and tool result are withheld. The bounded-recovery Note still listed\na five-code transient set, and neither Note linked the other.\n\nA keyless `malformed-tool-call-retry` scenario now records the refusal, the\nretry, and the absence of a `tool/call` for the failed attempt. A translator\ncase pins that an already closable block also withholds its `block-end`.",
+      "message": "fix(llm): cover the malformed tool-call path and correct its records\n\nThe `MALFORMED_TOOL_CALL` JSDoc claimed nothing durable is written, but the\nloop appends an `assistant/chunk` for every yielded chunk; only the assistant\nmessage and tool result are withheld. The bounded-recovery Note still listed\na five-code transient set, and neither Note linked the other.\n\nA keyless `malformed-tool-call-retry` scenario now records the refusal, the\nretry, and the absence of a `tool/call` for the failed attempt. A translator\ncase pins that an already closable block also withholds its `block-end`."
+    },
+    {
+      "sha": "83931a5f3ee97e6438a0b514765525512c54e342",
+      "parents": [
+        "e91c28d3fdbec83f967bd1d985dcffdf7c39f11a"
+      ],
+      "authored_at": "2026-09-02T10:08:42+08:00",
+      "subject": "fix(llm): correct the refusal's recorded rationale",
+      "body": "`LlmRuntime.adapterStream` normalizes a thrown `LlmError` into the same error\n`finish` the loop routes to `agent/request-error`, so throwing would reach\nretry too. The Note claimed otherwise. Yielding is chosen because it reports\nthe attempt's billed usage first and matches the neighbouring `EMPTY_RESPONSE`\nrefusal.\n\nThe rejection comment repeats the corrected durability wording, and the\nassembler's delta-only fallback carries a TODO for the empty name it still\ninvents for adapters that never close a tool-call block.",
+      "message": "fix(llm): correct the refusal's recorded rationale\n\n`LlmRuntime.adapterStream` normalizes a thrown `LlmError` into the same error\n`finish` the loop routes to `agent/request-error`, so throwing would reach\nretry too. The Note claimed otherwise. Yielding is chosen because it reports\nthe attempt's billed usage first and matches the neighbouring `EMPTY_RESPONSE`\nrefusal.\n\nThe rejection comment repeats the corrected durability wording, and the\nassembler's delta-only fallback carries a TODO for the empty name it still\ninvents for adapters that never close a tool-call block."
+    },
+    {
+      "sha": "b03261caada890105f0c9c3dafb9c6b01604887e",
+      "parents": [
+        "83931a5f3ee97e6438a0b514765525512c54e342"
+      ],
+      "authored_at": "2026-09-02T10:33:35+08:00",
+      "subject": "fix(llm): narrow the fix to identity acceptance",
+      "body": "Refusing a response whose tool call never receives an identity needed a new\nfailure code, a change to the default retryable set, and a `[DONE]` gate that\noverrode the finish reason a provider had already sent — turning a safe\n`max-tokens` truncation into up to five retries. The lenient wire it guarded\nagainst is hypothetical: no report describes a stream that omits identity\nentirely, and the pre-existing test for it is labelled as such.\n\nOnly `acceptIdentity` and the widened wire types remain. They close the\nreported erasure and cannot reach a worse outcome than the previous\nassignment, because the set of inputs that assign only narrows.",
+      "message": "fix(llm): narrow the fix to identity acceptance\n\nRefusing a response whose tool call never receives an identity needed a new\nfailure code, a change to the default retryable set, and a `[DONE]` gate that\noverrode the finish reason a provider had already sent — turning a safe\n`max-tokens` truncation into up to five retries. The lenient wire it guarded\nagainst is hypothetical: no report describes a stream that omits identity\nentirely, and the pre-existing test for it is labelled as such.\n\nOnly `acceptIdentity` and the widened wire types remain. They close the\nreported erasure and cannot reach a worse outcome than the previous\nassignment, because the set of inputs that assign only narrows."
+    }
+  ],
+  "files": [
+    {
+      "filename": ".agents/notes/implemented/architecture/2026-09-01-streamed-tool-call-identity.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": ".agents/notes/implemented/architecture/2026-09-01-streamed-tool-call-identity.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": ".agents/notes/implemented/architecture/2026-09-01-streamed-tool-call-identity.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/llm-deepseek/README.i18n.yaml",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/llm-deepseek/README.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/llm-deepseek/README.zh.md",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/llm-deepseek/src/translate.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/llm-deepseek/src/types.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "packages/llm/llm-deepseek/tests/translate.spec.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    }
+  ],
+  "linked_issue_numbers": [],
+  "quality": {
+    "score": 0.9,
+    "tier": "strong",
+    "reasons": [
+      "merged pull request",
+      "descriptive title",
+      "2 implementation files",
+      "1 test files",
+      "5 PR commits"
+    ],
+    "implementation_files": 2,
+    "test_files": 1,
+    "docs_files": 4,
+    "generated_files": 0
+  },
+  "provenance": {
+    "kind": "local_merge_commit",
+    "repository_path": "/home/chenyujia/tritonToLlvm/deepseek-harness",
+    "merge_subject": "Merge pull request #3424 from deepseek-harness/worktree/github-issue-725-verification-7e80bd",
+    "merge_body": "fix(llm): keep streamed tool-call identity across empty deltas",
+    "file_set": "first_parent_to_merge_result",
+    "commit_set": "first_parent_to_second_parent"
+  }
+}

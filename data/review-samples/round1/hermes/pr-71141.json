@@ -1,0 +1,163 @@
+{
+  "repository": "NousResearch/hermes-agent",
+  "number": 71141,
+  "title": "fix: custom endpoint keys go to .env, and Save keeps the whole model list",
+  "merge_sha": "8f8b66d8ac6ed5172daa213b615037cae0ed92f9",
+  "base_sha": "808c38ee639ed2ccc449920be4f6695fac17d042",
+  "head_sha": "15f29d0b6fd385507d8feae37e4d76b2598ed8a5",
+  "merged_at": "2026-07-24T22:09:53-05:00",
+  "commits": [
+    {
+      "sha": "bfe7460c79fabcd61c683d66f4ecbc45f0340c21",
+      "parents": [
+        "bb4765d21ce0b8bb2c0187d0a1509b0b3b6dca9a"
+      ],
+      "authored_at": "2026-07-24T21:11:26-05:00",
+      "subject": "fix(config): add a collision-safe env var name for custom endpoint keys",
+      "body": "Both the Desktop panel and the CLI setup flow need somewhere in .env to put\na custom endpoint's API key. Deriving the name from the endpoint's hostname\ncollapses two servers on one machine onto a single slot, and every IP-based\nlocal endpoint slugs to a digit-leading name that save_env_value rejects\noutright. Key off the endpoint's own identity and keep a fixed prefix.\n\nCo-authored-by: asorry75 <33794789+asorry75@users.noreply.github.com>\nCo-authored-by: webtecnica <75556242+webtecnica@users.noreply.github.com>",
+      "message": "fix(config): add a collision-safe env var name for custom endpoint keys\n\nBoth the Desktop panel and the CLI setup flow need somewhere in .env to put\na custom endpoint's API key. Deriving the name from the endpoint's hostname\ncollapses two servers on one machine onto a single slot, and every IP-based\nlocal endpoint slugs to a digit-leading name that save_env_value rejects\noutright. Key off the endpoint's own identity and keep a fixed prefix.\n\nCo-authored-by: asorry75 <33794789+asorry75@users.noreply.github.com>\nCo-authored-by: webtecnica <75556242+webtecnica@users.noreply.github.com>"
+    },
+    {
+      "sha": "de6375ebc5e44e5d1441839d5c5506b60e42ba13",
+      "parents": [
+        "bfe7460c79fabcd61c683d66f4ecbc45f0340c21"
+      ],
+      "authored_at": "2026-07-24T21:12:36-05:00",
+      "subject": "fix(desktop): persist the whole discovered model list when saving an endpoint",
+      "body": "Test enumerates a custom provider's catalogue and the panel holds the result\nin discoveredModels, but the save payload never carried it, so only the one\nmodel the user hand-typed reached providers.<id>.models. Every downstream\npicker reads that map straight from config.yaml with no live probe, which is\nwhy a proxy serving 18 models offered exactly one.\n\nSend the discovered list and merge it onto the entry, so models already\nknown keep their context lengths.\n\nFixes #69988\n\nCo-authored-by: asorry75 <33794789+asorry75@users.noreply.github.com>",
+      "message": "fix(desktop): persist the whole discovered model list when saving an endpoint\n\nTest enumerates a custom provider's catalogue and the panel holds the result\nin discoveredModels, but the save payload never carried it, so only the one\nmodel the user hand-typed reached providers.<id>.models. Every downstream\npicker reads that map straight from config.yaml with no live probe, which is\nwhy a proxy serving 18 models offered exactly one.\n\nSend the discovered list and merge it onto the entry, so models already\nknown keep their context lengths.\n\nFixes #69988\n\nCo-authored-by: asorry75 <33794789+asorry75@users.noreply.github.com>"
+    },
+    {
+      "sha": "bd2dcfe9ca40de8219eadc884c631033bbb96ed1",
+      "parents": [
+        "de6375ebc5e44e5d1441839d5c5506b60e42ba13"
+      ],
+      "authored_at": "2026-07-24T21:12:46-05:00",
+      "subject": "fix(web_server): keep Desktop custom endpoint API keys out of config.yaml",
+      "body": "The Custom Endpoints panel wrote the raw key to providers.<id>.api_key, so\nthe credential sat in plaintext in a file users routinely share and commit.\nThe input is masked, so nothing warned them.\n\nWrite the key to .env and reference it via key_env, the same indirection\nbuilt-in providers use and that runtime_provider already resolves. The read\nside has to move with it: reporting has_api_key from api_key alone would\nshow \"no API key\" for every migrated endpoint, and activate copying only\napi_key would drop the credential entirely. Delete now clears the .env slot\ntoo, and an entry still carrying a pre-fix plaintext key is migrated on its\nnext save so existing users get cleaned up without re-entering anything —\nunless the key is a hand-written ${VAR} template, which is already safe and\nmust not be duplicated into a second env var.\n\nFixes #69449\n\nCo-authored-by: webtecnica <75556242+webtecnica@users.noreply.github.com>\nCo-authored-by: asorry75 <33794789+asorry75@users.noreply.github.com>",
+      "message": "fix(web_server): keep Desktop custom endpoint API keys out of config.yaml\n\nThe Custom Endpoints panel wrote the raw key to providers.<id>.api_key, so\nthe credential sat in plaintext in a file users routinely share and commit.\nThe input is masked, so nothing warned them.\n\nWrite the key to .env and reference it via key_env, the same indirection\nbuilt-in providers use and that runtime_provider already resolves. The read\nside has to move with it: reporting has_api_key from api_key alone would\nshow \"no API key\" for every migrated endpoint, and activate copying only\napi_key would drop the credential entirely. Delete now clears the .env slot\ntoo, and an entry still carrying a pre-fix plaintext key is migrated on its\nnext save so existing users get cleaned up without re-entering anything —\nunless the key is a hand-written ${VAR} template, which is already safe and\nmust not be duplicated into a second env var.\n\nFixes #69449\n\nCo-authored-by: webtecnica <75556242+webtecnica@users.noreply.github.com>\nCo-authored-by: asorry75 <33794789+asorry75@users.noreply.github.com>"
+    },
+    {
+      "sha": "8a2925f794466a5d4487a1438b1b6c700b88a1d6",
+      "parents": [
+        "bd2dcfe9ca40de8219eadc884c631033bbb96ed1"
+      ],
+      "authored_at": "2026-07-24T21:12:53-05:00",
+      "subject": "fix(cli): store custom endpoint API key in .env instead of config.yaml",
+      "body": "hermes model's custom-endpoint flow is the other write path that produced a\nplaintext key, on both the model block and the custom_providers entry. Route\nit through the same .env indirection as the Desktop panel, and swap an\nexisting entry's inline key for the reference when the URL is re-saved.\n\nCo-authored-by: liuhao1024 <sunsky.lau@gmail.com>",
+      "message": "fix(cli): store custom endpoint API key in .env instead of config.yaml\n\nhermes model's custom-endpoint flow is the other write path that produced a\nplaintext key, on both the model block and the custom_providers entry. Route\nit through the same .env indirection as the Desktop panel, and swap an\nexisting entry's inline key for the reference when the URL is re-saved.\n\nCo-authored-by: liuhao1024 <sunsky.lau@gmail.com>"
+    },
+    {
+      "sha": "15f29d0b6fd385507d8feae37e4d76b2598ed8a5",
+      "parents": [
+        "8a2925f794466a5d4487a1438b1b6c700b88a1d6"
+      ],
+      "authored_at": "2026-07-24T21:12:59-05:00",
+      "subject": "test: cover custom endpoint key storage and model-list persistence",
+      "body": "Bug-class coverage for both fixes: the full catalogue survives Save, context\nlengths are preserved, the key never lands in config.yaml on either write\npath, blank clears it, a pre-fix plaintext key migrates while a ${VAR}\ntemplate is left alone, two endpoints on one host keep separate credentials,\nand an IP-derived name is still a valid POSIX env var.\n\nThe two delete tests asserted on the plaintext mirror; they now assert the\nsame invariants against the credential reference.",
+      "message": "test: cover custom endpoint key storage and model-list persistence\n\nBug-class coverage for both fixes: the full catalogue survives Save, context\nlengths are preserved, the key never lands in config.yaml on either write\npath, blank clears it, a pre-fix plaintext key migrates while a ${VAR}\ntemplate is left alone, two endpoints on one host keep separate credentials,\nand an IP-derived name is still a valid POSIX env var.\n\nThe two delete tests asserted on the plaintext mirror; they now assert the\nsame invariants against the credential reference."
+    }
+  ],
+  "files": [
+    {
+      "filename": "apps/desktop/src/app/settings/custom-endpoints-settings.tsx",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "apps/desktop/src/types/hermes.ts",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "hermes_cli/config.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "hermes_cli/main.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "hermes_cli/model_setup_flows.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "hermes_cli/web_server.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "tests/cli/test_cli_provider_resolution.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    },
+    {
+      "filename": "tests/hermes_cli/test_web_server.py",
+      "status": "changed",
+      "previous_filename": null,
+      "additions": 0,
+      "deletions": 0,
+      "changes": 0,
+      "blob_url": ""
+    }
+  ],
+  "linked_issue_numbers": [
+    69449,
+    69988
+  ],
+  "quality": {
+    "score": 0.98,
+    "tier": "strong",
+    "reasons": [
+      "merged pull request",
+      "descriptive title",
+      "6 implementation files",
+      "2 test files",
+      "explicit closing issue reference",
+      "5 PR commits"
+    ],
+    "implementation_files": 6,
+    "test_files": 2,
+    "docs_files": 0,
+    "generated_files": 0
+  },
+  "provenance": {
+    "kind": "local_merge_commit",
+    "repository_path": "/home/chenyujia/tritonToLlvm/hermes-agent",
+    "merge_subject": "Merge pull request #71141 from NousResearch/bb/custom-endpoint-keys-and-models",
+    "merge_body": "fix: custom endpoint keys go to .env, and Save keeps the whole model list",
+    "file_set": "first_parent_to_merge_result",
+    "commit_set": "first_parent_to_second_parent"
+  }
+}

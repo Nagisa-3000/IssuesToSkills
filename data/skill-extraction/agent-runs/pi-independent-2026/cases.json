@@ -1,0 +1,163 @@
+{
+  "case_id": "pi-independent-2026",
+  "case_version": "1.0.0",
+  "extracted_at": "2026-09-26",
+  "repository": {
+    "name": "pi-agent",
+    "path": "/home/chenyujia/tritonToLlvm/pi-agent",
+    "remote": "https://github.com/earendil-works/pi.git",
+    "head": "d5629e20"
+  },
+  "independence": {
+    "used_other_agent_output": false,
+    "keyword_hits_are_semantic_evidence": false,
+    "pattern_status": "provisional"
+  },
+  "git_provenance": {
+    "commits": [
+      "46bde88a1cd752966aa2a357d292e83aff98b132",
+      "56700d42ed65a94a80af7376adb19a9298065164",
+      "a6f720e6caf1cf429e382011156c015fa204c512",
+      "8bdcd4498a925301bcd8b9053386797727eae3b0",
+      "4495469a5e8466eb67e3f26969922d3e7b208de2"
+    ]
+  },
+  "comparison_criterion": {
+    "family": "Hermes/DeepSeek residual-budget shared-capacity",
+    "required_mechanism": "derive and preserve the capacity actually available to the next operation, including downstream/output headroom, at the request seam",
+    "epistemic_status": "inference_for_comparison_criterion"
+  },
+  "evidence_units": [
+    {
+      "id": "EU-PI-THRESHOLD",
+      "kind": "implementation",
+      "source": "packages/coding-agent/src/core/compaction/compaction.ts:289-292",
+      "commit": "46bde88a",
+      "observed_evidence": "shouldCompact triggers when contextTokens exceeds contextWindow minus reserveTokens.",
+      "inference": "This resembles residual-capacity thresholding, but does not prove shared provider input/output capacity."
+    },
+    {
+      "id": "EU-PI-POLICY",
+      "kind": "implementation_and_test",
+      "source": "packages/coding-agent/src/core/settings-manager.ts:13-28,859-905; packages/coding-agent/test/settings-manager-compaction.test.ts:115-190",
+      "commit": "46bde88a",
+      "observed_evidence": "Exact provider/model overrides are validated and resolved with override -> ordinary -> default precedence.",
+      "inference": "Reusable model-scoped policy resolution."
+    },
+    {
+      "id": "EU-PI-REPLAY",
+      "kind": "call_sites_and_test",
+      "source": "packages/coding-agent/src/core/agent-session.ts:587-605,2413-2429,2599-2605,2747-2750; packages/coding-agent/test/suite/agent-session-compaction-model-overrides.test.ts:36-103",
+      "commit": "46bde88a",
+      "observed_evidence": "Active-model settings are used by pre-request, manual, threshold, overflow, and extension-visible paths.",
+      "inference": "Policy replay across runtime reconfiguration."
+    },
+    {
+      "id": "EU-PI-BOUNDARY",
+      "kind": "before_after_and_test",
+      "source": "packages/agent/src/agent-loop.ts:182-241; packages/coding-agent/src/core/agent-session.ts:587-605; packages/coding-agent/test/suite/agent-session-compaction.test.ts",
+      "commit": "56700d42",
+      "observed_evidence": "Next-turn preparation and compaction are deferred until a real next assistant request; terminal tool results do not cause an extra compaction.",
+      "inference": "Request-boundary scheduling Atomic, adjacent to shared-capacity pressure."
+    },
+    {
+      "id": "EU-PI-CONTEXT",
+      "kind": "before_after_and_test",
+      "source": "packages/coding-agent/src/core/compaction/compaction.ts:218-283,919-935; packages/coding-agent/test/compaction.test.ts:358-375",
+      "commits": ["a6f720e6", "8bdcd449"],
+      "observed_evidence": "Canonical projection includes context-visible custom/trailing entries and chooses a safe cut point when a trailing tool result exceeds the retained-token budget.",
+      "inference": "Complete-context accounting and safe retention, adjacent rather than shared-capacity arithmetic."
+    },
+    {
+      "id": "EU-PI-NO-USAGE",
+      "kind": "before_after_and_test",
+      "source": "packages/coding-agent/src/core/agent-session.ts:2699-2734; packages/coding-agent/test/suite/regressions/8328-zero-usage-auto-compaction.test.ts:39-80",
+      "commit": "4495469a",
+      "observed_evidence": "Message-size estimation is used when provider usage is absent or all-zero.",
+      "inference": "Adjacent robustness, not a separate family realization."
+    }
+  ],
+  "case_actions": [
+    {
+      "id": "CA1",
+      "kind": "resolve",
+      "semantic_goal": "Resolve model-specific compaction reserve/retention policy with safe validation and deterministic fallback.",
+      "classification": "partial",
+      "evidence_ids": ["EU-PI-POLICY", "EU-PI-THRESHOLD"],
+      "evidence_vs_inference": {
+        "evidence": "Override precedence, validation, and threshold call are implemented and tested.",
+        "inference": "This is the closest Pi analogue to deriving a residual policy."
+      }
+    },
+    {
+      "id": "CA2",
+      "kind": "propagate",
+      "semantic_goal": "Replay the active model's resolved policy across manual, automatic, overflow, pre-request, and extension-visible compaction paths.",
+      "classification": "partial",
+      "evidence_ids": ["EU-PI-REPLAY"],
+      "evidence_vs_inference": {
+        "evidence": "Current call sites pass the active model and tests cover four compaction paths.",
+        "inference": "This supports the family's reconfiguration/policy-propagation role but not its shared-capacity formula."
+      }
+    },
+    {
+      "id": "CA3",
+      "kind": "schedule",
+      "semantic_goal": "Place pressure evaluation immediately before a real next provider request and avoid post-termination compaction.",
+      "classification": "adjacent",
+      "evidence_ids": ["EU-PI-BOUNDARY"],
+      "evidence_vs_inference": {
+        "evidence": "The before/after loop ordering and regression tests establish the timing behavior.",
+        "inference": "Timing is useful to a shared-capacity workflow but is not the capacity derivation itself."
+      }
+    },
+    {
+      "id": "CA4",
+      "kind": "measure_and_retain",
+      "semantic_goal": "Measure pressure from the canonical context-visible projection and keep a safe cut point when custom or oversized trailing artifacts dominate the retained budget.",
+      "classification": "adjacent",
+      "evidence_ids": ["EU-PI-CONTEXT", "EU-PI-NO-USAGE"],
+      "evidence_vs_inference": {
+        "evidence": "Projection-based estimation, custom-message tests, oversized-tool-result regression, and zero-usage fallback are present.",
+        "inference": "These mechanisms preserve pressure/accounting correctness but are not proof of a shared input/output capacity pool."
+      }
+    }
+  ],
+  "case_workflow": {
+    "id": "CW-PI-COMPACTION-PRESSURE",
+    "goal": "Keep Pi compaction behavior model-aware, canonical, correctly timed, and recoverable without claiming the Hermes/DeepSeek shared-capacity invariant.",
+    "steps": ["CA1", "CA2", "CA4", "CA3"],
+    "conditional_branches": [
+      "If the active model has an exact provider/model override, use it; otherwise use ordinary settings and then defaults.",
+      "If projected context exceeds contextWindow - reserveTokens, compact before the next assistant request.",
+      "If a tool result terminates the turn, do not schedule an unnecessary next-request compaction.",
+      "If provider usage is unavailable or all-zero, fall back to message estimation; if a trailing artifact exceeds keepRecentTokens, retain a safe assistant boundary."
+    ],
+    "stopping_conditions": [
+      "No compaction when disabled or below threshold.",
+      "No provider request starts with projected context above the active threshold after successful compaction.",
+      "No extra compaction after a terminating tool result.",
+      "Do not promote this workflow to a direct cross-repository Pattern without evidence of shared output-headroom arithmetic."
+    ],
+    "epistemic_status": "case_workflow_is_evidence_grounded; cross_repository_same_pattern_claim_is_inferred_and_rejected"
+  },
+  "alignment_decision": {
+    "label": "partial",
+    "direct_realization": false,
+    "confidence": 0.86,
+    "evidence_ids": ["EU-PI-THRESHOLD", "EU-PI-POLICY", "EU-PI-REPLAY", "EU-PI-BOUNDARY", "EU-PI-CONTEXT"],
+    "reason": "Pi has a reserve-subtracted compaction threshold and strong policy propagation, but the reviewed implementation does not connect that reserve to a shared provider request output budget in the same semantic seam."
+  },
+  "rejected_candidates": [
+    {"commit": "6d474f8c", "reason": "provider maxTokens cap without compaction/shared-capacity dataflow", "classification": "reject"},
+    {"commit": "22a9c484", "reason": "output-token option plumbing only", "classification": "reject"},
+    {"commit": "e98f287e", "reason": "provider overload retry, not context pressure", "classification": "reject"},
+    {"commit": "97fa14e3", "reason": "summary truncation validation, not capacity policy", "classification": "reject"}
+  ],
+  "promotion": {
+    "atomic_skills": "candidate",
+    "workflow_skill": "candidate",
+    "pattern": "provisional_only",
+    "promote_pi_as_direct_realization": false
+  }
+}
