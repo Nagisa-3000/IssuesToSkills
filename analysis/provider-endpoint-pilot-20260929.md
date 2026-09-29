@@ -152,3 +152,24 @@ The Aider run is under:
 The valid strict qualification count is now 2/4 (Aider and Hermes). Qwen and
 Pi still need environment/test-oracle repair before entering the strict causal
 denominator.
+
+## Qualification update (September 29, 2026)
+
+After correcting the execution environments, the strict oracle qualification is
+now 2/4:
+
+- Aider #199: base fails, known solution passes;
+- Hermes #121359: base fails, known solution passes;
+- Qwen #9452: workspace build/test setup still fails before the focused test;
+- Pi #10086: focused test command still exits non-zero in both base and solution.
+
+Aider was rerun with the corrected Python 3.11 seeded environment:
+
+| arm | test | wall seconds | input tokens | output tokens |
+| --- | ---: | ---: | ---: | ---: |
+| no_skill | pass | 163.26s | 297,881 | 3,724 |
+| guided | pass | 249.55s | 555,345 | 4,507 |
+
+This second Aider run is a correctness tie with higher guided context cost; the
+first Aider run was faster in the guided arm. Both results are retained rather
+than cherry-picked.
