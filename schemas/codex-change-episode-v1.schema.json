@@ -34,11 +34,26 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["name", "description", "evidence_ids"],
+        "required": ["name", "description", "evidence_ids", "semantic_action"],
         "properties": {
           "name": {"type": "string"},
           "description": {"type": "string"},
-          "evidence_ids": {"type": "array", "items": {"type": "string"}}
+          "evidence_ids": {"type": "array", "items": {"type": "string"}},
+          "semantic_action": {
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "required": ["intent", "module_role", "operation", "pre_state", "post_state", "validation", "parameters", "evidence_ids"],
+            "properties": {
+              "intent": {"type": "string"},
+              "module_role": {"type": "string"},
+              "operation": {"type": "string"},
+              "pre_state": {"type": "string"},
+              "post_state": {"type": "string"},
+              "validation": {"type": "string"},
+              "parameters": {"type": "array", "items": {"type": "string"}},
+              "evidence_ids": {"type": "array", "items": {"type": "string"}}
+            }
+          }
         }
       }
     },
@@ -47,12 +62,49 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["name", "description", "atomic_names", "evidence_ids"],
+        "required": ["name", "description", "atomic_names", "evidence_ids", "workflow_graph"],
         "properties": {
           "name": {"type": "string"},
           "description": {"type": "string"},
           "atomic_names": {"type": "array", "items": {"type": "string"}},
-          "evidence_ids": {"type": "array", "items": {"type": "string"}}
+          "evidence_ids": {"type": "array", "items": {"type": "string"}},
+          "workflow_graph": {
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "required": ["goal", "entry_state", "exit_state", "steps", "edges", "unresolved_or_deferred"],
+            "properties": {
+              "goal": {"type": "string"},
+              "entry_state": {"type": "string"},
+              "exit_state": {"type": "string"},
+              "steps": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["action_name", "role", "optional"],
+                  "properties": {
+                    "action_name": {"type": "string"},
+                    "role": {"type": "string"},
+                    "optional": {"type": "boolean"}
+                  }
+                }
+              },
+              "edges": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["from", "to", "type"],
+                  "properties": {
+                    "from": {"type": "string"},
+                    "to": {"type": "string"},
+                    "type": {"type": "string", "enum": ["requires", "enables", "validates", "repairs"]}
+                  }
+                }
+              },
+              "unresolved_or_deferred": {"type": "array", "items": {"type": "string"}}
+            }
+          }
         }
       }
     },

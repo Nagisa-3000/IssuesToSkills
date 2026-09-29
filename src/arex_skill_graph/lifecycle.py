@@ -143,6 +143,43 @@ class SkillRecord:
         result["usage"] = self.usage.to_json()
         return result
 
+    @classmethod
+    def from_json(cls, value: Mapping[str, Any]) -> "SkillRecord":
+        """Rehydrate a persisted skill snapshot for serving-time experiments."""
+        raw_usage = value.get("usage") or {}
+        usage = UsageStats(
+            attempts=int(raw_usage.get("attempts", 0)),
+            successes=int(raw_usage.get("successes", 0)),
+            failures=int(raw_usage.get("failures", 0)),
+            not_applicable=int(raw_usage.get("not_applicable", 0)),
+            independent_failure_contexts=set(str(item) for item in raw_usage.get("independent_failure_contexts", [])),
+            failure_by_kind={str(k): int(v) for k, v in (raw_usage.get("failure_by_kind") or {}).items()},
+            last_used_at=raw_usage.get("last_used_at"),
+            last_failure_at=raw_usage.get("last_failure_at"),
+        )
+        return cls(
+            skill_id=str(value["skill_id"]),
+            level=SkillLevel(str(value["level"])),
+            title=str(value.get("title", "")),
+            summary=str(value.get("summary", "")),
+            version=int(value.get("version", 1)),
+            status=SkillStatus(str(value.get("status", SkillStatus.CANDIDATE.value))),
+            canonical_id=str(value.get("canonical_id")) if value.get("canonical_id") is not None else None,
+            aliases=set(str(item) for item in value.get("aliases", [])),
+            supersedes=set(str(item) for item in value.get("supersedes", [])),
+            merged_from=set(str(item) for item in value.get("merged_from", [])),
+            parent_ids=set(str(item) for item in value.get("parent_ids", [])),
+            evidence_ids=set(str(item) for item in value.get("evidence_ids", [])),
+            preconditions=tuple(str(item) for item in value.get("preconditions", [])),
+            exclusions=tuple(str(item) for item in value.get("exclusions", [])),
+            failure_modes=tuple(str(item) for item in value.get("failure_modes", [])),
+            payload=dict(value.get("payload") or {}),
+            usage=usage,
+            created_at=str(value.get("created_at") or utc_now()),
+            updated_at=str(value.get("updated_at") or utc_now()),
+            quarantine_reason=value.get("quarantine_reason"),
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class DedupProposal:
