@@ -127,3 +127,28 @@ valid extraction/admission path and one qualified holdout. The paired agent
 result is promising in v1 but not yet conclusive because the other three
 holdouts need environment qualification and the v3 applicability-guided rerun
 failed. Do not promote the Pattern yet.
+
+## Additional valid paired result: Aider #199
+
+After switching the Aider qualification environment to a seeded Python 3.11
+virtual environment, the known-solution oracle passed and the case became
+qualified. A fresh paired agent run was then completed:
+
+| arm | test | wall seconds | input tokens | output tokens |
+| --- | --- | ---: | ---: | ---: |
+| no_skill | passed | 144.90s | 203,968 | 3,178 |
+| guided | passed | 135.00s | 263,666 | 4,140 |
+
+Both arms passed the visible test. Guided was slightly faster in this run but
+used more context/input tokens. This is a neutral correctness result with a
+small latency advantage for guided, not a standalone proof of Pattern benefit.
+
+The Aider run is under:
+
+```text
+/home/chenyujia/tritonToLlvm/arex-skill-graph/data/skill-extraction/provider-endpoint-pilot-20260929-v3/agent-eval-aider/
+```
+
+The valid strict qualification count is now 2/4 (Aider and Hermes). Qwen and
+Pi still need environment/test-oracle repair before entering the strict causal
+denominator.
