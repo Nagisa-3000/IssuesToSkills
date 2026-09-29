@@ -1,0 +1,2448 @@
+[
+  {
+    "episode_id": "Aider-AI__aider__88@549a1a76403e309890410f9538bda2fc4f901758",
+    "title": "Adapt provider configuration and request routing for alternate OpenAI-compatible endpoints",
+    "before": "At parent ec658223692f901c7456d5baa426e5a8d696dfb7, the CLI exposed only an API key and API base. Coder.create required those values and directly assigned openai.api_key and openai.api_base. ChatCompletion requests contained model, messages, temperature, stream, and optional functions, but could not carry deployment_id or engine routing arguments required by some provider endpoints.",
+    "after": "At 549a1a76403e309890410f9538bda2fc4f901758, the CLI accepts optional provider base, type, version, deployment ID, and engine settings. Startup centrally assigns supplied settings to the provider SDK module while leaving unspecified optional settings untouched. Coder.create no longer owns credentials or endpoint configuration. Request construction conditionally forwards stored deployment_id and engine values to ChatCompletion.create.",
+    "diff": "The merge commit changes seven files with 95 insertions and 46 deletions relative to its first parent. The implementation adds four provider-related CLI arguments, moves API key/base ownership from the coder factory to application startup, generically maps five optional CLI values onto SDK module attributes, conditionally adds deployment_id and engine to request kwargs, updates all affected test call sites to the slimmer Coder.create interface, and documents alternate endpoint configuration. No dedicated behavioral test for the newly added provider fields was added.",
+    "repository": "Aider-AI/aider",
+    "revision": "github-issue-88",
+    "evidence_ids": [
+      "ev-commit-01",
+      "ev-before-01",
+      "ev-before-02",
+      "ev-before-03",
+      "ev-after-01",
+      "ev-after-02",
+      "ev-after-03",
+      "ev-after-04",
+      "ev-diff-01",
+      "ev-callsite-01",
+      "ev-test-01",
+      "ev-test-02",
+      "ev-validation-01",
+      "ev-doc-01"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "Aider-AI/aider",
+      "issue": 88,
+      "checkout": "/home/chenyujia/tritonToLlvm/aider-agent",
+      "manifest_metadata": {
+        "category": "provider-interface-adaptation",
+        "theme": "model provider and endpoint resolution",
+        "file_sample": [
+          "aider/coders/base_coder.py",
+          "aider/main.py",
+          "tests/test_coder.py",
+          "tests/test_commands.py",
+          "tests/test_editblock.py",
+          "tests/test_wholefile.py"
+        ],
+        "split": "train_candidate"
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "Aider-AI/aider",
+        "issue_number": 88,
+        "issue": {
+          "number": 88,
+          "title": "Added args to configure openai module to access Azure",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 88,
+              "title": "Added args to configure openai module to access Azure",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\taider/coders/base_coder.py"
+              },
+              {
+                "status_line": "M\taider/main.py"
+              },
+              {
+                "status_line": "M\tdocs/faq.md"
+              },
+              {
+                "status_line": "M\ttests/test_coder.py"
+              },
+              {
+                "status_line": "M\ttests/test_commands.py"
+              },
+              {
+                "status_line": "M\ttests/test_editblock.py"
+              },
+              {
+                "status_line": "M\ttests/test_wholefile.py"
+              },
+              {
+                "status_line": "M\tHISTORY.md"
+              },
+              {
+                "status_line": "M\tREADME.md"
+              },
+              {
+                "status_line": "M\taider/__init__.py"
+              },
+              {
+                "status_line": "M\taider/main.py"
+              },
+              {
+                "status_line": "M\tdocs/faq.md"
+              },
+              {
+                "status_line": "M\tscripts/versionbump.py"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "549a1a76403e309890410f9538bda2fc4f901758",
+                "subject": "Added args to configure openai module to access Azure"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/aider-agent",
+        "pinned_ref": "549a1a76403e309890410f9538bda2fc4f901758",
+        "resolved_commit": "549a1a76403e309890410f9538bda2fc4f901758",
+        "parent_commit": "ec658223692f901c7456d5baa426e5a8d696dfb7",
+        "commit_show_stat": "commit 549a1a76403e309890410f9538bda2fc4f901758\nMerge: ec6582236 2a595afca\nAuthor:     paul-gauthier <69695708+paul-gauthier@users.noreply.github.com>\nAuthorDate: Wed Jul 12 07:32:10 2023 -0700\nCommit:     GitHub <noreply@github.com>\nCommitDate: Wed Jul 12 07:32:10 2023 -0700\n\n    Merge pull request #88 from paul-gauthier/azure\n    \n    Added args to configure openai module to access Azure\n\n aider/coders/base_coder.py | 11 ++++++-----\n aider/main.py              | 35 +++++++++++++++++++++++++++++++----\n docs/faq.md                | 36 ++++++++++++++++++++++++++++++++++++\n tests/test_coder.py        | 36 +++++++++++++-----------------------\n tests/test_commands.py     | 14 +++++++-------\n tests/test_editblock.py    |  5 +----\n tests/test_wholefile.py    |  4 +---\n 7 files changed, 95 insertions(+), 46 deletions(-)\n",
+        "changed_files_name_status": "M\taider/coders/base_coder.py\nM\taider/main.py\nM\tdocs/faq.md\nM\ttests/test_coder.py\nM\ttests/test_commands.py\nM\ttests/test_editblock.py\nM\ttests/test_wholefile.py\nM\tHISTORY.md\nM\tREADME.md\nM\taider/__init__.py\nM\taider/main.py\nM\tdocs/faq.md\nM\tscripts/versionbump.py\n",
+        "linked_issue_numbers": [
+          88
+        ],
+        "manifest_metadata": {
+          "category": "provider-interface-adaptation",
+          "theme": "model provider and endpoint resolution",
+          "file_sample": [
+            "aider/coders/base_coder.py",
+            "aider/main.py",
+            "tests/test_coder.py",
+            "tests/test_commands.py",
+            "tests/test_editblock.py",
+            "tests/test_wholefile.py"
+          ]
+        },
+        "fetched_at": "2026-09-29T04:59:50.196311+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "Aider-AI__aider__88@549a1a76403e309890410f9538bda2fc4f901758",
+          "title": "Adapt provider configuration and request routing for alternate OpenAI-compatible endpoints",
+          "before": "At parent ec658223692f901c7456d5baa426e5a8d696dfb7, the CLI exposed only an API key and API base. Coder.create required those values and directly assigned openai.api_key and openai.api_base. ChatCompletion requests contained model, messages, temperature, stream, and optional functions, but could not carry deployment_id or engine routing arguments required by some provider endpoints.",
+          "after": "At 549a1a76403e309890410f9538bda2fc4f901758, the CLI accepts optional provider base, type, version, deployment ID, and engine settings. Startup centrally assigns supplied settings to the provider SDK module while leaving unspecified optional settings untouched. Coder.create no longer owns credentials or endpoint configuration. Request construction conditionally forwards stored deployment_id and engine values to ChatCompletion.create.",
+          "diff": "The merge commit changes seven files with 95 insertions and 46 deletions relative to its first parent. The implementation adds four provider-related CLI arguments, moves API key/base ownership from the coder factory to application startup, generically maps five optional CLI values onto SDK module attributes, conditionally adds deployment_id and engine to request kwargs, updates all affected test call sites to the slimmer Coder.create interface, and documents alternate endpoint configuration. No dedicated behavioral test for the newly added provider fields was added."
+        },
+        "evidence_units": [
+          {
+            "id": "ev-commit-01",
+            "kind": "commit",
+            "claim": "Commit 549a1a76403e309890410f9538bda2fc4f901758 is a merge of PR/issue 88 titled \"Added args to configure openai module to access Azure\" and has first parent ec658223692f901c7456d5baa426e5a8d696dfb7.",
+            "source": "issue-bundle.json fields resolved_commit, parent_commit, linked_pull_requests; git show --format=fuller 549a1a76403e309890410f9538bda2fc4f901758"
+          },
+          {
+            "id": "ev-before-01",
+            "kind": "implementation",
+            "claim": "Before the change, Coder.create required openai_api_key, accepted openai_api_base with a fixed default, and assigned both values directly to the provider SDK module.",
+            "source": "git show ec658223692f901c7456d5baa426e5a8d696dfb7:aider/coders/base_coder.py, Coder.create"
+          },
+          {
+            "id": "ev-before-02",
+            "kind": "call_site",
+            "claim": "Before the change, main passed the parsed API key and API base positionally into Coder.create; the CLI offered no type, version, deployment ID, or engine options.",
+            "source": "git show ec658223692f901c7456d5baa426e5a8d696dfb7:aider/main.py, Advanced Model Settings and Coder.create call"
+          },
+          {
+            "id": "ev-before-03",
+            "kind": "implementation",
+            "claim": "Before the change, send_with_retries did not add deployment_id or engine to the keyword arguments passed to openai.ChatCompletion.create.",
+            "source": "git show ec658223692f901c7456d5baa426e5a8d696dfb7:aider/coders/base_coder.py, send_with_retries"
+          },
+          {
+            "id": "ev-after-01",
+            "kind": "implementation",
+            "claim": "The changed CLI defines optional arguments for provider API base, API type, API version, deployment ID, and engine.",
+            "source": "git show 549a1a76403e309890410f9538bda2fc4f901758:aider/main.py, Advanced Model Settings"
+          },
+          {
+            "id": "ev-after-02",
+            "kind": "implementation",
+            "claim": "After parsing and API-key validation, startup assigns openai.api_key and maps each non-null optional provider argument to the corresponding openai.api_* module attribute, reporting each optional assignment through tool output.",
+            "source": "git show 549a1a76403e309890410f9538bda2fc4f901758:aider/main.py, block preceding Coder.create"
+          },
+          {
+            "id": "ev-after-03",
+            "kind": "implementation",
+            "claim": "Coder.create no longer accepts or assigns provider credentials or endpoint configuration, making the coder factory independent of those startup concerns.",
+            "source": "git diff ec658223692f901c7456d5baa426e5a8d696dfb7 549a1a76403e309890410f9538bda2fc4f901758 -- aider/coders/base_coder.py"
+          },
+          {
+            "id": "ev-after-04",
+            "kind": "implementation",
+            "claim": "Request construction conditionally copies openai.api_deployment_id to deployment_id and openai.api_engine to engine before hashing the request kwargs and calling openai.ChatCompletion.create.",
+            "source": "git show 549a1a76403e309890410f9538bda2fc4f901758:aider/coders/base_coder.py, send_with_retries"
+          },
+          {
+            "id": "ev-diff-01",
+            "kind": "diff",
+            "claim": "Relative to the first parent, the merge changes aider/coders/base_coder.py, aider/main.py, docs/faq.md, and four existing test modules, totaling 95 insertions and 46 deletions.",
+            "source": "git show --stat 549a1a76403e309890410f9538bda2fc4f901758; git diff ec658223692f901c7456d5baa426e5a8d696dfb7 549a1a76403e309890410f9538bda2fc4f901758"
+          },
+          {
+            "id": "ev-callsite-01",
+            "kind": "call_site",
+            "claim": "The production Coder.create call in main was reconciled with the new factory interface by removing the API-key and API-base positional arguments.",
+            "source": "git diff ec658223692f901c7456d5baa426e5a8d696dfb7 549a1a76403e309890410f9538bda2fc4f901758 -- aider/main.py"
+          },
+          {
+            "id": "ev-test-01",
+            "kind": "test",
+            "claim": "Existing Coder.create invocations across test_coder, test_commands, test_editblock, and test_wholefile were updated to omit the removed openai_api_key argument, providing static evidence that affected callers were migrated to the new interface.",
+            "source": "git diff ec658223692f901c7456d5baa426e5a8d696dfb7 549a1a76403e309890410f9538bda2fc4f901758 -- tests/test_coder.py tests/test_commands.py tests/test_editblock.py tests/test_wholefile.py"
+          },
+          {
+            "id": "ev-test-02",
+            "kind": "test",
+            "claim": "test_main exercises argument parsing and mocks Coder.create, but the pinned version contains no assertions for the newly added API type, version, deployment ID, engine, or request forwarding behavior.",
+            "source": "git show 549a1a76403e309890410f9538bda2fc4f901758:tests/test_main.py; git grep at pinned ref for provider-field names under tests"
+          },
+          {
+            "id": "ev-validation-01",
+            "kind": "validation",
+            "claim": "A local attempt to run test_coder, test_commands, test_editblock, test_wholefile, and test_main at the pinned commit could not execute because the environment lacked GitPython, backoff, and prompt_toolkit; therefore no runtime pass result is claimed.",
+            "source": "python3 -m unittest tests.test_coder tests.test_commands tests.test_editblock tests.test_wholefile tests.test_main in a detached worktree at 549a1a76403e309890410f9538bda2fc4f901758; import errors for git, backoff, and prompt_toolkit"
+          },
+          {
+            "id": "ev-doc-01",
+            "kind": "implementation",
+            "claim": "The FAQ supplies an alternate-endpoint example using API type, key, base, version, and deployment ID through command-line or configuration-file inputs.",
+            "source": "git show 549a1a76403e309890410f9538bda2fc4f901758:docs/faq.md, Azure section"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "centralize-provider-sdk-configuration",
+            "description": "Accept endpoint-specific provider settings at the application boundary and apply only supplied values to the shared provider client before constructing downstream consumers.",
+            "evidence_ids": [
+              "ev-before-01",
+              "ev-before-02",
+              "ev-after-01",
+              "ev-after-02",
+              "ev-after-03",
+              "ev-callsite-01"
+            ],
+            "semantic_action": {
+              "intent": "Allow one client integration to target provider-compatible endpoints that require additional SDK configuration without embedding startup configuration inside the request consumer.",
+              "module_role": "application configuration boundary and provider client initializer",
+              "operation": "adapt",
+              "pre_state": "The application boundary supplies only a key and base, while a downstream consumer factory owns provider SDK mutation and cannot represent type, version, deployment, or engine settings.",
+              "post_state": "Startup owns provider SDK initialization, exposes the supported endpoint settings, and mutates optional SDK attributes only when corresponding values were supplied.",
+              "validation": "Inspect parsed option definitions and the pre-construction mapping to provider SDK attributes; verify the downstream factory no longer accepts or assigns provider configuration. Runtime validation remains unavailable in the inspected environment.",
+              "parameters": [
+                "credential",
+                "endpoint_base",
+                "provider_type",
+                "api_version",
+                "deployment_identifier",
+                "engine_identifier",
+                "provider_sdk_module"
+              ],
+              "evidence_ids": [
+                "ev-before-01",
+                "ev-before-02",
+                "ev-after-01",
+                "ev-after-02",
+                "ev-after-03",
+                "ev-callsite-01",
+                "ev-validation-01"
+              ]
+            }
+          },
+          {
+            "name": "forward-optional-provider-routing-fields",
+            "description": "Conditionally translate configured deployment and engine identifiers into per-request arguments at the provider invocation boundary.",
+            "evidence_ids": [
+              "ev-before-03",
+              "ev-after-04"
+            ],
+            "semantic_action": {
+              "intent": "Route requests through endpoints whose invocation contract requires a deployment identifier or engine identifier.",
+              "module_role": "provider request adapter",
+              "operation": "map",
+              "pre_state": "Provider requests include generic chat fields but omit endpoint-specific deployment and engine routing fields.",
+              "post_state": "Each configured routing identifier is included under the provider call's expected request keyword, while absent identifiers add no keyword.",
+              "validation": "Inspect the kwargs assembled immediately before request hashing and ChatCompletion.create; a dedicated behavioral test proving present and absent branches is not in the pinned change.",
+              "parameters": [
+                "deployment_identifier",
+                "engine_identifier",
+                "request_kwargs",
+                "provider_sdk_module",
+                "chat_completion_call"
+              ],
+              "evidence_ids": [
+                "ev-before-03",
+                "ev-after-04",
+                "ev-test-02"
+              ]
+            }
+          },
+          {
+            "name": "reconcile-consumer-construction-interface",
+            "description": "Remove provider credentials from the consumer factory contract and migrate production and test callers to the configuration-independent constructor.",
+            "evidence_ids": [
+              "ev-before-01",
+              "ev-after-03",
+              "ev-callsite-01",
+              "ev-test-01"
+            ],
+            "semantic_action": {
+              "intent": "Keep provider initialization at the application boundary while preserving construction of the request consumer across all known callers.",
+              "module_role": "consumer factory interface and its call sites",
+              "operation": "reconcile",
+              "pre_state": "The consumer factory requires provider configuration arguments, and production and tests pass those arguments at every construction site.",
+              "post_state": "The consumer factory accepts only its functional construction inputs, and known production and test callers use the reduced interface.",
+              "validation": "Diff all known Coder.create call sites and existing constructor-oriented tests to confirm removal of the obsolete argument; the suite could not be executed locally because dependencies were missing.",
+              "parameters": [
+                "consumer_factory",
+                "application_call_site",
+                "test_call_sites",
+                "provider_configuration_arguments"
+              ],
+              "evidence_ids": [
+                "ev-before-01",
+                "ev-after-03",
+                "ev-callsite-01",
+                "ev-test-01",
+                "ev-validation-01"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "adapt-a-client-to-provider-specific-endpoint-contracts",
+            "description": "Extend a provider-compatible client by centralizing endpoint configuration, reconciling consumer construction, and translating optional routing values only at the invocation boundary.",
+            "atomic_names": [
+              "centralize-provider-sdk-configuration",
+              "reconcile-consumer-construction-interface",
+              "forward-optional-provider-routing-fields"
+            ],
+            "evidence_ids": [
+              "ev-before-01",
+              "ev-before-02",
+              "ev-before-03",
+              "ev-after-01",
+              "ev-after-02",
+              "ev-after-03",
+              "ev-after-04",
+              "ev-callsite-01",
+              "ev-test-01",
+              "ev-test-02",
+              "ev-validation-01"
+            ],
+            "workflow_graph": {
+              "goal": "Permit the same application to invoke a compatible provider endpoint whose SDK and request contracts require optional endpoint metadata, without forcing provider configuration through the consumer factory.",
+              "entry_state": "The client supports a generic key/base configuration, configuration mutation occurs inside a downstream factory, and provider-specific routing values cannot reach the request call.",
+              "exit_state": "Application startup initializes all supplied provider settings, the consumer factory is configuration-independent, known callers use its revised interface, and configured request-routing identifiers are forwarded conditionally.",
+              "steps": [
+                {
+                  "action_name": "centralize-provider-sdk-configuration",
+                  "role": "establish-contract",
+                  "optional": false
+                },
+                {
+                  "action_name": "reconcile-consumer-construction-interface",
+                  "role": "reconcile",
+                  "optional": false
+                },
+                {
+                  "action_name": "forward-optional-provider-routing-fields",
+                  "role": "implement",
+                  "optional": false
+                }
+              ],
+              "edges": [
+                {
+                  "from": "centralize-provider-sdk-configuration",
+                  "to": "reconcile-consumer-construction-interface",
+                  "type": "enables"
+                },
+                {
+                  "from": "centralize-provider-sdk-configuration",
+                  "to": "forward-optional-provider-routing-fields",
+                  "type": "enables"
+                },
+                {
+                  "from": "reconcile-consumer-construction-interface",
+                  "to": "centralize-provider-sdk-configuration",
+                  "type": "validates"
+                }
+              ],
+              "unresolved_or_deferred": [
+                "No pinned test directly asserts SDK attribute assignment for the new optional configuration values.",
+                "No pinned test directly asserts conditional deployment_id or engine forwarding into ChatCompletion.create.",
+                "Runtime regression validation is deferred because required Python dependencies are unavailable in the inspection environment.",
+                "Behavior when the same process invokes main repeatedly with different optional settings is not established; omitted settings are left untouched on the shared SDK module.",
+                "Cross-project pattern promotion is deferred because this episode supplies only one repository workflow and no holdout result."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Did PR status checks or an external integration test validate a real alternate endpoint? The evidence bundle does not include checks or review metadata.",
+          "Should absent optional settings clear pre-existing SDK module attributes during repeated in-process startup, or intentionally preserve them? The implementation only assigns non-null values.",
+          "Are deployment_id and engine mutually exclusive, provider-version-dependent, or both valid together? The pinned code forwards both when both attributes exist.",
+          "The attempted local test run was blocked by missing dependencies, so only code, diff, call-site, and test-structure evidence supports this extraction."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "centralize-provider-sdk-configuration",
+          "description": "Accept endpoint-specific provider settings at the application boundary and apply only supplied values to the shared provider client before constructing downstream consumers.",
+          "evidence_ids": [
+            "ev-before-01",
+            "ev-before-02",
+            "ev-after-01",
+            "ev-after-02",
+            "ev-after-03",
+            "ev-callsite-01"
+          ],
+          "semantic_action": {
+            "intent": "Allow one client integration to target provider-compatible endpoints that require additional SDK configuration without embedding startup configuration inside the request consumer.",
+            "module_role": "application configuration boundary and provider client initializer",
+            "operation": "adapt",
+            "pre_state": "The application boundary supplies only a key and base, while a downstream consumer factory owns provider SDK mutation and cannot represent type, version, deployment, or engine settings.",
+            "post_state": "Startup owns provider SDK initialization, exposes the supported endpoint settings, and mutates optional SDK attributes only when corresponding values were supplied.",
+            "validation": "Inspect parsed option definitions and the pre-construction mapping to provider SDK attributes; verify the downstream factory no longer accepts or assigns provider configuration. Runtime validation remains unavailable in the inspected environment.",
+            "parameters": [
+              "credential",
+              "endpoint_base",
+              "provider_type",
+              "api_version",
+              "deployment_identifier",
+              "engine_identifier",
+              "provider_sdk_module"
+            ],
+            "evidence_ids": [
+              "ev-before-01",
+              "ev-before-02",
+              "ev-after-01",
+              "ev-after-02",
+              "ev-after-03",
+              "ev-callsite-01",
+              "ev-validation-01"
+            ]
+          }
+        },
+        {
+          "name": "forward-optional-provider-routing-fields",
+          "description": "Conditionally translate configured deployment and engine identifiers into per-request arguments at the provider invocation boundary.",
+          "evidence_ids": [
+            "ev-before-03",
+            "ev-after-04"
+          ],
+          "semantic_action": {
+            "intent": "Route requests through endpoints whose invocation contract requires a deployment identifier or engine identifier.",
+            "module_role": "provider request adapter",
+            "operation": "map",
+            "pre_state": "Provider requests include generic chat fields but omit endpoint-specific deployment and engine routing fields.",
+            "post_state": "Each configured routing identifier is included under the provider call's expected request keyword, while absent identifiers add no keyword.",
+            "validation": "Inspect the kwargs assembled immediately before request hashing and ChatCompletion.create; a dedicated behavioral test proving present and absent branches is not in the pinned change.",
+            "parameters": [
+              "deployment_identifier",
+              "engine_identifier",
+              "request_kwargs",
+              "provider_sdk_module",
+              "chat_completion_call"
+            ],
+            "evidence_ids": [
+              "ev-before-03",
+              "ev-after-04",
+              "ev-test-02"
+            ]
+          }
+        },
+        {
+          "name": "reconcile-consumer-construction-interface",
+          "description": "Remove provider credentials from the consumer factory contract and migrate production and test callers to the configuration-independent constructor.",
+          "evidence_ids": [
+            "ev-before-01",
+            "ev-after-03",
+            "ev-callsite-01",
+            "ev-test-01"
+          ],
+          "semantic_action": {
+            "intent": "Keep provider initialization at the application boundary while preserving construction of the request consumer across all known callers.",
+            "module_role": "consumer factory interface and its call sites",
+            "operation": "reconcile",
+            "pre_state": "The consumer factory requires provider configuration arguments, and production and tests pass those arguments at every construction site.",
+            "post_state": "The consumer factory accepts only its functional construction inputs, and known production and test callers use the reduced interface.",
+            "validation": "Diff all known Coder.create call sites and existing constructor-oriented tests to confirm removal of the obsolete argument; the suite could not be executed locally because dependencies were missing.",
+            "parameters": [
+              "consumer_factory",
+              "application_call_site",
+              "test_call_sites",
+              "provider_configuration_arguments"
+            ],
+            "evidence_ids": [
+              "ev-before-01",
+              "ev-after-03",
+              "ev-callsite-01",
+              "ev-test-01",
+              "ev-validation-01"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "adapt-a-client-to-provider-specific-endpoint-contracts",
+          "description": "Extend a provider-compatible client by centralizing endpoint configuration, reconciling consumer construction, and translating optional routing values only at the invocation boundary.",
+          "atomic_names": [
+            "centralize-provider-sdk-configuration",
+            "reconcile-consumer-construction-interface",
+            "forward-optional-provider-routing-fields"
+          ],
+          "evidence_ids": [
+            "ev-before-01",
+            "ev-before-02",
+            "ev-before-03",
+            "ev-after-01",
+            "ev-after-02",
+            "ev-after-03",
+            "ev-after-04",
+            "ev-callsite-01",
+            "ev-test-01",
+            "ev-test-02",
+            "ev-validation-01"
+          ],
+          "workflow_graph": {
+            "goal": "Permit the same application to invoke a compatible provider endpoint whose SDK and request contracts require optional endpoint metadata, without forcing provider configuration through the consumer factory.",
+            "entry_state": "The client supports a generic key/base configuration, configuration mutation occurs inside a downstream factory, and provider-specific routing values cannot reach the request call.",
+            "exit_state": "Application startup initializes all supplied provider settings, the consumer factory is configuration-independent, known callers use its revised interface, and configured request-routing identifiers are forwarded conditionally.",
+            "steps": [
+              {
+                "action_name": "centralize-provider-sdk-configuration",
+                "role": "establish-contract",
+                "optional": false
+              },
+              {
+                "action_name": "reconcile-consumer-construction-interface",
+                "role": "reconcile",
+                "optional": false
+              },
+              {
+                "action_name": "forward-optional-provider-routing-fields",
+                "role": "implement",
+                "optional": false
+              }
+            ],
+            "edges": [
+              {
+                "from": "centralize-provider-sdk-configuration",
+                "to": "reconcile-consumer-construction-interface",
+                "type": "enables"
+              },
+              {
+                "from": "centralize-provider-sdk-configuration",
+                "to": "forward-optional-provider-routing-fields",
+                "type": "enables"
+              },
+              {
+                "from": "reconcile-consumer-construction-interface",
+                "to": "centralize-provider-sdk-configuration",
+                "type": "validates"
+              }
+            ],
+            "unresolved_or_deferred": [
+              "No pinned test directly asserts SDK attribute assignment for the new optional configuration values.",
+              "No pinned test directly asserts conditional deployment_id or engine forwarding into ChatCompletion.create.",
+              "Runtime regression validation is deferred because required Python dependencies are unavailable in the inspection environment.",
+              "Behavior when the same process invokes main repeatedly with different optional settings is not established; omitted settings are left untouched on the shared SDK module.",
+              "Cross-project pattern promotion is deferred because this episode supplies only one repository workflow and no holdout result."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Did PR status checks or an external integration test validate a real alternate endpoint? The evidence bundle does not include checks or review metadata.",
+        "Should absent optional settings clear pre-existing SDK module attributes during repeated in-process startup, or intentionally preserve them? The implementation only assigns non-null values.",
+        "Are deployment_id and engine mutually exclusive, provider-version-dependent, or both valid together? The pinned code forwards both when both attributes exist.",
+        "The attempted local test run was blocked by missing dependencies, so only code, diff, call-site, and test-structure evidence supports this extraction."
+      ]
+    },
+    "call_sites": [
+      "Before the change, main passed the parsed API key and API base positionally into Coder.create; the CLI offered no type, version, deployment ID, or engine options.",
+      "The production Coder.create call in main was reconciled with the new factory interface by removing the API-key and API-base positional arguments."
+    ],
+    "tests": [
+      "Existing Coder.create invocations across test_coder, test_commands, test_editblock, and test_wholefile were updated to omit the removed openai_api_key argument, providing static evidence that affected callers were migrated to the new interface.",
+      "test_main exercises argument parsing and mocks Coder.create, but the pinned version contains no assertions for the newly added API type, version, deployment ID, engine, or request forwarding behavior."
+    ],
+    "category": "provider-interface-adaptation",
+    "theme": "model provider and endpoint resolution",
+    "split": "train"
+  },
+  {
+    "episode_id": "NousResearch/hermes-agent#125942@33c6ab002d1fac653d7e772025ef7aaab7c83480",
+    "title": "Resume sessions using the latest persisted provider route instead of a stale billing identity",
+    "before": "At parent 7fd2f574132fcf8aea71ca485ca489c367fedffe, the Desktop/TUI resume reader independently extracted provider, base_url, and api_mode only from top-level model_config fields, then fell back to billing_provider. It did not inspect model_config.gateway_runtime, even though the messaging gateway persisted its latest per-turn route there. Consequently, a session whose provider changed after its first accounted call could resume with the current stored model combined with the first-call billing_provider, while stale top-level route fields could also override the newer nested route.",
+    "after": "At 33c6ab002d1fac653d7e772025ef7aaab7c83480, Desktop/TUI resume delegates route extraction to SessionDB.session_gateway_runtime, the canonical reader already used by CLI resume. That reader gives a provider-bearing nested gateway_runtime first precedence, otherwise retains top-level provider/base_url/api_mode, and fills only a missing top-level provider from a routable billing_provider. Resume therefore uses the latest persisted provider/wire tuple while preserving compatibility for older rows containing top-level endpoint fields plus billing_provider.",
+    "diff": "The change removes the Desktop/TUI reader's hand-written provider and endpoint extraction and replaces it with a call to the shared session-route reader. It also changes the shared reader's legacy fallback from returning top-level fields immediately to augmenting those fields with billing_provider only when provider is absent. Two regression tests cover nested gateway_runtime winning over a stale first-call billing_provider and over stale top-level route keys; 33 lines were added and 24 removed across hermes_state_gateway.py, tui_gateway/server.py, and the focused test file.",
+    "repository": "NousResearch/hermes-agent",
+    "revision": "github-issue-125942",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10",
+      "E11",
+      "E12",
+      "E13"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 125942,
+      "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+      "manifest_metadata": {
+        "category": "provider-interface-adaptation",
+        "theme": "model provider and endpoint resolution",
+        "split": "train_candidate"
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "NousResearch/hermes-agent",
+        "issue_number": 125942,
+        "issue": {
+          "number": 125942,
+          "title": "Desktop resume of a gateway session ignores `model_config.gateway_runtime` and recombines the model with the stale `billing_provider` → 404",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 125942,
+              "title": "Desktop resume of a gateway session ignores `model_config.gateway_runtime` and recombines the model with the stale `billing_provider` → 404",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\thermes_state_gateway.py"
+              },
+              {
+                "status_line": "M\ttests/tui_gateway/test_resume_switched_provider_endpoint.py"
+              },
+              {
+                "status_line": "M\ttui_gateway/server.py"
+              }
+            ],
+            "commits": []
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+        "pinned_ref": "33c6ab002d1fac653d7e772025ef7aaab7c83480",
+        "resolved_commit": "33c6ab002d1fac653d7e772025ef7aaab7c83480",
+        "parent_commit": "7fd2f574132fcf8aea71ca485ca489c367fedffe",
+        "commit_show_stat": "commit 33c6ab002d1fac653d7e772025ef7aaab7c83480\nAuthor:     teknium1 <127238744+teknium1@users.noreply.github.com>\nAuthorDate: Mon Sep 28 00:44:26 2026 -0700\nCommit:     Teknium <127238744+teknium1@users.noreply.github.com>\nCommitDate: Mon Sep 28 03:13:19 2026 -0700\n\n    fix(tui_gateway): resume on the route in model_config.gateway_runtime (#125942, salvage #125956)\n    \n    tui_gateway/server.py::_stored_session_runtime_overrides read only the top-level model_config\n    keys and then fell back to billing_provider (frozen at the first accounted call), never the\n    nested gateway_runtime dict gateway/run_turn.py persists per turn — so a Telegram-driven session\n    resumed on Desktop paired the current model with the first-call provider and 404'd. Route the\n    Desktop/TUI reader through the canonical SessionDB.session_gateway_runtime (nested gateway_runtime,\n    then top-level TUI keys, then billing_provider), the same reader CLI --resume uses; the reader now\n    fills a missing top-level provider from billing_provider so the pre-existing TUI contract\n    (top-level base_url/api_mode + billing_provider) is unchanged. Redone slim from #125956, which\n    kept a second hand-rolled reader and inverted the precedence.\n    \n    red-on-base: tests/tui_gateway/test_resume_switched_provider_endpoint.py::\n    test_resume_honors_gateway_runtime_over_first_call_billing_provider and\n    test_resume_prefers_gateway_runtime_over_stale_top_level_keys fail on origin/main with\n    `assert ('anthropic', None, None) == ('openai-codex', None, 'codex_responses')`; green-on-head.\n\n hermes_state_gateway.py                            | 12 +++++------\n .../test_resume_switched_provider_endpoint.py      | 21 +++++++++++++++++++\n tui_gateway/server.py                              | 24 ++++++----------------\n 3 files changed, 33 insertions(+), 24 deletions(-)\n",
+        "changed_files_name_status": "M\thermes_state_gateway.py\nM\ttests/tui_gateway/test_resume_switched_provider_endpoint.py\nM\ttui_gateway/server.py\n",
+        "linked_issue_numbers": [
+          125942
+        ],
+        "manifest_metadata": {
+          "category": "provider-interface-adaptation",
+          "theme": "model provider and endpoint resolution"
+        },
+        "fetched_at": "2026-09-29T05:03:55.847994+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "NousResearch/hermes-agent#125942@33c6ab002d1fac653d7e772025ef7aaab7c83480",
+          "title": "Resume sessions using the latest persisted provider route instead of a stale billing identity",
+          "before": "At parent 7fd2f574132fcf8aea71ca485ca489c367fedffe, the Desktop/TUI resume reader independently extracted provider, base_url, and api_mode only from top-level model_config fields, then fell back to billing_provider. It did not inspect model_config.gateway_runtime, even though the messaging gateway persisted its latest per-turn route there. Consequently, a session whose provider changed after its first accounted call could resume with the current stored model combined with the first-call billing_provider, while stale top-level route fields could also override the newer nested route.",
+          "after": "At 33c6ab002d1fac653d7e772025ef7aaab7c83480, Desktop/TUI resume delegates route extraction to SessionDB.session_gateway_runtime, the canonical reader already used by CLI resume. That reader gives a provider-bearing nested gateway_runtime first precedence, otherwise retains top-level provider/base_url/api_mode, and fills only a missing top-level provider from a routable billing_provider. Resume therefore uses the latest persisted provider/wire tuple while preserving compatibility for older rows containing top-level endpoint fields plus billing_provider.",
+          "diff": "The change removes the Desktop/TUI reader's hand-written provider and endpoint extraction and replaces it with a call to the shared session-route reader. It also changes the shared reader's legacy fallback from returning top-level fields immediately to augmenting those fields with billing_provider only when provider is absent. Two regression tests cover nested gateway_runtime winning over a stale first-call billing_provider and over stale top-level route keys; 33 lines were added and 24 removed across hermes_state_gateway.py, tui_gateway/server.py, and the focused test file."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "Commit 33c6ab002d1fac653d7e772025ef7aaab7c83480 has parent 7fd2f574132fcf8aea71ca485ca489c367fedffe and identifies the defect as Desktop/TUI ignoring nested gateway_runtime and falling back to a billing_provider frozen at the first accounted call.",
+            "source": "git show -s --format='%H%n%P%n%s%n%b' 33c6ab002d1fac653d7e772025ef7aaab7c83480"
+          },
+          {
+            "id": "E2",
+            "kind": "implementation",
+            "claim": "The messaging gateway persists the current model route as model_config.gateway_runtime, replacing that nested object with the current provider, base_url, and api_mode values.",
+            "source": "33c6ab002d1fac653d7e772025ef7aaab7c83480:gateway/run_turn.py:365-379"
+          },
+          {
+            "id": "E3",
+            "kind": "diff",
+            "claim": "In the parent, _stored_session_runtime_overrides read top-level model_config provider/base_url/api_mode and used billing_provider when the top-level provider was missing; it had no gateway_runtime lookup.",
+            "source": "git show 7fd2f574132fcf8aea71ca485ca489c367fedffe:tui_gateway/server.py, function _stored_session_runtime_overrides"
+          },
+          {
+            "id": "E4",
+            "kind": "implementation",
+            "claim": "The changed Desktop/TUI resume reader calls SessionDB.session_gateway_runtime(row) and derives provider, base_url, and api_mode from that returned route, while continuing to read unrelated service-tier and reasoning settings from model_config.",
+            "source": "33c6ab002d1fac653d7e772025ef7aaab7c83480:tui_gateway/server.py, function _stored_session_runtime_overrides"
+          },
+          {
+            "id": "E5",
+            "kind": "implementation",
+            "claim": "SessionDB.session_gateway_runtime returns a provider-bearing nested gateway_runtime before other representations and filters None values from that nested route.",
+            "source": "33c6ab002d1fac653d7e772025ef7aaab7c83480:hermes_state_gateway.py, method SessionGatewayMixin.session_gateway_runtime"
+          },
+          {
+            "id": "E6",
+            "kind": "diff",
+            "claim": "The shared reader was changed so routable billing_provider fills a missing provider in the top-level route via setdefault instead of being considered only after an immediate top-level return; bare billing buckets remain excluded.",
+            "source": "git diff 7fd2f574132fcf8aea71ca485ca489c367fedffe 33c6ab002d1fac653d7e772025ef7aaab7c83480 -- hermes_state_gateway.py"
+          },
+          {
+            "id": "E7",
+            "kind": "call_site",
+            "claim": "CLI stored_session_route also obtains persisted provider, base_url, and api_mode through SessionDB.session_gateway_runtime, demonstrating that the changed Desktop/TUI path now shares the same route-resolution boundary as CLI resume.",
+            "source": "33c6ab002d1fac653d7e772025ef7aaab7c83480:hermes_cli/cli_model_switch_mixin.py:47-78"
+          },
+          {
+            "id": "E8",
+            "kind": "test",
+            "claim": "test_resume_honors_gateway_runtime_over_first_call_billing_provider constructs a row with billing_provider anthropic and nested gateway_runtime for openai-codex/codex_responses, then asserts both Desktop/TUI and CLI readers restore the nested route.",
+            "source": "33c6ab002d1fac653d7e772025ef7aaab7c83480:tests/tui_gateway/test_resume_switched_provider_endpoint.py, test_resume_honors_gateway_runtime_over_first_call_billing_provider"
+          },
+          {
+            "id": "E9",
+            "kind": "test",
+            "claim": "test_resume_prefers_gateway_runtime_over_stale_top_level_keys constructs conflicting top-level and nested routes and asserts Desktop/TUI restores the nested provider and wire mode rather than the stale top-level endpoint.",
+            "source": "33c6ab002d1fac653d7e772025ef7aaab7c83480:tests/tui_gateway/test_resume_switched_provider_endpoint.py, test_resume_prefers_gateway_runtime_over_stale_top_level_keys"
+          },
+          {
+            "id": "E10",
+            "kind": "test",
+            "claim": "The pre-existing parameterized test continues to assert that a stored provider switch drops an endpoint and wire mode belonging to the previous provider, covering compatibility with older and gateway-written rows.",
+            "source": "33c6ab002d1fac653d7e772025ef7aaab7c83480:tests/tui_gateway/test_resume_switched_provider_endpoint.py, test_resume_drops_previous_providers_endpoint"
+          },
+          {
+            "id": "E11",
+            "kind": "validation",
+            "claim": "The commit records both new tests as red on the base with the stale anthropic route and green on the implementation commit.",
+            "source": "commit message for 33c6ab002d1fac653d7e772025ef7aaab7c83480"
+          },
+          {
+            "id": "E12",
+            "kind": "diff",
+            "claim": "The implementation changes exactly three files, with 33 insertions and 24 deletions: the shared route reader, the Desktop/TUI consumer, and focused resume regression tests.",
+            "source": "git show --stat --oneline 33c6ab002d1fac653d7e772025ef7aaab7c83480"
+          },
+          {
+            "id": "E13",
+            "kind": "validation",
+            "claim": "The diff between the pinned parent and implementation commit passes git diff --check.",
+            "source": "git diff 7fd2f574132fcf8aea71ca485ca489c367fedffe 33c6ab002d1fac653d7e772025ef7aaab7c83480 --check"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "resolve-persisted-route-by-freshness",
+            "description": "Normalize multiple persisted route representations into one provider/endpoint/wire tuple using explicit freshness precedence: the latest nested runtime route first, then legacy top-level fields, with a routable billing identity only filling a missing provider.",
+            "evidence_ids": [
+              "E2",
+              "E5",
+              "E6",
+              "E8",
+              "E9",
+              "E10"
+            ],
+            "semantic_action": {
+              "intent": "Restore a resumed session on the provider interface most recently used by that session without discarding compatible legacy route metadata.",
+              "module_role": "canonical persisted-session route resolver",
+              "operation": "reconcile",
+              "pre_state": "Session metadata may contain a newer nested runtime route, older top-level provider/endpoint fields, and a first-call billing identity that disagree or are only partially populated.",
+              "post_state": "A provider-bearing nested runtime route wins; otherwise top-level route fields are retained and a routable billing identity fills only a missing provider, while unroutable bare billing buckets do not become route identities.",
+              "validation": "Conflicting nested-versus-billing and nested-versus-top-level fixtures must resolve to the nested provider and wire mode, while the existing legacy switched-provider fixture must still discard an endpoint belonging to the previous provider.",
+              "parameters": [
+                "session metadata row",
+                "nested runtime-route object",
+                "legacy top-level provider",
+                "legacy top-level endpoint",
+                "legacy top-level wire mode",
+                "billing-provider identity",
+                "set of unroutable billing buckets"
+              ],
+              "evidence_ids": [
+                "E2",
+                "E5",
+                "E6",
+                "E8",
+                "E9",
+                "E10"
+              ]
+            }
+          },
+          {
+            "name": "delegate-resume-consumer-to-canonical-route-reader",
+            "description": "Replace a consumer-specific reconstruction of persisted provider metadata with the canonical session-route resolver before applying existing endpoint-safety and provider-healing logic.",
+            "evidence_ids": [
+              "E3",
+              "E4",
+              "E7",
+              "E8",
+              "E9"
+            ],
+            "semantic_action": {
+              "intent": "Keep separate resume surfaces from interpreting the same persisted provider interface differently.",
+              "module_role": "session-resume runtime adapter",
+              "operation": "adapt",
+              "pre_state": "One resume surface manually reads only legacy top-level fields and billing identity, while another uses the canonical reader that understands the latest nested runtime route.",
+              "post_state": "The resume surface obtains provider, endpoint, and wire mode from the canonical resolver, while its existing model restoration, foreign-endpoint rejection, provider healing, reasoning, and service-tier behavior remains downstream.",
+              "validation": "The focused regression tests assert that Desktop/TUI and CLI select the same nested route for a stale-billing row, and that Desktop/TUI gives the nested route precedence over stale top-level keys.",
+              "parameters": [
+                "stored session row",
+                "canonical route resolver",
+                "resume model override",
+                "provider override",
+                "endpoint safety policy"
+              ],
+              "evidence_ids": [
+                "E3",
+                "E4",
+                "E7",
+                "E8",
+                "E9"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "adapt-session-resume-to-a-versioned-provider-route",
+            "description": "Establish one precedence-aware interpretation of persisted provider-interface state, then make each resume consumer delegate route extraction to it and validate conflicts between new and legacy representations.",
+            "atomic_names": [
+              "resolve-persisted-route-by-freshness",
+              "delegate-resume-consumer-to-canonical-route-reader"
+            ],
+            "evidence_ids": [
+              "E1",
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E10",
+              "E11"
+            ],
+            "workflow_graph": {
+              "goal": "Resume a session using its latest persisted provider, endpoint, and wire protocol without regressing compatible legacy rows or existing endpoint-safety rules.",
+              "entry_state": "A producer persists the latest route in a nested runtime object, but at least one consumer independently reconstructs the route from older top-level fields and a potentially stale billing identity.",
+              "exit_state": "Persisted route precedence is centralized and all relevant resume consumers use it; conflicting-representation tests select the latest nested route and legacy endpoint-safety coverage remains intact.",
+              "steps": [
+                {
+                  "action_name": "resolve-persisted-route-by-freshness",
+                  "role": "establish-contract",
+                  "optional": false
+                },
+                {
+                  "action_name": "delegate-resume-consumer-to-canonical-route-reader",
+                  "role": "implement",
+                  "optional": false
+                }
+              ],
+              "edges": [
+                {
+                  "from": "resolve-persisted-route-by-freshness",
+                  "to": "delegate-resume-consumer-to-canonical-route-reader",
+                  "type": "enables"
+                },
+                {
+                  "from": "delegate-resume-consumer-to-canonical-route-reader",
+                  "to": "resolve-persisted-route-by-freshness",
+                  "type": "validates"
+                }
+              ],
+              "unresolved_or_deferred": [
+                "No cross-repository resolution pattern is proposed from this single workflow.",
+                "The repository's test runner could not be independently executed in the available checkout because the installed Python environment lacks pytest; green-on-head status is supported by the pinned commit message rather than a fresh local run."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "GitHub issue body, comments, reviews, timeline, and status checks are unavailable in the supplied evidence bundle, so motivation and validation claims beyond the checkout and commit message are not inferred.",
+          "A fresh pytest execution was unavailable because /usr/bin/python3 has no pytest module; implementation and regression-test structure were inspected directly, git diff --check passed, and the commit's recorded red-on-base/green-on-head result is retained as commit-sourced validation."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "resolve-persisted-route-by-freshness",
+          "description": "Normalize multiple persisted route representations into one provider/endpoint/wire tuple using explicit freshness precedence: the latest nested runtime route first, then legacy top-level fields, with a routable billing identity only filling a missing provider.",
+          "evidence_ids": [
+            "E2",
+            "E5",
+            "E6",
+            "E8",
+            "E9",
+            "E10"
+          ],
+          "semantic_action": {
+            "intent": "Restore a resumed session on the provider interface most recently used by that session without discarding compatible legacy route metadata.",
+            "module_role": "canonical persisted-session route resolver",
+            "operation": "reconcile",
+            "pre_state": "Session metadata may contain a newer nested runtime route, older top-level provider/endpoint fields, and a first-call billing identity that disagree or are only partially populated.",
+            "post_state": "A provider-bearing nested runtime route wins; otherwise top-level route fields are retained and a routable billing identity fills only a missing provider, while unroutable bare billing buckets do not become route identities.",
+            "validation": "Conflicting nested-versus-billing and nested-versus-top-level fixtures must resolve to the nested provider and wire mode, while the existing legacy switched-provider fixture must still discard an endpoint belonging to the previous provider.",
+            "parameters": [
+              "session metadata row",
+              "nested runtime-route object",
+              "legacy top-level provider",
+              "legacy top-level endpoint",
+              "legacy top-level wire mode",
+              "billing-provider identity",
+              "set of unroutable billing buckets"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E5",
+              "E6",
+              "E8",
+              "E9",
+              "E10"
+            ]
+          }
+        },
+        {
+          "name": "delegate-resume-consumer-to-canonical-route-reader",
+          "description": "Replace a consumer-specific reconstruction of persisted provider metadata with the canonical session-route resolver before applying existing endpoint-safety and provider-healing logic.",
+          "evidence_ids": [
+            "E3",
+            "E4",
+            "E7",
+            "E8",
+            "E9"
+          ],
+          "semantic_action": {
+            "intent": "Keep separate resume surfaces from interpreting the same persisted provider interface differently.",
+            "module_role": "session-resume runtime adapter",
+            "operation": "adapt",
+            "pre_state": "One resume surface manually reads only legacy top-level fields and billing identity, while another uses the canonical reader that understands the latest nested runtime route.",
+            "post_state": "The resume surface obtains provider, endpoint, and wire mode from the canonical resolver, while its existing model restoration, foreign-endpoint rejection, provider healing, reasoning, and service-tier behavior remains downstream.",
+            "validation": "The focused regression tests assert that Desktop/TUI and CLI select the same nested route for a stale-billing row, and that Desktop/TUI gives the nested route precedence over stale top-level keys.",
+            "parameters": [
+              "stored session row",
+              "canonical route resolver",
+              "resume model override",
+              "provider override",
+              "endpoint safety policy"
+            ],
+            "evidence_ids": [
+              "E3",
+              "E4",
+              "E7",
+              "E8",
+              "E9"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "adapt-session-resume-to-a-versioned-provider-route",
+          "description": "Establish one precedence-aware interpretation of persisted provider-interface state, then make each resume consumer delegate route extraction to it and validate conflicts between new and legacy representations.",
+          "atomic_names": [
+            "resolve-persisted-route-by-freshness",
+            "delegate-resume-consumer-to-canonical-route-reader"
+          ],
+          "evidence_ids": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10",
+            "E11"
+          ],
+          "workflow_graph": {
+            "goal": "Resume a session using its latest persisted provider, endpoint, and wire protocol without regressing compatible legacy rows or existing endpoint-safety rules.",
+            "entry_state": "A producer persists the latest route in a nested runtime object, but at least one consumer independently reconstructs the route from older top-level fields and a potentially stale billing identity.",
+            "exit_state": "Persisted route precedence is centralized and all relevant resume consumers use it; conflicting-representation tests select the latest nested route and legacy endpoint-safety coverage remains intact.",
+            "steps": [
+              {
+                "action_name": "resolve-persisted-route-by-freshness",
+                "role": "establish-contract",
+                "optional": false
+              },
+              {
+                "action_name": "delegate-resume-consumer-to-canonical-route-reader",
+                "role": "implement",
+                "optional": false
+              }
+            ],
+            "edges": [
+              {
+                "from": "resolve-persisted-route-by-freshness",
+                "to": "delegate-resume-consumer-to-canonical-route-reader",
+                "type": "enables"
+              },
+              {
+                "from": "delegate-resume-consumer-to-canonical-route-reader",
+                "to": "resolve-persisted-route-by-freshness",
+                "type": "validates"
+              }
+            ],
+            "unresolved_or_deferred": [
+              "No cross-repository resolution pattern is proposed from this single workflow.",
+              "The repository's test runner could not be independently executed in the available checkout because the installed Python environment lacks pytest; green-on-head status is supported by the pinned commit message rather than a fresh local run."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "GitHub issue body, comments, reviews, timeline, and status checks are unavailable in the supplied evidence bundle, so motivation and validation claims beyond the checkout and commit message are not inferred.",
+        "A fresh pytest execution was unavailable because /usr/bin/python3 has no pytest module; implementation and regression-test structure were inspected directly, git diff --check passed, and the commit's recorded red-on-base/green-on-head result is retained as commit-sourced validation."
+      ]
+    },
+    "call_sites": [
+      "CLI stored_session_route also obtains persisted provider, base_url, and api_mode through SessionDB.session_gateway_runtime, demonstrating that the changed Desktop/TUI path now shares the same route-resolution boundary as CLI resume."
+    ],
+    "tests": [
+      "test_resume_honors_gateway_runtime_over_first_call_billing_provider constructs a row with billing_provider anthropic and nested gateway_runtime for openai-codex/codex_responses, then asserts both Desktop/TUI and CLI readers restore the nested route.",
+      "test_resume_prefers_gateway_runtime_over_stale_top_level_keys constructs conflicting top-level and nested routes and asserts Desktop/TUI restores the nested provider and wire mode rather than the stale top-level endpoint.",
+      "The pre-existing parameterized test continues to assert that a stored provider switch drops an endpoint and wire mode belonging to the previous provider, covering compatibility with older and gateway-written rows."
+    ],
+    "category": "provider-interface-adaptation",
+    "theme": "model provider and endpoint resolution",
+    "split": "train"
+  },
+  {
+    "episode_id": "QwenLM/qwen-code#11657@3ba01990e13e9e8e14e147b60add50e0f972431a",
+    "title": "Adapt replayed reasoning fields to a strict OpenAI-compatible endpoint",
+    "before": "At parent d50dc84e363f4225193418fcd8844fa21f3ae66a, all otherwise-unrecognized OpenAI-compatible endpoints used the default provider. For Qwen3 model names, that provider copied each assistant history message's non-empty reasoning_content into an additional reasoning field. Because no endpoint-specific adapter was selected for api.fireworks.ai, a multi-turn continuation replaying a thinking turn sent both fields; the strict endpoint rejected messages[N].reasoning with HTTP 400.",
+    "after": "At 3ba01990e13e9e8e14e147b60add50e0f972431a, exact and subdomain hostnames under api.fireworks.ai select a dedicated provider. After applying the inherited default request transformation, that provider creates a new outbound message array and removes reasoning only when it is a string exactly equal to reasoning_content. It preserves reasoning_content, distinct caller-supplied reasoning values, source conversation history, and the existing behavior of non-matching endpoints.",
+    "diff": "The change adds hostname-bounded provider detection and dispatch, exports a new provider adapter, and overrides the outbound request builder to reverse only the default provider's recognizable reasoning mirror. It also adds focused routing and field-preservation tests plus an HTTP integration test whose strict local endpoint rejects any assistant reasoning field and confirms that a two-turn thinking-history continuation succeeds with reasoning_content still present on the wire.",
+    "repository": "QwenLM/qwen-code",
+    "revision": "github-issue-11657",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "QwenLM/qwen-code",
+      "issue": 11657,
+      "checkout": "/home/chenyujia/tritonToLlvm/qwen-code",
+      "manifest_metadata": {
+        "category": "provider-interface-adaptation",
+        "theme": "model provider and endpoint resolution",
+        "split": "train_candidate"
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "QwenLM/qwen-code",
+        "issue_number": 11657,
+        "issue": {
+          "number": 11657,
+          "title": "Fireworks: Qwen3 tool-call continuation fails with 400 due to mirrored messages[].reasoning",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 11657,
+              "title": "Fireworks: Qwen3 tool-call continuation fails with 400 due to mirrored messages[].reasoning",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tpackages/core/src/core/openaiContentGenerator/index.ts"
+              },
+              {
+                "status_line": "A\tpackages/core/src/core/openaiContentGenerator/provider/fireworks.test.ts"
+              },
+              {
+                "status_line": "A\tpackages/core/src/core/openaiContentGenerator/provider/fireworks.ts"
+              },
+              {
+                "status_line": "M\tpackages/core/src/core/openaiContentGenerator/provider/index.ts"
+              }
+            ],
+            "commits": []
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/qwen-code",
+        "pinned_ref": "3ba01990e13e9e8e14e147b60add50e0f972431a",
+        "resolved_commit": "3ba01990e13e9e8e14e147b60add50e0f972431a",
+        "parent_commit": "d50dc84e363f4225193418fcd8844fa21f3ae66a",
+        "commit_show_stat": "commit 3ba01990e13e9e8e14e147b60add50e0f972431a\nAuthor:     bluefateludi <154300142+bluefateludi@users.noreply.github.com>\nAuthorDate: Sat Sep 12 19:20:55 2026 +0000\nCommit:     GitHub <noreply@github.com>\nCommitDate: Sat Sep 12 19:20:55 2026 +0000\n\n    fix(core): keep the mirrored reasoning field off Fireworks requests (#11701)\n    \n    Fireworks' OpenAI-compatible endpoint accepts the non-standard\n    reasoning_content field on input but rejects the additional reasoning\n    field with HTTP 400 (Extra inputs are not permitted, field:\n    'messages[N].reasoning'). The default provider mirrors\n    reasoning_content into reasoning for any model whose name contains\n    'qwen3' — a family match that does not establish the endpoint accepts\n    the extra field — so Qwen3 thinking models on Fireworks fail every\n    multi-turn continuation that replays a thinking turn, including\n    tool-call continuation (issue #11657).\n    \n    Add a Fireworks provider, detected by api.fireworks.ai hostname in\n    determineProvider (following the Cerebras precedent from #11049), that\n    undoes the mirror at the outbound request boundary. Only the exact\n    mirror copy (reasoning === reasoning_content) is dropped; a distinct\n    explicit reasoning field and reasoning_content itself — which Fireworks\n    documents for reasoning replay — are preserved. Conversation history is\n    never mutated and non-Fireworks endpoints keep the existing mirroring.\n\n .../core/src/core/openaiContentGenerator/index.ts  |  10 +\n .../provider/fireworks.test.ts                     | 303 +++++++++++++++++++++\n .../openaiContentGenerator/provider/fireworks.ts   |  93 +++++++\n .../core/openaiContentGenerator/provider/index.ts  |   1 +\n 4 files changed, 407 insertions(+)\n",
+        "changed_files_name_status": "M\tpackages/core/src/core/openaiContentGenerator/index.ts\nA\tpackages/core/src/core/openaiContentGenerator/provider/fireworks.test.ts\nA\tpackages/core/src/core/openaiContentGenerator/provider/fireworks.ts\nM\tpackages/core/src/core/openaiContentGenerator/provider/index.ts\n",
+        "linked_issue_numbers": [
+          11657
+        ],
+        "manifest_metadata": {
+          "category": "provider-interface-adaptation",
+          "theme": "model provider and endpoint resolution"
+        },
+        "fetched_at": "2026-09-29T05:08:31.947372+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "QwenLM/qwen-code#11657@3ba01990e13e9e8e14e147b60add50e0f972431a",
+          "title": "Adapt replayed reasoning fields to a strict OpenAI-compatible endpoint",
+          "before": "At parent d50dc84e363f4225193418fcd8844fa21f3ae66a, all otherwise-unrecognized OpenAI-compatible endpoints used the default provider. For Qwen3 model names, that provider copied each assistant history message's non-empty reasoning_content into an additional reasoning field. Because no endpoint-specific adapter was selected for api.fireworks.ai, a multi-turn continuation replaying a thinking turn sent both fields; the strict endpoint rejected messages[N].reasoning with HTTP 400.",
+          "after": "At 3ba01990e13e9e8e14e147b60add50e0f972431a, exact and subdomain hostnames under api.fireworks.ai select a dedicated provider. After applying the inherited default request transformation, that provider creates a new outbound message array and removes reasoning only when it is a string exactly equal to reasoning_content. It preserves reasoning_content, distinct caller-supplied reasoning values, source conversation history, and the existing behavior of non-matching endpoints.",
+          "diff": "The change adds hostname-bounded provider detection and dispatch, exports a new provider adapter, and overrides the outbound request builder to reverse only the default provider's recognizable reasoning mirror. It also adds focused routing and field-preservation tests plus an HTTP integration test whose strict local endpoint rejects any assistant reasoning field and confirms that a two-turn thinking-history continuation succeeds with reasoning_content still present on the wire."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "Commit 3ba01990e13e9e8e14e147b60add50e0f972431a identifies issue #11657 as a failure in which the default Qwen3 transformation adds reasoning beside reasoning_content and the strict endpoint rejects the extra field with HTTP 400; it states that the fix is applied at the outbound boundary without mutating history.",
+            "source": "git show --format=fuller 3ba01990e13e9e8e14e147b60add50e0f972431a (commit message)"
+          },
+          {
+            "id": "E2",
+            "kind": "implementation",
+            "claim": "In the parent implementation, DefaultOpenAICompatibleProvider recognizes Qwen3 by model-name substring and maps assistant messages through mirrorReasoningContentToReasoning; the helper returns a copied message with reasoning set to reasoning_content when reasoning_content is a non-empty string and no string reasoning value already exists.",
+            "source": "git show d50dc84e363f4225193418fcd8844fa21f3ae66a:packages/core/src/core/openaiContentGenerator/provider/default.ts, lines 34-61 and buildRequest around lines 190-211"
+          },
+          {
+            "id": "E3",
+            "kind": "diff",
+            "claim": "Before the change, determineProvider checked its known providers through Cerebras and otherwise returned DefaultOpenAICompatibleProvider; it had no routing branch for the affected endpoint.",
+            "source": "git show d50dc84e363f4225193418fcd8844fa21f3ae66a:packages/core/src/core/openaiContentGenerator/index.ts, determineProvider ending around lines 90-128"
+          },
+          {
+            "id": "E4",
+            "kind": "implementation",
+            "claim": "The added endpoint detector parses baseUrl, lowercases URL.hostname, accepts only api.fireworks.ai or its dot-delimited subdomains, and returns false for an absent or invalid URL. The implementation explicitly avoids model-name routing because third-party model identifiers are served by the endpoint.",
+            "source": "git show 3ba01990e13e9e8e14e147b60add50e0f972431a:packages/core/src/core/openaiContentGenerator/provider/fireworks.ts, lines 11-34"
+          },
+          {
+            "id": "E5",
+            "kind": "implementation",
+            "claim": "The dedicated provider first delegates to the default request builder, then maps the resulting outbound messages through unmirrorReasoningField. That helper changes only assistant messages whose reasoning is a string equal to reasoning_content, returning a copy without reasoning; role mismatches, unequal values, and non-string values are left unchanged.",
+            "source": "git show 3ba01990e13e9e8e14e147b60add50e0f972431a:packages/core/src/core/openaiContentGenerator/provider/fireworks.ts, lines 36-93"
+          },
+          {
+            "id": "E6",
+            "kind": "call_site",
+            "claim": "determineProvider now constructs the dedicated adapter when its hostname detector matches, before falling back to the default provider. The generation pipeline converts conversation contents into OpenAI messages and invokes provider.buildRequest before request capture and the SDK call, making this the outbound adaptation boundary.",
+            "source": "git show 3ba01990e13e9e8e14e147b60add50e0f972431a:packages/core/src/core/openaiContentGenerator/index.ts, lines 119-135; packages/core/src/core/openaiContentGenerator/pipeline.ts, lines 863-955 and 1382-1399"
+          },
+          {
+            "id": "E7",
+            "kind": "test",
+            "claim": "Focused tests assert exact-host and subdomain matching, rejection of a hostile hostname that merely contains the trusted suffix, removal of the mirror while preserving reasoning_content and source history, retention of a distinct explicit reasoning value, and unchanged mirroring for a non-matching endpoint.",
+            "source": "git show 3ba01990e13e9e8e14e147b60add50e0f972431a:packages/core/src/core/openaiContentGenerator/provider/fireworks.test.ts, lines 50-143"
+          },
+          {
+            "id": "E8",
+            "kind": "test",
+            "claim": "An HTTP integration test uses the real generator conversion/provider/wire path and a local strict server that returns the reported 400 shape whenever an assistant message contains reasoning. A follow-up containing a prior thought is accepted, and the captured wire message contains reasoning_content but no reasoning field.",
+            "source": "git show 3ba01990e13e9e8e14e147b60add50e0f972431a:packages/core/src/core/openaiContentGenerator/provider/fireworks.test.ts, lines 146-303"
+          },
+          {
+            "id": "E9",
+            "kind": "diff",
+            "claim": "The provider is exported from the provider barrel and public openaiContentGenerator module, and the commit changes four files with 407 inserted lines: routing, exports, the adapter, and its tests.",
+            "source": "git diff --stat and git diff d50dc84e363f4225193418fcd8844fa21f3ae66a 3ba01990e13e9e8e14e147b60add50e0f972431a"
+          },
+          {
+            "id": "E10",
+            "kind": "test",
+            "claim": "Existing default-provider tests establish the behavior that must remain intact: Qwen3 history mirrors reasoning_content without mutating the input, explicit reasoning is not overwritten, and non-Qwen3 models are not mirrored.",
+            "source": "git show d50dc84e363f4225193418fcd8844fa21f3ae66a:packages/core/src/core/openaiContentGenerator/provider/default.test.ts, lines 766-845"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "classify-compatible-endpoint-by-canonical-hostname",
+            "description": "Select an endpoint-specific compatibility adapter using parsed hostname boundaries rather than model-family names or substring matching.",
+            "evidence_ids": [
+              "E3",
+              "E4",
+              "E6",
+              "E7"
+            ],
+            "semantic_action": {
+              "intent": "Apply a compatibility policy only to requests targeting the endpoint whose wire contract requires it, without misrouting other hosts that serve the same model family.",
+              "module_role": "provider selection boundary",
+              "operation": "classify",
+              "pre_state": "The affected endpoint falls through to a generic compatible-provider implementation, while model identifiers are insufficient to identify the actual endpoint.",
+              "post_state": "Exact canonical hostname and legitimate subdomains select the specialized adapter; unrelated, hostile-suffix, missing, and invalid URLs do not.",
+              "validation": "Route exact-host, subdomain, and hostile lookalike URLs through provider selection and assert their resulting request behavior distinguishes matched from fallback endpoints.",
+              "parameters": [
+                "configured base URL",
+                "canonical endpoint hostname",
+                "provider configuration"
+              ],
+              "evidence_ids": [
+                "E3",
+                "E4",
+                "E6",
+                "E7"
+              ]
+            }
+          },
+          {
+            "name": "remove-only-derived-incompatible-wire-field",
+            "description": "At the outbound boundary, remove only a field recognizable as a derived mirror while retaining the endpoint-supported source field and distinct explicit values.",
+            "evidence_ids": [
+              "E2",
+              "E5",
+              "E7",
+              "E10"
+            ],
+            "semantic_action": {
+              "intent": "Prevent strict-schema request rejection without discarding supported replay data, explicit caller intent, or shared history.",
+              "module_role": "outbound provider request adapter",
+              "operation": "reconcile",
+              "pre_state": "An inherited generic transformation has added a reasoning field equal to reasoning_content on an assistant history message, but the selected endpoint rejects reasoning and accepts reasoning_content.",
+              "post_state": "The outbound copy omits reasoning only when it exactly matches the derived mirror signature; reasoning_content and distinct explicit reasoning values remain, and the source request is unchanged.",
+              "validation": "Assert the mirrored-equality case is removed, unequal explicit values are retained, supported content remains present, source history is not mutated, and fallback providers preserve their prior behavior.",
+              "parameters": [
+                "outbound chat request",
+                "assistant history messages",
+                "reasoning_content field",
+                "reasoning field",
+                "mirror equality predicate"
+              ],
+              "evidence_ids": [
+                "E2",
+                "E5",
+                "E7",
+                "E10"
+              ]
+            }
+          },
+          {
+            "name": "validate-strict-endpoint-multiturn-continuation",
+            "description": "Exercise the complete history-conversion, provider-adaptation, and HTTP path against a strict contract oracle.",
+            "evidence_ids": [
+              "E6",
+              "E8"
+            ],
+            "semantic_action": {
+              "intent": "Demonstrate that replaying a prior thinking turn no longer produces a rejected continuation request.",
+              "module_role": "provider wire-contract validation",
+              "operation": "validate",
+              "pre_state": "A multi-turn request includes an assistant thought that conversion represents as reasoning_content, and a strict endpoint rejects any assistant reasoning property.",
+              "post_state": "The continuation receives a successful response, with reasoning_content present and reasoning absent in the captured HTTP request.",
+              "validation": "Use a strict local HTTP server that returns the reported 400 validation payload if reasoning is present, then execute two turns through OpenAIContentGenerator and inspect the second request body.",
+              "parameters": [
+                "multi-turn generation request",
+                "prior thought part",
+                "strict HTTP test endpoint",
+                "captured request bodies"
+              ],
+              "evidence_ids": [
+                "E6",
+                "E8"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "adapt-generic-compatible-requests-to-a-stricter-endpoint-contract",
+            "description": "Introduce a narrowly routed outbound adapter when a nominally compatible endpoint rejects a generic provider transformation, preserving shared semantics and verifying the complete continuation path.",
+            "atomic_names": [
+              "classify-compatible-endpoint-by-canonical-hostname",
+              "remove-only-derived-incompatible-wire-field",
+              "validate-strict-endpoint-multiturn-continuation"
+            ],
+            "evidence_ids": [
+              "E1",
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E10"
+            ],
+            "workflow_graph": {
+              "goal": "Allow thinking-history and tool-call continuations to satisfy the stricter endpoint schema without weakening behavior for other compatible endpoints or deleting supported replay data.",
+              "entry_state": "A generic compatible-provider transformation derives an extra message field from preserved history, and the actual endpoint rejects that field during multi-turn continuation.",
+              "exit_state": "The affected endpoint is safely identified, only the derived incompatible field is removed from an outbound copy, other endpoint behavior is unchanged, and a strict HTTP oracle accepts the continuation wire shape.",
+              "steps": [
+                {
+                  "action_name": "classify-compatible-endpoint-by-canonical-hostname",
+                  "role": "establish-contract",
+                  "optional": false
+                },
+                {
+                  "action_name": "remove-only-derived-incompatible-wire-field",
+                  "role": "reconcile",
+                  "optional": false
+                },
+                {
+                  "action_name": "validate-strict-endpoint-multiturn-continuation",
+                  "role": "validate",
+                  "optional": false
+                }
+              ],
+              "edges": [
+                {
+                  "from": "classify-compatible-endpoint-by-canonical-hostname",
+                  "to": "remove-only-derived-incompatible-wire-field",
+                  "type": "enables"
+                },
+                {
+                  "from": "remove-only-derived-incompatible-wire-field",
+                  "to": "validate-strict-endpoint-multiturn-continuation",
+                  "type": "validates"
+                }
+              ],
+              "unresolved_or_deferred": [
+                "No independent test-run or CI result is present in the supplied GitHub bundle; the validation oracle is established from committed tests, but execution success was not independently observed in this extraction.",
+                "The bundle lacks issue body, comments, reviews, timeline, and status checks, so the endpoint contract and failure reproduction are grounded in the commit, implementation, and tests rather than discussion metadata.",
+                "No cross-repository peers or untouched holdout were provided, so this single workflow must not be promoted as a universal resolution pattern."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "The issue bundle labels its linked pull-request object as number 11657, while the implementation commit subject references PR #11701 and issue #11657; unavailable GitHub metadata prevents independently resolving that numbering inconsistency.",
+          "The checkout working tree is materialized as deletions, so inspection used the pinned commit and parent Git objects. Tests were not executed against the current worktree, and no validation-pass claim is made.",
+          "Whether empty or null equal-valued mirrors should be removed is discussed in implementation comments, but the helper's string guard leaves non-string values unchanged; committed tests do not cover empty-string or null cases.",
+          "Pattern induction, semantic peer adjudication, and holdout validation are deferred because only one repository workflow is in scope."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "classify-compatible-endpoint-by-canonical-hostname",
+          "description": "Select an endpoint-specific compatibility adapter using parsed hostname boundaries rather than model-family names or substring matching.",
+          "evidence_ids": [
+            "E3",
+            "E4",
+            "E6",
+            "E7"
+          ],
+          "semantic_action": {
+            "intent": "Apply a compatibility policy only to requests targeting the endpoint whose wire contract requires it, without misrouting other hosts that serve the same model family.",
+            "module_role": "provider selection boundary",
+            "operation": "classify",
+            "pre_state": "The affected endpoint falls through to a generic compatible-provider implementation, while model identifiers are insufficient to identify the actual endpoint.",
+            "post_state": "Exact canonical hostname and legitimate subdomains select the specialized adapter; unrelated, hostile-suffix, missing, and invalid URLs do not.",
+            "validation": "Route exact-host, subdomain, and hostile lookalike URLs through provider selection and assert their resulting request behavior distinguishes matched from fallback endpoints.",
+            "parameters": [
+              "configured base URL",
+              "canonical endpoint hostname",
+              "provider configuration"
+            ],
+            "evidence_ids": [
+              "E3",
+              "E4",
+              "E6",
+              "E7"
+            ]
+          }
+        },
+        {
+          "name": "remove-only-derived-incompatible-wire-field",
+          "description": "At the outbound boundary, remove only a field recognizable as a derived mirror while retaining the endpoint-supported source field and distinct explicit values.",
+          "evidence_ids": [
+            "E2",
+            "E5",
+            "E7",
+            "E10"
+          ],
+          "semantic_action": {
+            "intent": "Prevent strict-schema request rejection without discarding supported replay data, explicit caller intent, or shared history.",
+            "module_role": "outbound provider request adapter",
+            "operation": "reconcile",
+            "pre_state": "An inherited generic transformation has added a reasoning field equal to reasoning_content on an assistant history message, but the selected endpoint rejects reasoning and accepts reasoning_content.",
+            "post_state": "The outbound copy omits reasoning only when it exactly matches the derived mirror signature; reasoning_content and distinct explicit reasoning values remain, and the source request is unchanged.",
+            "validation": "Assert the mirrored-equality case is removed, unequal explicit values are retained, supported content remains present, source history is not mutated, and fallback providers preserve their prior behavior.",
+            "parameters": [
+              "outbound chat request",
+              "assistant history messages",
+              "reasoning_content field",
+              "reasoning field",
+              "mirror equality predicate"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E5",
+              "E7",
+              "E10"
+            ]
+          }
+        },
+        {
+          "name": "validate-strict-endpoint-multiturn-continuation",
+          "description": "Exercise the complete history-conversion, provider-adaptation, and HTTP path against a strict contract oracle.",
+          "evidence_ids": [
+            "E6",
+            "E8"
+          ],
+          "semantic_action": {
+            "intent": "Demonstrate that replaying a prior thinking turn no longer produces a rejected continuation request.",
+            "module_role": "provider wire-contract validation",
+            "operation": "validate",
+            "pre_state": "A multi-turn request includes an assistant thought that conversion represents as reasoning_content, and a strict endpoint rejects any assistant reasoning property.",
+            "post_state": "The continuation receives a successful response, with reasoning_content present and reasoning absent in the captured HTTP request.",
+            "validation": "Use a strict local HTTP server that returns the reported 400 validation payload if reasoning is present, then execute two turns through OpenAIContentGenerator and inspect the second request body.",
+            "parameters": [
+              "multi-turn generation request",
+              "prior thought part",
+              "strict HTTP test endpoint",
+              "captured request bodies"
+            ],
+            "evidence_ids": [
+              "E6",
+              "E8"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "adapt-generic-compatible-requests-to-a-stricter-endpoint-contract",
+          "description": "Introduce a narrowly routed outbound adapter when a nominally compatible endpoint rejects a generic provider transformation, preserving shared semantics and verifying the complete continuation path.",
+          "atomic_names": [
+            "classify-compatible-endpoint-by-canonical-hostname",
+            "remove-only-derived-incompatible-wire-field",
+            "validate-strict-endpoint-multiturn-continuation"
+          ],
+          "evidence_ids": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E10"
+          ],
+          "workflow_graph": {
+            "goal": "Allow thinking-history and tool-call continuations to satisfy the stricter endpoint schema without weakening behavior for other compatible endpoints or deleting supported replay data.",
+            "entry_state": "A generic compatible-provider transformation derives an extra message field from preserved history, and the actual endpoint rejects that field during multi-turn continuation.",
+            "exit_state": "The affected endpoint is safely identified, only the derived incompatible field is removed from an outbound copy, other endpoint behavior is unchanged, and a strict HTTP oracle accepts the continuation wire shape.",
+            "steps": [
+              {
+                "action_name": "classify-compatible-endpoint-by-canonical-hostname",
+                "role": "establish-contract",
+                "optional": false
+              },
+              {
+                "action_name": "remove-only-derived-incompatible-wire-field",
+                "role": "reconcile",
+                "optional": false
+              },
+              {
+                "action_name": "validate-strict-endpoint-multiturn-continuation",
+                "role": "validate",
+                "optional": false
+              }
+            ],
+            "edges": [
+              {
+                "from": "classify-compatible-endpoint-by-canonical-hostname",
+                "to": "remove-only-derived-incompatible-wire-field",
+                "type": "enables"
+              },
+              {
+                "from": "remove-only-derived-incompatible-wire-field",
+                "to": "validate-strict-endpoint-multiturn-continuation",
+                "type": "validates"
+              }
+            ],
+            "unresolved_or_deferred": [
+              "No independent test-run or CI result is present in the supplied GitHub bundle; the validation oracle is established from committed tests, but execution success was not independently observed in this extraction.",
+              "The bundle lacks issue body, comments, reviews, timeline, and status checks, so the endpoint contract and failure reproduction are grounded in the commit, implementation, and tests rather than discussion metadata.",
+              "No cross-repository peers or untouched holdout were provided, so this single workflow must not be promoted as a universal resolution pattern."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The issue bundle labels its linked pull-request object as number 11657, while the implementation commit subject references PR #11701 and issue #11657; unavailable GitHub metadata prevents independently resolving that numbering inconsistency.",
+        "The checkout working tree is materialized as deletions, so inspection used the pinned commit and parent Git objects. Tests were not executed against the current worktree, and no validation-pass claim is made.",
+        "Whether empty or null equal-valued mirrors should be removed is discussed in implementation comments, but the helper's string guard leaves non-string values unchanged; committed tests do not cover empty-string or null cases.",
+        "Pattern induction, semantic peer adjudication, and holdout validation are deferred because only one repository workflow is in scope."
+      ]
+    },
+    "call_sites": [
+      "determineProvider now constructs the dedicated adapter when its hostname detector matches, before falling back to the default provider. The generation pipeline converts conversation contents into OpenAI messages and invokes provider.buildRequest before request capture and the SDK call, making this the outbound adaptation boundary."
+    ],
+    "tests": [
+      "Focused tests assert exact-host and subdomain matching, rejection of a hostile hostname that merely contains the trusted suffix, removal of the mirror while preserving reasoning_content and source history, retention of a distinct explicit reasoning value, and unchanged mirroring for a non-matching endpoint.",
+      "An HTTP integration test uses the real generator conversion/provider/wire path and a local strict server that returns the reported 400 shape whenever an assistant message contains reasoning. A follow-up containing a prior thought is accepted, and the captured wire message contains reasoning_content but no reasoning field.",
+      "Existing default-provider tests establish the behavior that must remain intact: Qwen3 history mirrors reasoning_content without mutating the input, explicit reasoning is not overwritten, and non-Qwen3 models are not mirrored."
+    ],
+    "category": "provider-interface-adaptation",
+    "theme": "model provider and endpoint resolution",
+    "split": "train"
+  },
+  {
+    "episode_id": "earendil-works/pi#5832@6fbeba51af98a37a0695ec8b53308dde81d9ab46",
+    "title": "Preserve provider HTTP error bodies across heterogeneous SDK error interfaces",
+    "before": "At parent 5d499272a879398985ad9b1695866ab3d8685053, provider adapters formatted failures independently. Several catch paths returned only Error.message or JSON.stringify(error), hiding HTTP bodies stored in SDK-specific fields; status-aware response adapters still combined status with the opaque message, Bedrock could collapse gateway failures to \"Unknown: UnknownError\", and the completions adapter appended metadata.raw without a shared duplication check.",
+    "after": "At merge 6fbeba51af98a37a0695ec8b53308dde81d9ab46, a shared normalizer extracts status and body from known SDK shapes, safely serializes non-Error throws, ignores empty bodies, caps body text at 4000 characters, and records whether the message already contains the body. A shared formatter then exposes status plus body while preserving existing prefixes and avoiding duplicate body text. Eight response, text, and image adapters use this contract; Bedrock retains its exception-category and retention-hint behavior, while the completions path avoids re-appending metadata already present in the normalized body.",
+    "diff": "Relative to first parent 5d499272a879398985ad9b1695866ab3d8685053, the merge adds packages/ai/src/utils/error-body.ts, replaces local or message-only formatting in eight provider adapters, adds a duplicate guard for metadata.raw, and adds three test files covering normalization/formatting edge cases plus representative text, response, Bedrock, and image-provider catch paths. The implementation diff is 580 insertions and 36 deletions across 12 files.",
+    "repository": "earendil-works/pi",
+    "revision": "github-issue-5832",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10",
+      "E11"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "earendil-works/pi",
+      "issue": 5832,
+      "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+      "manifest_metadata": {
+        "category": "provider-interface-adaptation",
+        "theme": "model provider and endpoint resolution",
+        "split": "train_candidate"
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "earendil-works/pi",
+        "issue_number": 5832,
+        "issue": {
+          "number": 5832,
+          "title": "surface provider HTTP error body instead of opaque SDK message",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 5832,
+              "title": "surface provider HTTP error body instead of opaque SDK message",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tpackages/ai/src/api/azure-openai-responses.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/api/bedrock-converse-stream.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/api/google-generative-ai.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/api/google-vertex.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/api/openai-codex-responses.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/api/openai-completions.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/api/openai-responses.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/api/openrouter-images.ts"
+              },
+              {
+                "status_line": "A\tpackages/ai/src/utils/error-body.ts"
+              },
+              {
+                "status_line": "A\tpackages/ai/test/error-body.test.ts"
+              },
+              {
+                "status_line": "A\tpackages/ai/test/provider-error-body-passthrough.test.ts"
+              },
+              {
+                "status_line": "A\tpackages/ai/test/provider-error-body-regression.test.ts"
+              },
+              {
+                "status_line": "M\t.github/APPROVED_CONTRIBUTORS"
+              },
+              {
+                "status_line": "M\t.github/workflows/build-binaries.yml"
+              },
+              {
+                "status_line": "M\t.github/workflows/issue-gate.yml"
+              },
+              {
+                "status_line": "M\t.github/workflows/pr-gate.yml"
+              },
+              {
+                "status_line": "M\t.pi/prompts/wr.md"
+              },
+              {
+                "status_line": "M\tpackage-lock.json"
+              },
+              {
+                "status_line": "M\tpackage.json"
+              },
+              {
+                "status_line": "M\tpackages/ai/CHANGELOG.md"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/api/anthropic-messages.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/api/azure-openai-responses.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/api/bedrock-converse-stream.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/api/google-generative-ai.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/api/google-vertex.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/api/mistral-conversations.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/api/openai-codex-responses.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/api/openai-completions.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/api/openai-responses-shared.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/api/openai-responses.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/api/simple-options.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/image-models.generated.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/providers/huggingface.models.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/providers/openrouter.models.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/providers/vercel-ai-gateway.models.ts"
+              },
+              {
+                "status_line": "A\tpackages/ai/src/utils/estimate.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/test/openai-codex-stream.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/test/openai-completions-empty-tools.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/test/openai-completions-tool-choice.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/CHANGELOG.md"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/README.md"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/docs/keybindings.md"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/docs/rpc.md"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/docs/settings.md"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/docs/usage.md"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/examples/extensions/custom-compaction.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/examples/extensions/handoff.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/examples/extensions/qna.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/examples/extensions/summarize.ts"
+              },
+              {
+                "status_line": "A\tpackages/coding-agent/install-lock/package-lock.json"
+              },
+              {
+                "status_line": "A\tpackages/coding-agent/install-lock/package.json"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/package.json"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/cli/file-processor.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/core/agent-session.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/core/model-resolver.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/core/session-manager.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/core/settings-manager.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/core/tools/read.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/index.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/main.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/modes/interactive/components/assistant-message.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/modes/interactive/components/extension-editor.ts"
+              },
+              {
+                "status_line": "A\tpackages/coding-agent/src/modes/interactive/components/status-indicator.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/modes/interactive/components/user-message.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/modes/interactive/interactive-mode.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/modes/rpc/rpc-client.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/modes/rpc/rpc-mode.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/modes/rpc/rpc-types.ts"
+              },
+              {
+                "status_line": "A\tpackages/coding-agent/src/rpc-entry.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/utils/image-convert.ts"
+              },
+              {
+                "status_line": "A\tpackages/coding-agent/src/utils/image-process.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/utils/mime.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/test/assistant-message.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/test/block-images.test.ts"
+              },
+              {
+                "status_line": "A\tpackages/coding-agent/test/image-process.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/test/interactive-mode-import-command.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/test/model-resolver.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/test/rpc.test.ts"
+              },
+              {
+                "status_line": "A\tpackages/coding-agent/test/session-file-invalid.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/test/session-id-readonly.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/test/session-manager/custom-session-id.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/test/session-manager/file-operations.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/test/settings-manager.test.ts"
+              },
+              {
+                "status_line": "A\tpackages/coding-agent/test/status-indicator.test.ts"
+              },
+              {
+                "status_line": "A\tpackages/coding-agent/test/suite/regressions/pre-prompt-compaction-no-continue.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/test/tools.test.ts"
+              },
+              {
+                "status_line": "A\tpackages/orchestrator/CHANGELOG.md"
+              },
+              {
+                "status_line": "A\tpackages/orchestrator/README.md"
+              },
+              {
+                "status_line": "A\tpackages/orchestrator/package.json"
+              },
+              {
+                "status_line": "A\tpackages/orchestrator/src/cli.ts"
+              },
+              {
+                "status_line": "A\tpackages/orchestrator/src/config.ts"
+              },
+              {
+                "status_line": "A\tpackages/orchestrator/src/handler.ts"
+              },
+              {
+                "status_line": "A\tpackages/orchestrator/src/index.ts"
+              },
+              {
+                "status_line": "A\tpackages/orchestrator/src/ipc/client.ts"
+              },
+              {
+                "status_line": "A\tpackages/orchestrator/src/ipc/protocol.ts"
+              },
+              {
+                "status_line": "A\tpackages/orchestrator/src/ipc/server.ts"
+              },
+              {
+                "status_line": "A\tpackages/orchestrator/src/radius.ts"
+              },
+              {
+                "status_line": "A\tpackages/orchestrator/src/rpc-process.ts"
+              },
+              {
+                "status_line": "A\tpackages/orchestrator/src/serve.ts"
+              },
+              {
+                "status_line": "A\tpackages/orchestrator/src/storage.ts"
+              },
+              {
+                "status_line": "A\tpackages/orchestrator/src/supervisor.ts"
+              },
+              {
+                "status_line": "A\tpackages/orchestrator/src/types.ts"
+              },
+              {
+                "status_line": "A\tpackages/orchestrator/tsconfig.build.json"
+              },
+              {
+                "status_line": "M\tpackages/tui/CHANGELOG.md"
+              },
+              {
+                "status_line": "M\tpackages/tui/src/components/markdown.ts"
+              },
+              {
+                "status_line": "M\tpackages/tui/test/markdown.test.ts"
+              },
+              {
+                "status_line": "A\tscripts/generate-coding-agent-install-lock.mjs"
+              },
+              {
+                "status_line": "M\tscripts/release.mjs"
+              },
+              {
+                "status_line": "M\ttsconfig.json"
+              }
+            ],
+            "commits": []
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+        "pinned_ref": "6fbeba51af98a37a0695ec8b53308dde81d9ab46",
+        "resolved_commit": "6fbeba51af98a37a0695ec8b53308dde81d9ab46",
+        "parent_commit": "5d499272a879398985ad9b1695866ab3d8685053",
+        "commit_show_stat": "commit 6fbeba51af98a37a0695ec8b53308dde81d9ab46\nMerge: 5d499272a 62fad94f1\nAuthor:     Mario Zechner <badlogicgames@gmail.com>\nAuthorDate: Mon Jun 29 16:58:24 2026 +0200\nCommit:     GitHub <noreply@github.com>\nCommitDate: Mon Jun 29 16:58:24 2026 +0200\n\n    Merge pull request #5832 from stephanmck/fix/provider-error-body-passthrough-5763\n    \n    fix(ai): surface provider HTTP error body instead of opaque SDK message\n\n packages/ai/src/api/azure-openai-responses.ts      |  15 +-\n packages/ai/src/api/bedrock-converse-stream.ts     |  16 +-\n packages/ai/src/api/google-generative-ai.ts        |   3 +-\n packages/ai/src/api/google-vertex.ts               |   3 +-\n packages/ai/src/api/openai-codex-responses.ts      |   3 +-\n packages/ai/src/api/openai-completions.ts          |  10 +-\n packages/ai/src/api/openai-responses.ts            |  15 +-\n packages/ai/src/api/openrouter-images.ts           |   3 +-\n packages/ai/src/utils/error-body.ts                | 127 ++++++++++++++\n packages/ai/test/error-body.test.ts                | 154 +++++++++++++++++\n .../test/provider-error-body-passthrough.test.ts   |  78 +++++++++\n .../ai/test/provider-error-body-regression.test.ts | 189 +++++++++++++++++++++\n 12 files changed, 580 insertions(+), 36 deletions(-)\n",
+        "changed_files_name_status": "M\tpackages/ai/src/api/azure-openai-responses.ts\nM\tpackages/ai/src/api/bedrock-converse-stream.ts\nM\tpackages/ai/src/api/google-generative-ai.ts\nM\tpackages/ai/src/api/google-vertex.ts\nM\tpackages/ai/src/api/openai-codex-responses.ts\nM\tpackages/ai/src/api/openai-completions.ts\nM\tpackages/ai/src/api/openai-responses.ts\nM\tpackages/ai/src/api/openrouter-images.ts\nA\tpackages/ai/src/utils/error-body.ts\nA\tpackages/ai/test/error-body.test.ts\nA\tpackages/ai/test/provider-error-body-passthrough.test.ts\nA\tpackages/ai/test/provider-error-body-regression.test.ts\nM\t.github/APPROVED_CONTRIBUTORS\nM\t.github/workflows/build-binaries.yml\nM\t.github/workflows/issue-gate.yml\nM\t.github/workflows/pr-gate.yml\nM\t.pi/prompts/wr.md\nM\tpackage-lock.json\nM\tpackage.json\nM\tpackages/ai/CHANGELOG.md\nM\tpackages/ai/src/api/anthropic-messages.ts\nM\tpackages/ai/src/api/azure-openai-responses.ts\nM\tpackages/ai/src/api/bedrock-converse-stream.ts\nM\tpackages/ai/src/api/google-generative-ai.ts\nM\tpackages/ai/src/api/google-vertex.ts\nM\tpackages/ai/src/api/mistral-conversations.ts\nM\tpackages/ai/src/api/openai-codex-responses.ts\nM\tpackages/ai/src/api/openai-completions.ts\nM\tpackages/ai/src/api/openai-responses-shared.ts\nM\tpackages/ai/src/api/openai-responses.ts\nM\tpackages/ai/src/api/simple-options.ts\nM\tpackages/ai/src/image-models.generated.ts\nM\tpackages/ai/src/providers/huggingface.models.ts\nM\tpackages/ai/src/providers/openrouter.models.ts\nM\tpackages/ai/src/providers/vercel-ai-gateway.models.ts\nA\tpackages/ai/src/utils/estimate.ts\nM\tpackages/ai/test/openai-codex-stream.test.ts\nM\tpackages/ai/test/openai-completions-empty-tools.test.ts\nM\tpackages/ai/test/openai-completions-tool-choice.test.ts\nM\tpackages/coding-agent/CHANGELOG.md\nM\tpackages/coding-agent/README.md\nM\tpackages/coding-agent/docs/keybindings.md\nM\tpackages/coding-agent/docs/rpc.md\nM\tpackages/coding-agent/docs/settings.md\nM\tpackages/coding-agent/docs/usage.md\nM\tpackages/coding-agent/examples/extensions/custom-compaction.ts\nM\tpackages/coding-agent/examples/extensions/handoff.ts\nM\tpackages/coding-agent/examples/extensions/qna.ts\nM\tpackages/coding-agent/examples/extensions/summarize.ts\nA\tpackages/coding-agent/install-lock/package-lock.json\nA\tpackages/coding-agent/install-lock/package.json\nM\tpackages/coding-agent/package.json\nM\tpackages/coding-agent/src/cli/file-processor.ts\nM\tpackages/coding-agent/src/core/agent-session.ts\nM\tpackages/coding-agent/src/core/model-resolver.ts\nM\tpackages/coding-agent/src/core/session-manager.ts\nM\tpackages/coding-agent/src/core/settings-manager.ts\nM\tpackages/coding-agent/src/core/tools/read.ts\nM\tpackages/coding-agent/src/index.ts\nM\tpackages/coding-agent/src/main.ts\nM\tpackages/coding-agent/src/modes/interactive/components/assistant-message.ts\nM\tpackages/coding-agent/src/modes/interactive/components/extension-editor.ts\nA\tpackages/coding-agent/src/modes/interactive/components/status-indicator.ts\nM\tpackages/coding-agent/src/modes/interactive/components/user-message.ts\nM\tpackages/coding-agent/src/modes/interactive/interactive-mode.ts\nM\tpackages/coding-agent/src/modes/rpc/rpc-client.ts\nM\tpackages/coding-agent/src/modes/rpc/rpc-mode.ts\nM\tpackages/coding-agent/src/modes/rpc/rpc-types.ts\nA\tpackages/coding-agent/src/rpc-entry.ts\nM\tpackages/coding-agent/src/utils/image-convert.ts\nA\tpackages/coding-agent/src/utils/image-process.ts\nM\tpackages/coding-agent/src/utils/mime.ts\nM\tpackages/coding-agent/test/assistant-message.test.ts\nM\tpackages/coding-agent/test/block-images.test.ts\nA\tpackages/coding-agent/test/image-process.test.ts\nM\tpackages/coding-agent/test/interactive-mode-import-command.test.ts\nM\tpackages/coding-agent/test/model-resolver.test.ts\nM\tpackages/coding-agent/test/rpc.test.ts\nA\tpackages/coding-agent/test/session-file-invalid.test.ts\nM\tpackages/coding-agent/test/session-id-readonly.test.ts\nM\tpackages/coding-agent/test/session-manager/custom-session-id.test.ts\nM\tpackages/coding-agent/test/session-manager/file-operations.test.ts\nM\tpackages/coding-agent/test/settings-manager.test.ts\nA\tpackages/coding-agent/test/status-indicator.test.ts\nA\tpackages/coding-agent/test/suite/regressions/pre-prompt-compaction-no-continue.test.ts\nM\tpackages/coding-agent/test/tools.test.ts\nA\tpackages/orchestrator/CHANGELOG.md\nA\tpackages/orchestrator/README.md\nA\tpackages/orchestrator/package.json\nA\tpackages/orchestrator/src/cli.ts\nA\tpackages/orchestrator/src/config.ts\nA\tpackages/orchestrator/src/handler.ts\nA\tpackages/orchestrator/src/index.ts\nA\tpackages/orchestrator/src/ipc/client.ts\nA\tpackages/orchestrator/src/ipc/protocol.ts\nA\tpackages/orchestrator/src/ipc/server.ts\nA\tpackages/orchestrator/src/radius.ts\nA\tpackages/orchestrator/src/rpc-process.ts\nA\tpackages/orchestrator/src/serve.ts\nA\tpackages/orchestrator/src/storage.ts\nA\tpackages/orchestrator/src/supervisor.ts\nA\tpackages/orchestrator/src/types.ts\nA\tpackages/orchestrator/tsconfig.build.json\nM\tpackages/tui/CHANGELOG.md\nM\tpackages/tui/src/components/markdown.ts\nM\tpackages/tui/test/markdown.test.ts\nA\tscripts/generate-coding-agent-install-lock.mjs\nM\tscripts/release.mjs\nM\ttsconfig.json\n",
+        "linked_issue_numbers": [
+          5832
+        ],
+        "manifest_metadata": {
+          "category": "provider-interface-adaptation",
+          "theme": "model provider and endpoint resolution"
+        },
+        "fetched_at": "2026-09-29T05:12:09.923496+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "earendil-works/pi#5832@6fbeba51af98a37a0695ec8b53308dde81d9ab46",
+          "title": "Preserve provider HTTP error bodies across heterogeneous SDK error interfaces",
+          "before": "At parent 5d499272a879398985ad9b1695866ab3d8685053, provider adapters formatted failures independently. Several catch paths returned only Error.message or JSON.stringify(error), hiding HTTP bodies stored in SDK-specific fields; status-aware response adapters still combined status with the opaque message, Bedrock could collapse gateway failures to \"Unknown: UnknownError\", and the completions adapter appended metadata.raw without a shared duplication check.",
+          "after": "At merge 6fbeba51af98a37a0695ec8b53308dde81d9ab46, a shared normalizer extracts status and body from known SDK shapes, safely serializes non-Error throws, ignores empty bodies, caps body text at 4000 characters, and records whether the message already contains the body. A shared formatter then exposes status plus body while preserving existing prefixes and avoiding duplicate body text. Eight response, text, and image adapters use this contract; Bedrock retains its exception-category and retention-hint behavior, while the completions path avoids re-appending metadata already present in the normalized body.",
+          "diff": "Relative to first parent 5d499272a879398985ad9b1695866ab3d8685053, the merge adds packages/ai/src/utils/error-body.ts, replaces local or message-only formatting in eight provider adapters, adds a duplicate guard for metadata.raw, and adds three test files covering normalization/formatting edge cases plus representative text, response, Bedrock, and image-provider catch paths. The implementation diff is 580 insertions and 36 deletions across 12 files."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "Pinned ref 6fbeba51af98a37a0695ec8b53308dde81d9ab46 is the merge of PR #5832, titled \"fix(ai): surface provider HTTP error body instead of opaque SDK message\", with first parent 5d499272a879398985ad9b1695866ab3d8685053 and implementation parent 62fad94f1ab17e94a3f6f8d00ef3bae5cd5f8f66.",
+            "source": "git show --pretty=raw 6fbeba51af98a37a0695ec8b53308dde81d9ab46; issue-bundle.json linked_pull_requests[0]"
+          },
+          {
+            "id": "E2",
+            "kind": "diff",
+            "claim": "Before the change, affected adapters used Error.message, String(error), or JSON.stringify(error); the status-aware OpenAI and Azure helpers included status but still used error.message, and Bedrock derived its core message without inspecting the raw response body.",
+            "source": "git diff 5d499272a879398985ad9b1695866ab3d8685053 6fbeba51af98a37a0695ec8b53308dde81d9ab46 -- packages/ai/src/api/azure-openai-responses.ts packages/ai/src/api/bedrock-converse-stream.ts packages/ai/src/api/google-generative-ai.ts packages/ai/src/api/google-vertex.ts packages/ai/src/api/openai-codex-responses.ts packages/ai/src/api/openai-completions.ts packages/ai/src/api/openai-responses.ts packages/ai/src/api/openrouter-images.ts"
+          },
+          {
+            "id": "E3",
+            "kind": "implementation",
+            "claim": "The new normalization contract probes statusCode, status, $metadata.httpStatusCode, and $response.statusCode; probes string body, non-empty parsed error objects, and $response.body; trims and caps the selected body; safely serializes non-Error values; and records whether the original message already contains the extracted body.",
+            "source": "6fbeba51af98a37a0695ec8b53308dde81d9ab46:packages/ai/src/utils/error-body.ts:16-95,115-127"
+          },
+          {
+            "id": "E4",
+            "kind": "implementation",
+            "claim": "The shared formatter returns the existing message when the body is absent or already represented, preserves an optional adapter prefix and status, and otherwise formats the extracted status and body.",
+            "source": "6fbeba51af98a37a0695ec8b53308dde81d9ab46:packages/ai/src/utils/error-body.ts:97-113"
+          },
+          {
+            "id": "E5",
+            "kind": "call_site",
+            "claim": "Azure responses, Google generative AI, Google Vertex, OpenAI Codex responses, OpenAI completions, OpenAI responses, and OpenRouter images route caught errors through the shared normalize-and-format contract; the Azure and OpenAI response adapters preserve their existing provider-specific prefixes.",
+            "source": "git diff 5d499272a879398985ad9b1695866ab3d8685053 6fbeba51af98a37a0695ec8b53308dde81d9ab46 -- packages/ai/src/api/azure-openai-responses.ts packages/ai/src/api/google-generative-ai.ts packages/ai/src/api/google-vertex.ts packages/ai/src/api/openai-codex-responses.ts packages/ai/src/api/openai-completions.ts packages/ai/src/api/openai-responses.ts packages/ai/src/api/openrouter-images.ts"
+          },
+          {
+            "id": "E6",
+            "kind": "call_site",
+            "claim": "The Bedrock adapter uses normalized status/body as its core diagnostic only when the SDK message does not already carry the body, while retaining exception-name prefixes and the data-retention hint.",
+            "source": "6fbeba51af98a37a0695ec8b53308dde81d9ab46:packages/ai/src/api/bedrock-converse-stream.ts:327-349"
+          },
+          {
+            "id": "E7",
+            "kind": "call_site",
+            "claim": "The completions adapter appends metadata.raw only when the normalized error message does not already contain that value, preventing duplicate diagnostics.",
+            "source": "6fbeba51af98a37a0695ec8b53308dde81d9ab46:packages/ai/src/api/openai-completions.ts:463-477"
+          },
+          {
+            "id": "E8",
+            "kind": "test",
+            "claim": "Unit tests cover four SDK-shaped errors, non-Error throws, empty parsed bodies, bounded truncation, message/body deduplication, prefix preservation, and status-plus-body formatting.",
+            "source": "6fbeba51af98a37a0695ec8b53308dde81d9ab46:packages/ai/test/error-body.test.ts:11-154"
+          },
+          {
+            "id": "E9",
+            "kind": "test",
+            "claim": "An image-provider regression test injects an opaque 403 SDK message with a parsed body and requires the returned error to contain both status and gateway reason rather than equal the opaque SDK message.",
+            "source": "6fbeba51af98a37a0695ec8b53308dde81d9ab46:packages/ai/test/provider-error-body-passthrough.test.ts:19-77"
+          },
+          {
+            "id": "E10",
+            "kind": "test",
+            "claim": "Representative integration tests exercise a body-blind text adapter, a status-aware response adapter, and Bedrock; they also require metadata.raw to occur exactly once.",
+            "source": "6fbeba51af98a37a0695ec8b53308dde81d9ab46:packages/ai/test/provider-error-body-regression.test.ts:135-189"
+          },
+          {
+            "id": "E11",
+            "kind": "diff",
+            "claim": "The first-parent implementation diff changes 12 files with 580 insertions and 36 deletions, including one shared utility, eight adapter integrations, and three new test files.",
+            "source": "git show --stat --first-parent 6fbeba51af98a37a0695ec8b53308dde81d9ab46"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "normalize-heterogeneous-provider-failures",
+            "description": "Convert heterogeneous thrown provider values into one bounded diagnostic record containing the original message, optional HTTP status, optional body, and a flag indicating whether the message already carries that body.",
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E8"
+            ],
+            "semantic_action": {
+              "intent": "Recover actionable HTTP failure details that provider SDKs retain outside Error.message.",
+              "module_role": "shared provider-failure normalization boundary",
+              "operation": "normalize",
+              "pre_state": "A provider call has thrown an unknown value whose status and body may occupy SDK-specific fields or whose message may already contain the body.",
+              "post_state": "The failure is represented by a stable record with a safe message, optional numeric status, optional non-empty bounded body, and an explicit body-in-message predicate.",
+              "validation": "Synthetic error shapes verify field precedence and extraction for multiple SDK conventions, non-Error serialization, empty-body handling, truncation, and existing-body detection.",
+              "parameters": [
+                "thrown_value",
+                "status_field_candidates",
+                "body_field_candidates",
+                "maximum_body_characters"
+              ],
+              "evidence_ids": [
+                "E3",
+                "E8"
+              ]
+            }
+          },
+          {
+            "name": "compose-nonduplicating-provider-diagnostic",
+            "description": "Render a normalized failure so status and body are exposed when available while preserving prefixes, fallbacks, and messages that already contain the body.",
+            "evidence_ids": [
+              "E4",
+              "E8"
+            ],
+            "semantic_action": {
+              "intent": "Expose the provider's actual HTTP reason without duplicating it or discarding established adapter context.",
+              "module_role": "user-visible provider diagnostic composition boundary",
+              "operation": "reconcile",
+              "pre_state": "A normalized failure may contain status and body separately, may already include the body in its message, and may require an adapter-specific prefix.",
+              "post_state": "The diagnostic contains status plus body when separately available; otherwise it preserves the message, with the requested prefix and status where applicable, and does not print the body twice.",
+              "validation": "Formatter unit tests assert unprefixed and prefixed status/body output, preservation of messages already containing a body, and fallback behavior for non-Error values.",
+              "parameters": [
+                "normalized_failure",
+                "optional_context_prefix"
+              ],
+              "evidence_ids": [
+                "E4",
+                "E8"
+              ]
+            }
+          },
+          {
+            "name": "adapt-provider-catch-boundaries",
+            "description": "Replace adapter-local message-only formatting with the shared diagnostic contract while retaining adapter-specific semantics such as category prefixes, hints, and supplemental metadata.",
+            "evidence_ids": [
+              "E5",
+              "E6",
+              "E7",
+              "E9",
+              "E10"
+            ],
+            "semantic_action": {
+              "intent": "Make provider-facing text, response, streaming, and image entry points consistently return actionable HTTP failure details.",
+              "module_role": "provider adapter error boundary",
+              "operation": "adapt",
+              "pre_state": "Adapter catch blocks independently format thrown SDK values, and some lose bodies or duplicate supplemental details.",
+              "post_state": "Affected adapters consume the shared normalized diagnostic while preserving their established stop reasons, contextual prefixes, exception categories, hints, and nonduplicated supplemental data.",
+              "validation": "Mocked end-to-end catch-path tests require status and body propagation for representative image, text, response, and Bedrock tiers and require supplemental raw metadata to appear once.",
+              "parameters": [
+                "provider_adapter",
+                "caught_error",
+                "adapter_prefix",
+                "adapter_specific_hints",
+                "supplemental_metadata"
+              ],
+              "evidence_ids": [
+                "E5",
+                "E6",
+                "E7",
+                "E9",
+                "E10"
+              ]
+            }
+          },
+          {
+            "name": "validate-provider-diagnostic-contract",
+            "description": "Exercise utility edge cases and representative real adapter catch paths with opaque SDK messages that retain the actual reason in separate body fields.",
+            "evidence_ids": [
+              "E8",
+              "E9",
+              "E10"
+            ],
+            "semantic_action": {
+              "intent": "Prevent regressions where normalization works in isolation but adapter output still hides or duplicates the provider reason.",
+              "module_role": "provider diagnostic regression oracle",
+              "operation": "validate",
+              "pre_state": "The shared contract and adapter integrations have been implemented, but their behavior across error shapes and adapter tiers is not yet established.",
+              "post_state": "Tests specify that output preserves error stop state, includes HTTP status and body reason, excludes known opaque-only output, bounds long bodies, and avoids duplicate supplemental text.",
+              "validation": "The three added test files provide utility-level and representative adapter-level assertions; the available evidence does not include an executed test or CI result.",
+              "parameters": [
+                "synthetic_sdk_error_shapes",
+                "representative_adapter_tiers",
+                "expected_status",
+                "expected_body_reason",
+                "duplicate_marker"
+              ],
+              "evidence_ids": [
+                "E8",
+                "E9",
+                "E10"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "surface-hidden-http-error-details-at-provider-boundaries",
+            "description": "Establish one bounded error contract, compose it without duplication, adopt it at affected provider boundaries while preserving local behavior, and verify both utility semantics and representative catch paths.",
+            "atomic_names": [
+              "normalize-heterogeneous-provider-failures",
+              "compose-nonduplicating-provider-diagnostic",
+              "adapt-provider-catch-boundaries",
+              "validate-provider-diagnostic-contract"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E10"
+            ],
+            "workflow_graph": {
+              "goal": "Return actionable provider HTTP failure details when an SDK exposes the status and response body outside its opaque Error.message.",
+              "entry_state": "Multiple provider adapters own incompatible catch formatting, and gateway or proxy failures can expose only an opaque SDK message even though the thrown object retains a status and body.",
+              "exit_state": "Affected adapters expose a bounded status/body diagnostic without double-printing existing content and without losing adapter-specific prefixes, categories, hints, stop reasons, or supplemental metadata.",
+              "steps": [
+                {
+                  "action_name": "normalize-heterogeneous-provider-failures",
+                  "role": "establish-contract",
+                  "optional": false
+                },
+                {
+                  "action_name": "compose-nonduplicating-provider-diagnostic",
+                  "role": "reconcile",
+                  "optional": false
+                },
+                {
+                  "action_name": "adapt-provider-catch-boundaries",
+                  "role": "implement",
+                  "optional": false
+                },
+                {
+                  "action_name": "validate-provider-diagnostic-contract",
+                  "role": "validate",
+                  "optional": false
+                }
+              ],
+              "edges": [
+                {
+                  "from": "normalize-heterogeneous-provider-failures",
+                  "to": "compose-nonduplicating-provider-diagnostic",
+                  "type": "enables"
+                },
+                {
+                  "from": "compose-nonduplicating-provider-diagnostic",
+                  "to": "adapt-provider-catch-boundaries",
+                  "type": "enables"
+                },
+                {
+                  "from": "adapt-provider-catch-boundaries",
+                  "to": "validate-provider-diagnostic-contract",
+                  "type": "validates"
+                },
+                {
+                  "from": "normalize-heterogeneous-provider-failures",
+                  "to": "validate-provider-diagnostic-contract",
+                  "type": "validates"
+                }
+              ],
+              "unresolved_or_deferred": [
+                "The evidence establishes extraction only for the implemented SDK field shapes; behavior for other SDK error layouts remains outside this episode.",
+                "Only representative adapter tiers have end-to-end regression tests; the other migrated adapters rely on the shared utility contract and analogous call-site integration.",
+                "No test execution log or CI status was available, so runtime passage of the added tests is not claimed.",
+                "Cross-repository peers, semantic deduplication, pattern induction, and holdout validation are outside this single-episode extraction and remain deferred."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "The GitHub bundle lacks the PR body, issue discussion, reviews, timeline, and status checks, so the original acceptance discussion and CI result cannot be established.",
+          "It is not established from the pinned change whether response bodies can contain sensitive material requiring redaction in addition to the implemented 4000-character cap.",
+          "The change intentionally enumerates known SDK field shapes; no evidence establishes a generic fallback for future providers that store status or body under different fields."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "normalize-heterogeneous-provider-failures",
+          "description": "Convert heterogeneous thrown provider values into one bounded diagnostic record containing the original message, optional HTTP status, optional body, and a flag indicating whether the message already carries that body.",
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E8"
+          ],
+          "semantic_action": {
+            "intent": "Recover actionable HTTP failure details that provider SDKs retain outside Error.message.",
+            "module_role": "shared provider-failure normalization boundary",
+            "operation": "normalize",
+            "pre_state": "A provider call has thrown an unknown value whose status and body may occupy SDK-specific fields or whose message may already contain the body.",
+            "post_state": "The failure is represented by a stable record with a safe message, optional numeric status, optional non-empty bounded body, and an explicit body-in-message predicate.",
+            "validation": "Synthetic error shapes verify field precedence and extraction for multiple SDK conventions, non-Error serialization, empty-body handling, truncation, and existing-body detection.",
+            "parameters": [
+              "thrown_value",
+              "status_field_candidates",
+              "body_field_candidates",
+              "maximum_body_characters"
+            ],
+            "evidence_ids": [
+              "E3",
+              "E8"
+            ]
+          }
+        },
+        {
+          "name": "compose-nonduplicating-provider-diagnostic",
+          "description": "Render a normalized failure so status and body are exposed when available while preserving prefixes, fallbacks, and messages that already contain the body.",
+          "evidence_ids": [
+            "E4",
+            "E8"
+          ],
+          "semantic_action": {
+            "intent": "Expose the provider's actual HTTP reason without duplicating it or discarding established adapter context.",
+            "module_role": "user-visible provider diagnostic composition boundary",
+            "operation": "reconcile",
+            "pre_state": "A normalized failure may contain status and body separately, may already include the body in its message, and may require an adapter-specific prefix.",
+            "post_state": "The diagnostic contains status plus body when separately available; otherwise it preserves the message, with the requested prefix and status where applicable, and does not print the body twice.",
+            "validation": "Formatter unit tests assert unprefixed and prefixed status/body output, preservation of messages already containing a body, and fallback behavior for non-Error values.",
+            "parameters": [
+              "normalized_failure",
+              "optional_context_prefix"
+            ],
+            "evidence_ids": [
+              "E4",
+              "E8"
+            ]
+          }
+        },
+        {
+          "name": "adapt-provider-catch-boundaries",
+          "description": "Replace adapter-local message-only formatting with the shared diagnostic contract while retaining adapter-specific semantics such as category prefixes, hints, and supplemental metadata.",
+          "evidence_ids": [
+            "E5",
+            "E6",
+            "E7",
+            "E9",
+            "E10"
+          ],
+          "semantic_action": {
+            "intent": "Make provider-facing text, response, streaming, and image entry points consistently return actionable HTTP failure details.",
+            "module_role": "provider adapter error boundary",
+            "operation": "adapt",
+            "pre_state": "Adapter catch blocks independently format thrown SDK values, and some lose bodies or duplicate supplemental details.",
+            "post_state": "Affected adapters consume the shared normalized diagnostic while preserving their established stop reasons, contextual prefixes, exception categories, hints, and nonduplicated supplemental data.",
+            "validation": "Mocked end-to-end catch-path tests require status and body propagation for representative image, text, response, and Bedrock tiers and require supplemental raw metadata to appear once.",
+            "parameters": [
+              "provider_adapter",
+              "caught_error",
+              "adapter_prefix",
+              "adapter_specific_hints",
+              "supplemental_metadata"
+            ],
+            "evidence_ids": [
+              "E5",
+              "E6",
+              "E7",
+              "E9",
+              "E10"
+            ]
+          }
+        },
+        {
+          "name": "validate-provider-diagnostic-contract",
+          "description": "Exercise utility edge cases and representative real adapter catch paths with opaque SDK messages that retain the actual reason in separate body fields.",
+          "evidence_ids": [
+            "E8",
+            "E9",
+            "E10"
+          ],
+          "semantic_action": {
+            "intent": "Prevent regressions where normalization works in isolation but adapter output still hides or duplicates the provider reason.",
+            "module_role": "provider diagnostic regression oracle",
+            "operation": "validate",
+            "pre_state": "The shared contract and adapter integrations have been implemented, but their behavior across error shapes and adapter tiers is not yet established.",
+            "post_state": "Tests specify that output preserves error stop state, includes HTTP status and body reason, excludes known opaque-only output, bounds long bodies, and avoids duplicate supplemental text.",
+            "validation": "The three added test files provide utility-level and representative adapter-level assertions; the available evidence does not include an executed test or CI result.",
+            "parameters": [
+              "synthetic_sdk_error_shapes",
+              "representative_adapter_tiers",
+              "expected_status",
+              "expected_body_reason",
+              "duplicate_marker"
+            ],
+            "evidence_ids": [
+              "E8",
+              "E9",
+              "E10"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "surface-hidden-http-error-details-at-provider-boundaries",
+          "description": "Establish one bounded error contract, compose it without duplication, adopt it at affected provider boundaries while preserving local behavior, and verify both utility semantics and representative catch paths.",
+          "atomic_names": [
+            "normalize-heterogeneous-provider-failures",
+            "compose-nonduplicating-provider-diagnostic",
+            "adapt-provider-catch-boundaries",
+            "validate-provider-diagnostic-contract"
+          ],
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10"
+          ],
+          "workflow_graph": {
+            "goal": "Return actionable provider HTTP failure details when an SDK exposes the status and response body outside its opaque Error.message.",
+            "entry_state": "Multiple provider adapters own incompatible catch formatting, and gateway or proxy failures can expose only an opaque SDK message even though the thrown object retains a status and body.",
+            "exit_state": "Affected adapters expose a bounded status/body diagnostic without double-printing existing content and without losing adapter-specific prefixes, categories, hints, stop reasons, or supplemental metadata.",
+            "steps": [
+              {
+                "action_name": "normalize-heterogeneous-provider-failures",
+                "role": "establish-contract",
+                "optional": false
+              },
+              {
+                "action_name": "compose-nonduplicating-provider-diagnostic",
+                "role": "reconcile",
+                "optional": false
+              },
+              {
+                "action_name": "adapt-provider-catch-boundaries",
+                "role": "implement",
+                "optional": false
+              },
+              {
+                "action_name": "validate-provider-diagnostic-contract",
+                "role": "validate",
+                "optional": false
+              }
+            ],
+            "edges": [
+              {
+                "from": "normalize-heterogeneous-provider-failures",
+                "to": "compose-nonduplicating-provider-diagnostic",
+                "type": "enables"
+              },
+              {
+                "from": "compose-nonduplicating-provider-diagnostic",
+                "to": "adapt-provider-catch-boundaries",
+                "type": "enables"
+              },
+              {
+                "from": "adapt-provider-catch-boundaries",
+                "to": "validate-provider-diagnostic-contract",
+                "type": "validates"
+              },
+              {
+                "from": "normalize-heterogeneous-provider-failures",
+                "to": "validate-provider-diagnostic-contract",
+                "type": "validates"
+              }
+            ],
+            "unresolved_or_deferred": [
+              "The evidence establishes extraction only for the implemented SDK field shapes; behavior for other SDK error layouts remains outside this episode.",
+              "Only representative adapter tiers have end-to-end regression tests; the other migrated adapters rely on the shared utility contract and analogous call-site integration.",
+              "No test execution log or CI status was available, so runtime passage of the added tests is not claimed.",
+              "Cross-repository peers, semantic deduplication, pattern induction, and holdout validation are outside this single-episode extraction and remain deferred."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The GitHub bundle lacks the PR body, issue discussion, reviews, timeline, and status checks, so the original acceptance discussion and CI result cannot be established.",
+        "It is not established from the pinned change whether response bodies can contain sensitive material requiring redaction in addition to the implemented 4000-character cap.",
+        "The change intentionally enumerates known SDK field shapes; no evidence establishes a generic fallback for future providers that store status or body under different fields."
+      ]
+    },
+    "call_sites": [
+      "Azure responses, Google generative AI, Google Vertex, OpenAI Codex responses, OpenAI completions, OpenAI responses, and OpenRouter images route caught errors through the shared normalize-and-format contract; the Azure and OpenAI response adapters preserve their existing provider-specific prefixes.",
+      "The Bedrock adapter uses normalized status/body as its core diagnostic only when the SDK message does not already carry the body, while retaining exception-name prefixes and the data-retention hint.",
+      "The completions adapter appends metadata.raw only when the normalized error message does not already contain that value, preventing duplicate diagnostics."
+    ],
+    "tests": [
+      "Unit tests cover four SDK-shaped errors, non-Error throws, empty parsed bodies, bounded truncation, message/body deduplication, prefix preservation, and status-plus-body formatting.",
+      "An image-provider regression test injects an opaque 403 SDK message with a parsed body and requires the returned error to contain both status and gateway reason rather than equal the opaque SDK message.",
+      "Representative integration tests exercise a body-blind text adapter, a status-aware response adapter, and Bedrock; they also require metadata.raw to occur exactly once."
+    ],
+    "category": "provider-interface-adaptation",
+    "theme": "model provider and endpoint resolution",
+    "split": "train"
+  }
+]
