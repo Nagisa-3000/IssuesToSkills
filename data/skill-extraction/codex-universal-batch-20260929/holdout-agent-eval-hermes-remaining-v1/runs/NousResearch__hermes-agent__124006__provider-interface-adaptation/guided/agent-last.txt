@@ -1,0 +1,28 @@
+Implemented the provider interface adaptation behavior in the two transport modules.
+
+Changes:
+
+- In [chat_completions.py](/tmp/arex-holdout-agent-hermes-remaining-v1/NousResearch__hermes-agent__124006__provider-interface-adaptation/guided/worktree/agent/transports/chat_completions.py:108):
+  - Added model-aware Kimi effort translation.
+  - Kimi K3 aliases now map Hermes’ ladder to K3’s supported `low | high | max` vocabulary:
+    - `minimal`, `low` → `low`
+    - `medium`, `high` → `high`
+    - `xhigh`, `max`, `ultra` → `max`
+    - default → `high`
+  - Kimi K2-era models retain their `low | medium | high` vocabulary:
+    - `minimal` → `low`
+    - `xhigh`, `max`, `ultra` → `high`
+    - default remains `medium`
+  - TokenHub now maps `minimal` to `low` while retaining its existing `high` fallback and disabled-reasoning behavior.
+
+- In [codex.py](/tmp/arex-holdout-agent-hermes-remaining-v1/NousResearch__hermes-agent__124006__provider-interface-adaptation/guided/worktree/agent/transports/codex.py:439):
+  - `ultra` now maps to Responses API `max` for all general Responses models, while existing provider-specific xAI clamps remain effective.
+
+Validation completed:
+
+- Retained regression test: `10 passed`
+- Full `tests/agent/transports` suite: `300 passed`
+- Combined transport/profile/reasoning suites: `190 passed`
+- Ruff lint checks: passed
+- `git diff --check`: passed
+- Only `agent/transports/chat_completions.py` and `agent/transports/codex.py` were modified.

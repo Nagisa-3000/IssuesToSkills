@@ -1,0 +1,35 @@
+{
+  "source": "local_git_pinned_ref",
+  "repository": "NousResearch/hermes-agent",
+  "issue_number": 125235,
+  "issue": {
+    "number": 125235,
+    "title": "The 256,000-token compression default: zero review, three data points, no cost model — and it breaks prompt-cache economics on DeepSeek",
+    "body": null,
+    "metadata_unavailable": [
+      "issue body",
+      "comments",
+      "timeline",
+      "author/review discussion"
+    ]
+  },
+  "comments": [],
+  "timeline": [],
+  "linked_pull_requests": [],
+  "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/hermes-agent",
+  "pinned_ref": "98278833e29b167fe930e276eed7cb16bee68673",
+  "resolved_commit": "98278833e29b167fe930e276eed7cb16bee68673",
+  "parent_commit": "5912ed81ed945a784f67ca13c1096e2c122cd307",
+  "commit_show_stat": "commit 98278833e29b167fe930e276eed7cb16bee68673\nAuthor:     Siddharth Balyan <52913345+alt-glitch@users.noreply.github.com>\nAuthorDate: Mon Sep 28 12:59:40 2026 +0530\nCommit:     GitHub <noreply@github.com>\nCommitDate: Mon Sep 28 07:29:40 2026 +0000\n\n    Compaction follows compression.threshold again: no default 256K token cap (#117915, #125235) (#126064)\n    \n    * fix(compression): compaction follows the ratio again; no default token cap\n    \n    compression.threshold_tokens defaulted to 256000 since #115986, so every\n    window above ~341K compacted at 256K regardless of compression.threshold\n    or model_thresholds: a 1M-window model compacted at 25% of its window,\n    and threshold: 0.8 still compacted at 256K. No single token count suits\n    windows from 64K to 1M+, so the cap goes back to opt-in (null) and the\n    ratio decides, as it did before #115986.\n    \n    The template seeder and `hermes doctor --fix` copied the 256000 default\n    into config.yaml, where it reads as a user choice and would keep capping\n    those installs. Config v47 drops threshold_tokens only when it equals\n    256000; any other explicit cap and an explicit null are preserved.\n    \n    The rest of #115986 stays: the model-switch warning quoting the real\n    trigger and the shared _derive_trigger are correct with any default.\n    Tests that encoded 256K now derive expectations from DEFAULT_CONFIG.\n    \n    * docs(compression): threshold_tokens is an optional cap, default null\n    \n    User guide, developer guide and delegation page described the 256K\n    default cap; they now describe the ratio trigger as the default and\n    threshold_tokens as an opt-in cost ceiling.\n\n cli-config.yaml.example                            | 13 ++++----\n hermes_cli/config_defaults.py                      | 11 +++---\n hermes_cli/config_migrations.py                    | 11 ++++++\n tests/agent/test_context_compressor.py             | 32 ++++++------------\n tests/gateway/test_agent_cache.py                  | 10 +++---\n .../test_compression_config_hot_reload.py          | 39 +++++++++++++---------\n tui_gateway/session_compression.py                 |  5 ++-\n .../context-compression-and-caching.md             | 12 +++----\n website/docs/user-guide/configuration.md           |  4 +--\n website/docs/user-guide/features/delegation.md     |  2 +-\n 10 files changed, 73 insertions(+), 66 deletions(-)\n",
+  "changed_files_name_status": "M\tcli-config.yaml.example\nM\thermes_cli/config_defaults.py\nM\thermes_cli/config_migrations.py\nM\ttests/agent/test_context_compressor.py\nM\ttests/gateway/test_agent_cache.py\nM\ttests/tui_gateway/test_compression_config_hot_reload.py\nM\ttui_gateway/session_compression.py\nM\twebsite/docs/developer-guide/context-compression-and-caching.md\nM\twebsite/docs/user-guide/configuration.md\nM\twebsite/docs/user-guide/features/delegation.md\n",
+  "linked_issue_numbers": [
+    125235
+  ],
+  "manifest_metadata": {
+    "category": "bounded-resource-budget-control"
+  },
+  "fetched_at": "2026-09-28T19:20:50.551085+00:00",
+  "limitations": [
+    "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+  ]
+}

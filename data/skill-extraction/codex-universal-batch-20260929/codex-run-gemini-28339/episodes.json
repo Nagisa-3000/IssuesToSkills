@@ -1,0 +1,294 @@
+[
+  {
+    "episode_id": "google-gemini/gemini-cli#28339@d55e366f6ab393e024c613d940fead3696d56eac",
+    "title": "Infinite Fallback Loop on retryable errors (429 RESOURCE_EXHAUSTED): classify undelayed model-capacity exhaustion as terminal",
+    "before": "At parent dc859e8e48868ef5d1cc3b6708dbbdf3817cb9c9, the structured quota classifier parsed ErrorInfo and RetryInfo but had no semantic case for model-capacity exhaustion or capacity-exceeded reasons. A detailed 429 with one of those reasons and no parsed RetryInfo delay therefore bypassed the existing daily-limit, credit-balance, Cloud Code, retry-delay, and short-term-limit branches and fell to generic RetryableQuotaError. The retry loop treated that result as transient: it waited and retried, and only consulted the persistent-failure callback at the maximum-attempt boundary, so an exhausted model could be retried before fallback. This is consistent with the issue's retry/fallback hang title. [ev-before-001] [ev-call-002] [ev-issue-001]",
+    "after": "At d55e366f6ab393e024c613d940fead3696d56eac, after parsing the optional retry delay, the classifier checks the two model-capacity reasons before domain-specific quota handling. When no parsed server delay exists, it returns a terminal quota classification carrying the parsed API error and reason; the retry loop can then invoke onPersistent429 immediately and reset attempts if a fallback model is supplied. When a server delay exists, the new branch falls through, preserving the existing delay-aware retry behavior. [ev-impl-001] [ev-call-001] [ev-test-001]",
+    "diff": "This is an additive two-file patch: 17 implementation lines in the shared quota classifier and 57 test lines. The implementation adds one conditional guard for MODEL_CAPACITY_EXHAUSTED and MODEL_CAPACITY_EXCEEDED, terminalizing only the no-delay case while leaving delay-bearing capacity failures to existing RetryInfo processing. The tests cover no-delay exhaustion in the normal domain, no-delay exhaustion in a non-Cloud-Code domain, and no-delay capacity exceeded; the pre-existing 9-second capacity case continues to assert retryable behavior. No retry-loop or call-site file changed. [ev-diff-001] [ev-impl-001] [ev-test-001] [ev-test-002]",
+    "repository": "google-gemini/gemini-cli",
+    "revision": "github-issue-28339",
+    "evidence_ids": [
+      "ev-issue-001",
+      "ev-commit-001",
+      "ev-diff-001",
+      "ev-before-001",
+      "ev-impl-001",
+      "ev-call-001",
+      "ev-call-002",
+      "ev-test-001",
+      "ev-test-002",
+      "ev-validation-001"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 28339,
+      "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/gemini-cli",
+      "manifest_metadata": {
+        "category": "failure-recovery-and-retry",
+        "role": "train_candidate",
+        "case_id": "google-gemini/gemini-cli#28339:failure-recovery-and-retry:train_candidate"
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "google-gemini/gemini-cli",
+        "issue_number": 28339,
+        "issue": {
+          "number": 28339,
+          "title": "Infinite Fallback Loop on retryable errors (429 RESOURCE_EXHAUSTED)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [],
+        "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/gemini-cli",
+        "pinned_ref": "d55e366f6ab393e024c613d940fead3696d56eac",
+        "resolved_commit": "d55e366f6ab393e024c613d940fead3696d56eac",
+        "parent_commit": "dc859e8e48868ef5d1cc3b6708dbbdf3817cb9c9",
+        "commit_show_stat": "commit d55e366f6ab393e024c613d940fead3696d56eac\nAuthor:     luisfelipe-alt <luisfelipe@google.com>\nAuthorDate: Thu Jul 30 10:59:01 2026 -0700\nCommit:     GitHub <noreply@github.com>\nCommitDate: Thu Jul 30 17:59:01 2026 +0000\n\n    fix(core): classify capacity exhaustion as terminal to prevent retry hangs (#28599)\n\n packages/core/src/utils/googleQuotaErrors.test.ts | 57 +++++++++++++++++++++++\n packages/core/src/utils/googleQuotaErrors.ts      | 17 +++++++\n 2 files changed, 74 insertions(+)\n",
+        "changed_files_name_status": "M\tpackages/core/src/utils/googleQuotaErrors.test.ts\nM\tpackages/core/src/utils/googleQuotaErrors.ts\n",
+        "linked_issue_numbers": [
+          28339
+        ],
+        "manifest_metadata": {
+          "category": "failure-recovery-and-retry"
+        },
+        "fetched_at": "2026-09-28T21:23:09.003965+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "google-gemini/gemini-cli#28339@d55e366f6ab393e024c613d940fead3696d56eac",
+          "title": "Infinite Fallback Loop on retryable errors (429 RESOURCE_EXHAUSTED): classify undelayed model-capacity exhaustion as terminal",
+          "before": "At parent dc859e8e48868ef5d1cc3b6708dbbdf3817cb9c9, the structured quota classifier parsed ErrorInfo and RetryInfo but had no semantic case for model-capacity exhaustion or capacity-exceeded reasons. A detailed 429 with one of those reasons and no parsed RetryInfo delay therefore bypassed the existing daily-limit, credit-balance, Cloud Code, retry-delay, and short-term-limit branches and fell to generic RetryableQuotaError. The retry loop treated that result as transient: it waited and retried, and only consulted the persistent-failure callback at the maximum-attempt boundary, so an exhausted model could be retried before fallback. This is consistent with the issue's retry/fallback hang title. [ev-before-001] [ev-call-002] [ev-issue-001]",
+          "after": "At d55e366f6ab393e024c613d940fead3696d56eac, after parsing the optional retry delay, the classifier checks the two model-capacity reasons before domain-specific quota handling. When no parsed server delay exists, it returns a terminal quota classification carrying the parsed API error and reason; the retry loop can then invoke onPersistent429 immediately and reset attempts if a fallback model is supplied. When a server delay exists, the new branch falls through, preserving the existing delay-aware retry behavior. [ev-impl-001] [ev-call-001] [ev-test-001]",
+          "diff": "This is an additive two-file patch: 17 implementation lines in the shared quota classifier and 57 test lines. The implementation adds one conditional guard for MODEL_CAPACITY_EXHAUSTED and MODEL_CAPACITY_EXCEEDED, terminalizing only the no-delay case while leaving delay-bearing capacity failures to existing RetryInfo processing. The tests cover no-delay exhaustion in the normal domain, no-delay exhaustion in a non-Cloud-Code domain, and no-delay capacity exceeded; the pre-existing 9-second capacity case continues to assert retryable behavior. No retry-loop or call-site file changed. [ev-diff-001] [ev-impl-001] [ev-test-001] [ev-test-002]"
+        },
+        "evidence_units": [
+          {
+            "id": "ev-issue-001",
+            "kind": "issue",
+            "claim": "Issue 28339 is titled Infinite Fallback Loop on retryable errors (429 RESOURCE_EXHAUSTED).",
+            "source": "issue-bundle.json: issue.number and issue.title"
+          },
+          {
+            "id": "ev-commit-001",
+            "kind": "commit",
+            "claim": "The pinned resolved commit is d55e366f6ab393e024c613d940fead3696d56eac, its parent is dc859e8e48868ef5d1cc3b6708dbbdf3817cb9c9, and its subject is fix(core): classify capacity exhaustion as terminal to prevent retry hangs (#28599); the bundle labels the problem category failure-recovery-and-retry.",
+            "source": "issue-bundle.json: pinned_ref, resolved_commit, parent_commit, commit_show_stat, and manifest_metadata; corroborated by git show d55e366f6ab393e024c613d940fead3696d56eac"
+          },
+          {
+            "id": "ev-diff-001",
+            "kind": "diff",
+            "claim": "The pinned commit changes only packages/core/src/utils/googleQuotaErrors.ts and packages/core/src/utils/googleQuotaErrors.test.ts, adding 17 implementation lines and 57 test lines with no deletions.",
+            "source": "git diff --numstat and --name-status dc859e8e48868ef5d1cc3b6708dbbdf3817cb9c9 d55e366f6ab393e024c613d940fead3696d56eac"
+          },
+          {
+            "id": "ev-before-001",
+            "kind": "implementation",
+            "claim": "In the parent classifier, structured details are extracted into QuotaFailure, ErrorInfo, and RetryInfo. The ErrorInfo logic special-cases insufficient credits and Cloud Code rate/quota reasons, but has no branch for model-capacity exhaustion or capacity exceeded; if no other detailed rule matches, the function returns generic RetryableQuotaError.",
+            "source": "git show dc859e8e48868ef5d1cc3b6708dbbdf3817cb9c9:packages/core/src/utils/googleQuotaErrors.ts, lines 289-407"
+          },
+          {
+            "id": "ev-impl-001",
+            "kind": "implementation",
+            "claim": "The pinned classifier parses retryDelay into delaySeconds, then checks ErrorInfo reasons MODEL_CAPACITY_EXHAUSTED and MODEL_CAPACITY_EXCEEDED. If delaySeconds is undefined it returns a terminal quota error with the API message, parsed API error, undefined delay, and reason; otherwise it falls through to existing retry-delay and domain handling.",
+            "source": "packages/core/src/utils/googleQuotaErrors.ts, lines 313-348 at d55e366f6ab393e024c613d940fead3696d56eac"
+          },
+          {
+            "id": "ev-call-001",
+            "kind": "call_site",
+            "claim": "retryWithBackoff calls classifyGoogleError from its catch path. A terminal quota classification invokes onPersistent429 before normal retry processing; if that callback returns a fallback model, the loop resets attempts and delay and retries with the new model, otherwise it throws the terminal classification.",
+            "source": "packages/core/src/utils/retry.ts, lines 334-367 at d55e366f6ab393e024c613d940fead3696d56eac"
+          },
+          {
+            "id": "ev-call-002",
+            "kind": "call_site",
+            "claim": "A RetryableQuotaError enters the retry branch. The persistent-failure callback is consulted only after the current maximum attempts is reached, while retryDelayMs controls the server-directed wait and missing delay uses exponential backoff with jitter.",
+            "source": "packages/core/src/utils/retry.ts, lines 389-448 at d55e366f6ab393e024c613d940fead3696d56eac"
+          },
+          {
+            "id": "ev-test-001",
+            "kind": "test",
+            "claim": "The existing capacity test supplies MODEL_CAPACITY_EXHAUSTED with RetryInfo retryDelay 9s and asserts RetryableQuotaError with retryDelayMs equal to 9000, documenting that a server-directed delay preserves retryable behavior.",
+            "source": "packages/core/src/utils/googleQuotaErrors.test.ts, lines 84-108 at d55e366f6ab393e024c613d940fead3696d56eac"
+          },
+          {
+            "id": "ev-test-002",
+            "kind": "test",
+            "claim": "The commit adds three classifier tests: MODEL_CAPACITY_EXHAUSTED with no retry delay in the Cloud Code domain, the same reason with a non-Cloud-Code domain, and MODEL_CAPACITY_EXCEEDED with no retry delay; each asserts TerminalQuotaError.",
+            "source": "packages/core/src/utils/googleQuotaErrors.test.ts, lines 110-165 at d55e366f6ab393e024c613d940fead3696d56eac"
+          },
+          {
+            "id": "ev-validation-001",
+            "kind": "validation",
+            "claim": "The checked-out workspace has no root node_modules/.bin/vitest, so the focused Vitest suite was not executed during extraction; the available validation oracle is the checked-in regression-test code plus the clean diff inspection.",
+            "source": "Workspace probe in the pinned checkout: Test-Path node_modules/.bin/vitest returned False; git diff --check returned no output"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "classify-undelayed-model-capacity-exhaustion-as-terminal",
+            "description": "Add a classifier rule that maps structured model-capacity exhaustion with no server delay to terminal handling, while preserving retryable handling for capacity failures that carry a server delay.",
+            "evidence_ids": [
+              "ev-impl-001",
+              "ev-call-001",
+              "ev-call-002",
+              "ev-test-001",
+              "ev-test-002"
+            ],
+            "semantic_action": {
+              "intent": "Stop retrying an exhausted model when the upstream supplies no retry schedule, so persistent fallback handling can be reached.",
+              "module_role": "Structured upstream-failure classifier at the retry and fallback boundary",
+              "operation": "classify",
+              "pre_state": "A structured quota failure is recognized as a retryable-status error, but its capacity-exhaustion reason is not distinguished and no parsed server retry delay is available; it falls through to generic transient handling.",
+              "post_state": "The no-delay capacity-exhaustion condition is classified as terminal and retains the parsed error and reason for downstream fallback handling; a present server delay takes the existing retryable, delay-aware path.",
+              "validation": "The added focused tests assert terminal classification for both capacity-reason variants with no delay, including a non-Cloud-Code domain, while the existing 9-second RetryInfo case asserts retryable classification with a 9000 ms delay. The assertions were not executed in this checkout because the Vitest binary is absent.",
+              "parameters": [
+                "structured quota status",
+                "capacity-exhaustion reason",
+                "optional server retry delay",
+                "parsed API error payload and details"
+              ],
+              "evidence_ids": [
+                "ev-impl-001",
+                "ev-call-001",
+                "ev-call-002",
+                "ev-test-001",
+                "ev-test-002",
+                "ev-validation-001"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "classify-capacity-exhaustion-before-retry",
+            "description": "When a structured model-capacity failure lacks a server-directed delay, classify it as terminal at the error-normalization boundary so persistent fallback handling is reached without normal retry churn; retain delay-based retry for explicitly delayed capacity failures.",
+            "atomic_names": [
+              "classify-undelayed-model-capacity-exhaustion-as-terminal"
+            ],
+            "evidence_ids": [
+              "ev-before-001",
+              "ev-impl-001",
+              "ev-call-001",
+              "ev-call-002",
+              "ev-test-001",
+              "ev-test-002"
+            ],
+            "workflow_graph": {
+              "goal": "Route a no-delay model-capacity failure to terminal and fallback handling without retrying the same exhausted model through the normal transient path.",
+              "entry_state": "A detailed retryable-status API error reaches classification with a model-capacity exhaustion reason and no parsed server retry delay.",
+              "exit_state": "Capacity exhaustion without a server delay is terminal and eligible for immediate persistent fallback; capacity errors with a server delay remain delay-aware retryable failures.",
+              "steps": [
+                {
+                  "action_name": "classify-undelayed-model-capacity-exhaustion-as-terminal",
+                  "role": "implement",
+                  "optional": false
+                }
+              ],
+              "edges": [],
+              "unresolved_or_deferred": [
+                "The delay-present branch is preserved inside the single classifier action rather than represented as a separate changed action; its behavior is directly covered by the existing 9-second retry test.",
+                "Execution of the focused test suite was not observed because the checkout has no root node_modules/.bin/vitest."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "The issue bundle provides no issue body, comments, timeline, or linked pull-request metadata, so reproduction details beyond the title remain unavailable.",
+          "The focused Vitest suite was not executed because the checkout lacks node_modules/.bin/vitest; validation is therefore grounded in the checked-in test assertions and source/diff inspection rather than a fresh test run."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "classify-undelayed-model-capacity-exhaustion-as-terminal",
+          "description": "Add a classifier rule that maps structured model-capacity exhaustion with no server delay to terminal handling, while preserving retryable handling for capacity failures that carry a server delay.",
+          "evidence_ids": [
+            "ev-impl-001",
+            "ev-call-001",
+            "ev-call-002",
+            "ev-test-001",
+            "ev-test-002"
+          ],
+          "semantic_action": {
+            "intent": "Stop retrying an exhausted model when the upstream supplies no retry schedule, so persistent fallback handling can be reached.",
+            "module_role": "Structured upstream-failure classifier at the retry and fallback boundary",
+            "operation": "classify",
+            "pre_state": "A structured quota failure is recognized as a retryable-status error, but its capacity-exhaustion reason is not distinguished and no parsed server retry delay is available; it falls through to generic transient handling.",
+            "post_state": "The no-delay capacity-exhaustion condition is classified as terminal and retains the parsed error and reason for downstream fallback handling; a present server delay takes the existing retryable, delay-aware path.",
+            "validation": "The added focused tests assert terminal classification for both capacity-reason variants with no delay, including a non-Cloud-Code domain, while the existing 9-second RetryInfo case asserts retryable classification with a 9000 ms delay. The assertions were not executed in this checkout because the Vitest binary is absent.",
+            "parameters": [
+              "structured quota status",
+              "capacity-exhaustion reason",
+              "optional server retry delay",
+              "parsed API error payload and details"
+            ],
+            "evidence_ids": [
+              "ev-impl-001",
+              "ev-call-001",
+              "ev-call-002",
+              "ev-test-001",
+              "ev-test-002",
+              "ev-validation-001"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "classify-capacity-exhaustion-before-retry",
+          "description": "When a structured model-capacity failure lacks a server-directed delay, classify it as terminal at the error-normalization boundary so persistent fallback handling is reached without normal retry churn; retain delay-based retry for explicitly delayed capacity failures.",
+          "atomic_names": [
+            "classify-undelayed-model-capacity-exhaustion-as-terminal"
+          ],
+          "evidence_ids": [
+            "ev-before-001",
+            "ev-impl-001",
+            "ev-call-001",
+            "ev-call-002",
+            "ev-test-001",
+            "ev-test-002"
+          ],
+          "workflow_graph": {
+            "goal": "Route a no-delay model-capacity failure to terminal and fallback handling without retrying the same exhausted model through the normal transient path.",
+            "entry_state": "A detailed retryable-status API error reaches classification with a model-capacity exhaustion reason and no parsed server retry delay.",
+            "exit_state": "Capacity exhaustion without a server delay is terminal and eligible for immediate persistent fallback; capacity errors with a server delay remain delay-aware retryable failures.",
+            "steps": [
+              {
+                "action_name": "classify-undelayed-model-capacity-exhaustion-as-terminal",
+                "role": "implement",
+                "optional": false
+              }
+            ],
+            "edges": [],
+            "unresolved_or_deferred": [
+              "The delay-present branch is preserved inside the single classifier action rather than represented as a separate changed action; its behavior is directly covered by the existing 9-second retry test.",
+              "Execution of the focused test suite was not observed because the checkout has no root node_modules/.bin/vitest."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The issue bundle provides no issue body, comments, timeline, or linked pull-request metadata, so reproduction details beyond the title remain unavailable.",
+        "The focused Vitest suite was not executed because the checkout lacks node_modules/.bin/vitest; validation is therefore grounded in the checked-in test assertions and source/diff inspection rather than a fresh test run."
+      ]
+    },
+    "call_sites": [
+      "retryWithBackoff calls classifyGoogleError from its catch path. A terminal quota classification invokes onPersistent429 before normal retry processing; if that callback returns a fallback model, the loop resets attempts and delay and retries with the new model, otherwise it throws the terminal classification.",
+      "A RetryableQuotaError enters the retry branch. The persistent-failure callback is consulted only after the current maximum attempts is reached, while retryDelayMs controls the server-directed wait and missing delay uses exponential backoff with jitter."
+    ],
+    "tests": [
+      "The existing capacity test supplies MODEL_CAPACITY_EXHAUSTED with RetryInfo retryDelay 9s and asserts RetryableQuotaError with retryDelayMs equal to 9000, documenting that a server-directed delay preserves retryable behavior.",
+      "The commit adds three classifier tests: MODEL_CAPACITY_EXHAUSTED with no retry delay in the Cloud Code domain, the same reason with a non-Cloud-Code domain, and MODEL_CAPACITY_EXCEEDED with no retry delay; each asserts TerminalQuotaError."
+    ]
+  }
+]

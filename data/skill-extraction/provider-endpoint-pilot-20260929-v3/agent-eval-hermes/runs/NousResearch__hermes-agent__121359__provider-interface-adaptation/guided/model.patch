@@ -1,0 +1,170 @@
+diff --git a/agent/auxiliary_client.py b/agent/auxiliary_client.py
+index ab6d440c..c72ac30f 100644
+--- a/agent/auxiliary_client.py
++++ b/agent/auxiliary_client.py
+@@ -2296,7 +2296,11 @@ def _warn_paid_lane_once(model: str) -> None:
+     )
+ 
+ 
+-def _try_openrouter(explicit_api_key: Optional[Union[str, Callable[[], str]]] = None, model: str = None) -> Tuple[Optional[OpenAI], Optional[str]]:
++def _try_openrouter(
++    explicit_api_key: Optional[Union[str, Callable[[], str]]] = None,
++    model: str = None,
++    explicit_base_url: str = None,
++) -> Tuple[Optional[OpenAI], Optional[str]]:
+     free_only, cfg_model = _aux_openrouter_settings()
+     or_model = model or cfg_model
+     if free_only and not _is_free_model(or_model):
+@@ -2313,7 +2317,9 @@ def _try_openrouter(explicit_api_key: Optional[Union[str, Callable[[], str]]] =
+     if pool_present:
+         or_key = explicit_api_key or _pool_runtime_api_key(entry)
+         if or_key:
+-            base_url = _pool_runtime_base_url(entry, OPENROUTER_BASE_URL) or OPENROUTER_BASE_URL
++            base_url = ((explicit_base_url or "").strip().rstrip("/")
++                        or _pool_runtime_base_url(entry, OPENROUTER_BASE_URL)
++                        or OPENROUTER_BASE_URL)
+             logger.debug("Auxiliary client: OpenRouter via pool")
+             return _create_openai_client(
+                 api_key=or_key, base_url=base_url, default_headers=build_or_headers()
+@@ -2326,8 +2332,9 @@ def _try_openrouter(explicit_api_key: Optional[Union[str, Callable[[], str]]] =
+             "openrouter", ttl=60, reason=_describe_openrouter_unavailable(or_model), level=logging.DEBUG)
+         return None, None
+     logger.debug("Auxiliary client: OpenRouter")
++    base_url = (explicit_base_url or "").strip().rstrip("/") or OPENROUTER_BASE_URL
+     return _create_openai_client(
+-        api_key=or_key, base_url=OPENROUTER_BASE_URL, default_headers=build_or_headers()
++        api_key=or_key, base_url=base_url, default_headers=build_or_headers()
+     ), or_model
+ 
+ 
+@@ -3009,7 +3016,10 @@ def _try_azure_foundry(
+     return client, final_model
+ 
+ 
+-def _try_anthropic(explicit_api_key: Optional[Union[str, Callable[[], str]]] = None) -> Tuple[Optional[Any], Optional[str]]:
++def _try_anthropic(
++    explicit_api_key: Optional[Union[str, Callable[[], str]]] = None,
++    explicit_base_url: str = None,
++) -> Tuple[Optional[Any], Optional[str]]:
+     try:
+         from agent.anthropic_adapter import build_anthropic_client
+         from agent.anthropic_credentials import resolve_anthropic_token
+@@ -3024,16 +3034,24 @@ def _try_anthropic(explicit_api_key: Optional[Union[str, Callable[[], str]]] = N
+         token = explicit_api_key or resolve_anthropic_token()
+     if not token:
+         return None, None
++    explicit_base = (explicit_base_url or "").strip().rstrip("/")
++    if explicit_base and not _is_anthropic_compatible_host(explicit_base):
++        logger.warning(
++            "Auxiliary client: refusing explicit Anthropic base_url %r because it does not "
++            "identify an Anthropic Messages endpoint", explicit_base)
++        return None, None
+     # Honor config.yaml model.base_url only when provider is anthropic AND the URL is
+     # Anthropic-compatible; a foreign host (Codex, OpenRouter) would 401 every aux call.
+-    base_url = _pool_runtime_base_url(entry, _ANTHROPIC_DEFAULT_BASE_URL) if pool_present else _ANTHROPIC_DEFAULT_BASE_URL
++    base_url = (explicit_base
++                or (_pool_runtime_base_url(entry, _ANTHROPIC_DEFAULT_BASE_URL)
++                    if pool_present else _ANTHROPIC_DEFAULT_BASE_URL))
+     with contextlib.suppress(Exception):
+         from hermes_cli.config import load_config_readonly
+         cfg = load_config_readonly()
+         model_cfg = cfg.get("model")
+         if isinstance(model_cfg, dict):
+             cfg_provider = str(model_cfg.get("provider") or "").strip().lower()
+-            if cfg_provider == "anthropic":
++            if cfg_provider == "anthropic" and not explicit_base:
+                 cfg_base_url = (model_cfg.get("base_url") or "").strip().rstrip("/")
+                 if cfg_base_url and _is_anthropic_compatible_host(cfg_base_url):
+                     base_url = cfg_base_url
+@@ -4968,7 +4986,9 @@ def _resolve_auto_branch(req: _ResolveRequest) -> _ResolveResult:
+ 
+ def _resolve_openrouter_branch(req: _ResolveRequest) -> _ResolveResult:
+     """OpenRouter."""
+-    client, default = _try_openrouter(explicit_api_key=req.explicit_api_key, model=req.model)
++    client, default = _try_openrouter(
++        explicit_api_key=req.explicit_api_key, model=req.model,
++        explicit_base_url=req.explicit_base_url)
+     if client is None:
+         logger.warning("resolve_provider_client: openrouter requested but %s",
+                        _describe_openrouter_unavailable(model=req.model))
+@@ -5230,7 +5250,9 @@ def _resolve_api_key_branch(req: _ResolveRequest, pconfig: Any, resolve_creds: C
+     """PROVIDER_REGISTRY ``api_key`` providers (Anthropic via its own resolver), honouring explicit overrides."""
+     provider = req.provider
+     if provider == "anthropic":
+-        client, default_model = _try_anthropic(explicit_api_key=req.explicit_api_key)
++        client, default_model = _try_anthropic(
++            explicit_api_key=req.explicit_api_key,
++            explicit_base_url=req.explicit_base_url)
+         return _route_or_warn(req, client, default_model,
+                               "resolve_provider_client: anthropic requested but no Anthropic credentials found")
+     creds = resolve_creds(provider)
+diff --git a/hermes_cli/models.py b/hermes_cli/models.py
+index 74c4189f..89193cae 100644
+--- a/hermes_cli/models.py
++++ b/hermes_cli/models.py
+@@ -817,6 +817,20 @@ def _get_model_config_dict() -> dict[str, Any]:
+     return {}
+ 
+ 
++def _configured_relay_base_url(provider: str) -> str:
++    """Return this provider's configured ``model.base_url``, never another provider's.
++
++    A configured relay is an explicit routing boundary: catalog discovery must use it and
++    must not retry against the provider's canonical host if the relay is unavailable.
++    """
++    model_cfg = _get_model_config_dict()
++    configured_provider = normalize_provider(model_cfg.get("provider"))
++    requested_provider = normalize_provider(provider)
++    if configured_provider != requested_provider:
++        return ""
++    return str(model_cfg.get("base_url") or "").strip().rstrip("/")
++
++
+ def _base_url_looks_like_anthropic_messages(base_url: str) -> bool:
+     normalized = str(base_url or "").strip().lower().rstrip("/")
+     if not normalized:
+@@ -1610,6 +1624,25 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False)
+         return _ollama_local_catalog(force_refresh)
+ 
+     normalized = normalize_provider(provider)
++    relay_base_url = _configured_relay_base_url(normalized)
++    if relay_base_url:
++        profile = None
++        try:
++            from providers import get_provider_profile
++            profile = get_provider_profile(normalized)
++            api_key, _credential_base_url = _api_key_credentials(normalized)
++            live = profile.fetch_models(api_key=api_key, base_url=relay_base_url) if profile else None
++        except Exception:
++            live = None
++        if live:
++            return _chat_catalog_rows(list(live))
++        # The relay is terminal for live egress. Degrade to local data without touching any
++        # canonical fetcher or remote metadata source.
++        curated = list(_PROVIDER_MODELS.get(normalized, []))
++        if not curated and profile is not None:
++            curated = list(profile.fallback_models or ())
++        return _chat_catalog_rows(_drop_delisted_opencode_models(normalized, curated))
++
+     fetcher = _PROVIDER_CATALOG_FETCHERS.get(normalized)
+     if fetcher is not None:
+         models = fetcher(normalized, force_refresh)
+diff --git a/hermes_cli/runtime_provider.py b/hermes_cli/runtime_provider.py
+index cf149c3b..00f2ecfb 100644
+--- a/hermes_cli/runtime_provider.py
++++ b/hermes_cli/runtime_provider.py
+@@ -534,6 +534,14 @@ def _pool_entry_mode_and_url(provider, entry, model_cfg, effective_model, base_u
+             # only when the pool row still carries the canonical URL).
+             if base_url in ("", default_url):
+                 base_url = _config_base_url_for_provider(model_cfg, provider) or base_url
++        elif provider == "xai":
++            # Env-seeded pool rows retain the registry endpoint. A same-provider
++            # model.base_url is the user's relay and wins over that default; a genuinely
++            # custom per-credential endpoint remains authoritative.
++            registry_url = (PROVIDER_REGISTRY.get(provider).inference_base_url
++                            if PROVIDER_REGISTRY.get(provider) else "")
++            if not base_url or base_url.rstrip("/") == registry_url.rstrip("/"):
++                base_url = _config_base_url_for_provider(model_cfg, provider) or base_url
+         return api_mode, base_url or (default_url() if callable(default_url) else default_url)
+     if provider == "anthropic":
+         return "anthropic_messages", _anthropic_cfg_base_url(model_cfg) or base_url or _ANTHROPIC_DEFAULT_BASE_URL

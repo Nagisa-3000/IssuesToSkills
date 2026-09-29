@@ -1,0 +1,491 @@
+[
+  {
+    "episode_id": "NousResearch/hermes-agent#125235@98278833e29b167fe930e276eed7cb16bee68673",
+    "title": "Compaction follows compression.threshold again: no default 256K token cap",
+    "before": "At parent 5912ed81ed945a784f67ca13c1096e2c122cd307, the canonical compression configuration set compression.threshold_tokens to 256000 and the schema version to 46. When the raw compression section omitted the key, agent construction fell back to that default and passed it as the compressor's absolute threshold cap. The compressor then used the lower of the ratio-derived trigger and the cap, so a 1M-token window with the default 0.50 ratio compacted at 256K rather than 500K; an explicit null was already an opt-out. The example configuration was version 46 and materialized threshold_tokens: 256000, and the shared seeding path copied that template into new configurations, turning the temporary default into a persisted literal that looked like a user choice. Existing gateway-cache and TUI hot-reload consumers also resolved an absent key through DEFAULT_CONFIG, so they treated absence as the 256K cap.",
+    "after": "At 98278833e29b167fe930e276eed7cb16bee68673, compression.threshold_tokens is None in DEFAULT_CONFIG and the schema/template move to version 47. An absent key now constructs a compressor with no absolute cap, so the ratio- and model-derived trigger governs across context-window sizes; a positive user-supplied cap remains supported, is applied as the lower-of ratio-versus-absolute rule, and survives model switches. The new v47 migration removes threshold_tokens only when a versioned pre-v47 configuration contains exactly the stale 256000 default; other explicit caps and explicit null remain untouched. Because the gateway cache signature and TUI live-sync code already read the canonical default, their behavior follows the new policy: absent and explicit null are ratio-only, while an explicit positive cap remains a distinct cached/live configuration. Documentation and regression expectations now describe the absolute cap as opt-in.",
+    "diff": "The commit changes 10 files with 73 insertions and 66 deletions. The production policy change is the DEFAULT_CONFIG flip from 256000 to None plus config schema v46 to v47; the example template becomes a commented optional cap and v47. A new v46-to-v47 migration uses the existing stale-default rewrite mechanism to delete only the exact old literal. The compressor algorithm, gateway cache extraction, and TUI live-sync implementation are not structurally changed because they already derive their fallback from DEFAULT_CONFIG; their tests are updated to assert the new default while preserving explicit-cap behavior. Three documentation pages are updated from a universal 256K cap to an optional absolute cost ceiling.",
+    "repository": "NousResearch/hermes-agent",
+    "revision": "github-issue-125235",
+    "evidence_ids": [
+      "ev-01-anchor",
+      "ev-02-commit-rationale",
+      "ev-03-default-policy-diff",
+      "ev-04-template-diff",
+      "ev-05-agent-init-call-site",
+      "ev-06-compressor-call_site",
+      "ev-07-seeding-call-sites",
+      "ev-08-migration-diff",
+      "ev-09-migration-helper",
+      "ev-10-cache-call-site",
+      "ev-11-live-reload-call_site",
+      "ev-12-compressor-tests",
+      "ev-13-cache-tests",
+      "ev-14-tui-tests",
+      "ev-15-default-fallback-test",
+      "ev-16-migration-property-test",
+      "ev-17-documentation-diff",
+      "ev-18-diff-validation",
+      "ev-19-test-run-blocked"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 125235,
+      "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/hermes-agent",
+      "manifest_metadata": {
+        "category": "bounded-resource-budget-control",
+        "role": "train_candidate",
+        "case_id": "NousResearch/hermes-agent#125235:bounded-resource-budget-control:train_candidate"
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "NousResearch/hermes-agent",
+        "issue_number": 125235,
+        "issue": {
+          "number": 125235,
+          "title": "The 256,000-token compression default: zero review, three data points, no cost model — and it breaks prompt-cache economics on DeepSeek",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [],
+        "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/hermes-agent",
+        "pinned_ref": "98278833e29b167fe930e276eed7cb16bee68673",
+        "resolved_commit": "98278833e29b167fe930e276eed7cb16bee68673",
+        "parent_commit": "5912ed81ed945a784f67ca13c1096e2c122cd307",
+        "commit_show_stat": "commit 98278833e29b167fe930e276eed7cb16bee68673\nAuthor:     Siddharth Balyan <52913345+alt-glitch@users.noreply.github.com>\nAuthorDate: Mon Sep 28 12:59:40 2026 +0530\nCommit:     GitHub <noreply@github.com>\nCommitDate: Mon Sep 28 07:29:40 2026 +0000\n\n    Compaction follows compression.threshold again: no default 256K token cap (#117915, #125235) (#126064)\n    \n    * fix(compression): compaction follows the ratio again; no default token cap\n    \n    compression.threshold_tokens defaulted to 256000 since #115986, so every\n    window above ~341K compacted at 256K regardless of compression.threshold\n    or model_thresholds: a 1M-window model compacted at 25% of its window,\n    and threshold: 0.8 still compacted at 256K. No single token count suits\n    windows from 64K to 1M+, so the cap goes back to opt-in (null) and the\n    ratio decides, as it did before #115986.\n    \n    The template seeder and `hermes doctor --fix` copied the 256000 default\n    into config.yaml, where it reads as a user choice and would keep capping\n    those installs. Config v47 drops threshold_tokens only when it equals\n    256000; any other explicit cap and an explicit null are preserved.\n    \n    The rest of #115986 stays: the model-switch warning quoting the real\n    trigger and the shared _derive_trigger are correct with any default.\n    Tests that encoded 256K now derive expectations from DEFAULT_CONFIG.\n    \n    * docs(compression): threshold_tokens is an optional cap, default null\n    \n    User guide, developer guide and delegation page described the 256K\n    default cap; they now describe the ratio trigger as the default and\n    threshold_tokens as an opt-in cost ceiling.\n\n cli-config.yaml.example                            | 13 ++++----\n hermes_cli/config_defaults.py                      | 11 +++---\n hermes_cli/config_migrations.py                    | 11 ++++++\n tests/agent/test_context_compressor.py             | 32 ++++++------------\n tests/gateway/test_agent_cache.py                  | 10 +++---\n .../test_compression_config_hot_reload.py          | 39 +++++++++++++---------\n tui_gateway/session_compression.py                 |  5 ++-\n .../context-compression-and-caching.md             | 12 +++----\n website/docs/user-guide/configuration.md           |  4 +--\n website/docs/user-guide/features/delegation.md     |  2 +-\n 10 files changed, 73 insertions(+), 66 deletions(-)\n",
+        "changed_files_name_status": "M\tcli-config.yaml.example\nM\thermes_cli/config_defaults.py\nM\thermes_cli/config_migrations.py\nM\ttests/agent/test_context_compressor.py\nM\ttests/gateway/test_agent_cache.py\nM\ttests/tui_gateway/test_compression_config_hot_reload.py\nM\ttui_gateway/session_compression.py\nM\twebsite/docs/developer-guide/context-compression-and-caching.md\nM\twebsite/docs/user-guide/configuration.md\nM\twebsite/docs/user-guide/features/delegation.md\n",
+        "linked_issue_numbers": [
+          125235
+        ],
+        "manifest_metadata": {
+          "category": "bounded-resource-budget-control"
+        },
+        "fetched_at": "2026-09-28T19:20:50.551085+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "NousResearch/hermes-agent#125235@98278833e29b167fe930e276eed7cb16bee68673",
+          "title": "Compaction follows compression.threshold again: no default 256K token cap",
+          "before": "At parent 5912ed81ed945a784f67ca13c1096e2c122cd307, the canonical compression configuration set compression.threshold_tokens to 256000 and the schema version to 46. When the raw compression section omitted the key, agent construction fell back to that default and passed it as the compressor's absolute threshold cap. The compressor then used the lower of the ratio-derived trigger and the cap, so a 1M-token window with the default 0.50 ratio compacted at 256K rather than 500K; an explicit null was already an opt-out. The example configuration was version 46 and materialized threshold_tokens: 256000, and the shared seeding path copied that template into new configurations, turning the temporary default into a persisted literal that looked like a user choice. Existing gateway-cache and TUI hot-reload consumers also resolved an absent key through DEFAULT_CONFIG, so they treated absence as the 256K cap.",
+          "after": "At 98278833e29b167fe930e276eed7cb16bee68673, compression.threshold_tokens is None in DEFAULT_CONFIG and the schema/template move to version 47. An absent key now constructs a compressor with no absolute cap, so the ratio- and model-derived trigger governs across context-window sizes; a positive user-supplied cap remains supported, is applied as the lower-of ratio-versus-absolute rule, and survives model switches. The new v47 migration removes threshold_tokens only when a versioned pre-v47 configuration contains exactly the stale 256000 default; other explicit caps and explicit null remain untouched. Because the gateway cache signature and TUI live-sync code already read the canonical default, their behavior follows the new policy: absent and explicit null are ratio-only, while an explicit positive cap remains a distinct cached/live configuration. Documentation and regression expectations now describe the absolute cap as opt-in.",
+          "diff": "The commit changes 10 files with 73 insertions and 66 deletions. The production policy change is the DEFAULT_CONFIG flip from 256000 to None plus config schema v46 to v47; the example template becomes a commented optional cap and v47. A new v46-to-v47 migration uses the existing stale-default rewrite mechanism to delete only the exact old literal. The compressor algorithm, gateway cache extraction, and TUI live-sync implementation are not structurally changed because they already derive their fallback from DEFAULT_CONFIG; their tests are updated to assert the new default while preserving explicit-cap behavior. Three documentation pages are updated from a universal 256K cap to an optional absolute cost ceiling."
+        },
+        "evidence_units": [
+          {
+            "id": "ev-01-anchor",
+            "kind": "commit",
+            "claim": "The issue bundle anchors issue 125235 to resolved commit 98278833e29b167fe930e276eed7cb16bee68673 with parent 5912ed81ed945a784f67ca13c1096e2c122cd307; it reports a 10-file implementation-bearing change but provides no issue body, comments, timeline, or linked pull-request metadata.",
+            "source": "issue-bundle.json fields issue, pinned_ref, resolved_commit, parent_commit, commit_show_stat, and limitations"
+          },
+          {
+            "id": "ev-02-commit-rationale",
+            "kind": "commit",
+            "claim": "The pinned commit message identifies the mechanism: 256000 had become the default cap, large windows therefore compacted at a fixed count regardless of compression.threshold or model_thresholds, and the intended repair is an opt-in null default plus a migration that preserves other explicit values.",
+            "source": "git show -s --format=fuller 98278833e29b167fe930e276eed7cb16bee68673"
+          },
+          {
+            "id": "ev-03-default-policy-diff",
+            "kind": "diff",
+            "claim": "The implementation diff changes DEFAULT_CONFIG compression.threshold_tokens from 256_000 to None and increments _config_version from 46 to 47; the new comments explicitly say no single count suits windows from 64K to 1M+ and the ratio should decide by default.",
+            "source": "git diff 5912ed81ed945a784f67ca13c1096e2c122cd307 98278833e29b167fe930e276eed7cb16bee68673 -- hermes_cli/config_defaults.py; current lines hermes_cli/config_defaults.py:572-579 and :2683"
+          },
+          {
+            "id": "ev-04-template-diff",
+            "kind": "diff",
+            "claim": "The example configuration changes from an active threshold_tokens: 256000 at schema v46 to schema v47 with an optional commented threshold_tokens example, documenting null/disabled as the default.",
+            "source": "git diff 5912ed81ed945a784f67ca13c1096e2c122cd307 98278833e29b167fe930e276eed7cb16bee68673 -- cli-config.yaml.example; current lines cli-config.yaml.example:694-698"
+          },
+          {
+            "id": "ev-05-agent-init-call-site",
+            "kind": "call_site",
+            "claim": "Agent construction reads threshold_tokens from the raw compression section and falls back to DEFAULT_CONFIG when the key is absent; explicit null remains None, and the parsed value is passed as threshold_tokens_cap to ContextCompressor.",
+            "source": "Pinned checkout agent/agent_init.py:1525-1541 and :1998-2007"
+          },
+          {
+            "id": "ev-06-compressor-call_site",
+            "kind": "call_site",
+            "claim": "The compressor's shared trigger derivation computes the ratio/model threshold and lowers it only when an effective positive cap exists; cap normalization treats None as no cap, while update_model reapplies a retained positive cap after a model switch.",
+            "source": "Pinned checkout agent/context_compressor.py:2573-2590, :2596-2615, and :2662-2674"
+          },
+          {
+            "id": "ev-07-seeding-call-sites",
+            "kind": "call_site",
+            "claim": "seed_config_file is the shared path for installer-style and doctor --fix seeding: it copies cli-config.yaml.example when present and otherwise writes stripped DEFAULT_CONFIG; config editing also invokes this path, so the template/default change affects newly materialized configurations.",
+            "source": "Pinned checkout hermes_cli/config.py:515-528 and :3080-3088; hermes_cli/doctor_config.py:307-312"
+          },
+          {
+            "id": "ev-08-migration-diff",
+            "kind": "diff",
+            "claim": "The commit adds migration target 47, matching compression.threshold_tokens exactly against old value 256000 and using new=None; its comments state that any other explicit cap and explicit null are preserved.",
+            "source": "git diff 5912ed81ed945a784f67ca13c1096e2c122cd307 98278833e29b167fe930e276eed7cb16bee68673 -- hermes_cli/config_migrations.py; current hermes_cli/config_migrations.py:757-767"
+          },
+          {
+            "id": "ev-09-migration-helper",
+            "kind": "implementation",
+            "claim": "The existing migration helper rewrites a key only when its current value satisfies the supplied match predicate; new=None deletes the key, and the commit persists the changed raw configuration. _rewrite_stale_default supplies an equality match against the old default, so the v47 step cannot overwrite a different user value.",
+            "source": "Pinned checkout hermes_cli/config_migrations.py:60-106"
+          },
+          {
+            "id": "ev-10-cache-call-site",
+            "kind": "call_site",
+            "claim": "The gateway cache-busting surface includes compression.threshold_tokens and extracts absent values from DEFAULT_CONFIG while reading explicit raw values directly; with the new default, absent and explicit null resolve to the same None signature, whereas an explicit positive cap changes the signature and forces a rebuild.",
+            "source": "Pinned checkout gateway/run.py:4402-4421 and gateway/run_agent_cache.py:49-64"
+          },
+          {
+            "id": "ev-11-live-reload-call_site",
+            "kind": "call_site",
+            "claim": "The TUI live compressor fallback reads DEFAULT_CONFIG through _default_threshold_tokens_cap, applies compression.get with that fallback, and invalidates the cached trigger so an absent key re-derives from the canonical default while explicit values remain effective.",
+            "source": "Pinned checkout tui_gateway/session_compression.py:42-51 and :135-172"
+          },
+          {
+            "id": "ev-12-compressor-tests",
+            "kind": "test",
+            "claim": "The changed compressor tests replace the shipped-default 256K expectation with a parameterized 128K/1M contract asserting threshold_tokens_cap is None and the effective trigger equals the ratio-only trigger; a separate test keeps a user-set 200K cap effective across a model switch.",
+            "source": "git diff 5912ed81ed945a784f67ca13c1096e2c122cd307 98278833e29b167fe930e276eed7cb16bee68673 -- tests/agent/test_context_compressor.py; current tests/agent/test_context_compressor.py:2192-2280"
+          },
+          {
+            "id": "ev-13-cache-tests",
+            "kind": "test",
+            "claim": "The changed gateway cache test now asserts that absent and explicit DEFAULT_CONFIG values have the same signature, while a different explicit cap has a distinct signature; the former null-versus-absent distinction is removed because the default is now null.",
+            "source": "git diff 5912ed81ed945a784f67ca13c1096e2c122cd307 98278833e29b167fe930e276eed7cb16bee68673 -- tests/gateway/test_agent_cache.py; current tests/gateway/test_agent_cache.py:140-161"
+          },
+          {
+            "id": "ev-14-tui-tests",
+            "kind": "test",
+            "claim": "The changed TUI hot-reload tests derive expectations from DEFAULT_CONFIG instead of hardcoding 256000 and assert that absent/removed threshold_tokens follows that default for 272K, 600K, and 1M windows while derived ratio triggers remain correct.",
+            "source": "git diff 5912ed81ed945a784f67ca13c1096e2c122cd307 98278833e29b167fe930e276eed7cb16bee68673 -- tests/tui_gateway/test_compression_config_hot_reload.py; current tests/tui_gateway/test_compression_config_hot_reload.py:117-179 and :251-279"
+          },
+          {
+            "id": "ev-15-default-fallback-test",
+            "kind": "test",
+            "claim": "An existing configuration-default test directly checks that a missing compression section falls back to DEFAULT_CONFIG and that explicit threshold_tokens: null remains the ratio-only opt-out; the test therefore follows the changed canonical default without embedding a fixed token count.",
+            "source": "Pinned checkout tests/agent/test_compression_config_defaults.py:1-26"
+          },
+          {
+            "id": "ev-16-migration-property-test",
+            "kind": "test",
+            "claim": "The generic upgrade property test derives migration start versions from the live MIGRATIONS registry and checks that migration reaches the latest version, preserves canaries and customized values, is byte-idempotent on a second run, and is a no-op when reapplying the ladder to migrated output. Its stale-default fixture does not include threshold_tokens, so it is indirect rather than an exact v47 cap-preservation test.",
+            "source": "Pinned checkout tests/e2e/core/upgrade/test_config_roundtrip_properties.py:1078-1096 and :1146-1182"
+          },
+          {
+            "id": "ev-17-documentation-diff",
+            "kind": "diff",
+            "claim": "The documentation changes describe threshold_tokens as optional with default null, explain that the ratio decides when no cap is set, retain the lower-of semantics for an explicit cap, and remove the claim that subagents inherit a universal 256K global cap.",
+            "source": "git diff 5912ed81ed945a784f67ca13c1096e2c122cd307 98278833e29b167fe930e276eed7cb16bee68673 -- website/docs/developer-guide/context-compression-and-caching.md website/docs/user-guide/configuration.md website/docs/user-guide/features/delegation.md"
+          },
+          {
+            "id": "ev-18-diff-validation",
+            "kind": "validation",
+            "claim": "The pinned implementation diff passes git diff --check with no whitespace errors.",
+            "source": "git diff --check 5912ed81ed945a784f67ca13c1096e2c122cd307 98278833e29b167fe930e276eed7cb16bee68673 -- all 10 changed files"
+          },
+          {
+            "id": "ev-19-test-run-blocked",
+            "kind": "validation",
+            "claim": "The prescribed targeted test runner was attempted but did not reach test collection because environment activation failed: uv --locked reported that uv.lock needs to be updated; git status remained clean afterward.",
+            "source": "bash scripts/run_tests.sh tests/agent/test_compression_config_defaults.py tests/agent/test_context_compressor.py tests/gateway/test_agent_cache.py tests/tui_gateway/test_compression_config_hot_reload.py -k ThresholdTokensCap or cache or threshold_tokens or compression_config; git status --short --branch"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "restore_ratio_driven_compression_default",
+            "description": "Make the absolute compression-trigger cap opt-in by changing the canonical default and its seeded template from 256000 to null/None, while retaining explicit positive caps as lower-of ratio-versus-absolute controls.",
+            "evidence_ids": [
+              "ev-02-commit-rationale",
+              "ev-03-default-policy-diff",
+              "ev-04-template-diff",
+              "ev-05-agent-init-call-site",
+              "ev-06-compressor-call_site",
+              "ev-07-seeding-call-sites",
+              "ev-10-cache-call-site",
+              "ev-11-live-reload-call_site",
+              "ev-12-compressor-tests",
+              "ev-13-cache-tests",
+              "ev-14-tui-tests",
+              "ev-15-default-fallback-test",
+              "ev-17-documentation-diff"
+            ],
+            "semantic_action": {
+              "intent": "Remove an unintended fixed token ceiling that makes compression fire at a non-proportional point across heterogeneous context windows, while preserving an explicit user-controlled absolute cost ceiling.",
+              "module_role": "Compression budget policy and configuration defaulting",
+              "operation": "normalize",
+              "pre_state": "When compression.threshold_tokens is absent, the defaulted configuration supplies 256000; agent construction passes that value as an absolute cap and the compressor lowers the ratio/model trigger to min(ratio_trigger, 256000).",
+              "post_state": "When compression.threshold_tokens is absent, the canonical value is None and the effective trigger is the ratio/model-derived threshold with no absolute cap; a positive explicit cap still lowers the trigger and remains durable across model switches.",
+              "validation": "The changed compressor test covers 128000 and 1000000 context windows and asserts no default cap plus equality with the ratio-only trigger; the explicit-cap test asserts a 200000 cap survives a switch. Gateway-cache and TUI tests verify that consumers use the canonical default and distinguish explicit positive caps.",
+              "parameters": [
+                "model context window",
+                "compression.threshold ratio",
+                "compression.model_thresholds overrides",
+                "optional compression.threshold_tokens cap",
+                "active model and provider"
+              ],
+              "evidence_ids": [
+                "ev-03-default-policy-diff",
+                "ev-05-agent-init-call-site",
+                "ev-06-compressor-call_site",
+                "ev-12-compressor-tests",
+                "ev-13-cache-tests",
+                "ev-14-tui-tests"
+              ]
+            }
+          },
+          {
+            "name": "reconcile_stale_persisted_compression_cap",
+            "description": "Migrate configurations that persisted the temporary 256000 default so they inherit the new ratio-only default, without rewriting an intentional cap or explicit null.",
+            "evidence_ids": [
+              "ev-02-commit-rationale",
+              "ev-07-seeding-call-sites",
+              "ev-08-migration-diff",
+              "ev-09-migration-helper",
+              "ev-16-migration-property-test"
+            ],
+            "semantic_action": {
+              "intent": "Remove a stale materialized default from existing configuration files so the new policy takes effect after upgrade without clobbering user-selected resource budgets.",
+              "module_role": "Versioned configuration migration and user-choice preservation",
+              "operation": "reconcile",
+              "pre_state": "A versioned configuration below schema v47 may contain compression.threshold_tokens: 256000 copied from the old template or doctor seeding; the same field may instead contain another explicit positive integer or null.",
+              "post_state": "The v47 migration deletes the field only when its raw value equals exactly 256000, allowing the new DEFAULT_CONFIG None to apply; other explicit caps, explicit null, and unrelated configuration values remain intact.",
+              "validation": "The new registry entry and the existing equality-gated deletion helper directly encode the exact-value guard. The generic upgrade property test dynamically includes registered migration versions and checks latest-version convergence, user-value preservation, idempotence, and reapplication stability, but does not directly generate threshold_tokens: 256000.",
+              "parameters": [
+                "on-disk config schema version",
+                "raw compression.threshold_tokens value",
+                "stale old default 256000",
+                "new default None",
+                "explicit user cap or null"
+              ],
+              "evidence_ids": [
+                "ev-08-migration-diff",
+                "ev-09-migration-helper",
+                "ev-16-migration-property-test"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "restore_proportional_compression_budget_and_upgrade_stale_configs",
+            "description": "Establish the ratio-driven default for compression triggers, then reconcile versioned configurations that persisted the temporary 256000 default; leave explicit absolute caps available as an opt-in branch and verify the existing cache/live-session consumers follow the canonical value.",
+            "atomic_names": [
+              "restore_ratio_driven_compression_default",
+              "reconcile_stale_persisted_compression_cap"
+            ],
+            "evidence_ids": [
+              "ev-02-commit-rationale",
+              "ev-03-default-policy-diff",
+              "ev-04-template-diff",
+              "ev-05-agent-init-call-site",
+              "ev-06-compressor-call_site",
+              "ev-07-seeding-call-sites",
+              "ev-08-migration-diff",
+              "ev-09-migration-helper",
+              "ev-10-cache-call-site",
+              "ev-11-live-reload-call_site",
+              "ev-12-compressor-tests",
+              "ev-13-cache-tests",
+              "ev-14-tui-tests",
+              "ev-16-migration-property-test",
+              "ev-17-documentation-diff"
+            ],
+            "workflow_graph": {
+              "goal": "Compression follows the configured ratio and model/window semantics by default, while an explicit absolute threshold remains available and old seeded configurations stop imposing the stale fixed cap.",
+              "entry_state": "The parent v46 policy supplies a 256000 cap when threshold_tokens is absent, templates can persist that value, and a large-window session can compact at the fixed cap instead of its proportional trigger.",
+              "exit_state": "The v47 default and template represent no absolute cap, fresh and live configurations treat absence as ratio-only, versioned old literals are removed, and explicit positive caps still clamp triggers and survive model switches.",
+              "steps": [
+                {
+                  "action_name": "restore_ratio_driven_compression_default",
+                  "role": "implement",
+                  "optional": false
+                },
+                {
+                  "action_name": "reconcile_stale_persisted_compression_cap",
+                  "role": "reconcile",
+                  "optional": true
+                }
+              ],
+              "edges": [
+                {
+                  "from": "restore_ratio_driven_compression_default",
+                  "to": "reconcile_stale_persisted_compression_cap",
+                  "type": "enables"
+                }
+              ],
+              "unresolved_or_deferred": [
+                "The migration branch is conditional: it runs for versioned configurations below v47 whose raw value is exactly 256000; unversioned files and current-version explicit values remain outside this stale-default rewrite.",
+                "No changed test directly constructs a v46 file with threshold_tokens: 256000 and asserts both deletion and preservation of alternate values; exact behavior is supported by the implementation guard and indirectly by the generic migration properties.",
+                "The targeted runtime test suite was not executed because the repository environment could not activate with the locked dependency file."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "The issue bundle contains no issue body, comments, timeline, or linked pull request, so motivation beyond the issue title and the implementation commit message cannot be independently corroborated.",
+          "The prescribed targeted tests could not execute because environment activation failed with uv --locked reporting that uv.lock needs an update; the checked-in tests and source-level oracles were inspected, but no green runtime test result is claimed.",
+          "The commit does not add a threshold-specific migration test. The generic migration property test dynamically includes the new registry version and checks idempotence/no clobber, but its stale-default fixture does not include compression.threshold_tokens.",
+          "No independent peer episodes from other repositories were supplied or retrieved; this single-episode extraction intentionally does not induce or claim a cross-project Pattern."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "restore_ratio_driven_compression_default",
+          "description": "Make the absolute compression-trigger cap opt-in by changing the canonical default and its seeded template from 256000 to null/None, while retaining explicit positive caps as lower-of ratio-versus-absolute controls.",
+          "evidence_ids": [
+            "ev-02-commit-rationale",
+            "ev-03-default-policy-diff",
+            "ev-04-template-diff",
+            "ev-05-agent-init-call-site",
+            "ev-06-compressor-call_site",
+            "ev-07-seeding-call-sites",
+            "ev-10-cache-call-site",
+            "ev-11-live-reload-call_site",
+            "ev-12-compressor-tests",
+            "ev-13-cache-tests",
+            "ev-14-tui-tests",
+            "ev-15-default-fallback-test",
+            "ev-17-documentation-diff"
+          ],
+          "semantic_action": {
+            "intent": "Remove an unintended fixed token ceiling that makes compression fire at a non-proportional point across heterogeneous context windows, while preserving an explicit user-controlled absolute cost ceiling.",
+            "module_role": "Compression budget policy and configuration defaulting",
+            "operation": "normalize",
+            "pre_state": "When compression.threshold_tokens is absent, the defaulted configuration supplies 256000; agent construction passes that value as an absolute cap and the compressor lowers the ratio/model trigger to min(ratio_trigger, 256000).",
+            "post_state": "When compression.threshold_tokens is absent, the canonical value is None and the effective trigger is the ratio/model-derived threshold with no absolute cap; a positive explicit cap still lowers the trigger and remains durable across model switches.",
+            "validation": "The changed compressor test covers 128000 and 1000000 context windows and asserts no default cap plus equality with the ratio-only trigger; the explicit-cap test asserts a 200000 cap survives a switch. Gateway-cache and TUI tests verify that consumers use the canonical default and distinguish explicit positive caps.",
+            "parameters": [
+              "model context window",
+              "compression.threshold ratio",
+              "compression.model_thresholds overrides",
+              "optional compression.threshold_tokens cap",
+              "active model and provider"
+            ],
+            "evidence_ids": [
+              "ev-03-default-policy-diff",
+              "ev-05-agent-init-call-site",
+              "ev-06-compressor-call_site",
+              "ev-12-compressor-tests",
+              "ev-13-cache-tests",
+              "ev-14-tui-tests"
+            ]
+          }
+        },
+        {
+          "name": "reconcile_stale_persisted_compression_cap",
+          "description": "Migrate configurations that persisted the temporary 256000 default so they inherit the new ratio-only default, without rewriting an intentional cap or explicit null.",
+          "evidence_ids": [
+            "ev-02-commit-rationale",
+            "ev-07-seeding-call-sites",
+            "ev-08-migration-diff",
+            "ev-09-migration-helper",
+            "ev-16-migration-property-test"
+          ],
+          "semantic_action": {
+            "intent": "Remove a stale materialized default from existing configuration files so the new policy takes effect after upgrade without clobbering user-selected resource budgets.",
+            "module_role": "Versioned configuration migration and user-choice preservation",
+            "operation": "reconcile",
+            "pre_state": "A versioned configuration below schema v47 may contain compression.threshold_tokens: 256000 copied from the old template or doctor seeding; the same field may instead contain another explicit positive integer or null.",
+            "post_state": "The v47 migration deletes the field only when its raw value equals exactly 256000, allowing the new DEFAULT_CONFIG None to apply; other explicit caps, explicit null, and unrelated configuration values remain intact.",
+            "validation": "The new registry entry and the existing equality-gated deletion helper directly encode the exact-value guard. The generic upgrade property test dynamically includes registered migration versions and checks latest-version convergence, user-value preservation, idempotence, and reapplication stability, but does not directly generate threshold_tokens: 256000.",
+            "parameters": [
+              "on-disk config schema version",
+              "raw compression.threshold_tokens value",
+              "stale old default 256000",
+              "new default None",
+              "explicit user cap or null"
+            ],
+            "evidence_ids": [
+              "ev-08-migration-diff",
+              "ev-09-migration-helper",
+              "ev-16-migration-property-test"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "restore_proportional_compression_budget_and_upgrade_stale_configs",
+          "description": "Establish the ratio-driven default for compression triggers, then reconcile versioned configurations that persisted the temporary 256000 default; leave explicit absolute caps available as an opt-in branch and verify the existing cache/live-session consumers follow the canonical value.",
+          "atomic_names": [
+            "restore_ratio_driven_compression_default",
+            "reconcile_stale_persisted_compression_cap"
+          ],
+          "evidence_ids": [
+            "ev-02-commit-rationale",
+            "ev-03-default-policy-diff",
+            "ev-04-template-diff",
+            "ev-05-agent-init-call-site",
+            "ev-06-compressor-call_site",
+            "ev-07-seeding-call-sites",
+            "ev-08-migration-diff",
+            "ev-09-migration-helper",
+            "ev-10-cache-call-site",
+            "ev-11-live-reload-call_site",
+            "ev-12-compressor-tests",
+            "ev-13-cache-tests",
+            "ev-14-tui-tests",
+            "ev-16-migration-property-test",
+            "ev-17-documentation-diff"
+          ],
+          "workflow_graph": {
+            "goal": "Compression follows the configured ratio and model/window semantics by default, while an explicit absolute threshold remains available and old seeded configurations stop imposing the stale fixed cap.",
+            "entry_state": "The parent v46 policy supplies a 256000 cap when threshold_tokens is absent, templates can persist that value, and a large-window session can compact at the fixed cap instead of its proportional trigger.",
+            "exit_state": "The v47 default and template represent no absolute cap, fresh and live configurations treat absence as ratio-only, versioned old literals are removed, and explicit positive caps still clamp triggers and survive model switches.",
+            "steps": [
+              {
+                "action_name": "restore_ratio_driven_compression_default",
+                "role": "implement",
+                "optional": false
+              },
+              {
+                "action_name": "reconcile_stale_persisted_compression_cap",
+                "role": "reconcile",
+                "optional": true
+              }
+            ],
+            "edges": [
+              {
+                "from": "restore_ratio_driven_compression_default",
+                "to": "reconcile_stale_persisted_compression_cap",
+                "type": "enables"
+              }
+            ],
+            "unresolved_or_deferred": [
+              "The migration branch is conditional: it runs for versioned configurations below v47 whose raw value is exactly 256000; unversioned files and current-version explicit values remain outside this stale-default rewrite.",
+              "No changed test directly constructs a v46 file with threshold_tokens: 256000 and asserts both deletion and preservation of alternate values; exact behavior is supported by the implementation guard and indirectly by the generic migration properties.",
+              "The targeted runtime test suite was not executed because the repository environment could not activate with the locked dependency file."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The issue bundle contains no issue body, comments, timeline, or linked pull request, so motivation beyond the issue title and the implementation commit message cannot be independently corroborated.",
+        "The prescribed targeted tests could not execute because environment activation failed with uv --locked reporting that uv.lock needs an update; the checked-in tests and source-level oracles were inspected, but no green runtime test result is claimed.",
+        "The commit does not add a threshold-specific migration test. The generic migration property test dynamically includes the new registry version and checks idempotence/no clobber, but its stale-default fixture does not include compression.threshold_tokens.",
+        "No independent peer episodes from other repositories were supplied or retrieved; this single-episode extraction intentionally does not induce or claim a cross-project Pattern."
+      ]
+    },
+    "call_sites": [
+      "Agent construction reads threshold_tokens from the raw compression section and falls back to DEFAULT_CONFIG when the key is absent; explicit null remains None, and the parsed value is passed as threshold_tokens_cap to ContextCompressor.",
+      "The compressor's shared trigger derivation computes the ratio/model threshold and lowers it only when an effective positive cap exists; cap normalization treats None as no cap, while update_model reapplies a retained positive cap after a model switch.",
+      "seed_config_file is the shared path for installer-style and doctor --fix seeding: it copies cli-config.yaml.example when present and otherwise writes stripped DEFAULT_CONFIG; config editing also invokes this path, so the template/default change affects newly materialized configurations.",
+      "The gateway cache-busting surface includes compression.threshold_tokens and extracts absent values from DEFAULT_CONFIG while reading explicit raw values directly; with the new default, absent and explicit null resolve to the same None signature, whereas an explicit positive cap changes the signature and forces a rebuild.",
+      "The TUI live compressor fallback reads DEFAULT_CONFIG through _default_threshold_tokens_cap, applies compression.get with that fallback, and invalidates the cached trigger so an absent key re-derives from the canonical default while explicit values remain effective."
+    ],
+    "tests": [
+      "The changed compressor tests replace the shipped-default 256K expectation with a parameterized 128K/1M contract asserting threshold_tokens_cap is None and the effective trigger equals the ratio-only trigger; a separate test keeps a user-set 200K cap effective across a model switch.",
+      "The changed gateway cache test now asserts that absent and explicit DEFAULT_CONFIG values have the same signature, while a different explicit cap has a distinct signature; the former null-versus-absent distinction is removed because the default is now null.",
+      "The changed TUI hot-reload tests derive expectations from DEFAULT_CONFIG instead of hardcoding 256000 and assert that absent/removed threshold_tokens follows that default for 272K, 600K, and 1M windows while derived ratio triggers remain correct.",
+      "An existing configuration-default test directly checks that a missing compression section falls back to DEFAULT_CONFIG and that explicit threshold_tokens: null remains the ratio-only opt-out; the test therefore follows the changed canonical default without embedding a fixed token count.",
+      "The generic upgrade property test derives migration start versions from the live MIGRATIONS registry and checks that migration reaches the latest version, preserves canaries and customized values, is byte-idempotent on a second run, and is a no-op when reapplying the ladder to migrated output. Its stale-default fixture does not include threshold_tokens, so it is indirect rather than an exact v47 cap-preservation test."
+    ]
+  }
+]

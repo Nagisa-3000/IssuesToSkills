@@ -1,0 +1,35 @@
+{
+  "source": "local_git_pinned_ref",
+  "repository": "QwenLM/qwen-code",
+  "issue_number": 12029,
+  "issue": {
+    "number": 12029,
+    "title": "Percentage-of-context-window budgets scale the wrong way: ToolSearch preload never engages, and the always-on context warning never fires, on large windows",
+    "body": null,
+    "metadata_unavailable": [
+      "issue body",
+      "comments",
+      "timeline",
+      "author/review discussion"
+    ]
+  },
+  "comments": [],
+  "timeline": [],
+  "linked_pull_requests": [],
+  "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/qwen-code",
+  "pinned_ref": "18cb393e4b59555d5e90f7003267fb69a43f6c77",
+  "resolved_commit": "18cb393e4b59555d5e90f7003267fb69a43f6c77",
+  "parent_commit": "6cfa25c967e348104609ee17ab020635c23f6ca0",
+  "commit_show_stat": "commit 18cb393e4b59555d5e90f7003267fb69a43f6c77\nAuthor:     Dragon <52599892+DragonnZhang@users.noreply.github.com>\nAuthorDate: Thu Jul 30 07:01:01 2026 +0800\nCommit:     GitHub <noreply@github.com>\nCommitDate: Wed Jul 29 23:01:01 2026 +0000\n\n    feat(core): preload deferred tools within a context-window threshold (#7922)\n    \n    * feat(core): preload deferred tools within a context-window threshold\n    \n    Adds tools.toolSearch.threshold (default 10, percent of the context\n    window). At session start, when the combined estimated schema footprint\n    of every deferred tool - bundled built-ins and MCP alike - fits within\n    the budget, all are revealed upfront so the declaration list stays\n    stable for the whole session and prefix KV caches survive; otherwise\n    everything stays deferred. Set 0 to always defer. Mirrors Claude Code's\n    ENABLE_TOOL_SEARCH=auto threshold mode, extended to bundled deferred\n    tools because here every reveal rewrites the declaration list and busts\n    the prompt-cache prefix.\n    \n    Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>\n    \n    * feat(core): log deferred-tool preload budget decision\n    \n    Emit debugLogger diagnostics in preloadDeferredToolsWithinBudget covering\n    the computed budget, estimated token footprint, candidate count, and which\n    branch of the all-or-nothing gate was taken (no candidates, over budget, or\n    preloaded). Lets an operator diagnosing session-startup cost tell from debug\n    logs whether the deferred set fit the budget or was left behind ToolSearch,\n    without adding temporary instrumentation. No behavior change.\n    \n    * fix(tools): bound toolSearch.threshold to 0-100%\n    \n    The threshold setting is a percentage of the context window but had no\n    upper bound, so a value like 200 (a typo or misreading of the \"(%)\"\n    label) made the preload budget exceed the whole window and\n    unconditionally preloaded every deferred tool — the opposite of the\n    prefix-stability the threshold buys.\n    \n    - Add minimum:0/maximum:100 to the setting schema (jsonSchemaOverride,\n      like autoCompactThreshold) and regenerate the VS Code settings schema.\n    - Add a symmetric runtime upper guard next to the existing\n      'thresholdPercent <= 0' lower guard in client.ts, clamping to 100% so a\n      hand-edited settings file cannot slip a larger budget past validation.\n    \n    Adds a client test asserting a 200% threshold clamps to a full-context\n    budget.\n    \n    * test(core): cover configured preload budget\n    \n    * fix(tool-search): harden preload threshold\n    \n    * test(tool-search): cover preload exclusions\n    \n    ---------\n    \n    Co-authored-by: Claude Fable 5 <noreply@anthropic.com>\n\n docs/design/toolsearch-preload-threshold.md        |  75 +++++++++++\n docs/users/configuration/settings.md               |   1 +\n packages/cli/src/config/config.test.ts             |  37 ++++++\n packages/cli/src/config/config.ts                  |   2 +\n packages/cli/src/config/settingsSchema.ts          |  20 +++\n packages/core/src/config/config.ts                 |  26 ++++\n packages/core/src/core/client.test.ts              |  97 ++++++++++++++\n packages/core/src/core/client.ts                   |  52 +++++++-\n packages/core/src/tools/tool-registry.test.ts      | 148 +++++++++++++++++++++\n packages/core/src/tools/tool-registry.ts           |  52 ++++++++\n .../schemas/settings.schema.json                   |   7 +\n 11 files changed, 516 insertions(+), 1 deletion(-)\n",
+  "changed_files_name_status": "A\tdocs/design/toolsearch-preload-threshold.md\nM\tdocs/users/configuration/settings.md\nM\tpackages/cli/src/config/config.test.ts\nM\tpackages/cli/src/config/config.ts\nM\tpackages/cli/src/config/settingsSchema.ts\nM\tpackages/core/src/config/config.ts\nM\tpackages/core/src/core/client.test.ts\nM\tpackages/core/src/core/client.ts\nM\tpackages/core/src/tools/tool-registry.test.ts\nM\tpackages/core/src/tools/tool-registry.ts\nM\tpackages/vscode-ide-companion/schemas/settings.schema.json\n",
+  "linked_issue_numbers": [
+    12029
+  ],
+  "manifest_metadata": {
+    "category": "bounded-resource-budget-control"
+  },
+  "fetched_at": "2026-09-28T19:32:04.505734+00:00",
+  "limitations": [
+    "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+  ]
+}

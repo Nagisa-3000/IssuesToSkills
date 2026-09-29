@@ -1,0 +1,392 @@
+[
+  {
+    "episode_id": "google-gemini/gemini-cli#28518@571851b1077a51cef757146ce13f9da887326bec",
+    "title": "[v0.52.0] Utility sub-agent handoff regression: 0 input tokens passed to main model on startup",
+    "before": "During late-bound context rendering, ContextManager concatenated the rendered history and pending history, hardened the combined turns, and searched for the first pending turn by ID. It accepted both the raw pending ID and a turn_-prefixed form, but unconditionally excluded the stable environment-context ID and its prefixed form from being the pending boundary. The graph mapper intentionally assigns a first turn containing <session_context> that stable environment-context identity, so a startup request carrying that header could remain in the historical result instead of starting pendingApiHistory, even when it was the final hardened turn.",
+    "after": "The history partitioner still recognizes raw and turn_-prefixed pending IDs, but it now treats the stable environment-context identity as an excluded startup context only when that turn is not the final hardened turn. If the environment-context turn is the final turn, it is allowed to start the pending segment, so pendingApiHistory retains the startup request. The client can then append that processed pending content to the managed API history used for the main-model request. A regression test verifies that a pending request containing <session_context> produces exactly one pending API item containing the header.",
+    "diff": "Commit 571851b1077a51cef757146ce13f9da887326bec changes packages/core/src/context/contextManager.ts and its test. The implementation extracts pending-ID recognition into isPendingId, introduces isStartupContext for earlier environment-context turns, and changes the boundary condition so only non-final startup context is suppressed. The commit adds a focused test that calls renderHistory with a pending <session_context> request and asserts that pendingApiHistory contains the request.",
+    "repository": "google-gemini/gemini-cli",
+    "revision": "github-issue-28518",
+    "evidence_ids": [
+      "E-ISSUE-28518",
+      "E-COMMIT-571851",
+      "E-DIFF-PENDING-BOUNDARY",
+      "E-GRAPH-ENV-ID",
+      "E-RENDER-LATE-BIND",
+      "E-CONTEXT-SPLIT",
+      "E-CLIENT-PENDING-CONSUMER",
+      "E-API-HANDOFF",
+      "E-BASELINE-LATE-BIND-TEST",
+      "E-REGRESSION-SESSION-CONTEXT-TEST",
+      "E-TEST-EXECUTION-LIMIT"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 28518,
+      "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/gemini-cli",
+      "manifest_metadata": {
+        "category": "concurrent-work-coordination",
+        "role": "train_candidate",
+        "case_id": "google-gemini/gemini-cli#28518:concurrent-work-coordination:train_candidate"
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "google-gemini/gemini-cli",
+        "issue_number": 28518,
+        "issue": {
+          "number": 28518,
+          "title": "[v0.52.0] Utility sub-agent handoff regression: 0 input tokens passed to main model on startup",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [],
+        "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/gemini-cli",
+        "pinned_ref": "571851b1077a51cef757146ce13f9da887326bec",
+        "resolved_commit": "571851b1077a51cef757146ce13f9da887326bec",
+        "parent_commit": "2ad220a8205ea4f533a3667fb8ca60575dbcebff",
+        "commit_show_stat": "commit 571851b1077a51cef757146ce13f9da887326bec\nAuthor:     joneba-google <joneba@google.com>\nAuthorDate: Tue Aug 18 13:37:25 2026 +0000\nCommit:     GitHub <noreply@github.com>\nCommitDate: Tue Aug 18 13:37:25 2026 +0000\n\n    [SSR Agent] Issue Fix (28518): Fix sub-agent handoff token regression on startup (#28882)\n    \n    Co-authored-by: gemini-code-assist[bot] <176961590+gemini-code-assist[bot]@users.noreply.github.com>\n\n packages/core/src/context/contextManager.test.ts | 31 ++++++++++++++++++++++++\n packages/core/src/context/contextManager.ts      | 17 +++++++------\n 2 files changed, 40 insertions(+), 8 deletions(-)\n",
+        "changed_files_name_status": "M\tpackages/core/src/context/contextManager.test.ts\nM\tpackages/core/src/context/contextManager.ts\n",
+        "linked_issue_numbers": [
+          28518
+        ],
+        "manifest_metadata": {
+          "category": "concurrent-work-coordination"
+        },
+        "fetched_at": "2026-09-28T20:48:12.279140+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "google-gemini/gemini-cli#28518@571851b1077a51cef757146ce13f9da887326bec",
+          "title": "[v0.52.0] Utility sub-agent handoff regression: 0 input tokens passed to main model on startup",
+          "before": "During late-bound context rendering, ContextManager concatenated the rendered history and pending history, hardened the combined turns, and searched for the first pending turn by ID. It accepted both the raw pending ID and a turn_-prefixed form, but unconditionally excluded the stable environment-context ID and its prefixed form from being the pending boundary. The graph mapper intentionally assigns a first turn containing <session_context> that stable environment-context identity, so a startup request carrying that header could remain in the historical result instead of starting pendingApiHistory, even when it was the final hardened turn.",
+          "after": "The history partitioner still recognizes raw and turn_-prefixed pending IDs, but it now treats the stable environment-context identity as an excluded startup context only when that turn is not the final hardened turn. If the environment-context turn is the final turn, it is allowed to start the pending segment, so pendingApiHistory retains the startup request. The client can then append that processed pending content to the managed API history used for the main-model request. A regression test verifies that a pending request containing <session_context> produces exactly one pending API item containing the header.",
+          "diff": "Commit 571851b1077a51cef757146ce13f9da887326bec changes packages/core/src/context/contextManager.ts and its test. The implementation extracts pending-ID recognition into isPendingId, introduces isStartupContext for earlier environment-context turns, and changes the boundary condition so only non-final startup context is suppressed. The commit adds a focused test that calls renderHistory with a pending <session_context> request and asserts that pendingApiHistory contains the request."
+        },
+        "evidence_units": [
+          {
+            "id": "E-ISSUE-28518",
+            "kind": "issue",
+            "claim": "The issue is titled '[v0.52.0] Utility sub-agent handoff regression: 0 input tokens passed to main model on startup'; the bundle routes it under concurrent-work-coordination and identifies issue 28518 with the pinned and resolved commit.",
+            "source": "issue-bundle.json: issue, manifest_metadata, pinned_ref, resolved_commit"
+          },
+          {
+            "id": "E-COMMIT-571851",
+            "kind": "commit",
+            "claim": "The pinned commit is implementation-bearing: its subject identifies issue 28518 and its stat changes contextManager.ts plus contextManager.test.ts with 40 insertions and 8 deletions.",
+            "source": "git show --format=fuller --stat 571851b1077a51cef757146ce13f9da887326bec"
+          },
+          {
+            "id": "E-DIFF-PENDING-BOUNDARY",
+            "kind": "diff",
+            "claim": "Relative to parent 2ad220a8205ea4f533a3667fb8ca60575dbcebff, the code replaces the inline pending-ID and unconditional environment-ID exclusion with isPendingId plus an isStartupContext check that is true only for a non-final hardened turn.",
+            "source": "git diff 2ad220a8205ea4f533a3667fb8ca60575dbcebff 571851b1077a51cef757146ce13f9da887326bec -- packages/core/src/context/contextManager.ts"
+          },
+          {
+            "id": "E-GRAPH-ENV-ID",
+            "kind": "implementation",
+            "claim": "The graph builder detects a text part beginning with <session_context> on the first input turn and assigns that turn the stable environment-context identity; later legacy session-context headers are skipped.",
+            "source": "packages/core/src/context/graph/toGraph.ts:195-224 at 571851b1077a51cef757146ce13f9da887326bec"
+          },
+          {
+            "id": "E-RENDER-LATE-BIND",
+            "kind": "call_site",
+            "claim": "When lateBindPrompt is enabled, the renderer excludes the most recent turn from managed history and returns that turn as pendingHistory, both in the within-budget path and in the pressure-barrier path.",
+            "source": "packages/core/src/context/graph/render.ts:122-161 and 223-260 at 571851b1077a51cef757146ce13f9da887326bec"
+          },
+          {
+            "id": "E-CONTEXT-SPLIT",
+            "kind": "implementation",
+            "claim": "ContextManager hardens renderedHistory plus pendingHistory, derives pendingIds from pendingHistory, and maps the resulting history partition into apiHistory and pendingApiHistory.",
+            "source": "packages/core/src/context/contextManager.ts:220-276 at 571851b1077a51cef757146ce13f9da887326bec"
+          },
+          {
+            "id": "E-CLIENT-PENDING-CONSUMER",
+            "kind": "call_site",
+            "claim": "The main client invokes ContextManager.renderHistory with a pending request, selects the first processed pendingApiHistory item when available, and constructs apiHistoryOverride as historical API content followed by the final pending content.",
+            "source": "packages/core/src/core/client.ts:643-677 at 571851b1077a51cef757146ce13f9da887326bec"
+          },
+          {
+            "id": "E-API-HANDOFF",
+            "kind": "call_site",
+            "claim": "The client passes apiHistoryOverride through Turn.run and GeminiChat.sendMessageStream; GeminiChat uses the override, after scrubbing, as requestContents for the model API call.",
+            "source": "packages/core/src/core/client.ts:803-807; packages/core/src/core/turn.ts:280-292; packages/core/src/core/geminiChat.ts:780-801 at 571851b1077a51cef757146ce13f9da887326bec"
+          },
+          {
+            "id": "E-BASELINE-LATE-BIND-TEST",
+            "kind": "test",
+            "claim": "The existing ContextManager test establishes the normal partition contract: historical environment context and prior model content remain in apiHistory, only the active prompt is in pendingApiHistory, and the combined roles alternate.",
+            "source": "packages/core/src/context/contextManager.test.ts:132-185 at 571851b1077a51cef757146ce13f9da887326bec"
+          },
+          {
+            "id": "E-REGRESSION-SESSION-CONTEXT-TEST",
+            "kind": "test",
+            "claim": "The added regression test passes a pending user turn containing <session_context> to renderHistory and asserts pendingApiHistory has one item whose text contains <session_context>.",
+            "source": "packages/core/src/context/contextManager.test.ts:210-239 at 571851b1077a51cef757146ce13f9da887326bec"
+          },
+          {
+            "id": "E-TEST-EXECUTION-LIMIT",
+            "kind": "validation",
+            "claim": "The targeted test command was attempted but could not execute because the workspace did not recognize the vitest executable; therefore no independent runtime pass result is claimed.",
+            "source": "npm run test --workspace=@google/gemini-cli-core -- contextManager.test.ts --reporter=dot: command result in the checkout"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "classify_final_startup_context_as_pending",
+            "description": "Preserve a late-bound startup request carrying session context in the pending API segment when its normalized environment-context identity is the final hardened turn, while continuing to treat an earlier environment context turn as historical.",
+            "evidence_ids": [
+              "E-DIFF-PENDING-BOUNDARY",
+              "E-GRAPH-ENV-ID",
+              "E-RENDER-LATE-BIND",
+              "E-CONTEXT-SPLIT",
+              "E-CLIENT-PENDING-CONSUMER"
+            ],
+            "semantic_action": {
+              "intent": "Preserve active startup or sub-agent handoff content for the upcoming main-model request instead of losing it at the history/pending boundary.",
+              "module_role": "late-bound context history partitioner",
+              "operation": "classify",
+              "pre_state": "A pending request containing <session_context> is mapped as the stable environment-context turn; after hardening, its identity may be raw or turn_-prefixed, and the previous classifier excluded that identity even when it was the final turn.",
+              "post_state": "Pending-ID variants are recognized, and the environment-context identity is suppressed only for an earlier startup context; when it is the final hardened turn, it starts the pending segment and the request appears in pendingApiHistory.",
+              "validation": "The added ContextManager regression test requires one pending API item whose text contains <session_context>; the client call site then consumes that pending item as the final content appended to apiHistoryOverride.",
+              "parameters": [
+                "pending HistoryTurn",
+                "stable environment-context identifier",
+                "raw or turn_-prefixed normalized turn identifier",
+                "hardened history order",
+                "late-binding mode"
+              ],
+              "evidence_ids": [
+                "E-DIFF-PENDING-BOUNDARY",
+                "E-GRAPH-ENV-ID",
+                "E-RENDER-LATE-BIND",
+                "E-CONTEXT-SPLIT",
+                "E-CLIENT-PENDING-CONSUMER",
+                "E-REGRESSION-SESSION-CONTEXT-TEST"
+              ]
+            }
+          },
+          {
+            "name": "assert_startup_pending_partition_regression",
+            "description": "Add a focused regression oracle for the special startup session-context boundary while retaining the existing normal late-binding split and role-alternation checks.",
+            "evidence_ids": [
+              "E-BASELINE-LATE-BIND-TEST",
+              "E-REGRESSION-SESSION-CONTEXT-TEST"
+            ],
+            "semantic_action": {
+              "intent": "Detect regressions that return a startup session-context request as historical content or an empty pending API segment.",
+              "module_role": "context-boundary partition validation oracle",
+              "operation": "validate",
+              "pre_state": "The normal pending split is covered, but a first pending turn beginning with <session_context> can be assigned the environment-context identity and be misclassified by the boundary logic.",
+              "post_state": "The regression suite requires exactly one pending API item containing <session_context>, while the existing test continues to require that an ordinary active prompt is the only pending item and that the combined sequence alternates roles.",
+              "validation": "The assertions in contextManager.test.ts directly inspect pendingApiHistory and the combined role sequence; the test was not executable in this checkout because vitest was unavailable.",
+              "parameters": [
+                "pending session-context content",
+                "pendingApiHistory result",
+                "historical API content",
+                "role alternation invariant"
+              ],
+              "evidence_ids": [
+                "E-BASELINE-LATE-BIND-TEST",
+                "E-REGRESSION-SESSION-CONTEXT-TEST",
+                "E-TEST-EXECUTION-LIMIT"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "preserve_startup_session_context_in_late_bound_main_model_input",
+            "description": "Partition the hardened context so a final startup session-context request remains pending, then verify that the pending segment is the content passed through the main-model API override.",
+            "atomic_names": [
+              "classify_final_startup_context_as_pending",
+              "assert_startup_pending_partition_regression"
+            ],
+            "evidence_ids": [
+              "E-ISSUE-28518",
+              "E-COMMIT-571851",
+              "E-DIFF-PENDING-BOUNDARY",
+              "E-GRAPH-ENV-ID",
+              "E-RENDER-LATE-BIND",
+              "E-CONTEXT-SPLIT",
+              "E-CLIENT-PENDING-CONSUMER",
+              "E-API-HANDOFF",
+              "E-BASELINE-LATE-BIND-TEST",
+              "E-REGRESSION-SESSION-CONTEXT-TEST"
+            ],
+            "workflow_graph": {
+              "goal": "Deliver the active startup or sub-agent handoff content, including session context, through the late-bound API history used for the main-model request.",
+              "entry_state": "Context management receives a pending HistoryTurn whose text begins with <session_context>; graph mapping gives it the stable environment-context turn identity, and the old boundary classifier can exclude that identity from the pending segment.",
+              "exit_state": "The final startup request is present in pendingApiHistory as one content item, and the client can construct apiHistoryOverride from historical API content plus that pending item while earlier startup context remains historical.",
+              "steps": [
+                {
+                  "action_name": "classify_final_startup_context_as_pending",
+                  "role": "implement",
+                  "optional": false
+                },
+                {
+                  "action_name": "assert_startup_pending_partition_regression",
+                  "role": "validate",
+                  "optional": false
+                }
+              ],
+              "edges": [
+                {
+                  "from": "classify_final_startup_context_as_pending",
+                  "to": "assert_startup_pending_partition_regression",
+                  "type": "validates"
+                }
+              ],
+              "unresolved_or_deferred": [
+                "The checkout does not contain an end-to-end sub-agent handoff trace or a token-count assertion proving the exact reported zero-token symptom; the directly established invariant is restoration of the pending API-history partition.",
+                "The committed regression test is the validation oracle, but its runtime result was not observed because the vitest executable was unavailable in the checkout."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "The GitHub bundle omits the issue body, comments, timeline, author/review discussion, and linked pull-request metadata; the implementation-bearing resolution is therefore anchored to the pinned local commit and its parent.",
+          "The targeted ContextManager Vitest test could not be run because vitest was not recognized in the workspace, so the output records the test as a committed oracle rather than claiming a passing execution.",
+          "The issue title reports zero input tokens in a utility sub-agent handoff, but the available checkout evidence does not include an end-to-end token-count trace; the precise directly supported mechanism is misclassification of a final startup session-context turn at the history/pending boundary."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "classify_final_startup_context_as_pending",
+          "description": "Preserve a late-bound startup request carrying session context in the pending API segment when its normalized environment-context identity is the final hardened turn, while continuing to treat an earlier environment context turn as historical.",
+          "evidence_ids": [
+            "E-DIFF-PENDING-BOUNDARY",
+            "E-GRAPH-ENV-ID",
+            "E-RENDER-LATE-BIND",
+            "E-CONTEXT-SPLIT",
+            "E-CLIENT-PENDING-CONSUMER"
+          ],
+          "semantic_action": {
+            "intent": "Preserve active startup or sub-agent handoff content for the upcoming main-model request instead of losing it at the history/pending boundary.",
+            "module_role": "late-bound context history partitioner",
+            "operation": "classify",
+            "pre_state": "A pending request containing <session_context> is mapped as the stable environment-context turn; after hardening, its identity may be raw or turn_-prefixed, and the previous classifier excluded that identity even when it was the final turn.",
+            "post_state": "Pending-ID variants are recognized, and the environment-context identity is suppressed only for an earlier startup context; when it is the final hardened turn, it starts the pending segment and the request appears in pendingApiHistory.",
+            "validation": "The added ContextManager regression test requires one pending API item whose text contains <session_context>; the client call site then consumes that pending item as the final content appended to apiHistoryOverride.",
+            "parameters": [
+              "pending HistoryTurn",
+              "stable environment-context identifier",
+              "raw or turn_-prefixed normalized turn identifier",
+              "hardened history order",
+              "late-binding mode"
+            ],
+            "evidence_ids": [
+              "E-DIFF-PENDING-BOUNDARY",
+              "E-GRAPH-ENV-ID",
+              "E-RENDER-LATE-BIND",
+              "E-CONTEXT-SPLIT",
+              "E-CLIENT-PENDING-CONSUMER",
+              "E-REGRESSION-SESSION-CONTEXT-TEST"
+            ]
+          }
+        },
+        {
+          "name": "assert_startup_pending_partition_regression",
+          "description": "Add a focused regression oracle for the special startup session-context boundary while retaining the existing normal late-binding split and role-alternation checks.",
+          "evidence_ids": [
+            "E-BASELINE-LATE-BIND-TEST",
+            "E-REGRESSION-SESSION-CONTEXT-TEST"
+          ],
+          "semantic_action": {
+            "intent": "Detect regressions that return a startup session-context request as historical content or an empty pending API segment.",
+            "module_role": "context-boundary partition validation oracle",
+            "operation": "validate",
+            "pre_state": "The normal pending split is covered, but a first pending turn beginning with <session_context> can be assigned the environment-context identity and be misclassified by the boundary logic.",
+            "post_state": "The regression suite requires exactly one pending API item containing <session_context>, while the existing test continues to require that an ordinary active prompt is the only pending item and that the combined sequence alternates roles.",
+            "validation": "The assertions in contextManager.test.ts directly inspect pendingApiHistory and the combined role sequence; the test was not executable in this checkout because vitest was unavailable.",
+            "parameters": [
+              "pending session-context content",
+              "pendingApiHistory result",
+              "historical API content",
+              "role alternation invariant"
+            ],
+            "evidence_ids": [
+              "E-BASELINE-LATE-BIND-TEST",
+              "E-REGRESSION-SESSION-CONTEXT-TEST",
+              "E-TEST-EXECUTION-LIMIT"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "preserve_startup_session_context_in_late_bound_main_model_input",
+          "description": "Partition the hardened context so a final startup session-context request remains pending, then verify that the pending segment is the content passed through the main-model API override.",
+          "atomic_names": [
+            "classify_final_startup_context_as_pending",
+            "assert_startup_pending_partition_regression"
+          ],
+          "evidence_ids": [
+            "E-ISSUE-28518",
+            "E-COMMIT-571851",
+            "E-DIFF-PENDING-BOUNDARY",
+            "E-GRAPH-ENV-ID",
+            "E-RENDER-LATE-BIND",
+            "E-CONTEXT-SPLIT",
+            "E-CLIENT-PENDING-CONSUMER",
+            "E-API-HANDOFF",
+            "E-BASELINE-LATE-BIND-TEST",
+            "E-REGRESSION-SESSION-CONTEXT-TEST"
+          ],
+          "workflow_graph": {
+            "goal": "Deliver the active startup or sub-agent handoff content, including session context, through the late-bound API history used for the main-model request.",
+            "entry_state": "Context management receives a pending HistoryTurn whose text begins with <session_context>; graph mapping gives it the stable environment-context turn identity, and the old boundary classifier can exclude that identity from the pending segment.",
+            "exit_state": "The final startup request is present in pendingApiHistory as one content item, and the client can construct apiHistoryOverride from historical API content plus that pending item while earlier startup context remains historical.",
+            "steps": [
+              {
+                "action_name": "classify_final_startup_context_as_pending",
+                "role": "implement",
+                "optional": false
+              },
+              {
+                "action_name": "assert_startup_pending_partition_regression",
+                "role": "validate",
+                "optional": false
+              }
+            ],
+            "edges": [
+              {
+                "from": "classify_final_startup_context_as_pending",
+                "to": "assert_startup_pending_partition_regression",
+                "type": "validates"
+              }
+            ],
+            "unresolved_or_deferred": [
+              "The checkout does not contain an end-to-end sub-agent handoff trace or a token-count assertion proving the exact reported zero-token symptom; the directly established invariant is restoration of the pending API-history partition.",
+              "The committed regression test is the validation oracle, but its runtime result was not observed because the vitest executable was unavailable in the checkout."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The GitHub bundle omits the issue body, comments, timeline, author/review discussion, and linked pull-request metadata; the implementation-bearing resolution is therefore anchored to the pinned local commit and its parent.",
+        "The targeted ContextManager Vitest test could not be run because vitest was not recognized in the workspace, so the output records the test as a committed oracle rather than claiming a passing execution.",
+        "The issue title reports zero input tokens in a utility sub-agent handoff, but the available checkout evidence does not include an end-to-end token-count trace; the precise directly supported mechanism is misclassification of a final startup session-context turn at the history/pending boundary."
+      ]
+    },
+    "call_sites": [
+      "When lateBindPrompt is enabled, the renderer excludes the most recent turn from managed history and returns that turn as pendingHistory, both in the within-budget path and in the pressure-barrier path.",
+      "The main client invokes ContextManager.renderHistory with a pending request, selects the first processed pendingApiHistory item when available, and constructs apiHistoryOverride as historical API content followed by the final pending content.",
+      "The client passes apiHistoryOverride through Turn.run and GeminiChat.sendMessageStream; GeminiChat uses the override, after scrubbing, as requestContents for the model API call."
+    ],
+    "tests": [
+      "The existing ContextManager test establishes the normal partition contract: historical environment context and prior model content remain in apiHistory, only the active prompt is in pendingApiHistory, and the combined roles alternate.",
+      "The added regression test passes a pending user turn containing <session_context> to renderHistory and asserts pendingApiHistory has one item whose text contains <session_context>."
+    ]
+  }
+]

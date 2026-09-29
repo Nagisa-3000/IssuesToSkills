@@ -1,0 +1,1222 @@
+[
+  {
+    "episode_id": "Aider-AI__aider__1102__a0e56c52",
+    "repository": "Aider-AI/aider",
+    "revision": "github-issue-1102",
+    "title": "Make file-write line endings configurable",
+    "before": "At parent de7da1e8063382c85eaad48dd1a17e81494c8b1d, aider exposed an output encoding setting but no line-ending setting. InputOutput.write_text opened text files with mode and encoding only, so Python applied the host platform's normal newline translation. All coder edits routed through this behavior and could not request LF or CRLF explicitly.",
+    "after": "At a0e56c528228b36b84d58b54d56453840c5e9e11, the CLI accepts --line-endings with platform, lf, and crlf choices and defaults to platform. main passes the parsed value into InputOutput, which maps it to open()'s newline argument: None for platform behavior, \"\\n\" for LF, or \"\\r\\n\" for CRLF. InputOutput.write_text uses that value for centralized file writes, so existing callers inherit the selected convention.",
+    "diff": "The merge adds 11 lines and removes 1 across aider/args.py, aider/main.py, and aider/io.py. It defines the constrained CLI option, threads args.line_endings into InputOutput, stores the corresponding newline value, and adds newline=self.newline to the text-file open call. No test file changed in the pinned implementation.",
+    "call_sites": [
+      "The main entry point passes args.line_endings into the InputOutput instance used by the application, connecting CLI/config parsing to file output behavior.",
+      "Editing implementations such as EditBlockCoder and WholeFileCoder write generated content through self.io.write_text, so the centralized newline policy applies without modifying each coder.",
+      "The .gitignore update path also uses io.write_text and therefore inherits the configured line-ending behavior."
+    ],
+    "tests": [
+      "The pinned change adds no tests, and the pinned test tree contains no line_endings or line-endings references."
+    ],
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "Aider-AI/aider",
+      "issue": 1102,
+      "checkout": "/home/chenyujia/tritonToLlvm/aider-agent",
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "Aider-AI/aider",
+        "issue_number": 1102,
+        "issue": {
+          "number": 1102,
+          "title": "feat: Add line endings configuration option for file writing - fixes #1102",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 2856,
+              "title": "feat: Add line endings configuration option for file writing - fixes #1102",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [],
+            "commits": [
+              {
+                "sha": "a0e56c528228b36b84d58b54d56453840c5e9e11",
+                "subject": "feat: Add line endings configuration option for file writing"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/aider-agent",
+        "pinned_ref": "a0e56c528228b36b84d58b54d56453840c5e9e11",
+        "resolved_commit": "a0e56c528228b36b84d58b54d56453840c5e9e11",
+        "parent_commit": "de7da1e8063382c85eaad48dd1a17e81494c8b1d",
+        "commit_show_stat": "commit a0e56c528228b36b84d58b54d56453840c5e9e11\nMerge: de7da1e8 c3952cb9\nAuthor:     paul-gauthier <69695708+paul-gauthier@users.noreply.github.com>\nAuthorDate: Mon Jan 13 09:26:57 2025 -0800\nCommit:     GitHub <noreply@github.com>\nCommitDate: Mon Jan 13 09:26:57 2025 -0800\n\n    Merge pull request #2856 from titusz/configurable-line-endings\n    \n    feat: Add line endings configuration option for file writing - fixes #1102\n\n aider/args.py | 6 ++++++\n aider/io.py   | 5 ++++-\n aider/main.py | 1 +\n 3 files changed, 11 insertions(+), 1 deletion(-)\n",
+        "changed_files_name_status": "",
+        "linked_issue_numbers": [
+          1102
+        ],
+        "manifest_metadata": {
+          "category": "input-output-platform-normalization",
+          "theme": "Normalize platform-dependent paths and line endings at file boundaries",
+          "module_families": [
+            "configuration"
+          ],
+          "file_sample": [
+            "aider/args.py",
+            "aider/io.py",
+            "aider/main.py"
+          ],
+          "quality": {
+            "score": 0.68,
+            "tier": "medium",
+            "reasons": [
+              "merged pull request",
+              "descriptive title",
+              "3 implementation files",
+              "no test file",
+              "explicit closing issue reference",
+              "1 PR commits"
+            ],
+            "implementation_files": 3,
+            "test_files": 0,
+            "docs_files": 0,
+            "generated_files": 0
+          }
+        },
+        "fetched_at": "2026-09-27T15:54:23.379906+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "Aider-AI__aider__1102__a0e56c52",
+          "title": "Make file-write line endings configurable",
+          "before": "At parent de7da1e8063382c85eaad48dd1a17e81494c8b1d, aider exposed an output encoding setting but no line-ending setting. InputOutput.write_text opened text files with mode and encoding only, so Python applied the host platform's normal newline translation. All coder edits routed through this behavior and could not request LF or CRLF explicitly.",
+          "after": "At a0e56c528228b36b84d58b54d56453840c5e9e11, the CLI accepts --line-endings with platform, lf, and crlf choices and defaults to platform. main passes the parsed value into InputOutput, which maps it to open()'s newline argument: None for platform behavior, \"\\n\" for LF, or \"\\r\\n\" for CRLF. InputOutput.write_text uses that value for centralized file writes, so existing callers inherit the selected convention.",
+          "diff": "The merge adds 11 lines and removes 1 across aider/args.py, aider/main.py, and aider/io.py. It defines the constrained CLI option, threads args.line_endings into InputOutput, stores the corresponding newline value, and adds newline=self.newline to the text-file open call. No test file changed in the pinned implementation."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "Pinned ref a0e56c528228b36b84d58b54d56453840c5e9e11 is the merge of PR #2856, titled \"configurable-line-endings\", and states that it adds a line-endings configuration option fixing #1102.",
+            "source": "git show -s a0e56c528228b36b84d58b54d56453840c5e9e11; issue-bundle.json linked_pull_requests[0]"
+          },
+          {
+            "id": "E2",
+            "kind": "diff",
+            "claim": "Relative to first parent de7da1e8063382c85eaad48dd1a17e81494c8b1d, the implementation changes only aider/args.py, aider/io.py, and aider/main.py, with 11 insertions and 1 deletion.",
+            "source": "git diff --stat de7da1e8063382c85eaad48dd1a17e81494c8b1d a0e56c528228b36b84d58b54d56453840c5e9e11"
+          },
+          {
+            "id": "E3",
+            "kind": "implementation",
+            "claim": "aider/args.py adds --line-endings under Other settings, restricts values to platform, lf, or crlf, and defaults to platform.",
+            "source": "git diff de7da1e8063382c85eaad48dd1a17e81494c8b1d a0e56c528228b36b84d58b54d56453840c5e9e11 -- aider/args.py"
+          },
+          {
+            "id": "E4",
+            "kind": "implementation",
+            "claim": "InputOutput gains a line_endings=\"platform\" constructor argument and maps it to self.newline as None, \"\\n\", or \"\\r\\n\"; write_text passes self.newline to open(..., newline=...).",
+            "source": "git show a0e56c528228b36b84d58b54d56453840c5e9e11:aider/io.py, InputOutput.__init__ and InputOutput.write_text; compared with git show de7da1e8063382c85eaad48dd1a17e81494c8b1d:aider/io.py"
+          },
+          {
+            "id": "E5",
+            "kind": "call_site",
+            "claim": "The main entry point passes args.line_endings into the InputOutput instance used by the application, connecting CLI/config parsing to file output behavior.",
+            "source": "git show a0e56c528228b36b84d58b54d56453840c5e9e11:aider/main.py, main.get_io"
+          },
+          {
+            "id": "E6",
+            "kind": "call_site",
+            "claim": "Editing implementations such as EditBlockCoder and WholeFileCoder write generated content through self.io.write_text, so the centralized newline policy applies without modifying each coder.",
+            "source": "git show a0e56c528228b36b84d58b54d56453840c5e9e11:aider/coders/editblock_coder.py:71; git show a0e56c528228b36b84d58b54d56453840c5e9e11:aider/coders/wholefile_coder.py:128"
+          },
+          {
+            "id": "E7",
+            "kind": "call_site",
+            "claim": "The .gitignore update path also uses io.write_text and therefore inherits the configured line-ending behavior.",
+            "source": "git show a0e56c528228b36b84d58b54d56453840c5e9e11:aider/main.py:198"
+          },
+          {
+            "id": "E8",
+            "kind": "test",
+            "claim": "The pinned change adds no tests, and the pinned test tree contains no line_endings or line-endings references.",
+            "source": "git diff --name-only de7da1e8063382c85eaad48dd1a17e81494c8b1d a0e56c528228b36b84d58b54d56453840c5e9e11; git grep -n -E 'line_endings|line-endings' a0e56c528228b36b84d58b54d56453840c5e9e11 -- tests/basic tests/unit returned no matches"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "define_constrained_line_ending_option",
+            "description": "Add a user-facing line-ending option with explicit platform, LF, and CRLF values while retaining platform behavior as the compatibility default.",
+            "evidence_ids": [
+              "E3"
+            ]
+          },
+          {
+            "name": "map_line_ending_mode_to_text_io_newline",
+            "description": "Translate the semantic line-ending mode into Python text I/O newline values: None, \"\\n\", or \"\\r\\n\".",
+            "evidence_ids": [
+              "E4"
+            ]
+          },
+          {
+            "name": "thread_output_policy_into_shared_io",
+            "description": "Pass the parsed line-ending setting from application startup into the shared InputOutput service.",
+            "evidence_ids": [
+              "E5"
+            ]
+          },
+          {
+            "name": "apply_newline_policy_at_write_boundary",
+            "description": "Supply the configured newline value to open() in the centralized write_text method so existing edit writers inherit the policy.",
+            "evidence_ids": [
+              "E4",
+              "E6",
+              "E7"
+            ]
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "add_configurable_file_output_normalization",
+            "description": "Expose a constrained output-format option, propagate it through startup, map it to the runtime text-I/O primitive, and enforce it at the shared file-writing boundary used by editing call sites.",
+            "atomic_names": [
+              "define_constrained_line_ending_option",
+              "thread_output_policy_into_shared_io",
+              "map_line_ending_mode_to_text_io_newline",
+              "apply_newline_policy_at_write_boundary"
+            ],
+            "evidence_ids": [
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7"
+            ]
+          }
+        ],
+        "unresolved_questions": [
+          "The GitHub evidence bundle lacks the issue body, comments, PR body, reviews, and status checks, so the motivating platform-specific failure and acceptance criteria cannot be recovered from discussion evidence.",
+          "The pinned implementation contains no dedicated tests proving emitted bytes for platform, LF, and CRLF modes or confirming configuration-file parsing of the new option."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "define_constrained_line_ending_option",
+          "description": "Add a user-facing line-ending option with explicit platform, LF, and CRLF values while retaining platform behavior as the compatibility default.",
+          "evidence_ids": [
+            "E3"
+          ]
+        },
+        {
+          "name": "map_line_ending_mode_to_text_io_newline",
+          "description": "Translate the semantic line-ending mode into Python text I/O newline values: None, \"\\n\", or \"\\r\\n\".",
+          "evidence_ids": [
+            "E4"
+          ]
+        },
+        {
+          "name": "thread_output_policy_into_shared_io",
+          "description": "Pass the parsed line-ending setting from application startup into the shared InputOutput service.",
+          "evidence_ids": [
+            "E5"
+          ]
+        },
+        {
+          "name": "apply_newline_policy_at_write_boundary",
+          "description": "Supply the configured newline value to open() in the centralized write_text method so existing edit writers inherit the policy.",
+          "evidence_ids": [
+            "E4",
+            "E6",
+            "E7"
+          ]
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "add_configurable_file_output_normalization",
+          "description": "Expose a constrained output-format option, propagate it through startup, map it to the runtime text-I/O primitive, and enforce it at the shared file-writing boundary used by editing call sites.",
+          "atomic_names": [
+            "define_constrained_line_ending_option",
+            "thread_output_policy_into_shared_io",
+            "map_line_ending_mode_to_text_io_newline",
+            "apply_newline_policy_at_write_boundary"
+          ],
+          "evidence_ids": [
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7"
+          ]
+        }
+      ],
+      "unresolved_questions": [
+        "The GitHub evidence bundle lacks the issue body, comments, PR body, reviews, and status checks, so the motivating platform-specific failure and acceptance criteria cannot be recovered from discussion evidence.",
+        "The pinned implementation contains no dedicated tests proving emitted bytes for platform, LF, and CRLF modes or confirming configuration-file parsing of the new option."
+      ]
+    }
+  },
+  {
+    "episode_id": "earendil-works-pi-355-c214a334",
+    "repository": "earendil-works/pi",
+    "revision": "github-issue-355",
+    "title": "Make edit-tool matching independent of CRLF versus LF line endings",
+    "before": "At parent 65fb9116, the edit tool compared oldText directly with raw file content using includes, split, and indexOf. An LF-only oldText therefore did not match equivalent text stored with Windows CRLF line endings. Replacement output and diffs also operated directly on raw content.",
+    "after": "At c214a334, the edit tool detects the file's line-ending style, normalizes file content, oldText, and newText to LF for matching, uniqueness checks, replacement, and diff generation, then converts the completed content back to the detected CRLF or LF style before writing. LF-only model input can edit CRLF files while ordinary CRLF and LF files retain their respective line-ending styles.",
+    "diff": "Added detectLineEnding, normalizeToLF, and restoreLineEndings helpers. Reworked existence checks, occurrence counting, index calculation, replacement, and no-op detection to use normalized strings. Restored the detected file style at the write boundary and generated diffs from normalized content. Simplified the success message by removing raw character counts. Added four tests covering LF input against CRLF content, CRLF preservation, LF preservation, and duplicate detection across mixed CRLF/LF variants.",
+    "call_sites": [
+      "The changed edit implementation is used by the default mutable coding tool set, the all-tools map, and working-directory-specific createCodingTools/createAllTools factories, so the normalization applies to standard agent edit operations without call-site changes."
+    ],
+    "tests": [
+      "A regression test writes CRLF content and invokes editTool with LF-only oldText/newText, asserting that the edit succeeds.",
+      "Regression tests read the resulting files and assert that a CRLF file remains entirely CRLF after editing and an LF file remains LF.",
+      "A regression test creates logically duplicated text using one CRLF occurrence and one LF occurrence, then verifies that normalized uniqueness checking reports two occurrences."
+    ],
+    "evidence_ids": [
+      "ev-commit-issue-355",
+      "ev-before-raw-matching",
+      "ev-line-ending-helpers",
+      "ev-normalized-edit-pipeline",
+      "ev-write-and-diff-boundaries",
+      "ev-call-sites",
+      "ev-test-crlf-match",
+      "ev-test-style-preservation",
+      "ev-test-normalized-duplicates",
+      "ev-changelog"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "earendil-works/pi",
+      "issue": 355,
+      "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "earendil-works/pi",
+        "issue_number": 355,
+        "issue": {
+          "number": 355,
+          "title": "Fix edit tool failing on Windows due to CRLF line endings",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 360,
+              "title": "Fix edit tool failing on Windows due to CRLF line endings",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [],
+            "commits": [
+              {
+                "sha": "c214a33405c9d997fe1132da2f3c1ffdbcd75a8a",
+                "subject": "Fix edit tool failing on Windows due to CRLF line endings"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+        "pinned_ref": "c214a33405c9d997fe1132da2f3c1ffdbcd75a8a",
+        "resolved_commit": "c214a33405c9d997fe1132da2f3c1ffdbcd75a8a",
+        "parent_commit": "65fb9116fbdeb6c4e91ea37e93521b67a830dc7d",
+        "commit_show_stat": "commit c214a33405c9d997fe1132da2f3c1ffdbcd75a8a\nMerge: 65fb9116 8c43a9fb\nAuthor:     Mario Zechner <badlogicgames@gmail.com>\nAuthorDate: Mon Dec 29 23:28:55 2025 +0100\nCommit:     GitHub <noreply@github.com>\nCommitDate: Mon Dec 29 23:28:55 2025 +0100\n\n    Merge pull request #360 from prathamdby/fix/edit-crlf-windows\n    \n    Fix edit tool failing on Windows due to CRLF line endings\n\n package-lock.json                            |  7 ++-\n packages/coding-agent/CHANGELOG.md           |  4 ++\n packages/coding-agent/src/core/tools/edit.ts | 41 ++++++++++++----\n packages/coding-agent/test/tools.test.ts     | 71 +++++++++++++++++++++++++++-\n 4 files changed, 113 insertions(+), 10 deletions(-)\n",
+        "changed_files_name_status": "",
+        "linked_issue_numbers": [
+          355
+        ],
+        "manifest_metadata": {
+          "category": "input-output-platform-normalization",
+          "theme": "Keep edit-tool file writes correct across Windows line endings",
+          "module_families": [
+            "other"
+          ],
+          "file_sample": [
+            "package-lock.json",
+            "packages/coding-agent/CHANGELOG.md",
+            "packages/coding-agent/src/core/tools/edit.ts",
+            "packages/coding-agent/test/tools.test.ts"
+          ],
+          "quality": {
+            "score": 0.98,
+            "tier": "strong",
+            "reasons": [
+              "merged pull request",
+              "descriptive title",
+              "1 implementation files",
+              "1 test files",
+              "explicit closing issue reference",
+              "1 PR commits"
+            ],
+            "implementation_files": 1,
+            "test_files": 1,
+            "docs_files": 1,
+            "generated_files": 1
+          }
+        },
+        "fetched_at": "2026-09-27T15:59:02.138918+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "earendil-works-pi-355-c214a334",
+          "title": "Make edit-tool matching independent of CRLF versus LF line endings",
+          "before": "At parent 65fb9116, the edit tool compared oldText directly with raw file content using includes, split, and indexOf. An LF-only oldText therefore did not match equivalent text stored with Windows CRLF line endings. Replacement output and diffs also operated directly on raw content.",
+          "after": "At c214a334, the edit tool detects the file's line-ending style, normalizes file content, oldText, and newText to LF for matching, uniqueness checks, replacement, and diff generation, then converts the completed content back to the detected CRLF or LF style before writing. LF-only model input can edit CRLF files while ordinary CRLF and LF files retain their respective line-ending styles.",
+          "diff": "Added detectLineEnding, normalizeToLF, and restoreLineEndings helpers. Reworked existence checks, occurrence counting, index calculation, replacement, and no-op detection to use normalized strings. Restored the detected file style at the write boundary and generated diffs from normalized content. Simplified the success message by removing raw character counts. Added four tests covering LF input against CRLF content, CRLF preservation, LF preservation, and duplicate detection across mixed CRLF/LF variants."
+        },
+        "evidence_units": [
+          {
+            "id": "ev-commit-issue-355",
+            "kind": "commit",
+            "claim": "Implementation commit 8c43a9fb states that line endings are normalized before matching and restored on write, and explicitly declares `Fixes #355`; it was merged by pinned merge commit c214a334 through PR #360.",
+            "source": "git show --format=fuller 8c43a9fbc83809c033b1fa0d22b13b3e3409024b; git show --format=fuller c214a33405c9d997fe1132da2f3c1ffdbcd75a8a; issue-bundle.json linked_pull_requests[0]"
+          },
+          {
+            "id": "ev-before-raw-matching",
+            "kind": "implementation",
+            "claim": "Before the change, the tool performed existence checking, occurrence counting, replacement indexing, no-op comparison, writing, and diff generation directly against raw `content`, `oldText`, and `newText`. Thus CRLF/LF differences were treated as text mismatches.",
+            "source": "git show 65fb9116fbdeb6c4e91ea37e93521b67a830dc7d:packages/coding-agent/src/core/tools/edit.ts, lines 164-243"
+          },
+          {
+            "id": "ev-line-ending-helpers",
+            "kind": "implementation",
+            "claim": "The implementation adds helpers that select CRLF when the first newline is a CRLF sequence, normalize CRLF and lone CR characters to LF, and restore normalized LF text to CRLF when required.",
+            "source": "git show c214a33405c9d997fe1132da2f3c1ffdbcd75a8a:packages/coding-agent/src/core/tools/edit.ts, lines 8-22"
+          },
+          {
+            "id": "ev-normalized-edit-pipeline",
+            "kind": "implementation",
+            "claim": "After reading a file, the tool records its line-ending style and normalizes the file content plus both edit operands. It then uses the normalized values for matching, uniqueness enforcement, index-based replacement, and no-op detection.",
+            "source": "git show c214a33405c9d997fe1132da2f3c1ffdbcd75a8a:packages/coding-agent/src/core/tools/edit.ts, lines 180-245"
+          },
+          {
+            "id": "ev-write-and-diff-boundaries",
+            "kind": "diff",
+            "claim": "The completed normalized content is converted back to the detected file line ending before writeFile, while the returned diff is generated from normalized old and new content. The success response no longer reports raw oldText/newText character lengths.",
+            "source": "git diff 65fb9116fbdeb6c4e91ea37e93521b67a830dc7d c214a33405c9d997fe1132da2f3c1ffdbcd75a8a -- packages/coding-agent/src/core/tools/edit.ts; pinned file lines 247-267"
+          },
+          {
+            "id": "ev-call-sites",
+            "kind": "call_site",
+            "claim": "The changed edit implementation is used by the default mutable coding tool set, the all-tools map, and working-directory-specific createCodingTools/createAllTools factories, so the normalization applies to standard agent edit operations without call-site changes.",
+            "source": "git show c214a33405c9d997fe1132da2f3c1ffdbcd75a8a:packages/coding-agent/src/core/tools/index.ts, lines 23-46 and 59-64"
+          },
+          {
+            "id": "ev-test-crlf-match",
+            "kind": "test",
+            "claim": "A regression test writes CRLF content and invokes editTool with LF-only oldText/newText, asserting that the edit succeeds.",
+            "source": "git show c214a33405c9d997fe1132da2f3c1ffdbcd75a8a:packages/coding-agent/test/tools.test.ts, lines 381-393"
+          },
+          {
+            "id": "ev-test-style-preservation",
+            "kind": "test",
+            "claim": "Regression tests read the resulting files and assert that a CRLF file remains entirely CRLF after editing and an LF file remains LF.",
+            "source": "git show c214a33405c9d997fe1132da2f3c1ffdbcd75a8a:packages/coding-agent/test/tools.test.ts, lines 395-421"
+          },
+          {
+            "id": "ev-test-normalized-duplicates",
+            "kind": "test",
+            "claim": "A regression test creates logically duplicated text using one CRLF occurrence and one LF occurrence, then verifies that normalized uniqueness checking reports two occurrences.",
+            "source": "git show c214a33405c9d997fe1132da2f3c1ffdbcd75a8a:packages/coding-agent/test/tools.test.ts, lines 423-435"
+          },
+          {
+            "id": "ev-changelog",
+            "kind": "diff",
+            "claim": "The coding-agent changelog documents that CRLF files now match LF-only model text and that the original line-ending style is restored on write, attributing the fix to issue #355.",
+            "source": "git diff 65fb9116fbdeb6c4e91ea37e93521b67a830dc7d c214a33405c9d997fe1132da2f3c1ffdbcd75a8a -- packages/coding-agent/CHANGELOG.md"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "normalize_edit_inputs_before_exact_matching",
+            "description": "Convert file content, search text, and replacement text to one canonical newline representation before performing exact existence checks and index-based replacement.",
+            "evidence_ids": [
+              "ev-before-raw-matching",
+              "ev-line-ending-helpers",
+              "ev-normalized-edit-pipeline",
+              "ev-test-crlf-match"
+            ]
+          },
+          {
+            "name": "preserve_file_line_endings_at_write_boundary",
+            "description": "Detect the source file's newline style before normalization and restore that style only after the normalized edit is complete.",
+            "evidence_ids": [
+              "ev-line-ending-helpers",
+              "ev-write-and-diff-boundaries",
+              "ev-test-style-preservation"
+            ]
+          },
+          {
+            "name": "enforce_edit_uniqueness_after_normalization",
+            "description": "Count search-text occurrences in canonicalized content so logically identical CRLF and LF regions cannot bypass the single-match requirement.",
+            "evidence_ids": [
+              "ev-normalized-edit-pipeline",
+              "ev-test-normalized-duplicates"
+            ]
+          },
+          {
+            "name": "generate_edit_diff_from_canonical_text",
+            "description": "Generate the user-facing edit diff from normalized pre-edit and post-edit content so newline encoding differences do not obscure the semantic change.",
+            "evidence_ids": [
+              "ev-write-and-diff-boundaries"
+            ]
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "make_exact_text_edits_line-ending-independent",
+            "description": "Canonicalize newline encodings for semantic matching and replacement, enforce uniqueness in that canonical form, then restore the source file's selected newline style when persisting the result.",
+            "atomic_names": [
+              "normalize_edit_inputs_before_exact_matching",
+              "enforce_edit_uniqueness_after_normalization",
+              "preserve_file_line_endings_at_write_boundary",
+              "generate_edit_diff_from_canonical_text"
+            ],
+            "evidence_ids": [
+              "ev-before-raw-matching",
+              "ev-line-ending-helpers",
+              "ev-normalized-edit-pipeline",
+              "ev-write-and-diff-boundaries",
+              "ev-call-sites",
+              "ev-test-crlf-match",
+              "ev-test-style-preservation",
+              "ev-test-normalized-duplicates"
+            ]
+          }
+        ],
+        "unresolved_questions": [
+          "The repository checkout lacked an available `node` executable during inspection, so the pinned regression tests were inspected but not executed in this extraction environment."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "normalize_edit_inputs_before_exact_matching",
+          "description": "Convert file content, search text, and replacement text to one canonical newline representation before performing exact existence checks and index-based replacement.",
+          "evidence_ids": [
+            "ev-before-raw-matching",
+            "ev-line-ending-helpers",
+            "ev-normalized-edit-pipeline",
+            "ev-test-crlf-match"
+          ]
+        },
+        {
+          "name": "preserve_file_line_endings_at_write_boundary",
+          "description": "Detect the source file's newline style before normalization and restore that style only after the normalized edit is complete.",
+          "evidence_ids": [
+            "ev-line-ending-helpers",
+            "ev-write-and-diff-boundaries",
+            "ev-test-style-preservation"
+          ]
+        },
+        {
+          "name": "enforce_edit_uniqueness_after_normalization",
+          "description": "Count search-text occurrences in canonicalized content so logically identical CRLF and LF regions cannot bypass the single-match requirement.",
+          "evidence_ids": [
+            "ev-normalized-edit-pipeline",
+            "ev-test-normalized-duplicates"
+          ]
+        },
+        {
+          "name": "generate_edit_diff_from_canonical_text",
+          "description": "Generate the user-facing edit diff from normalized pre-edit and post-edit content so newline encoding differences do not obscure the semantic change.",
+          "evidence_ids": [
+            "ev-write-and-diff-boundaries"
+          ]
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "make_exact_text_edits_line-ending-independent",
+          "description": "Canonicalize newline encodings for semantic matching and replacement, enforce uniqueness in that canonical form, then restore the source file's selected newline style when persisting the result.",
+          "atomic_names": [
+            "normalize_edit_inputs_before_exact_matching",
+            "enforce_edit_uniqueness_after_normalization",
+            "preserve_file_line_endings_at_write_boundary",
+            "generate_edit_diff_from_canonical_text"
+          ],
+          "evidence_ids": [
+            "ev-before-raw-matching",
+            "ev-line-ending-helpers",
+            "ev-normalized-edit-pipeline",
+            "ev-write-and-diff-boundaries",
+            "ev-call-sites",
+            "ev-test-crlf-match",
+            "ev-test-style-preservation",
+            "ev-test-normalized-duplicates"
+          ]
+        }
+      ],
+      "unresolved_questions": [
+        "The repository checkout lacked an available `node` executable during inspection, so the pinned regression tests were inspected but not executed in this extraction environment."
+      ]
+    }
+  },
+  {
+    "episode_id": "deepseek-harness-issue-32-ce0a1e4253",
+    "repository": "deepseek-ai/deepseek-harness",
+    "revision": "github-issue-32",
+    "title": "Decode Win32 folder-picker paths without a fixed-size unmanaged view",
+    "before": "The Win32 directory-picker binding decoded the NUL-terminated UTF-16 path returned by IShellItem::GetDisplayName by creating a fixed 32,768-byte Koffi external view, scanning that view for a two-byte NUL terminator, and converting the prefix with Buffer.toString('utf16le'). The fixed view neither represented the allocation's actual size nor supported paths whose encoded data exceeded 32 KiB.",
+    "after": "The binding serializes the BigInt native string address into an eight-byte buffer, restricts the buffer to the process pointer width reported by koffi.sizeof('void *'), and passes that pointer variable to koffi.decode(..., 'str16'). The resultPath path still frees the original GetDisplayName address with CoTaskMemFree and releases the shell item. Tests cover four- and eight-byte pointer preservation, the original release address, BMP characters with zero low bytes, surrogate pairs, NUL termination, and strings longer than 32 KiB using real Koffi decoding over live test-owned buffers.",
+    "diff": "Removed Koffi.view from the local binding interface and replaced the fixed external-memory view plus manual UTF-16 terminator scan with pointer-width native Koffi string decoding. Threaded the already-derived pointerSize into readUtf16. Reworked the fake Koffi environment around numeric BigInt addresses and pointer buffers, added assertions for pointer-width serialization and COM deallocation, and added real-Koffi resultPath cases for representative UTF-16 and long-string behavior. Added a bilingual implementation note recording the decoding and ownership constraints.",
+    "call_sites": [
+      "loadWin32DialogBindings derives pointerSize with koffi.sizeof('void *'), passes it to readUtf16 in resultPath, then frees the unchanged GetDisplayName address with CoTaskMemFree and releases the IShellItem in finally.",
+      "runFolderDialog consumes dialog.resultPath after a successful Show, checks its HRESULT, and returns the decoded path to the directory-picker caller while retaining dialog and COM cleanup in finally blocks."
+    ],
+    "tests": [
+      "Parameterized fake-Koffi tests exercise both four-byte and eight-byte BigInt addresses, assert that the decoder receives the matching pointer-buffer width, and assert that CoTaskMemFree receives the original address.",
+      "Real-Koffi resultPath tests decode live UTF-16 buffers containing zero-low-byte BMP code units, a surrogate pair, more than 32 KiB of text, and an embedded NUL; they compare the serialized pointer before native dereference and verify deallocation and COM cleanup."
+    ],
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10",
+      "E11"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "deepseek-ai/deepseek-harness",
+      "issue": 32,
+      "checkout": "/home/chenyujia/tritonToLlvm/deepseek-harness",
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "deepseek-ai/deepseek-harness",
+        "issue_number": 32,
+        "issue": {
+          "number": 32,
+          "title": "fix(directory-picker-native): decode the Win32 picker path without a fixed 32KiB view",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 3368,
+              "title": "fix(directory-picker-native): decode the Win32 picker path without a fixed 32KiB view",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [],
+            "commits": [
+              {
+                "sha": "ce0a1e42530682d385e8b020cdfd9a977a34785f",
+                "subject": "fix(directory-picker-native): decode the Win32 picker path without a fixed 32KiB view"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/deepseek-harness",
+        "pinned_ref": "ce0a1e42530682d385e8b020cdfd9a977a34785f",
+        "resolved_commit": "ce0a1e42530682d385e8b020cdfd9a977a34785f",
+        "parent_commit": "eae5c6b896900f76f3884411a130582b7074703d",
+        "commit_show_stat": "commit ce0a1e42530682d385e8b020cdfd9a977a34785f\nMerge: eae5c6b896 141d72d7cf\nAuthor:     Tianyi Cui <53024+tianyicui@users.noreply.github.com>\nAuthorDate: Sat Sep 5 23:51:08 2026 +0800\nCommit:     GitHub <noreply@github.com>\nCommitDate: Sat Sep 5 23:51:08 2026 +0800\n\n    Merge pull request #3368 from deepseek-harness/fix/directory-picker-win32-overread\n    \n    fix(directory-picker-native): decode the Win32 picker path without a fixed 32KiB view\n\n ...6-08-31-win32-picker-path-string-read.i18n.yaml |   6 ++\n .../2026-08-31-win32-picker-path-string-read.md    |  25 +++++\n .../2026-08-31-win32-picker-path-string-read.zh.md |  25 +++++\n .../src/win32-dialog-bindings.ts                   |  26 ++---\n .../tests/win32-dialog-bindings.spec.ts            | 111 +++++++++++++++------\n 5 files changed, 149 insertions(+), 44 deletions(-)\n",
+        "changed_files_name_status": "",
+        "linked_issue_numbers": [
+          32
+        ],
+        "manifest_metadata": {
+          "category": "input-output-platform-normalization",
+          "theme": "Decode native picker paths without fixed-size truncation",
+          "module_families": [
+            "other"
+          ],
+          "file_sample": [
+            ".agents/notes/implemented/bug-fix/2026-08-31-win32-picker-path-string-read.i18n.yaml",
+            ".agents/notes/implemented/bug-fix/2026-08-31-win32-picker-path-string-read.md",
+            ".agents/notes/implemented/bug-fix/2026-08-31-win32-picker-path-string-read.zh.md",
+            "packages/host/directory-picker-native/src/win32-dialog-bindings.ts",
+            "packages/host/directory-picker-native/tests/win32-dialog-bindings.spec.ts"
+          ],
+          "quality": {
+            "score": 0.98,
+            "tier": "strong",
+            "reasons": [
+              "merged pull request",
+              "descriptive title",
+              "1 implementation files",
+              "1 test files",
+              "explicit closing issue reference",
+              "1 PR commits"
+            ],
+            "implementation_files": 1,
+            "test_files": 1,
+            "docs_files": 2,
+            "generated_files": 0
+          }
+        },
+        "fetched_at": "2026-09-27T16:01:37.407450+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "deepseek-harness-issue-32-ce0a1e4253",
+          "title": "Decode Win32 folder-picker paths without a fixed-size unmanaged view",
+          "before": "The Win32 directory-picker binding decoded the NUL-terminated UTF-16 path returned by IShellItem::GetDisplayName by creating a fixed 32,768-byte Koffi external view, scanning that view for a two-byte NUL terminator, and converting the prefix with Buffer.toString('utf16le'). The fixed view neither represented the allocation's actual size nor supported paths whose encoded data exceeded 32 KiB.",
+          "after": "The binding serializes the BigInt native string address into an eight-byte buffer, restricts the buffer to the process pointer width reported by koffi.sizeof('void *'), and passes that pointer variable to koffi.decode(..., 'str16'). The resultPath path still frees the original GetDisplayName address with CoTaskMemFree and releases the shell item. Tests cover four- and eight-byte pointer preservation, the original release address, BMP characters with zero low bytes, surrogate pairs, NUL termination, and strings longer than 32 KiB using real Koffi decoding over live test-owned buffers.",
+          "diff": "Removed Koffi.view from the local binding interface and replaced the fixed external-memory view plus manual UTF-16 terminator scan with pointer-width native Koffi string decoding. Threaded the already-derived pointerSize into readUtf16. Reworked the fake Koffi environment around numeric BigInt addresses and pointer buffers, added assertions for pointer-width serialization and COM deallocation, and added real-Koffi resultPath cases for representative UTF-16 and long-string behavior. Added a bilingual implementation note recording the decoding and ownership constraints."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "Pinned ref ce0a1e42530682d385e8b020cdfd9a977a34785f is the merge of PR #3368, titled \"fix(directory-picker-native): decode the Win32 picker path without a fixed 32KiB view\", with first parent eae5c6b896900f76f3884411a130582b7074703d and implementation parent 141d72d7cf3a83559362a4c1c89bb89f03f25485.",
+            "source": "git rev-list --parents -n 1 ce0a1e42530682d385e8b020cdfd9a977a34785f; git show -s --format=fuller ce0a1e42530682d385e8b020cdfd9a977a34785f"
+          },
+          {
+            "id": "E2",
+            "kind": "diff",
+            "claim": "Before the change, readUtf16 called koffi.view(address, 32768), manually advanced through UTF-16LE code units until a two-byte NUL, and decoded the bounded prefix; the Koffi interface consequently required view(ref, len).",
+            "source": "git show ce0a1e42530682d385e8b020cdfd9a977a34785f^1:packages/host/directory-picker-native/src/win32-dialog-bindings.ts lines 19-44"
+          },
+          {
+            "id": "E3",
+            "kind": "implementation",
+            "claim": "After the change, readUtf16 writes the returned native address as a little-endian 64-bit integer, slices the buffer to the process pointer width, and invokes koffi.decode(pointer, 'str16'); the fixed view and manual scanner are absent.",
+            "source": "git show ce0a1e42530682d385e8b020cdfd9a977a34785f:packages/host/directory-picker-native/src/win32-dialog-bindings.ts lines 19-44"
+          },
+          {
+            "id": "E4",
+            "kind": "call_site",
+            "claim": "loadWin32DialogBindings derives pointerSize with koffi.sizeof('void *'), passes it to readUtf16 in resultPath, then frees the unchanged GetDisplayName address with CoTaskMemFree and releases the IShellItem in finally.",
+            "source": "git show ce0a1e42530682d385e8b020cdfd9a977a34785f:packages/host/directory-picker-native/src/win32-dialog-bindings.ts lines 90-110 and 152-166"
+          },
+          {
+            "id": "E5",
+            "kind": "call_site",
+            "claim": "runFolderDialog consumes dialog.resultPath after a successful Show, checks its HRESULT, and returns the decoded path to the directory-picker caller while retaining dialog and COM cleanup in finally blocks.",
+            "source": "packages/host/directory-picker-native/src/win32-dialog-logic.ts lines 119-146; resultPath interface contract at lines 39-46"
+          },
+          {
+            "id": "E6",
+            "kind": "test",
+            "claim": "Parameterized fake-Koffi tests exercise both four-byte and eight-byte BigInt addresses, assert that the decoder receives the matching pointer-buffer width, and assert that CoTaskMemFree receives the original address.",
+            "source": "git show ce0a1e42530682d385e8b020cdfd9a977a34785f:packages/host/directory-picker-native/tests/win32-dialog-bindings.spec.ts lines 214-225"
+          },
+          {
+            "id": "E7",
+            "kind": "test",
+            "claim": "Real-Koffi resultPath tests decode live UTF-16 buffers containing zero-low-byte BMP code units, a surrogate pair, more than 32 KiB of text, and an embedded NUL; they compare the serialized pointer before native dereference and verify deallocation and COM cleanup.",
+            "source": "git show ce0a1e42530682d385e8b020cdfd9a977a34785f:packages/host/directory-picker-native/tests/win32-dialog-bindings.spec.ts lines 227-256"
+          },
+          {
+            "id": "E8",
+            "kind": "implementation",
+            "claim": "The implementation note records why generic str16 decoding must receive a pointer variable, why the slice follows sizeof('void *'), why the original address must remain available for CoTaskMemFree, and why a fixed or growing external view cannot establish the native allocation size.",
+            "source": "git show ce0a1e42530682d385e8b020cdfd9a977a34785f:.agents/notes/implemented/bug-fix/2026-08-31-win32-picker-path-string-read.md"
+          },
+          {
+            "id": "E9",
+            "kind": "diff",
+            "claim": "The first-parent diff contains one production source change, one test change, and three bilingual-note files, totaling 149 insertions and 44 deletions.",
+            "source": "git show --stat --oneline --no-renames ce0a1e42530682d385e8b020cdfd9a977a34785f; git diff --no-renames ce0a1e42530682d385e8b020cdfd9a977a34785f^1 ce0a1e42530682d385e8b020cdfd9a977a34785f"
+          },
+          {
+            "id": "E10",
+            "kind": "commit",
+            "claim": "The linked implementation commit explicitly describes replacing the external ArrayBuffer view and manual scan with decoding through a pointer-width buffer while preserving the original address for CoTaskMemFree.",
+            "source": "git show -s --format='%H%n%P%n%s%n%b' 141d72d7cf3a83559362a4c1c89bb89f03f25485"
+          },
+          {
+            "id": "E11",
+            "kind": "commit",
+            "claim": "The supplied GitHub bundle links issue 32 to PR #3368 and the pinned merge commit, while declaring PR body, reviews, status checks, issue body, comments, and timeline unavailable.",
+            "source": "/home/chenyujia/tritonToLlvm/arex-skill-graph/data/skill-extraction/codex-runs/common-12-batch-1-20260927/deepseek-ai__deepseek-harness__32/issue-bundle.json"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "decode-native-nul-terminated-utf16-through-a-pointer-variable",
+            "description": "When an FFI out-parameter returns a raw address for a NUL-terminated UTF-16 allocation, serialize the address into a pointer-width buffer and let the FFI library's native string decoder traverse the allocation instead of constructing an arbitrary fixed-size external view.",
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E8"
+            ]
+          },
+          {
+            "name": "preserve-native-address-for-owning-allocator-release",
+            "description": "Keep the raw address returned by the native API separate from its decoded text and pass that same address to the API-mandated deallocator after successful conversion.",
+            "evidence_ids": [
+              "E4",
+              "E6",
+              "E8",
+              "E10"
+            ]
+          },
+          {
+            "name": "test-native-pointer-marshalling-at-both-pointer-widths",
+            "description": "Exercise four-byte and eight-byte pointer serialization with nontrivial BigInt addresses, asserting both the decoder input width and the exact address later released.",
+            "evidence_ids": [
+              "E3",
+              "E6"
+            ]
+          },
+          {
+            "name": "exercise-ffi-string-decoding-with-live-native-compatible-buffers",
+            "description": "Use the real FFI decoder over test-owned buffers whose lifetime spans the synchronous native read, covering multibyte Unicode, embedded NUL termination, and data exceeding the removed fixed bound.",
+            "evidence_ids": [
+              "E7",
+              "E8"
+            ]
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "replace-bounded-native-string-overreads-with-ffi-owned-decoding",
+            "description": "Trace the allocator and out-parameter semantics, remove the arbitrary external-memory bound and manual scanner, marshal the returned address as a correctly sized pointer variable, retain the original address for the correct deallocator, and validate the production result path across pointer widths and adversarial string contents.",
+            "atomic_names": [
+              "decode-native-nul-terminated-utf16-through-a-pointer-variable",
+              "preserve-native-address-for-owning-allocator-release",
+              "test-native-pointer-marshalling-at-both-pointer-widths",
+              "exercise-ffi-string-decoding-with-live-native-compatible-buffers"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E10"
+            ]
+          }
+        ],
+        "unresolved_questions": []
+      },
+      "candidate_atomics": [
+        {
+          "name": "decode-native-nul-terminated-utf16-through-a-pointer-variable",
+          "description": "When an FFI out-parameter returns a raw address for a NUL-terminated UTF-16 allocation, serialize the address into a pointer-width buffer and let the FFI library's native string decoder traverse the allocation instead of constructing an arbitrary fixed-size external view.",
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E8"
+          ]
+        },
+        {
+          "name": "preserve-native-address-for-owning-allocator-release",
+          "description": "Keep the raw address returned by the native API separate from its decoded text and pass that same address to the API-mandated deallocator after successful conversion.",
+          "evidence_ids": [
+            "E4",
+            "E6",
+            "E8",
+            "E10"
+          ]
+        },
+        {
+          "name": "test-native-pointer-marshalling-at-both-pointer-widths",
+          "description": "Exercise four-byte and eight-byte pointer serialization with nontrivial BigInt addresses, asserting both the decoder input width and the exact address later released.",
+          "evidence_ids": [
+            "E3",
+            "E6"
+          ]
+        },
+        {
+          "name": "exercise-ffi-string-decoding-with-live-native-compatible-buffers",
+          "description": "Use the real FFI decoder over test-owned buffers whose lifetime spans the synchronous native read, covering multibyte Unicode, embedded NUL termination, and data exceeding the removed fixed bound.",
+          "evidence_ids": [
+            "E7",
+            "E8"
+          ]
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "replace-bounded-native-string-overreads-with-ffi-owned-decoding",
+          "description": "Trace the allocator and out-parameter semantics, remove the arbitrary external-memory bound and manual scanner, marshal the returned address as a correctly sized pointer variable, retain the original address for the correct deallocator, and validate the production result path across pointer widths and adversarial string contents.",
+          "atomic_names": [
+            "decode-native-nul-terminated-utf16-through-a-pointer-variable",
+            "preserve-native-address-for-owning-allocator-release",
+            "test-native-pointer-marshalling-at-both-pointer-widths",
+            "exercise-ffi-string-decoding-with-live-native-compatible-buffers"
+          ],
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E10"
+          ]
+        }
+      ],
+      "unresolved_questions": []
+    }
+  },
+  {
+    "episode_id": "NousResearch/hermes-agent#892@22990ed3789338d399b41f5a1297310212e313e2",
+    "repository": "NousResearch/hermes-agent",
+    "revision": "github-issue-892",
+    "title": "Route remaining Hermes runtime data paths through HERMES_HOME",
+    "before": "Although hermes_cli.config.get_hermes_home() already resolved HERMES_HOME with ~/.hermes as its fallback, numerous CLI, gateway, agent, environment, and tool paths bypassed it by constructing Path.home() / \".hermes\" or expanding ~/.hermes directly. Consequently, a process configured with a custom HERMES_HOME could still read or write configuration, sessions, caches, logs, authentication data, process checkpoints, sandbox data, and other state under the operating-system home directory, breaking isolation between Hermes instances.",
+    "after": "The affected paths derive their roots from get_hermes_home(), the CLI's existing _hermes_home value, or an equivalent HERMES_HOME-with-~/.hermes-fallback expression. This covers CLI configuration/history/images/pastes/debug logs; gateway configuration, sessions, pairing, hooks, delivery output, channel data, caches, and WhatsApp state; agent auth/SOUL/error logs; environment sandboxes and snapshot stores; process checkpoints; TTS output; status and service paths. Tests now configure HERMES_HOME and assert that session discovery and clipboard image storage use that directory.",
+    "diff": "Relative to first parent 984f00e0b0922ebc61b1891c3251b2991173bd2d, merge commit 22990ed3789338d399b41f5a1297310212e313e2 changes 23 files with 80 insertions and 56 deletions. Twenty-one implementation files replace hardcoded ~/.hermes constructions with the shared resolver, an already-resolved CLI home, or direct environment-aware fallback logic. Two test files stop relying on patched Path.home() and instead exercise HERMES_HOME-based paths. The implementation arrived in commits 437ec1712 and 206e56cc5, with the latter completing interrupt-debug-log routing and the final channel-directory test conversion.",
+    "call_sites": [
+      "CLI call sites now use the resolved Hermes home for relative prefill files, user configuration loading and saving, persistent history, clipboard images, terminal configuration lookup, interrupt debug logs, and pasted-text files."
+    ],
+    "tests": [
+      "Channel-directory tests create sessions.json directly beneath a temporary HERMES_HOME and patch that environment variable for successful discovery, missing-file behavior, deduplication, and topic distinction, replacing the previous Path.home() patching strategy.",
+      "The clipboard attachment test now asserts that generated image paths are rooted at Path(os.environ[\"HERMES_HOME\"]) / \"images\" rather than Path.home() / \".hermes\" / \"images\"."
+    ],
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 892,
+      "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "NousResearch/hermes-agent",
+        "issue_number": 892,
+        "issue": {
+          "number": 892,
+          "title": "fix: respect HERMES_HOME in remaining hardcoded paths",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 1233,
+              "title": "fix: respect HERMES_HOME in remaining hardcoded paths",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [],
+            "commits": [
+              {
+                "sha": "22990ed3789338d399b41f5a1297310212e313e2",
+                "subject": "fix(cli): respect HERMES_HOME in all remaining hardcoded ~/.hermes paths"
+              },
+              {
+                "sha": "22990ed3789338d399b41f5a1297310212e313e2",
+                "subject": "fix: finish HERMES_HOME path cleanup"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+        "pinned_ref": "22990ed3789338d399b41f5a1297310212e313e2",
+        "resolved_commit": "22990ed3789338d399b41f5a1297310212e313e2",
+        "parent_commit": "984f00e0b0922ebc61b1891c3251b2991173bd2d",
+        "commit_show_stat": "commit 22990ed3789338d399b41f5a1297310212e313e2\nMerge: 984f00e0b 206e56cc5\nAuthor:     Teknium <127238744+teknium1@users.noreply.github.com>\nAuthorDate: Fri Mar 13 21:37:02 2026 -0700\nCommit:     GitHub <noreply@github.com>\nCommitDate: Fri Mar 13 21:37:02 2026 -0700\n\n    Merge pull request #1233 from NousResearch/hermes/hermes-7c22e5c1\n    \n    fix: respect HERMES_HOME in remaining hardcoded paths\n\n agent/auxiliary_client.py               |  3 ++-\n agent/prompt_builder.py                 |  2 +-\n cli.py                                  | 26 ++++++++++++--------------\n gateway/channel_directory.py            |  6 ++++--\n gateway/config.py                       | 15 +++++++++------\n gateway/delivery.py                     |  6 ++++--\n gateway/hooks.py                        |  4 +++-\n gateway/mirror.py                       |  4 +++-\n gateway/pairing.py                      |  4 +++-\n gateway/platforms/base.py               |  9 +++++----\n gateway/platforms/whatsapp.py           |  4 +++-\n gateway/sticker_cache.py                |  4 +++-\n hermes_cli/gateway.py                   |  8 ++++----\n hermes_cli/main.py                      |  2 +-\n hermes_cli/status.py                    |  6 +++---\n run_agent.py                            |  2 +-\n tests/gateway/test_channel_directory.py | 11 ++++++-----\n tests/tools/test_clipboard.py           |  2 +-\n tools/environments/base.py              |  6 ++++--\n tools/environments/modal.py             |  3 ++-\n tools/environments/singularity.py       |  3 ++-\n tools/process_registry.py               |  4 +++-\n tools/tts_tool.py                       |  2 +-\n 23 files changed, 80 insertions(+), 56 deletions(-)\n",
+        "changed_files_name_status": "",
+        "linked_issue_numbers": [
+          892
+        ],
+        "manifest_metadata": {
+          "category": "input-output-platform-normalization",
+          "theme": "Resolve runtime home paths from the configured environment",
+          "module_families": [
+            "tui_cli"
+          ],
+          "file_sample": [
+            "agent/auxiliary_client.py",
+            "agent/prompt_builder.py",
+            "cli.py",
+            "gateway/channel_directory.py",
+            "gateway/config.py",
+            "gateway/delivery.py",
+            "gateway/hooks.py",
+            "gateway/mirror.py",
+            "gateway/pairing.py",
+            "gateway/platforms/base.py",
+            "gateway/platforms/whatsapp.py",
+            "gateway/sticker_cache.py",
+            "hermes_cli/gateway.py",
+            "hermes_cli/main.py",
+            "hermes_cli/status.py",
+            "run_agent.py",
+            "tests/gateway/test_channel_directory.py",
+            "tests/tools/test_clipboard.py",
+            "tools/environments/base.py",
+            "tools/environments/modal.py"
+          ],
+          "quality": {
+            "score": 0.98,
+            "tier": "strong",
+            "reasons": [
+              "merged pull request",
+              "descriptive title",
+              "21 implementation files",
+              "2 test files",
+              "explicit closing issue reference",
+              "2 PR commits"
+            ],
+            "implementation_files": 21,
+            "test_files": 2,
+            "docs_files": 0,
+            "generated_files": 0
+          }
+        },
+        "fetched_at": "2026-09-27T16:05:06.691991+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "NousResearch/hermes-agent#892@22990ed3789338d399b41f5a1297310212e313e2",
+          "title": "Route remaining Hermes runtime data paths through HERMES_HOME",
+          "before": "Although hermes_cli.config.get_hermes_home() already resolved HERMES_HOME with ~/.hermes as its fallback, numerous CLI, gateway, agent, environment, and tool paths bypassed it by constructing Path.home() / \".hermes\" or expanding ~/.hermes directly. Consequently, a process configured with a custom HERMES_HOME could still read or write configuration, sessions, caches, logs, authentication data, process checkpoints, sandbox data, and other state under the operating-system home directory, breaking isolation between Hermes instances.",
+          "after": "The affected paths derive their roots from get_hermes_home(), the CLI's existing _hermes_home value, or an equivalent HERMES_HOME-with-~/.hermes-fallback expression. This covers CLI configuration/history/images/pastes/debug logs; gateway configuration, sessions, pairing, hooks, delivery output, channel data, caches, and WhatsApp state; agent auth/SOUL/error logs; environment sandboxes and snapshot stores; process checkpoints; TTS output; status and service paths. Tests now configure HERMES_HOME and assert that session discovery and clipboard image storage use that directory.",
+          "diff": "Relative to first parent 984f00e0b0922ebc61b1891c3251b2991173bd2d, merge commit 22990ed3789338d399b41f5a1297310212e313e2 changes 23 files with 80 insertions and 56 deletions. Twenty-one implementation files replace hardcoded ~/.hermes constructions with the shared resolver, an already-resolved CLI home, or direct environment-aware fallback logic. Two test files stop relying on patched Path.home() and instead exercise HERMES_HOME-based paths. The implementation arrived in commits 437ec1712 and 206e56cc5, with the latter completing interrupt-debug-log routing and the final channel-directory test conversion."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "The pinned merge commit is PR #1233, titled \"fix: respect HERMES_HOME in remaining hardcoded paths,\" and its first-parent diff changes 23 files with 80 insertions and 56 deletions.",
+            "source": "git show --stat --format=fuller 22990ed3789338d399b41f5a1297310212e313e2; issue-bundle.json linked_pull_requests[0]"
+          },
+          {
+            "id": "E2",
+            "kind": "implementation",
+            "claim": "The repository's canonical resolver returns Path(os.getenv(\"HERMES_HOME\", Path.home() / \".hermes\")), establishing the custom-root behavior and legacy fallback used by the change.",
+            "source": "22990ed3789338d399b41f5a1297310212e313e2:hermes_cli/config.py:38-40"
+          },
+          {
+            "id": "E3",
+            "kind": "diff",
+            "claim": "Before the change, affected code directly used Path.home() / \".hermes\" or os.path.expanduser(\"~/.hermes/...\"); the patch replaces those constructions across CLI, gateway, agent, environment, and tool modules with get_hermes_home(), _hermes_home, or equivalent HERMES_HOME-aware expressions.",
+            "source": "git diff 984f00e0b0922ebc61b1891c3251b2991173bd2d 22990ed3789338d399b41f5a1297310212e313e2 -- agent gateway hermes_cli tools cli.py run_agent.py"
+          },
+          {
+            "id": "E4",
+            "kind": "implementation",
+            "claim": "Gateway state now follows HERMES_HOME for channel-directory and session indexes, gateway/config YAML, default session storage, delivery output, hooks, pairing, mirrored sessions, sticker and media caches, WhatsApp sessions, service logs, cron jobs, and status session reads.",
+            "source": "22990ed3789338d399b41f5a1297310212e313e2:gateway/channel_directory.py; gateway/config.py; gateway/delivery.py; gateway/hooks.py; gateway/mirror.py; gateway/pairing.py; gateway/platforms/base.py; gateway/platforms/whatsapp.py; gateway/sticker_cache.py; hermes_cli/gateway.py; hermes_cli/main.py; hermes_cli/status.py"
+          },
+          {
+            "id": "E5",
+            "kind": "call_site",
+            "claim": "CLI call sites now use the resolved Hermes home for relative prefill files, user configuration loading and saving, persistent history, clipboard images, terminal configuration lookup, interrupt debug logs, and pasted-text files.",
+            "source": "22990ed3789338d399b41f5a1297310212e313e2:cli.py:97-101,142-149,1038-1043,1260-1264,1779-1784,2075-2082,3685-3692,3993-4000,4254-4261"
+          },
+          {
+            "id": "E6",
+            "kind": "implementation",
+            "claim": "Non-gateway runtime storage is also redirected: auxiliary authentication, global SOUL.md, agent error logs, sandbox roots, Modal and Singularity snapshot indexes, process checkpoints, and TTS audio output all honor HERMES_HOME.",
+            "source": "22990ed3789338d399b41f5a1297310212e313e2:agent/auxiliary_client.py; agent/prompt_builder.py; run_agent.py; tools/environments/base.py; tools/environments/modal.py; tools/environments/singularity.py; tools/process_registry.py; tools/tts_tool.py"
+          },
+          {
+            "id": "E7",
+            "kind": "test",
+            "claim": "Channel-directory tests create sessions.json directly beneath a temporary HERMES_HOME and patch that environment variable for successful discovery, missing-file behavior, deduplication, and topic distinction, replacing the previous Path.home() patching strategy.",
+            "source": "git diff 984f00e0b0922ebc61b1891c3251b2991173bd2d 22990ed3789338d399b41f5a1297310212e313e2 -- tests/gateway/test_channel_directory.py"
+          },
+          {
+            "id": "E8",
+            "kind": "test",
+            "claim": "The clipboard attachment test now asserts that generated image paths are rooted at Path(os.environ[\"HERMES_HOME\"]) / \"images\" rather than Path.home() / \".hermes\" / \"images\".",
+            "source": "22990ed3789338d399b41f5a1297310212e313e2:tests/tools/test_clipboard.py:806-813"
+          },
+          {
+            "id": "E9",
+            "kind": "commit",
+            "claim": "Implementation commit 437ec1712 states that hardcoded paths bypassed HERMES_HOME and broke isolation for multiple Hermes instances; follow-up commit 206e56cc5 routes remaining CLI interrupt debug logs through HERMES_HOME and updates the last channel-directory test.",
+            "source": "git show --format=fuller --stat 437ec1712545fe3af486c451d988ce5905022362; git show --format=fuller --stat 206e56cc5e0d799ab3a824185b8dc0be65fe888f"
+          },
+          {
+            "id": "E10",
+            "kind": "diff",
+            "claim": "The merge's first-parent diff includes 21 implementation files and two test files, demonstrating a repository-wide cleanup rather than a change limited to one call site.",
+            "source": "git diff --stat 984f00e0b0922ebc61b1891c3251b2991173bd2d 22990ed3789338d399b41f5a1297310212e313e2"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "resolve-hermes-state-under-configured-home",
+            "description": "Replace a hardcoded ~/.hermes-derived runtime path with get_hermes_home() or an already-resolved Hermes-home value while retaining ~/.hermes as the default fallback.",
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E5"
+            ]
+          },
+          {
+            "name": "normalize-import-time-storage-constants",
+            "description": "Initialize module-level cache, checkpoint, pairing, hook, session, and snapshot paths from the shared Hermes-home resolver instead of Path.home() or expanduser.",
+            "evidence_ids": [
+              "E3",
+              "E4",
+              "E6"
+            ]
+          },
+          {
+            "name": "test-custom-hermes-home-routing",
+            "description": "Set HERMES_HOME to an isolated temporary directory and assert that path-consuming behavior reads or writes beneath that directory.",
+            "evidence_ids": [
+              "E7",
+              "E8"
+            ]
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "audit-and-remove-hardcoded-hermes-home-paths",
+            "description": "Identify runtime paths that bypass the canonical Hermes-home resolver, convert module constants and operational call sites to the configured root, then update focused tests to use a temporary HERMES_HOME and verify observable path routing.",
+            "atomic_names": [
+              "resolve-hermes-state-under-configured-home",
+              "normalize-import-time-storage-constants",
+              "test-custom-hermes-home-routing"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E10"
+            ]
+          }
+        ],
+        "unresolved_questions": [
+          "The available GitHub bundle omits the issue body, comments, reviews, and status checks, so no reviewer rationale or CI result can be established.",
+          "Only channel-directory and clipboard path behavior received direct test changes in this commit; the checkout evidence does not establish dedicated tests for every converted gateway, agent, environment, and tool path.",
+          "No test suite was executed as part of this extraction, so validation evidence is limited to the committed test changes and inspected implementation diff."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "resolve-hermes-state-under-configured-home",
+          "description": "Replace a hardcoded ~/.hermes-derived runtime path with get_hermes_home() or an already-resolved Hermes-home value while retaining ~/.hermes as the default fallback.",
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E5"
+          ]
+        },
+        {
+          "name": "normalize-import-time-storage-constants",
+          "description": "Initialize module-level cache, checkpoint, pairing, hook, session, and snapshot paths from the shared Hermes-home resolver instead of Path.home() or expanduser.",
+          "evidence_ids": [
+            "E3",
+            "E4",
+            "E6"
+          ]
+        },
+        {
+          "name": "test-custom-hermes-home-routing",
+          "description": "Set HERMES_HOME to an isolated temporary directory and assert that path-consuming behavior reads or writes beneath that directory.",
+          "evidence_ids": [
+            "E7",
+            "E8"
+          ]
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "audit-and-remove-hardcoded-hermes-home-paths",
+          "description": "Identify runtime paths that bypass the canonical Hermes-home resolver, convert module constants and operational call sites to the configured root, then update focused tests to use a temporary HERMES_HOME and verify observable path routing.",
+          "atomic_names": [
+            "resolve-hermes-state-under-configured-home",
+            "normalize-import-time-storage-constants",
+            "test-custom-hermes-home-routing"
+          ],
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10"
+          ]
+        }
+      ],
+      "unresolved_questions": [
+        "The available GitHub bundle omits the issue body, comments, reviews, and status checks, so no reviewer rationale or CI result can be established.",
+        "Only channel-directory and clipboard path behavior received direct test changes in this commit; the checkout evidence does not establish dedicated tests for every converted gateway, agent, environment, and tool path.",
+        "No test suite was executed as part of this extraction, so validation evidence is limited to the committed test changes and inspected implementation diff."
+      ]
+    }
+  }
+]

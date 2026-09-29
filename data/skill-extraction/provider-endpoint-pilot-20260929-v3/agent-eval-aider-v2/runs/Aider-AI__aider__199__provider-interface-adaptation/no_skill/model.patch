@@ -1,0 +1,79 @@
+diff --git a/aider/main.py b/aider/main.py
+index 8d9b384..755e118 100644
+--- a/aider/main.py
++++ b/aider/main.py
+@@ -449,8 +449,6 @@ def main(argv=None, input=None, output=None, force_git_root=None):
+             )
+         return 1
+ 
+-    main_model = models.Model(args.model)
+-
+     openai.api_key = args.openai_api_key
+     for attr in ("base", "type", "version", "deployment_id", "engine"):
+         arg_key = f"openai_api_{attr}"
+@@ -460,6 +458,8 @@ def main(argv=None, input=None, output=None, force_git_root=None):
+             setattr(openai, mod_key, val)
+             io.tool_output(f"Setting openai.{mod_key}={val}")
+ 
++    main_model = models.Model.create(args.model)
++
+     try:
+         coder = Coder.create(
+             main_model,
+diff --git a/aider/models.py b/aider/models.py
+index fdbb2d1..b93c0de 100644
+--- a/aider/models.py
++++ b/aider/models.py
+@@ -1,4 +1,5 @@
+ import re
++from decimal import Decimal
+ 
+ known_tokens = {
+     "gpt-3.5-turbo": 4,
+@@ -14,6 +15,15 @@ class Model:
+     prompt_price = None
+     completion_price = None
+ 
++    @classmethod
++    def create(cls, name):
++        import openai
++
++        if openai.api_base and "openrouter.ai" in openai.api_base:
++            return OpenRouterModel(name)
++
++        return cls(name)
++
+     def __init__(self, name):
+         self.name = name
+ 
+@@ -71,6 +81,30 @@ class Model:
+         return self.name
+ 
+ 
++class OpenRouterModel(Model):
++    def __init__(self, name):
++        # Aider's editing behavior is based on the underlying OpenAI model,
++        # while OpenRouter exposes that model under a provider-qualified id.
++        model_name = name.rsplit("/", 1)[-1]
++        super().__init__(model_name)
++
++        import openai
++
++        models = openai.Model.list()
++        for model in models.data:
++            model_id = model["id"]
++            if model_id != name and model_id.rsplit("/", 1)[-1] != name:
++                continue
++
++            self.name = model_id
++            self.max_context_tokens = int(model["context_length"])
++            self.prompt_price = float(Decimal(model["pricing"]["prompt"]) * 1000)
++            self.completion_price = float(Decimal(model["pricing"]["completion"]) * 1000)
++            return
++
++        raise ValueError(f"Unknown OpenRouter model: {name}")
++
++
+ GPT4 = Model("gpt-4")
+ GPT35 = Model("gpt-3.5-turbo")
+ GPT35_16k = Model("gpt-3.5-turbo-16k")

@@ -1,0 +1,27 @@
+You are the independent semantic judge for a universal ChangeAction -> IssueWorkflow -> Pattern graph.
+
+Read ONLY this already-built training graph: \\wsl.localhost\Ubuntu\home\chenyujia\tritonToLlvm\arex-skill-graph\data\skill-extraction\codex-universal-batch-20260929\graph-fifteen-structural.json
+It contains admitted training episodes from six agent harness repositories. Do not search for,
+read, or infer any holdout issue, repository solution, target test, or external episode. Do not
+modify files. Return ONLY JSON matching the required schema.
+
+Your two decisions are deliberately separate:
+
+1. action_merges: propose a merge only when two or more action IDs describe the same reusable
+   operation at the same semantic level, with the same meaningful postcondition and validation
+   oracle. Paths, symbols, issue titles, provider names, and repository labels are not enough.
+   If actions are merely in the same broad problem class but have different mechanisms or
+   oracles, omit them or mark the relationship distinct/unknown. Preserve the most general
+   existing action ID as canonical_action_id. Never merge actions from one episode merely
+   because they occur in one workflow.
+
+2. pattern_judgments: assess each graph Pattern candidate. Promote only if independent
+   workflows from at least two repositories support a mandatory reusable action or an explicit
+   equivalent-action cluster. Otherwise use defer or reject. This batch is a pilot, so it is
+   acceptable and often correct to defer a broad category whose mechanisms do not align.
+   A promoted candidate still needs an untouched holdout end-task repair and must not be called
+   final here. List concrete missing probes whenever a candidate is deferred.
+
+Use only evidence IDs already present in the graph's action/workflow payloads. Return grounded,
+concise rationale. The graph currently contains these structural categories: bounded-resource-budget-control, concurrent-work-coordination, configuration-and-environment-resolution, effect-control-and-isolation, extension-resource-lifecycle, failure-recovery-and-retry, observable-validation-and-diagnostics, provider-interface-adaptation, state-continuity-reconstruction, structured-tool-contract-integrity.
+Required schema: \\wsl.localhost\Ubuntu\home\chenyujia\tritonToLlvm\arex-skill-graph\schemas\universal-resolution-adjudication-v1.schema.json

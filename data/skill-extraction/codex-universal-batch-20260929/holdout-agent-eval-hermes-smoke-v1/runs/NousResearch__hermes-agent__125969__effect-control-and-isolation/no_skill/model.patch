@@ -1,0 +1,96 @@
+diff --git a/hermes_cli/models_catalog_static.py b/hermes_cli/models_catalog_static.py
+index 3cfcda1..ff1be5b 100644
+--- a/hermes_cli/models_catalog_static.py
++++ b/hermes_cli/models_catalog_static.py
+@@ -369,14 +369,39 @@ def _plugin_provider_enters_picker(pp) -> bool:
+     return pp.name not in _canonical_slugs
+ 
+ 
+-try:
+-    from providers import list_providers as _list_providers_for_canonical
+-    for _pp in _list_providers_for_canonical():
+-        if not _plugin_provider_enters_picker(_pp):
++def sync_plugin_provider_catalog() -> int:
++    """Admit newly registered plugin providers into the picker catalog.
++
++    ``CANONICAL_PROVIDERS`` is intentionally a stable list object because ``hermes_cli.models``
++    imports it once and several picker surfaces share that reference.  Provider discovery can,
++    however, finish after this module has been imported (or a plugin can register at runtime).
++    Append only previously unseen slugs and update the label snapshot in the same operation so
++    those surfaces agree without requiring a process restart.
++    """
++    try:
++        from providers import list_providers
++        profiles = list_providers()
++    except Exception:
++        return 0
++
++    labels = globals().get("_PROVIDER_LABELS")
++    added = 0
++    for profile in profiles:
++        if not _plugin_provider_enters_picker(profile):
+             continue
+-        _label = _pp.display_name or _pp.name
+-        CANONICAL_PROVIDERS.append(ProviderEntry(_pp.name, _label, _pp.description or f"{_label} (direct API)"))
+-        _canonical_slugs.add(_pp.name)
++        label = profile.display_name or profile.name
++        CANONICAL_PROVIDERS.append(
++            ProviderEntry(profile.name, label, profile.description or f"{label} (direct API)")
++        )
++        _canonical_slugs.add(profile.name)
++        if isinstance(labels, dict):
++            labels[profile.name] = label
++        added += 1
++    return added
++
++
++try:
++    sync_plugin_provider_catalog()
+ except Exception:
+     pass
+ 
+diff --git a/providers/__init__.py b/providers/__init__.py
+index 9f09982..fd57178 100644
+--- a/providers/__init__.py
++++ b/providers/__init__.py
+@@ -95,23 +95,31 @@ _BUNDLED_PLUGINS_DIR = (
+ 
+ 
+ def _sync_auth_registry() -> None:
+-    """Mirror profiles into ``hermes_cli.auth.PROVIDER_REGISTRY`` if that module is loaded.
++    """Mirror profiles into loaded auth and model-picker registries.
+ 
+     ``hermes_cli.auth`` takes its own snapshot of ``list_providers()`` when it is imported. If a
+     plugin's imports pull that module in while :func:`_discover_providers` is still running, the
+     snapshot is partial and later plugins never reach the auth registry ("Unknown provider",
+-    #102123). Calling back into auth once discovery is complete closes that window. Looked up via
++    #102123). The model picker keeps a separate canonical-list/label snapshot with the same
++    window. Calling both sync hooks once discovery is complete closes both windows. Looked up via
+     ``sys.modules`` on purpose: this layer must never import ``hermes_cli`` (that would run auth's
+     top-level code mid-scan and risk a circular import). Never raises: registration must not fail
+-    because of the auth mirror.
++    because of either mirror.
+     """
+     sync = getattr(sys.modules.get("hermes_cli.auth"), "sync_plugin_provider_registry", None)
+-    if sync is None:
+-        return
+-    try:
+-        sync()
+-    except Exception as exc:  # pragma: no cover — never break discovery
+-        logger.debug("auth registry sync skipped: %s", exc)
++    if sync is not None:
++        try:
++            sync()
++        except Exception as exc:  # pragma: no cover — never break discovery
++            logger.debug("auth registry sync skipped: %s", exc)
++
++    catalog_sync = getattr(
++        sys.modules.get("hermes_cli.models_catalog_static"), "sync_plugin_provider_catalog", None)
++    if catalog_sync is not None:
++        try:
++            catalog_sync()
++        except Exception as exc:  # pragma: no cover — never break discovery
++            logger.debug("model catalog sync skipped: %s", exc)
+ 
+ 
+ def register_provider(profile: ProviderProfile) -> None:

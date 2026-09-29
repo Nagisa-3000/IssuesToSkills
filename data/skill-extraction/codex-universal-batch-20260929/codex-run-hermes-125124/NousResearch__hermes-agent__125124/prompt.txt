@@ -1,0 +1,192 @@
+You are extracting a training-quality ChangeEpisode from a real agent repository.
+
+Repository checkout: C:\Users\W\AppData\Local\Temp\arex-skill-graph-codex\hermes-agent
+Issue number: 125124
+Universal problem class: concurrent-work-coordination
+Pinned implementation ref: 6e929a96946a5c69644d08bd59c9dcfdc757e91b
+Use git show 6e929a96946a5c69644d08bd59c9dcfdc757e91b and inspect its parent, changed files, implementation, call sites, and tests.
+GitHub evidence bundle: C:\Users\W\AppData\Local\Temp\arex-skill-graph-codex\universal-batch-20260929\codex-run-hermes-125124\NousResearch__hermes-agent__125124\issue-bundle.json
+Required output schema: C:\Users\W\AppData\Local\Temp\arex-skill-graph-codex\codex-change-episode-v1.schema.json
+
+Use the following corrected meta-skill as the extraction contract. It is a
+semantic role specification, not evidence about this repository:
+
+---
+name: universal-resolution-distiller
+description: Extract evidence-grounded Change Actions and Issue Workflows from closed implementation issues, then propose cross-project Resolution Patterns without leaking held-out episodes or repository-specific paths into the abstraction.
+---
+
+# Universal resolution distiller
+
+This is a meta-skill for the extraction role. It organizes evidence and asks a
+downstream semantic judge to normalize it; it does not patch the target
+repository and it does not treat an issue title, a commit subject, or an
+embedding match as proof of a solution.
+
+## Role boundary
+
+The distiller is responsible for:
+
+- assembling one bounded issue/PR/commit episode;
+- recovering the before state, after state, implementation evidence, call-site
+  evidence, and validation oracle;
+- splitting a change into the smallest semantically testable Change Actions;
+- organizing those actions into a partial-order Issue Workflow;
+- proposing a Pattern only from multiple training Workflows and recording
+  support, optional branches, counterexamples, and uncertainty;
+- preserving provenance and marking unsupported claims as unresolved.
+
+It is not responsible for:
+
+- deciding that a closed issue is implementation-bearing without reading the
+  checkout and linked resolution;
+- changing code, running the target repair, or claiming an agent solved a task;
+- promoting a training candidate or a Pattern before the holdout gate;
+- replacing Project Binding probes with fixed paths, symbols, or version names.
+
+## Universal problem-class rule
+
+Use a project-independent capability or invariant as the problem class. Good
+classes describe a state/contract boundary such as bounded resource control,
+state reconstruction, effect isolation, failure recovery, or structured
+request integrity. Do not use a UI surface, keyboard shortcut, release name,
+repository directory, or one product's command name as the class.
+
+The class is a routing hypothesis only. Evidence may reject it. If the issue's
+actual mechanism belongs elsewhere, record the revised class and why.
+
+## Required operating order
+
+```text
+anchor issue and linked resolution
+  -> bound the episode and cutoff
+  -> inspect before/after implementation and tests
+  -> extract Change Actions
+  -> build the Issue Workflow DAG
+  -> retrieve same-level peers
+  -> semantic dedup/adjudication
+  -> induce Pattern from training Workflows
+  -> validate on untouched holdout
+```
+
+Never induce a Pattern from a single issue. Never allow a holdout issue,
+solution ref, target test, descendant commit, or target repository's solution
+node into training extraction, dedup context, Pattern support, or prompt
+hydration.
+
+## Change Action contract
+
+Each action must answer all of these questions:
+
+```yaml
+change_action:
+  intent: <observable capability or failure removed>
+  module_role: <semantic owner, not a path>
+  operation: <finite verb such as normalize, guard, adapt, reconcile, map, validate>
+  pre_state: <state predicate supported by evidence>
+  post_state: <state/invariant after the action>
+  validation: <direct oracle and what it proves>
+  parameters: <entities that bind at runtime>
+  evidence_ids: []
+```
+
+Split actions when they have different semantic owners, can be independently
+tested, or represent an optional branch. Merge actions only when no single
+action can satisfy the same postcondition and the evidence shows a shared
+oracle. Paths, symbols, issue ids, and commit ids belong in `evidence_ids` or
+runtime binding, never in `module_role` as the reusable identity.
+
+## Issue Workflow contract
+
+Represent the solution as a DAG or partial-order stage graph, not as a commit
+chronology:
+
+```yaml
+issue_workflow:
+  goal: <observable target>
+  entry_state: <failing or incomplete state>
+  steps:
+    - action: <change-action id>
+      role: diagnose | establish-contract | implement | reconcile | validate | repair
+  edges:
+    - from: <step>
+      to: <step>
+      type: requires | enables | validates | repairs
+  exit_state: <completion invariant>
+  unresolved_or_deferred: []
+  evidence_ids: []
+```
+
+Infer ordering from producer/consumer, state ownership, tests, and repair
+dependencies. Timestamps and commit order are weak evidence. Keep optional
+branches explicit and do not force every workflow to contain every stage.
+
+## Pattern contract
+
+Align training Workflows by action semantics (`module_role + operation +
+post_state + validation`), not by path or title. A Pattern may contain:
+
+- mandatory actions supported across the training Workflows;
+- optional branches with predicates and negative evidence;
+- ordering constraints and decision points;
+- invariants and a validation ladder;
+- known failure modes and exclusions;
+- supporting workflow ids and repository diversity;
+- a confidence and a holdout result.
+
+Use a structural candidate algorithm first (shared action fingerprints,
+subgraph/sequence alignment, or MDL). Ask the LLM only to normalize names,
+judge semantic equivalence, explain uncertainty, and choose between bounded
+branches. The LLM must cite evidence ids and return `unknown` when evidence is
+insufficient.
+
+## Retrieval and judge boundary
+
+The retrieval layer may use structured filters, BM25/FTS, dense vectors, HNSW,
+typed graph expansion, and a bounded hybrid ranker. These produce candidates;
+they do not decide duplicate, applicability, or Pattern validity. The semantic
+judge receives only top-k candidates, their evidence-backed cards, and probe
+results. Record model, prompt version, candidate ids, decision, rationale,
+evidence ids, tokens, and latency.
+
+## Promotion and stopping gates
+
+Stop extraction for an episode when any of these holds:
+
+- no closed issue or linked resolution can be established;
+- the checkout cannot show an implementation-bearing change;
+- the before/after state or validation oracle is unknown;
+- the episode is docs/release/formatting/merge noise or UI-only for this study;
+- the candidate depends on target solution artifacts reserved for holdout.
+
+Keep the evidence record with `rejected`, `unresolved`, or `deferred` status.
+Promote a Pattern only when it has independent training Workflows from at least
+two repositories, explicit applicability/exclusion predicates, and a successful
+leakage-audited holdout result. A retrieval hit without an end-task oracle is
+not a successful Pattern use.
+
+
+Read the issue bundle and inspect the actual checkout. Use git history, the issue/PR
+references, changed files, implementation code, call sites, and tests. Do not read
+or use any prepared evidence.md or case.json artifact. Do not invent a before/after
+change from an issue title, an automatic close, or a PR link alone.
+
+Return ONLY JSON matching the required schema. The episode must contain a precise
+before state, after state, and implementation diff summary. Every evidence unit must
+have a stable id, kind, claim, and source. Evidence kinds implementation, diff,
+commit, call_site/call-site, test, or validation require direct support from the
+checkout or GitHub bundle. If no implementation-bearing change can be established,
+return empty candidate arrays, put the reason in unresolved_questions, and do not
+claim a usable episode. Candidate atomics and workflows must be grounded in the
+returned episode evidence, not generic repository knowledge.
+
+For every candidate_atomic, fill semantic_action when the evidence supports it:
+intent, semantic module_role, finite operation, pre_state, post_state,
+validation, and parameter slots; if it is not supportable, return null rather
+than inventing values. Keep paths, symbols, commit ids, and provider names in
+evidence or parameters; do not use them as the abstraction. For every
+candidate_workflow, fill workflow_graph as a partial-order resolution chain
+when supportable, otherwise return null.
+Use requires/enables/validates/repairs edges based on code and tests rather than
+commit timestamp alone. Keep unresolved_or_deferred explicit. The universal
+problem class is a routing hypothesis, not permission to invent a match.

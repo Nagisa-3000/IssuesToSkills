@@ -1,0 +1,245 @@
+FF.....FF...................F..                                          [100%]
+=================================== FAILURES ===================================
+_ test_only_managed_search_may_use_billed_fallback[selection0-False-expected_paths0] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fd39e452ad0>
+tmp_path = PosixPath('/tmp/pytest-of-chenyujia/pytest-29/test_only_managed_search_may_u0')
+local_gateway = [('/v2/search', {'Host': '127.0.0.1:43829', 'Accept': '*/*', 'Accept-Encoding': 'gzip, deflate', 'Connection': 'keep-alive', ...}, {'query': 'local fixture', 'limit': 10})]
+selection = {'backend': 'nous'}, direct_key = False
+expected_paths = ['/perplexity/search', '/v2/search']
+
+    @pytest.mark.parametrize(
+        "selection,direct_key,expected_paths",
+        [
+            ({"backend": "nous"}, False, ["/perplexity/search", "/v2/search"]),
+            ({"backend": "nous"}, True, ["/direct/search"]),
+            ({"backend": "nous", "search_backend": "perplexity"}, True, ["/direct/search"]),
+            ({"search_backend": "perplexity"}, False, []),
+            ({"backend": "nous", "search_backend": "perplexity"}, False, []),
+            ({"backend": "perplexity"}, False, []),
+            ({"backend": "firecrawl", "search_backend": "perplexity"}, False, []),
+            ({}, False, ["/perplexity/search", "/v2/search"]),
+            ({"extract_backend": "exa"}, False, ["/perplexity/search", "/v2/search"]),
+        ],
+    )
+    def test_only_managed_search_may_use_billed_fallback(
+        monkeypatch, tmp_path, local_gateway, selection, direct_key, expected_paths,
+    ):
+        from hermes_cli.config import atomic_config_write
+        from tools import web_tools
+        from tests.tools.conftest import register_all_web_providers
+    
+        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        atomic_config_write(tmp_path / "config.yaml", {
+            "web": {**selection, "keyless_rescue": False, "cache_enabled": True},
+        })
+        if direct_key:
+            monkeypatch.setenv("PERPLEXITY_API_KEY", "test-direct-key")
+        else:
+            monkeypatch.delenv("PERPLEXITY_API_KEY", raising=False)
+        register_all_web_providers()
+        expected = [
+            (path, "Bearer test-direct-key" if path == "/direct/search" else "Bearer test-nous-token")
+            for path in expected_paths
+        ]
+        for attempt in (1, 2):
+            result = json.loads(web_tools.web_search_tool("local fixture", limit=3))
+            # A fallback must not be cached: the identical query retries Perplexity.
+>           assert [(path, headers["Authorization"]) for path, headers, _ in local_gateway] == expected * attempt
+E           AssertionError: assert [('/v2/search...-nous-token')] == [('/perplexit...-nous-token')]
+E             
+E             At index 0 diff: ('/v2/search', 'Bearer test-nous-token') != ('/perplexity/search', 'Bearer test-nous-token')
+E             Right contains one more item: ('/v2/search', 'Bearer test-nous-token')
+E             Use -v to get more diff
+
+tests/tools/test_web_managed_routing.py:108: AssertionError
+_ test_only_managed_search_may_use_billed_fallback[selection1-True-expected_paths1] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fd39cfb87d0>
+tmp_path = PosixPath('/tmp/pytest-of-chenyujia/pytest-29/test_only_managed_search_may_u1')
+local_gateway = [('/v2/search', {'Host': '127.0.0.1:33559', 'Accept': '*/*', 'Accept-Encoding': 'gzip, deflate', 'Connection': 'keep-alive', ...}, {'query': 'local fixture', 'limit': 10})]
+selection = {'backend': 'nous'}, direct_key = True
+expected_paths = ['/direct/search']
+
+    @pytest.mark.parametrize(
+        "selection,direct_key,expected_paths",
+        [
+            ({"backend": "nous"}, False, ["/perplexity/search", "/v2/search"]),
+            ({"backend": "nous"}, True, ["/direct/search"]),
+            ({"backend": "nous", "search_backend": "perplexity"}, True, ["/direct/search"]),
+            ({"search_backend": "perplexity"}, False, []),
+            ({"backend": "nous", "search_backend": "perplexity"}, False, []),
+            ({"backend": "perplexity"}, False, []),
+            ({"backend": "firecrawl", "search_backend": "perplexity"}, False, []),
+            ({}, False, ["/perplexity/search", "/v2/search"]),
+            ({"extract_backend": "exa"}, False, ["/perplexity/search", "/v2/search"]),
+        ],
+    )
+    def test_only_managed_search_may_use_billed_fallback(
+        monkeypatch, tmp_path, local_gateway, selection, direct_key, expected_paths,
+    ):
+        from hermes_cli.config import atomic_config_write
+        from tools import web_tools
+        from tests.tools.conftest import register_all_web_providers
+    
+        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        atomic_config_write(tmp_path / "config.yaml", {
+            "web": {**selection, "keyless_rescue": False, "cache_enabled": True},
+        })
+        if direct_key:
+            monkeypatch.setenv("PERPLEXITY_API_KEY", "test-direct-key")
+        else:
+            monkeypatch.delenv("PERPLEXITY_API_KEY", raising=False)
+        register_all_web_providers()
+        expected = [
+            (path, "Bearer test-direct-key" if path == "/direct/search" else "Bearer test-nous-token")
+            for path in expected_paths
+        ]
+        for attempt in (1, 2):
+            result = json.loads(web_tools.web_search_tool("local fixture", limit=3))
+            # A fallback must not be cached: the identical query retries Perplexity.
+>           assert [(path, headers["Authorization"]) for path, headers, _ in local_gateway] == expected * attempt
+E           AssertionError: assert [('/v2/search...-nous-token')] == [('/direct/se...-direct-key')]
+E             
+E             At index 0 diff: ('/v2/search', 'Bearer test-nous-token') != ('/direct/search', 'Bearer test-direct-key')
+E             Use -v to get more diff
+
+tests/tools/test_web_managed_routing.py:108: AssertionError
+_ test_only_managed_search_may_use_billed_fallback[selection7-False-expected_paths7] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fd39a192610>
+tmp_path = PosixPath('/tmp/pytest-of-chenyujia/pytest-29/test_only_managed_search_may_u7')
+local_gateway = [('/v2/search', {'Host': '127.0.0.1:35747', 'Accept': '*/*', 'Accept-Encoding': 'gzip, deflate', 'Connection': 'keep-alive', ...}, {'query': 'local fixture', 'limit': 10})]
+selection = {}, direct_key = False
+expected_paths = ['/perplexity/search', '/v2/search']
+
+    @pytest.mark.parametrize(
+        "selection,direct_key,expected_paths",
+        [
+            ({"backend": "nous"}, False, ["/perplexity/search", "/v2/search"]),
+            ({"backend": "nous"}, True, ["/direct/search"]),
+            ({"backend": "nous", "search_backend": "perplexity"}, True, ["/direct/search"]),
+            ({"search_backend": "perplexity"}, False, []),
+            ({"backend": "nous", "search_backend": "perplexity"}, False, []),
+            ({"backend": "perplexity"}, False, []),
+            ({"backend": "firecrawl", "search_backend": "perplexity"}, False, []),
+            ({}, False, ["/perplexity/search", "/v2/search"]),
+            ({"extract_backend": "exa"}, False, ["/perplexity/search", "/v2/search"]),
+        ],
+    )
+    def test_only_managed_search_may_use_billed_fallback(
+        monkeypatch, tmp_path, local_gateway, selection, direct_key, expected_paths,
+    ):
+        from hermes_cli.config import atomic_config_write
+        from tools import web_tools
+        from tests.tools.conftest import register_all_web_providers
+    
+        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        atomic_config_write(tmp_path / "config.yaml", {
+            "web": {**selection, "keyless_rescue": False, "cache_enabled": True},
+        })
+        if direct_key:
+            monkeypatch.setenv("PERPLEXITY_API_KEY", "test-direct-key")
+        else:
+            monkeypatch.delenv("PERPLEXITY_API_KEY", raising=False)
+        register_all_web_providers()
+        expected = [
+            (path, "Bearer test-direct-key" if path == "/direct/search" else "Bearer test-nous-token")
+            for path in expected_paths
+        ]
+        for attempt in (1, 2):
+            result = json.loads(web_tools.web_search_tool("local fixture", limit=3))
+            # A fallback must not be cached: the identical query retries Perplexity.
+>           assert [(path, headers["Authorization"]) for path, headers, _ in local_gateway] == expected * attempt
+E           AssertionError: assert [('/v2/search...-nous-token')] == [('/perplexit...-nous-token')]
+E             
+E             At index 0 diff: ('/v2/search', 'Bearer test-nous-token') != ('/perplexity/search', 'Bearer test-nous-token')
+E             Right contains one more item: ('/v2/search', 'Bearer test-nous-token')
+E             Use -v to get more diff
+
+tests/tools/test_web_managed_routing.py:108: AssertionError
+_ test_only_managed_search_may_use_billed_fallback[selection8-False-expected_paths8] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fd39a0e2bd0>
+tmp_path = PosixPath('/tmp/pytest-of-chenyujia/pytest-29/test_only_managed_search_may_u8')
+local_gateway = [('/v2/search', {'Host': '127.0.0.1:37591', 'Accept': '*/*', 'Accept-Encoding': 'gzip, deflate', 'Connection': 'keep-alive', ...}, {'query': 'local fixture', 'limit': 10})]
+selection = {'extract_backend': 'exa'}, direct_key = False
+expected_paths = ['/perplexity/search', '/v2/search']
+
+    @pytest.mark.parametrize(
+        "selection,direct_key,expected_paths",
+        [
+            ({"backend": "nous"}, False, ["/perplexity/search", "/v2/search"]),
+            ({"backend": "nous"}, True, ["/direct/search"]),
+            ({"backend": "nous", "search_backend": "perplexity"}, True, ["/direct/search"]),
+            ({"search_backend": "perplexity"}, False, []),
+            ({"backend": "nous", "search_backend": "perplexity"}, False, []),
+            ({"backend": "perplexity"}, False, []),
+            ({"backend": "firecrawl", "search_backend": "perplexity"}, False, []),
+            ({}, False, ["/perplexity/search", "/v2/search"]),
+            ({"extract_backend": "exa"}, False, ["/perplexity/search", "/v2/search"]),
+        ],
+    )
+    def test_only_managed_search_may_use_billed_fallback(
+        monkeypatch, tmp_path, local_gateway, selection, direct_key, expected_paths,
+    ):
+        from hermes_cli.config import atomic_config_write
+        from tools import web_tools
+        from tests.tools.conftest import register_all_web_providers
+    
+        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        atomic_config_write(tmp_path / "config.yaml", {
+            "web": {**selection, "keyless_rescue": False, "cache_enabled": True},
+        })
+        if direct_key:
+            monkeypatch.setenv("PERPLEXITY_API_KEY", "test-direct-key")
+        else:
+            monkeypatch.delenv("PERPLEXITY_API_KEY", raising=False)
+        register_all_web_providers()
+        expected = [
+            (path, "Bearer test-direct-key" if path == "/direct/search" else "Bearer test-nous-token")
+            for path in expected_paths
+        ]
+        for attempt in (1, 2):
+            result = json.loads(web_tools.web_search_tool("local fixture", limit=3))
+            # A fallback must not be cached: the identical query retries Perplexity.
+>           assert [(path, headers["Authorization"]) for path, headers, _ in local_gateway] == expected * attempt
+E           AssertionError: assert [('/v2/search...-nous-token')] == [('/perplexit...-nous-token')]
+E             
+E             At index 0 diff: ('/v2/search', 'Bearer test-nous-token') != ('/perplexity/search', 'Bearer test-nous-token')
+E             Right contains one more item: ('/v2/search', 'Bearer test-nous-token')
+E             Use -v to get more diff
+
+tests/tools/test_web_managed_routing.py:108: AssertionError
+_______ test_web_selection_reports_the_backend_it_writes[True-firecrawl] _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fd398894990>
+managed = True, backend = 'firecrawl'
+
+    @pytest.mark.parametrize("managed,backend", [(True, "firecrawl"), (False, "perplexity"), (False, "exa")])
+    def test_web_selection_reports_the_backend_it_writes(monkeypatch, managed, backend):
+        import hermes_cli.tools_config_providers as providers
+    
+        monkeypatch.setattr(providers, "_nous_provider_gate", lambda *a, **kw: True)
+        messages = []
+        monkeypatch.setattr(providers, "_print_success", messages.append)
+        row = {"name": "Test provider", "web_backend": backend, "env_vars": []}
+        if managed:
+            row["managed_nous_feature"] = "web"
+        config = {}
+        providers._configure_provider(row, config)
+        selected = config["web"]["backend"]
+        assert selected == ("nous" if managed else backend)
+>       assert f"  Web backend set to: {selected}" in messages
+E       AssertionError: assert '  Web backend set to: nous' in ['  Web backend set to: firecrawl', '  Test provider - no configuration needed!']
+
+tests/hermes_cli/test_web_provider_selection.py:20: AssertionError
+----------------------------- Captured stdout call -----------------------------
+    Requests for this tool will be billed to your Nous subscription.
+=========================== short test summary info ============================
+FAILED tests/tools/test_web_managed_routing.py::test_only_managed_search_may_use_billed_fallback[selection0-False-expected_paths0]
+FAILED tests/tools/test_web_managed_routing.py::test_only_managed_search_may_use_billed_fallback[selection1-True-expected_paths1]
+FAILED tests/tools/test_web_managed_routing.py::test_only_managed_search_may_use_billed_fallback[selection7-False-expected_paths7]
+FAILED tests/tools/test_web_managed_routing.py::test_only_managed_search_may_use_billed_fallback[selection8-False-expected_paths8]
+FAILED tests/hermes_cli/test_web_provider_selection.py::test_web_selection_reports_the_backend_it_writes[True-firecrawl]
+5 failed, 26 passed in 9.07s

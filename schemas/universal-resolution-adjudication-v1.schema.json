@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Universal Resolution Graph Adjudication",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["action_merges", "pattern_judgments", "unresolved"],
+  "properties": {
+    "action_merges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["canonical_action_id", "member_action_ids", "decision", "confidence", "rationale", "evidence_ids"],
+        "properties": {
+          "canonical_action_id": {"type": "string", "minLength": 1},
+          "member_action_ids": {"type": "array", "minItems": 2, "items": {"type": "string", "minLength": 1}},
+          "decision": {"enum": ["equivalent", "unknown", "distinct"]},
+          "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+          "rationale": {"type": "string", "minLength": 1},
+          "evidence_ids": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "pattern_judgments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["pattern_id", "decision", "confidence", "rationale", "evidence_ids", "missing_probes"],
+        "properties": {
+          "pattern_id": {"type": "string", "minLength": 1},
+          "decision": {"enum": ["promote_candidate", "defer", "reject"]},
+          "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+          "rationale": {"type": "string", "minLength": 1},
+          "evidence_ids": {"type": "array", "items": {"type": "string"}},
+          "missing_probes": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "unresolved": {"type": "array", "items": {"type": "string"}}
+  }
+}

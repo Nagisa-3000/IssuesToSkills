@@ -1,0 +1,40 @@
+Implemented the provider interface adaptation for reasoning-effort wire values.
+
+Changes:
+
+- Updated Kimi/Moonshot handling in `agent/transports/chat_completions.py`:
+  - K3 models now use the supported `low`/`high`/`max` vocabulary.
+  - K3 defaults to `high`.
+  - K3 mappings:
+    - `minimal` → `low`
+    - `low` → `low`
+    - `medium`/`high` → `high`
+    - `xhigh`/`max`/`ultra` → `max`
+  - K2-era models retain their native `low`/`medium`/`high` levels.
+  - K2 upper-ladder values cap at `high`, while `minimal` maps to `low`.
+  - Disabled reasoning continues to omit `reasoning_effort`.
+
+- Updated Tencent TokenHub mapping:
+  - `minimal` now maps to `low`.
+  - `xhigh`, `max`, and `ultra` cap at `high`.
+  - Native `low`/`medium`/`high` values continue to pass through.
+
+- Updated `agent/transports/codex.py`:
+  - `ultra` now maps to `max` for generic Responses API models, not only GPT-5.6.
+  - Existing provider-specific xAI ceiling clamps remain intact.
+
+Validation completed:
+
+- `tests/agent/transports/test_reasoning_effort_sibling_sites.py`: **10 passed**
+- `tests/agent/transports/test_chat_completions.py`
+  and `tests/agent/transports/test_codex_transport.py`: **145 passed**
+- `tests/agent/test_reasoning_effort_wire_translation.py`
+  `tests/agent/test_moa_reasoning_effort.py`
+  `tests/providers/test_transport_parity.py`: **18 passed**
+- `git diff --check`: passed
+- Python byte-compilation of both modified transports: passed
+
+Only these files were modified:
+
+- [agent/transports/chat_completions.py](/tmp/arex-holdout-agent-hermes-124006-retry-v1/NousResearch__hermes-agent__124006__provider-interface-adaptation/no_skill/worktree/agent/transports/chat_completions.py)
+- [agent/transports/codex.py](/tmp/arex-holdout-agent-hermes-124006-retry-v1/NousResearch__hermes-agent__124006__provider-interface-adaptation/no_skill/worktree/agent/transports/codex.py)

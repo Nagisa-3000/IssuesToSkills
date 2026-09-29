@@ -1,0 +1,120 @@
+FFF.F..F.F                                                               [100%]
+=================================== FAILURES ===================================
+___________ TestKimiEffortVocabulary.test_k3_maps_full_hermes_ladder ___________
+
+self = <tests.agent.transports.test_reasoning_effort_sibling_sites.TestKimiEffortVocabulary object at 0x7f8977c52c90>
+
+    def test_k3_maps_full_hermes_ladder(self):
+        expected = {
+            "minimal": "low",
+            "low": "low",
+            "medium": "high",
+            "high": "high",
+            "xhigh": "max",
+            "max": "max",
+            "ultra": "max",
+        }
+        for hermes_level, wire_level in expected.items():
+            kw = _kimi_kwargs(
+                "kimi-k3", {"enabled": True, "effort": hermes_level}
+            )
+>           assert kw["reasoning_effort"] == wire_level, hermes_level
+E           AssertionError: minimal
+E           assert 'medium' == 'low'
+E             
+E             - low
+E             + medium
+
+tests/agent/transports/test_reasoning_effort_sibling_sites.py:51: AssertionError
+_______________ TestKimiEffortVocabulary.test_k3_default_is_high _______________
+
+self = <tests.agent.transports.test_reasoning_effort_sibling_sites.TestKimiEffortVocabulary object at 0x7f8977986050>
+
+    def test_k3_default_is_high(self):
+        kw = _kimi_kwargs("kimi-k3", None)
+>       assert kw["reasoning_effort"] == "high"
+E       AssertionError: assert 'medium' == 'high'
+E         
+E         - high
+E         + medium
+
+tests/agent/transports/test_reasoning_effort_sibling_sites.py:55: AssertionError
+____ TestKimiEffortVocabulary.test_k2_upper_ladder_caps_at_high_not_medium _____
+
+self = <tests.agent.transports.test_reasoning_effort_sibling_sites.TestKimiEffortVocabulary object at 0x7f8977985110>
+
+    def test_k2_upper_ladder_caps_at_high_not_medium(self):
+        """Pre-fix, ultra/max/xhigh on K2-era models silently dropped to the
+        'medium' default — the strongest ask resolved weaker than an explicit
+        high (ladder inversion, same class as #74295)."""
+        for level in ("xhigh", "max", "ultra"):
+            kw = _kimi_kwargs(
+                "moonshotai/kimi-k2.6", {"enabled": True, "effort": level}
+            )
+>           assert kw["reasoning_effort"] == "high", level
+E           AssertionError: xhigh
+E           assert 'medium' == 'high'
+E             
+E             - high
+E             + medium
+
+tests/agent/transports/test_reasoning_effort_sibling_sites.py:65: AssertionError
+_____________ TestKimiEffortVocabulary.test_k2_minimal_maps_to_low _____________
+
+self = <tests.agent.transports.test_reasoning_effort_sibling_sites.TestKimiEffortVocabulary object at 0x7f8977ae6a10>
+
+    def test_k2_minimal_maps_to_low(self):
+        kw = _kimi_kwargs(
+            "moonshotai/kimi-k2.6", {"enabled": True, "effort": "minimal"}
+        )
+>       assert kw["reasoning_effort"] == "low"
+E       AssertionError: assert 'medium' == 'low'
+E         
+E         - low
+E         + medium
+
+tests/agent/transports/test_reasoning_effort_sibling_sites.py:78: AssertionError
+________ TestTokenHubEffortVocabulary.test_minimal_maps_to_low_not_high ________
+
+self = <tests.agent.transports.test_reasoning_effort_sibling_sites.TestTokenHubEffortVocabulary object at 0x7f8977ae5fd0>
+
+    def test_minimal_maps_to_low_not_high(self):
+        """Pre-fix, 'minimal' fell through to the 'high' default — asked for
+        the least reasoning, got the most."""
+        kw = self._kwargs({"enabled": True, "effort": "minimal"})
+>       assert kw["reasoning_effort"] == "low"
+E       AssertionError: assert 'high' == 'low'
+E         
+E         - low
+E         + high
+
+tests/agent/transports/test_reasoning_effort_sibling_sites.py:103: AssertionError
+___ TestCodexUltraForEveryModel.test_ultra_maps_to_max_for_non_gpt56_models ____
+
+self = <tests.agent.transports.test_reasoning_effort_sibling_sites.TestCodexUltraForEveryModel object at 0x7f8977ae6f50>
+
+    def test_ultra_maps_to_max_for_non_gpt56_models(self):
+        transport = get_transport("codex_responses")
+        for model in ("gpt-5.6-codex", "o5-pro", "some-responses-model"):
+            kw = transport.build_kwargs(
+                model=model,
+                messages=[{"role": "user", "content": "hi"}],
+                tools=[],
+                reasoning_config={"enabled": True, "effort": "ultra"},
+            )
+>           assert kw["reasoning"]["effort"] == "max", model
+E           AssertionError: o5-pro
+E           assert 'ultra' == 'max'
+E             
+E             - max
+E             + ultra
+
+tests/agent/transports/test_reasoning_effort_sibling_sites.py:121: AssertionError
+=========================== short test summary info ============================
+FAILED tests/agent/transports/test_reasoning_effort_sibling_sites.py::TestKimiEffortVocabulary::test_k3_maps_full_hermes_ladder
+FAILED tests/agent/transports/test_reasoning_effort_sibling_sites.py::TestKimiEffortVocabulary::test_k3_default_is_high
+FAILED tests/agent/transports/test_reasoning_effort_sibling_sites.py::TestKimiEffortVocabulary::test_k2_upper_ladder_caps_at_high_not_medium
+FAILED tests/agent/transports/test_reasoning_effort_sibling_sites.py::TestKimiEffortVocabulary::test_k2_minimal_maps_to_low
+FAILED tests/agent/transports/test_reasoning_effort_sibling_sites.py::TestTokenHubEffortVocabulary::test_minimal_maps_to_low_not_high
+FAILED tests/agent/transports/test_reasoning_effort_sibling_sites.py::TestCodexUltraForEveryModel::test_ultra_maps_to_max_for_non_gpt56_models
+6 failed, 4 passed in 2.52s

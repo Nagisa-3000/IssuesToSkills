@@ -1,0 +1,110 @@
+diff --git a/packages/ai/test/mistral-no-strict-field.test.ts b/packages/ai/test/mistral-no-strict-field.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..fe40b887bf3117e954bbaeae49a036627496347d
+--- /dev/null
++++ b/packages/ai/test/mistral-no-strict-field.test.ts
+@@ -0,0 +1,87 @@
++import { Type } from "typebox";
++import { describe, expect, it } from "vitest";
++import { streamSimple } from "../src/api/mistral-conversations.ts";
++import { complete, getModel } from "../src/compat.ts";
++import type { Context, Model } from "../src/types.ts";
++import { normalizeContext } from "../src/utils/transcript.ts";
++
++interface MistralWireTool {
++	type: string;
++	function: {
++		name: string;
++		description?: string;
++		parameters?: Record<string, unknown>;
++		strict?: boolean;
++	};
++}
++
++describe("Mistral tool wire format", () => {
++	it("never sends a strict field on tool functions", async () => {
++		const model: Model<"mistral-conversations"> = {
++			...getModel("mistral", "devstral-medium-latest"),
++			baseUrl: "http://127.0.0.1:9",
++		};
++		// Mix a constrained tool (which resolves strict sampling) with a plain tool,
++		// mirroring real requests: pi's built-ins opt into constrained sampling while
++		// extension tools do not.
++		const context: Context = {
++			messages: [{ role: "user", content: "Hi", timestamp: Date.now() }],
++			tools: [
++				{
++					name: "constrained_tool",
++					description: "Opted into strict JSON schema sampling",
++					parameters: Type.Object({ value: Type.String() }),
++					constrainedSampling: { type: "json_schema", strict: "require" },
++				},
++				{
++					name: "plain_tool",
++					description: "No constrained sampling",
++					parameters: Type.Object({ other: Type.Optional(Type.String()) }),
++				},
++			],
++		};
++
++		let capturedTools: MistralWireTool[] | undefined;
++		await complete(model, context, {
++			apiKey: "fake-key",
++			onPayload: (payload) => {
++				capturedTools = (payload as { tools?: MistralWireTool[] }).tools;
++				return payload;
++			},
++		});
++
++		expect(capturedTools).toHaveLength(2);
++		// Mistral mangles streamed tool-call arguments (truncated to the first
++		// property, or fragment soup) for at least the zai-glm models whenever any
++		// tool function carries a strict field — true or false, uniformly or mixed.
++		// The field must be absent everywhere.
++		for (const tool of capturedTools ?? []) {
++			expect("strict" in tool.function).toBe(false);
++			expect(tool.function.strict).toBeUndefined();
++		}
++	});
++
++	it("uses reasoning_effort for zai-glm-5-3 instead of the ignored prompt_mode", async () => {
++		const model: Model<"mistral-conversations"> = {
++			...getModel("mistral", "zai-glm-5-3"),
++			baseUrl: "http://127.0.0.1:9",
++		};
++		const context: Context = {
++			messages: [{ role: "user", content: "Hi", timestamp: Date.now() }],
++		};
++
++		let captured: Record<string, unknown> | undefined;
++		const stream = streamSimple(model, normalizeContext(context), {
++			apiKey: "fake-key",
++			reasoning: "high",
++			onPayload: (payload) => {
++				captured = payload as Record<string, unknown>;
++				return payload;
++			},
++		});
++		await stream.result();
++
++		expect(captured?.reasoningEffort).toBeDefined();
++		expect(captured?.promptMode).toBeUndefined();
++	});
++});
+diff --git a/packages/ai/test/mistral-tool-schema.test.ts b/packages/ai/test/mistral-tool-schema.test.ts
+index 6f3bac16e7ef2a697ae710b4f83c8ff47bd663e6..ecc511d1a5528bc7f8d1bd9cca9810205a50893d 100644
+--- a/packages/ai/test/mistral-tool-schema.test.ts
++++ b/packages/ai/test/mistral-tool-schema.test.ts
+@@ -47,7 +47,11 @@ describe("Mistral tool schema serialization", () => {
+ 		});
+ 
+ 		expect(capturedPayload?.tools).toHaveLength(1);
+-		expect(capturedPayload?.tools?.[0]?.function.strict).toBe(true);
++		// The strict field must NOT be sent on this API: Mistral mangles streamed
++		// tool-call arguments whenever any tool function carries a strict field.
++		// The strict JSON Schema transform is still applied to the wire parameters
++		// for constrained tools.
++		expect(capturedPayload?.tools?.[0]?.function.strict).toBeUndefined();
+ 		const payloadParameters = capturedPayload?.tools?.[0]?.function.parameters;
+ 		expect(payloadParameters).toBeDefined();
+ 		expect(Object.getOwnPropertySymbols(payloadParameters ?? {})).toHaveLength(0);

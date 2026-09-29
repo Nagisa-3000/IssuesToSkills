@@ -1,0 +1,256 @@
+FFFF......F............................................................. [ 66%]
+....................................                                     [100%]
+=================================== FAILURES ===================================
+____________ test_relay_base_url_is_probed_for_configured_provider _____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f3bb6c1e780>
+
+    def test_relay_base_url_is_probed_for_configured_provider(monkeypatch):
+        monkeypatch.setattr(
+            models,
+            "_get_model_config_dict",
+            lambda: {
+                "provider": "deepseek",
+                "base_url": "http://127.0.0.1:9001/deepseek/v1",
+            },
+        )
+        profile = _RecordingProfile()
+        import providers
+    
+        monkeypatch.setattr(providers, "get_provider_profile", lambda name: profile)
+        monkeypatch.setattr(models, "_api_key_credentials", lambda name: (None, None))
+        monkeypatch.setattr(
+            models,
+            "_PROVIDER_CATALOG_FETCHERS",
+            {
+                "deepseek": lambda n, f: (_ for _ in ()).throw(
+                    AssertionError("canonical host touched")
+                )
+            },
+        )
+    
+>       assert models.provider_model_ids("deepseek", force_refresh=True) == [
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            "relay-only-model"
+        ]
+
+tests/hermes_cli/test_models_relay_base_url.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+hermes_cli/models.py:1615: in provider_model_ids
+    models = fetcher(normalized, force_refresh)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/hermes_cli/test_models_relay_base_url.py:40: in <lambda>
+    "deepseek": lambda n, f: (_ for _ in ()).throw(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+.0 = <tuple_iterator object at 0x7f3bb70fc2e0>
+
+>           "deepseek": lambda n, f: (_ for _ in ()).throw(
+                AssertionError("canonical host touched")
+            )
+        },
+    )
+E   AssertionError: canonical host touched
+
+tests/hermes_cli/test_models_relay_base_url.py:40: AssertionError
+______________ test_base_url_for_a_different_provider_is_ignored _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f3bb69c0fc0>
+
+    def test_base_url_for_a_different_provider_is_ignored(monkeypatch):
+        monkeypatch.setattr(
+            models,
+            "_get_model_config_dict",
+            lambda: {
+                "provider": "deepseek",
+                "base_url": "http://127.0.0.1:9001/deepseek/v1",
+            },
+        )
+>       assert models._configured_relay_base_url("openai") == ""
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/hermes_cli/test_models_relay_base_url.py:61: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = '_configured_relay_base_url'
+
+    def __getattr__(name):  # PEP 562 — lazy so no import cycles
+        target = _PLUGIN_COMPAT_LAZY.get(name)
+        if target is None:
+>           raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+E           AttributeError: module 'hermes_cli.models' has no attribute '_configured_relay_base_url'
+
+hermes_cli/models.py:2867: AttributeError
+_ test_a_failed_relay_probe_never_falls_back_to_the_vendor_host[relay-hangs-or-errors] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f3bb57b6330>
+probe_result = 'raise'
+
+    @pytest.mark.parametrize(
+        "probe_result",
+        [
+            pytest.param("raise", id="relay-hangs-or-errors"),
+            pytest.param([], id="relay-404-empty-catalog"),
+        ],
+    )
+    def test_a_failed_relay_probe_never_falls_back_to_the_vendor_host(monkeypatch, probe_result):
+        """Egress sentinel: a configured relay is TERMINAL for live catalog egress.
+    
+        A relay that 404s, hangs or returns nothing must degrade to the LOCAL curated list.
+        Falling through to the canonical fetcher would send the provider credential to exactly
+        the vendor host the user routed away from, recreating #121387 on the failure path.
+        """
+        monkeypatch.setattr(
+            models,
+            "_get_model_config_dict",
+            lambda: {
+                "provider": "deepseek",
+                "base_url": "http://127.0.0.1:9001/deepseek/v1",
+            },
+        )
+    
+        def _probe(**kwargs):
+            if probe_result == "raise":
+                raise RuntimeError("relay down")
+            return probe_result
+    
+        import providers
+    
+        monkeypatch.setattr(
+            providers,
+            "get_provider_profile",
+            lambda name: SimpleNamespace(
+                auth_type="api_key", fetch_models=_probe, fallback_models=[]
+            ),
+        )
+        monkeypatch.setattr(models, "_api_key_credentials", lambda name: (None, None))
+    
+        # Sentinels on EVERY live-egress seam below the relay probe.
+        def _egress(*a, **k):
+            raise AssertionError("vendor host touched after a failed relay probe")
+    
+        monkeypatch.setattr(models, "_PROVIDER_CATALOG_FETCHERS", {"deepseek": _egress})
+        monkeypatch.setattr(models, "_profile_live_catalog", _egress)
+        monkeypatch.setattr(models, "_merge_with_models_dev", _egress)
+        monkeypatch.setattr(models, "_PROVIDER_MODELS", {"deepseek": ["curated-local"]})
+    
+        # Degrades locally to the curated list, with no vendor egress at all.
+>       assert models.provider_model_ids("deepseek") == ["curated-local"]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/hermes_cli/test_models_relay_base_url.py:113: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+hermes_cli/models.py:1615: in provider_model_ids
+    models = fetcher(normalized, force_refresh)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+a = ('deepseek', False), k = {}
+
+    def _egress(*a, **k):
+>       raise AssertionError("vendor host touched after a failed relay probe")
+E       AssertionError: vendor host touched after a failed relay probe
+
+tests/hermes_cli/test_models_relay_base_url.py:105: AssertionError
+_ test_a_failed_relay_probe_never_falls_back_to_the_vendor_host[relay-404-empty-catalog] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f3bb58aa470>
+probe_result = []
+
+    @pytest.mark.parametrize(
+        "probe_result",
+        [
+            pytest.param("raise", id="relay-hangs-or-errors"),
+            pytest.param([], id="relay-404-empty-catalog"),
+        ],
+    )
+    def test_a_failed_relay_probe_never_falls_back_to_the_vendor_host(monkeypatch, probe_result):
+        """Egress sentinel: a configured relay is TERMINAL for live catalog egress.
+    
+        A relay that 404s, hangs or returns nothing must degrade to the LOCAL curated list.
+        Falling through to the canonical fetcher would send the provider credential to exactly
+        the vendor host the user routed away from, recreating #121387 on the failure path.
+        """
+        monkeypatch.setattr(
+            models,
+            "_get_model_config_dict",
+            lambda: {
+                "provider": "deepseek",
+                "base_url": "http://127.0.0.1:9001/deepseek/v1",
+            },
+        )
+    
+        def _probe(**kwargs):
+            if probe_result == "raise":
+                raise RuntimeError("relay down")
+            return probe_result
+    
+        import providers
+    
+        monkeypatch.setattr(
+            providers,
+            "get_provider_profile",
+            lambda name: SimpleNamespace(
+                auth_type="api_key", fetch_models=_probe, fallback_models=[]
+            ),
+        )
+        monkeypatch.setattr(models, "_api_key_credentials", lambda name: (None, None))
+    
+        # Sentinels on EVERY live-egress seam below the relay probe.
+        def _egress(*a, **k):
+            raise AssertionError("vendor host touched after a failed relay probe")
+    
+        monkeypatch.setattr(models, "_PROVIDER_CATALOG_FETCHERS", {"deepseek": _egress})
+        monkeypatch.setattr(models, "_profile_live_catalog", _egress)
+        monkeypatch.setattr(models, "_merge_with_models_dev", _egress)
+        monkeypatch.setattr(models, "_PROVIDER_MODELS", {"deepseek": ["curated-local"]})
+    
+        # Degrades locally to the curated list, with no vendor egress at all.
+>       assert models.provider_model_ids("deepseek") == ["curated-local"]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/hermes_cli/test_models_relay_base_url.py:113: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+hermes_cli/models.py:1615: in provider_model_ids
+    models = fetcher(normalized, force_refresh)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+a = ('deepseek', False), k = {}
+
+    def _egress(*a, **k):
+>       raise AssertionError("vendor host touched after a failed relay probe")
+E       AssertionError: vendor host touched after a failed relay probe
+
+tests/hermes_cli/test_models_relay_base_url.py:105: AssertionError
+________ test_xai_pool_honors_model_base_url_when_row_is_registry_host _________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f3bb8040590>
+
+    def test_xai_pool_honors_model_base_url_when_row_is_registry_host(monkeypatch):
+        """#121347: an env-seeded xAI row keeps https://api.x.ai/v1. model.base_url is the
+        relay override, same as the other API-key providers, and must not be shadowed."""
+        monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "xai")
+        monkeypatch.setattr(rp, "load_pool", lambda provider: _xai_pool("https://api.x.ai/v1"))
+        monkeypatch.delenv("XAI_BASE_URL", raising=False)
+        monkeypatch.setattr(rp, "_get_model_config", lambda: {
+            "provider": "xai", "default": "grok-4", "base_url": "http://127.0.0.1:8765/v1/"})
+    
+        resolved = rp.resolve_runtime_provider(requested="xai")
+    
+        assert resolved["provider"] == "xai"
+        assert resolved["api_key"] == "pool-token"
+>       assert resolved["base_url"] == "http://127.0.0.1:8765/v1"
+E       AssertionError: assert 'https://api.x.ai/v1' == 'http://127.0.0.1:8765/v1'
+E         
+E         - http://127.0.0.1:8765/v1
+E         + https://api.x.ai/v1
+
+tests/hermes_cli/test_runtime_provider_resolution.py:195: AssertionError
+=========================== short test summary info ============================
+FAILED tests/hermes_cli/test_models_relay_base_url.py::test_relay_base_url_is_probed_for_configured_provider
+FAILED tests/hermes_cli/test_models_relay_base_url.py::test_base_url_for_a_different_provider_is_ignored
+FAILED tests/hermes_cli/test_models_relay_base_url.py::test_a_failed_relay_probe_never_falls_back_to_the_vendor_host[relay-hangs-or-errors]
+FAILED tests/hermes_cli/test_models_relay_base_url.py::test_a_failed_relay_probe_never_falls_back_to_the_vendor_host[relay-404-empty-catalog]
+FAILED tests/hermes_cli/test_runtime_provider_resolution.py::test_xai_pool_honors_model_base_url_when_row_is_registry_host
+5 failed, 103 passed in 8.07s

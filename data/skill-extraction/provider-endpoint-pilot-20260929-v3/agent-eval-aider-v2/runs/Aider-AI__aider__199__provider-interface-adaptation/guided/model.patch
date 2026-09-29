@@ -1,0 +1,113 @@
+diff --git a/aider/commands.py b/aider/commands.py
+index c05bd12..4d53369 100644
+--- a/aider/commands.py
++++ b/aider/commands.py
+@@ -24,7 +24,8 @@ class Commands:
+             voice_language = None
+ 
+         self.voice_language = voice_language
+-        self.tokenizer = tiktoken.encoding_for_model(coder.main_model.name)
++        model_name = getattr(coder.main_model, "tokenizer_name", coder.main_model.name)
++        self.tokenizer = tiktoken.encoding_for_model(model_name)
+ 
+     def is_command(self, inp):
+         if inp[0] == "/":
+diff --git a/aider/main.py b/aider/main.py
+index 8d9b384..755e118 100644
+--- a/aider/main.py
++++ b/aider/main.py
+@@ -449,8 +449,6 @@ def main(argv=None, input=None, output=None, force_git_root=None):
+             )
+         return 1
+ 
+-    main_model = models.Model(args.model)
+-
+     openai.api_key = args.openai_api_key
+     for attr in ("base", "type", "version", "deployment_id", "engine"):
+         arg_key = f"openai_api_{attr}"
+@@ -460,6 +458,8 @@ def main(argv=None, input=None, output=None, force_git_root=None):
+             setattr(openai, mod_key, val)
+             io.tool_output(f"Setting openai.{mod_key}={val}")
+ 
++    main_model = models.Model.create(args.model)
++
+     try:
+         coder = Coder.create(
+             main_model,
+diff --git a/aider/models.py b/aider/models.py
+index fdbb2d1..1ae13e9 100644
+--- a/aider/models.py
++++ b/aider/models.py
+@@ -1,4 +1,8 @@
+ import re
++from decimal import Decimal
++from urllib.parse import urlparse
++
++import openai
+ 
+ known_tokens = {
+     "gpt-3.5-turbo": 4,
+@@ -14,6 +18,15 @@ class Model:
+     prompt_price = None
+     completion_price = None
+ 
++    @classmethod
++    def create(cls, name):
++        """Create the model implementation appropriate for the configured API."""
++        api_base = getattr(openai, "api_base", "") or ""
++        if urlparse(api_base).hostname == "openrouter.ai":
++            return OpenRouterModel(name)
++
++        return cls(name)
++
+     def __init__(self, name):
+         self.name = name
+ 
+@@ -71,6 +84,33 @@ class Model:
+         return self.name
+ 
+ 
++class OpenRouterModel(Model):
++    def __init__(self, name):
++        model_list = openai.Model.list().data
++
++        model = next(
++            (
++                item
++                for item in model_list
++                if item["id"] == name or item["id"].endswith("/" + name)
++            ),
++            None,
++        )
++        if model is None:
++            raise ValueError(f"Unknown OpenRouter model: {name}")
++
++        # Initialize aider's behavioral defaults from the OpenAI-compatible
++        # portion of the name, then replace its metadata with OpenRouter's.
++        base_name = model["id"].rsplit("/", 1)[-1]
++        super().__init__(base_name)
++
++        self.name = model["id"]
++        self.tokenizer_name = base_name
++        self.max_context_tokens = int(model["context_length"])
++        self.prompt_price = float(Decimal(model["pricing"]["prompt"]) * 1000)
++        self.completion_price = float(Decimal(model["pricing"]["completion"]) * 1000)
++
++
+ GPT4 = Model("gpt-4")
+ GPT35 = Model("gpt-3.5-turbo")
+ GPT35_16k = Model("gpt-3.5-turbo-16k")
+diff --git a/aider/repomap.py b/aider/repomap.py
+index 5f9ae3a..933651c 100644
+--- a/aider/repomap.py
++++ b/aider/repomap.py
+@@ -104,7 +104,8 @@ class RepoMap:
+         else:
+             self.use_ctags = False
+ 
+-        self.tokenizer = tiktoken.encoding_for_model(main_model.name)
++        model_name = getattr(main_model, "tokenizer_name", main_model.name)
++        self.tokenizer = tiktoken.encoding_for_model(model_name)
+         self.repo_content_prefix = repo_content_prefix
+ 
+     def get_repo_map(self, chat_files, other_files):

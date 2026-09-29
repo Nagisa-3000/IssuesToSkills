@@ -1,0 +1,63 @@
+{
+  "source": "local_git_pinned_ref",
+  "repository": "QwenLM/qwen-code",
+  "issue_number": 11657,
+  "issue": {
+    "number": 11657,
+    "title": "Fireworks: Qwen3 tool-call continuation fails with 400 due to mirrored messages[].reasoning",
+    "body": null,
+    "metadata_unavailable": [
+      "issue body",
+      "comments",
+      "timeline",
+      "author/review discussion"
+    ]
+  },
+  "comments": [],
+  "timeline": [],
+  "linked_pull_requests": [
+    {
+      "pull_request": {
+        "number": 11657,
+        "title": "Fireworks: Qwen3 tool-call continuation fails with 400 due to mirrored messages[].reasoning",
+        "metadata_unavailable": [
+          "PR body",
+          "reviews",
+          "status checks"
+        ]
+      },
+      "files": [
+        {
+          "status_line": "M\tpackages/core/src/core/openaiContentGenerator/index.ts"
+        },
+        {
+          "status_line": "A\tpackages/core/src/core/openaiContentGenerator/provider/fireworks.test.ts"
+        },
+        {
+          "status_line": "A\tpackages/core/src/core/openaiContentGenerator/provider/fireworks.ts"
+        },
+        {
+          "status_line": "M\tpackages/core/src/core/openaiContentGenerator/provider/index.ts"
+        }
+      ],
+      "commits": []
+    }
+  ],
+  "checkout": "/home/chenyujia/tritonToLlvm/qwen-code",
+  "pinned_ref": "3ba01990e13e9e8e14e147b60add50e0f972431a",
+  "resolved_commit": "3ba01990e13e9e8e14e147b60add50e0f972431a",
+  "parent_commit": "d50dc84e363f4225193418fcd8844fa21f3ae66a",
+  "commit_show_stat": "commit 3ba01990e13e9e8e14e147b60add50e0f972431a\nAuthor:     bluefateludi <154300142+bluefateludi@users.noreply.github.com>\nAuthorDate: Sat Sep 12 19:20:55 2026 +0000\nCommit:     GitHub <noreply@github.com>\nCommitDate: Sat Sep 12 19:20:55 2026 +0000\n\n    fix(core): keep the mirrored reasoning field off Fireworks requests (#11701)\n    \n    Fireworks' OpenAI-compatible endpoint accepts the non-standard\n    reasoning_content field on input but rejects the additional reasoning\n    field with HTTP 400 (Extra inputs are not permitted, field:\n    'messages[N].reasoning'). The default provider mirrors\n    reasoning_content into reasoning for any model whose name contains\n    'qwen3' — a family match that does not establish the endpoint accepts\n    the extra field — so Qwen3 thinking models on Fireworks fail every\n    multi-turn continuation that replays a thinking turn, including\n    tool-call continuation (issue #11657).\n    \n    Add a Fireworks provider, detected by api.fireworks.ai hostname in\n    determineProvider (following the Cerebras precedent from #11049), that\n    undoes the mirror at the outbound request boundary. Only the exact\n    mirror copy (reasoning === reasoning_content) is dropped; a distinct\n    explicit reasoning field and reasoning_content itself — which Fireworks\n    documents for reasoning replay — are preserved. Conversation history is\n    never mutated and non-Fireworks endpoints keep the existing mirroring.\n\n .../core/src/core/openaiContentGenerator/index.ts  |  10 +\n .../provider/fireworks.test.ts                     | 303 +++++++++++++++++++++\n .../openaiContentGenerator/provider/fireworks.ts   |  93 +++++++\n .../core/openaiContentGenerator/provider/index.ts  |   1 +\n 4 files changed, 407 insertions(+)\n",
+  "changed_files_name_status": "M\tpackages/core/src/core/openaiContentGenerator/index.ts\nA\tpackages/core/src/core/openaiContentGenerator/provider/fireworks.test.ts\nA\tpackages/core/src/core/openaiContentGenerator/provider/fireworks.ts\nM\tpackages/core/src/core/openaiContentGenerator/provider/index.ts\n",
+  "linked_issue_numbers": [
+    11657
+  ],
+  "manifest_metadata": {
+    "category": "provider-interface-adaptation",
+    "theme": "model provider and endpoint resolution"
+  },
+  "fetched_at": "2026-09-29T05:08:31.947372+00:00",
+  "limitations": [
+    "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+  ]
+}

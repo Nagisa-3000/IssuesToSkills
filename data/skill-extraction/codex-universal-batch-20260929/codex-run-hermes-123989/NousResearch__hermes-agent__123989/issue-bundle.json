@@ -1,0 +1,35 @@
+{
+  "source": "local_git_pinned_ref",
+  "repository": "NousResearch/hermes-agent",
+  "issue_number": 123989,
+  "issue": {
+    "number": 123989,
+    "title": "[Bug]: Multiplex: API-server turns for different profiles share one Docker sandbox when their opening messages match",
+    "body": null,
+    "metadata_unavailable": [
+      "issue body",
+      "comments",
+      "timeline",
+      "author/review discussion"
+    ]
+  },
+  "comments": [],
+  "timeline": [],
+  "linked_pull_requests": [],
+  "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/hermes-agent",
+  "pinned_ref": "b5f587dba8b1852127c6cc3d7e3d98dceedbf94d",
+  "resolved_commit": "b5f587dba8b1852127c6cc3d7e3d98dceedbf94d",
+  "parent_commit": "2e3c9ceeb1cfca90f8d5a6eea3210dd78c86846f",
+  "commit_show_stat": "commit b5f587dba8b1852127c6cc3d7e3d98dceedbf94d\nAuthor:     Nabil Ahmed Ameena <nabil@techilaservices.com>\nAuthorDate: Sat Sep 26 21:07:46 2026 +0530\nCommit:     teknium1 <127238744+teknium1@users.noreply.github.com>\nCommitDate: Mon Sep 28 01:27:37 2026 -0700\n\n    fix(terminal): qualify session-isolated container keys and cwd records under a routed profile scope (#123989)\n    \n    A multiplexed host serves every profile in one process, and header-less API-server\n    clients derive their session id from a fingerprint of the system prompt + first\n    user message. Under per-session isolation (docker + container_persistent: false,\n    plus plugin backends declaring session_isolated_when_nonpersistent) branch 2 of\n    _resolve_container_task_id keyed the raw id, so two profiles whose conversations\n    open with the same text shared one _active_environments slot: the second profile's\n    turn attached to the first profile's sandbox, with the first profile's image,\n    mounts and exported environment. Verified live against real docker (both\n    directions on unmodified main; isolated after the fix).\n    \n    Routed scopes (HERMES_HOME override: multiplex turns named AND default,\n    per-profile TUI/desktop RPC, cron ticks) now qualify the key with the profile\n    name or home realpath; CLI and single-profile gateways keep the historical raw\n    key. The session-cwd record/get/clear trio gets the same qualification so the\n    fingerprint collision cannot carry one profile's cd state into another's.\n    \n    Regression tests in TestRoutedScopeQualification fail on pre-fix code (4/6) and\n    pass with the fix; persistent-Docker behavior is byte-identical (labels stay\n    profile:<name> / default).\n\n tests/tools/test_docker_session_isolation.py | 98 ++++++++++++++++++++++++++++\n tools/terminal_tool.py                       | 68 +++++++++++++++++--\n 2 files changed, 159 insertions(+), 7 deletions(-)\n",
+  "changed_files_name_status": "M\ttests/tools/test_docker_session_isolation.py\nM\ttools/terminal_tool.py\n",
+  "linked_issue_numbers": [
+    123989
+  ],
+  "manifest_metadata": {
+    "category": "effect-control-and-isolation"
+  },
+  "fetched_at": "2026-09-28T21:23:07.766552+00:00",
+  "limitations": [
+    "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+  ]
+}

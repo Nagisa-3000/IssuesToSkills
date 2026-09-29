@@ -1,0 +1,1638 @@
+diff --git a/packages/cli/src/config/config.test.ts b/packages/cli/src/config/config.test.ts
+index 6d177585221a2380220b6e9c6576413faaefa0f4..a87a5bafab8f94ef36b355901a4cdb404ff3e53e 100644
+--- a/packages/cli/src/config/config.test.ts
++++ b/packages/cli/src/config/config.test.ts
+@@ -2852,6 +2852,8 @@ describe('loadCliConfig', () => {
+     };
+ 
+     it('returns undefined when neither settings nor env configure web search', async () => {
++      // `undefined` means "derive the backend from the active provider" —
++      // it must not be confused with an explicit opt-out.
+       const config = await loadWithSettings({});
+       expect(config.getWebSearchSettings()).toBeUndefined();
+     });
+@@ -2933,6 +2935,8 @@ describe('loadCliConfig', () => {
+       );
+     });
+ 
++    // Both modes must turn the tool off explicitly: leaving the settings
++    // undefined would let the registry derive a backend from the provider.
+     it('disables web search in safe mode', async () => {
+       process.argv = ['node', 'script.js', '--safe-mode'];
+       const argv = await parseArguments();
+@@ -2940,7 +2944,14 @@ describe('loadCliConfig', () => {
+         { tools: { webSearch: { enabled: true, model: 'qwen3.6-plus' } } },
+         argv,
+       );
+-      expect(config.getWebSearchSettings()).toBeUndefined();
++      expect(config.getWebSearchSettings()).toEqual({ enabled: false });
++    });
++
++    it('disables web search in safe mode even when nothing is configured', async () => {
++      process.argv = ['node', 'script.js', '--safe-mode'];
++      const argv = await parseArguments();
++      const config = await loadCliConfig({}, argv);
++      expect(config.getWebSearchSettings()).toEqual({ enabled: false });
+     });
+ 
+     it('disables web search in bare mode', async () => {
+@@ -2950,7 +2961,14 @@ describe('loadCliConfig', () => {
+         { tools: { webSearch: { enabled: true, model: 'qwen3.6-plus' } } },
+         argv,
+       );
+-      expect(config.getWebSearchSettings()).toBeUndefined();
++      expect(config.getWebSearchSettings()).toEqual({ enabled: false });
++    });
++
++    it('disables web search in bare mode even when nothing is configured', async () => {
++      process.argv = ['node', 'script.js', '--bare'];
++      const argv = await parseArguments();
++      const config = await loadCliConfig({}, argv);
++      expect(config.getWebSearchSettings()).toEqual({ enabled: false });
+     });
+   });
+ });
+diff --git a/packages/cli/src/config/settingsUtils.test.ts b/packages/cli/src/config/settingsUtils.test.ts
+index 6a92f6b379b7537513d111a44e83a5e0774aa9fd..957f546cf5fdeb4d44f18b0bd017ccd17d4f6518 100644
+--- a/packages/cli/src/config/settingsUtils.test.ts
++++ b/packages/cli/src/config/settingsUtils.test.ts
+@@ -22,6 +22,8 @@ import {
+   setPendingSettingValue,
+   getRestartRequiredFromModified,
+   getDisplayValue,
++  nextBooleanSettingValue,
++  saveModifiedSettings,
+   isDefaultValue,
+   setNestedPropertySafe,
+   setNestedPropertyForce,
+@@ -35,6 +37,7 @@ import {
+   type SettingsSchema,
+   type SettingsSchemaType,
+ } from './settingsSchema.js';
++import { SettingScope, type LoadedSettings } from './settings.js';
+ 
+ vi.mock('./settingsSchema.js', async (importOriginal) => {
+   const original = await importOriginal<typeof import('./settingsSchema.js')>();
+@@ -678,6 +681,97 @@ describe('SettingsUtils', () => {
+     });
+ 
+     describe('getDisplayValue', () => {
++      it('renders an unset tri-state boolean without exposing undefined', () => {
++        vi.mocked(getSettingsSchema).mockReturnValue({
++          tools: {
++            type: 'object',
++            label: 'Tools',
++            category: 'Tools',
++            requiresRestart: true,
++            default: {},
++            description: 'Tools',
++            showInDialog: false,
++            properties: {
++              webSearch: {
++                type: 'object',
++                label: 'Web Search',
++                category: 'Tools',
++                requiresRestart: true,
++                default: {},
++                description: 'Web Search',
++                showInDialog: false,
++                properties: {
++                  enabled: {
++                    type: 'boolean',
++                    label: 'Enable WebSearch',
++                    category: 'Tools',
++                    requiresRestart: true,
++                    default: undefined,
++                    description: 'Enable WebSearch',
++                    showInDialog: true,
++                  },
++                },
++              },
++            },
++          },
++        } as unknown as SettingsSchemaType);
++
++        expect(
++          getDisplayValue(
++            'tools.webSearch.enabled',
++            makeMockSettings({}),
++            makeMockSettings({}),
++            new Set(),
++          ),
++        ).toBe('(not set)');
++      });
++
++      it('renders a pending reset to an unset tri-state value', () => {
++        vi.mocked(getSettingsSchema).mockReturnValue({
++          tools: {
++            type: 'object',
++            label: 'Tools',
++            category: 'Tools',
++            requiresRestart: true,
++            default: {},
++            description: 'Tools',
++            showInDialog: false,
++            properties: {
++              webSearch: {
++                type: 'object',
++                label: 'Web Search',
++                category: 'Tools',
++                requiresRestart: true,
++                default: {},
++                description: 'Web Search',
++                showInDialog: false,
++                properties: {
++                  enabled: {
++                    type: 'boolean',
++                    label: 'Enable WebSearch',
++                    category: 'Tools',
++                    requiresRestart: true,
++                    default: undefined,
++                    description: 'Enable WebSearch',
++                    showInDialog: true,
++                  },
++                },
++              },
++            },
++          },
++        } as unknown as SettingsSchemaType);
++
++        expect(
++          getDisplayValue(
++            'tools.webSearch.enabled',
++            makeMockSettings({ tools: { webSearch: { enabled: true } } }),
++            makeMockSettings({ tools: { webSearch: { enabled: true } } }),
++            new Set(['tools.webSearch.enabled']),
++            makeMockSettings({ tools: { webSearch: { enabled: undefined } } }),
++          ),
++        ).toBe('(not set)*');
++      });
++
+       describe('enum behavior', () => {
+         enum StringEnum {
+           FOO = 'foo',
+@@ -852,6 +946,25 @@ describe('SettingsUtils', () => {
+           );
+           expect(result).toBe('Bar');
+         });
++
++        it('renders an unset enum default without exposing undefined', () => {
++          vi.mocked(getSettingsSchema).mockReturnValue({
++            ui: {
++              properties: {
++                theme: { ...SETTING, default: undefined },
++              },
++            },
++          } as unknown as SettingsSchemaType);
++
++          expect(
++            getDisplayValue(
++              'ui.theme',
++              makeMockSettings({}),
++              makeMockSettings({}),
++              new Set(),
++            ),
++          ).toBe('(not set)');
++        });
+       });
+ 
+       it('should show value without * when setting matches default', () => {
+@@ -975,6 +1088,40 @@ describe('SettingsUtils', () => {
+       });
+     });
+ 
++    describe('nextBooleanSettingValue', () => {
++      it('moves an unset tri-state boolean directly to false', () => {
++        expect(nextBooleanSettingValue(undefined)).toBe(false);
++        expect(nextBooleanSettingValue(undefined, false)).toBe(true);
++        expect(nextBooleanSettingValue(false)).toBe(true);
++        expect(nextBooleanSettingValue(true)).toBe(false);
++      });
++    });
++
++    describe('saveModifiedSettings', () => {
++      it('unsets an existing tri-state boolean when reset to default', () => {
++        const setValue = vi.fn();
++        const loadedSettings = {
++          forScope: () => ({
++            settings: { tools: { webSearch: { enabled: true } } },
++          }),
++          setValue,
++        } as unknown as LoadedSettings;
++
++        saveModifiedSettings(
++          new Set(['tools.webSearch.enabled']),
++          { tools: { webSearch: { enabled: undefined } } },
++          loadedSettings,
++          SettingScope.User,
++        );
++
++        expect(setValue).toHaveBeenCalledWith(
++          SettingScope.User,
++          'tools.webSearch.enabled',
++          undefined,
++        );
++      });
++    });
++
+     describe('isDefaultValue', () => {
+       it('should return true when setting does not exist in scope', () => {
+         const settings = makeMockSettings({}); // setting doesn't exist
+diff --git a/packages/cli/src/ui/commands/config-command.test.ts b/packages/cli/src/ui/commands/config-command.test.ts
+index aa1d4d69b4b1366521f42dec339222f2d190bdbf..939b55fd1c6294a9a3bf81d065b136f598015ef4 100644
+--- a/packages/cli/src/ui/commands/config-command.test.ts
++++ b/packages/cli/src/ui/commands/config-command.test.ts
+@@ -158,6 +158,44 @@ describe('configCommand', () => {
+         content: expect.stringContaining('true'),
+       });
+     });
++
++    it.each(['ui.accessibility.screenReader', 'security.auth.useExternal'])(
++      'enables an unset default-off setting: %s',
++      async (key) => {
++        const { ctx, setValuesMock } = createMockContext({});
++        const result = await configCommand.action!(ctx, key);
++
++        expect(result).toEqual({
++          type: 'message',
++          messageType: 'info',
++          content: expect.stringContaining('true'),
++        });
++        expect(setValuesMock).toHaveBeenCalledWith([
++          { scope: 'User', key, value: true },
++        ]);
++      },
++    );
++
++    it('turns an unset tri-state web search setting off', async () => {
++      const { ctx, setValuesMock } = createMockContext({});
++      const result = await configCommand.action!(
++        ctx,
++        'tools.webSearch.enabled',
++      );
++
++      expect(result).toEqual({
++        type: 'message',
++        messageType: 'info',
++        content: expect.stringContaining('false'),
++      });
++      expect(setValuesMock).toHaveBeenCalledWith([
++        {
++          scope: 'User',
++          key: 'tools.webSearch.enabled',
++          value: false,
++        },
++      ]);
++    });
+   });
+ 
+   describe('invalid boolean value', () => {
+diff --git a/packages/cli/src/ui/components/SettingsDialog.test.tsx b/packages/cli/src/ui/components/SettingsDialog.test.tsx
+index 2c62a8a9423b68c284e73e3cd83d69191f1c7031..12c98774de1c5858840342d44c651f8a29e9cab7 100644
+--- a/packages/cli/src/ui/components/SettingsDialog.test.tsx
++++ b/packages/cli/src/ui/components/SettingsDialog.test.tsx
+@@ -390,6 +390,127 @@ describe('SettingsDialog', () => {
+   });
+ 
+   describe('Settings Toggling', () => {
++    it('toggles an unset WebSearch setting off and resets it to auto', async () => {
++      vi.mocked(saveModifiedSettings).mockClear();
++      const settings = createMockSettings();
++      const onSelect = vi.fn();
++      const { stdin, unmount, lastFrame } = render(
++        <KeypressProvider kittyProtocolEnabled={false}>
++          <SettingsDialog settings={settings} onSelect={onSelect} />
++        </KeypressProvider>,
++      );
++      const targetIndex = getDialogSettingKeys().indexOf(
++        'tools.webSearch.enabled',
++      );
++      expect(targetIndex).toBeGreaterThan(0);
++      for (let i = 0; i < targetIndex; i++) {
++        act(() => stdin.write(TerminalKeys.DOWN_ARROW));
++        await wait();
++      }
++      await waitFor(() => {
++        expect(lastFrame()).toContain('●\uFE0E Enable WebSearch');
++        expect(lastFrame()).toContain('(not set)');
++      });
++
++      act(() => stdin.write(TerminalKeys.ENTER));
++      await waitFor(() => {
++        const activeRow = lastFrame()
++          ?.split('\n')
++          .find((line) => line.includes('●\uFE0E Enable WebSearch'));
++        expect(activeRow).toContain('false*');
++      });
++
++      act(() => stdin.write('\u0003'));
++      await waitFor(() => {
++        const activeRow = lastFrame()
++          ?.split('\n')
++          .find((line) => line.includes('●\uFE0E Enable WebSearch'));
++        expect(activeRow).toContain('(not set)');
++        expect(activeRow).not.toContain('(not set)*');
++      });
++      unmount();
++    });
++
++    it('persists resetting an explicit WebSearch setting to auto', async () => {
++      vi.mocked(saveModifiedSettings).mockClear();
++      const settings = createMockSettings({
++        tools: { webSearch: { enabled: true } },
++      });
++      const onRestartRequest = vi.fn();
++      const { stdin, unmount, lastFrame } = render(
++        <KeypressProvider kittyProtocolEnabled={false}>
++          <SettingsDialog
++            settings={settings}
++            onSelect={() => {}}
++            onRestartRequest={onRestartRequest}
++          />
++        </KeypressProvider>,
++      );
++      const targetIndex = getDialogSettingKeys().indexOf(
++        'tools.webSearch.enabled',
++      );
++      for (let i = 0; i < targetIndex; i++) {
++        act(() => stdin.write(TerminalKeys.DOWN_ARROW));
++        await wait();
++      }
++
++      act(() => stdin.write('\u0003'));
++      await waitFor(() => {
++        const activeRow = lastFrame()
++          ?.split('\n')
++          .find((line) => line.includes('●\uFE0E Enable WebSearch'));
++        expect(activeRow).toContain('(not set)*');
++      });
++
++      act(() => stdin.write('r'));
++      await waitFor(() => expect(onRestartRequest).toHaveBeenCalledOnce());
++      expect(saveModifiedSettings).toHaveBeenCalledWith(
++        new Set(['tools.webSearch.enabled']),
++        expect.objectContaining({
++          tools: expect.objectContaining({
++            webSearch: expect.objectContaining({ enabled: undefined }),
++          }),
++        }),
++        settings,
++        SettingScope.User,
++      );
++      unmount();
++    });
++
++    it('does not persist a reset when the stored value already equals the default', async () => {
++      vi.mocked(saveModifiedSettings).mockClear();
++      const settings = createMockSettings({
++        general: { preventSystemSleep: true },
++      });
++      const { stdin, unmount, lastFrame } = render(
++        <KeypressProvider kittyProtocolEnabled={false}>
++          <SettingsDialog settings={settings} onSelect={() => {}} />
++        </KeypressProvider>,
++      );
++      const targetIndex = getDialogSettingKeys().indexOf(
++        'general.preventSystemSleep',
++      );
++      for (let i = 0; i < targetIndex; i++) {
++        act(() => stdin.write(TerminalKeys.DOWN_ARROW));
++        await wait();
++      }
++      await waitFor(() => {
++        const activeRow = lastFrame()
++          ?.split('\n')
++          .find((line) => line.includes('●\uFE0E Prevent System Sleep'));
++        expect(activeRow).toContain('true*');
++      });
++
++      act(() => stdin.write('\u0003'));
++      await wait();
++
++      expect(saveModifiedSettings).not.toHaveBeenCalled();
++      expect(lastFrame()).not.toContain(
++        'To see changes, Qwen Code must be restarted',
++      );
++      unmount();
++    });
++
+     it('should toggle setting with Enter key', async () => {
+       vi.mocked(saveModifiedSettings).mockClear();
+ 
+diff --git a/packages/cli/src/ui/opentui/dialogs-settings.test.ts b/packages/cli/src/ui/opentui/dialogs-settings.test.ts
+index db6d602e293f8f98869cff65daf0e645c8f4c4f4..cb0e7290a1e289ff693b5c5d894afe64307e06c4 100644
+--- a/packages/cli/src/ui/opentui/dialogs-settings.test.ts
++++ b/packages/cli/src/ui/opentui/dialogs-settings.test.ts
+@@ -108,6 +108,10 @@ describe('nextToggleValue', () => {
+     expect(nextToggleValue({ type: 'boolean' }, false)).toBe(true);
+   });
+ 
++  it('turns an unset tri-state boolean off', () => {
++    expect(nextToggleValue({ type: 'boolean' }, undefined)).toBe(false);
++  });
++
+   it('cycles enums and loops back to the first option', () => {
+     const def = {
+       type: 'enum' as const,
+diff --git a/packages/core/src/config/config.safe-mode.test.ts b/packages/core/src/config/config.safe-mode.test.ts
+index 2e814db5a675b3fe5cc8ac753a39dbe065080c0b..340bd23f132b1e4da176ae4bb97157653a7f5cd6 100644
+--- a/packages/core/src/config/config.safe-mode.test.ts
++++ b/packages/core/src/config/config.safe-mode.test.ts
+@@ -10,6 +10,8 @@ import type { ConfigParameters } from './config.js';
+ import { Config } from './config.js';
+ import * as fs from 'node:fs';
+ import { recordStartupEvent } from '../utils/startupEventSink.js';
++import { ToolNames } from '../tools/tool-names.js';
++import { AuthType } from '../core/contentGenerator.js';
+ 
+ vi.mock('node:fs', async (importOriginal) => {
+   const actual = await importOriginal<typeof import('node:fs')>();
+@@ -113,7 +115,7 @@ vi.mock('../skills/skill-manager.js', () => {
+ });
+ 
+ vi.mock('../core/contentGenerator.js', () => ({
+-  AuthType: { QWEN_API_KEY: 'qwen_api_key' },
++  AuthType: { USE_OPENAI: 'openai' },
+   Protocol: {
+     OPENAI: 'openai',
+     QWEN_OAUTH: 'qwen-oauth',
+@@ -251,6 +253,32 @@ describe('Config safe mode', () => {
+   });
+ 
+   describe('safe mode disables subsystems', () => {
++    it('does not register web search even when core Config could derive it', async () => {
++      process.env['DASHSCOPE_API_KEY'] = 'sk-test';
++      const config = new Config({
++        ...baseParams,
++        safeMode: true,
++        authType: AuthType.USE_OPENAI,
++        webSearch: { enabled: true, model: 'test-model' },
++        modelProvidersConfig: {
++          [AuthType.USE_OPENAI]: [
++            {
++              id: 'test-model',
++              envKey: 'DASHSCOPE_API_KEY',
++              baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
++            },
++          ],
++        },
++      });
++      await config.initialize();
++      const registry = config.getToolRegistry() as unknown as {
++        registerFactory: Mock;
++      };
++      expect(
++        registry.registerFactory.mock.calls.map(([name]) => name),
++      ).not.toContain(ToolNames.WEB_SEARCH);
++    });
++
+     it('disables all hooks in safe mode', () => {
+       const config = new Config({ ...baseParams, safeMode: true });
+       expect(config.getDisableAllHooks()).toBe(true);
+diff --git a/packages/core/src/config/config.test.ts b/packages/core/src/config/config.test.ts
+index 6ddeccdf6e7804fc245563ad5626f64c3faace9a..be2708980a2c5c48d177b640a789491ffd7ab1fb 100644
+--- a/packages/core/src/config/config.test.ts
++++ b/packages/core/src/config/config.test.ts
+@@ -10065,7 +10065,7 @@ describe('Server Config (config.ts)', () => {
+       }
+     });
+ 
+-    it('does not register web_search or push a notice when the feature is disabled', async () => {
++    it('does not register web_search or push a notice when nothing is configured and no provider can back it', async () => {
+       const config = new Config(baseParams);
+       await config.initialize();
+ 
+@@ -10083,6 +10083,222 @@ describe('Server Config (config.ts)', () => {
+       ).toEqual([]);
+     });
+ 
++    it('registers web_search with no configuration when the primary model runs on a ModelStudio provider', async () => {
++      process.env['DASHSCOPE_API_KEY'] = 'sk-test';
++      try {
++        const config = new Config({
++          ...baseParams,
++          authType: AuthType.USE_OPENAI,
++          model: 'qwen3.6-plus',
++          modelProvidersConfig: {
++            openai: [
++              {
++                id: 'qwen3.6-plus',
++                baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
++                envKey: 'DASHSCOPE_API_KEY',
++              },
++            ],
++          },
++        });
++        await config.initialize();
++
++        const registerToolMock = (
++          (await vi.importMock('../tools/tool-registry')) as {
++            ToolRegistry: { prototype: { registerFactory: Mock } };
++          }
++        ).ToolRegistry.prototype.registerFactory;
++
++        expect(
++          (registerToolMock as Mock).mock.calls.map((call) => call[0]),
++        ).toContain(ToolNames.WEB_SEARCH);
++        expect(
++          config.getWarnings().filter((w) => w.includes('WebSearch')),
++        ).toEqual([]);
++      } finally {
++        delete process.env['DASHSCOPE_API_KEY'];
++      }
++    });
++
++    it('registers web_search for an env-only configuration pointing at a DashScope host', async () => {
++      // No modelProviders entry at all: the endpoint comes from
++      // OPENAI_BASE_URL and the key variable is the auth type's default. The
++      // runtime model snapshot is not captured until after the tool registry
++      // is built, so the gate must read the resolved generation config.
++      vi.stubEnv('OPENAI_API_KEY', 'sk-env-only');
++      try {
++        const config = new Config({
++          ...baseParams,
++          authType: AuthType.USE_OPENAI,
++          model: 'qwen3.6-plus',
++          // What the CLI resolver produces from OPENAI_BASE_URL /
++          // OPENAI_API_KEY: an endpoint but no key variable name.
++          generationConfig: {
++            authType: AuthType.USE_OPENAI,
++            model: 'qwen3.6-plus',
++            baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
++            apiKey: 'sk-env-only',
++          },
++          generationConfigSources: {
++            apiKey: { kind: 'env', envKey: 'OPENAI_API_KEY' },
++          },
++        });
++        await config.initialize();
++
++        const registerToolMock = (
++          (await vi.importMock('../tools/tool-registry')) as {
++            ToolRegistry: { prototype: { registerFactory: Mock } };
++          }
++        ).ToolRegistry.prototype.registerFactory;
++
++        expect(
++          (registerToolMock as Mock).mock.calls.map((call) => call[0]),
++        ).toContain(ToolNames.WEB_SEARCH);
++        expect(
++          config.getWarnings().filter((w) => w.includes('WebSearch')),
++        ).toEqual([]);
++      } finally {
++        vi.unstubAllEnvs();
++      }
++    });
++
++    it('leaves web_search off for an env-only configuration on a non-DashScope host', async () => {
++      vi.stubEnv('OPENAI_API_KEY', 'sk-env-only');
++      try {
++        const config = new Config({
++          ...baseParams,
++          authType: AuthType.USE_OPENAI,
++          model: 'gpt-5',
++          generationConfig: {
++            authType: AuthType.USE_OPENAI,
++            model: 'gpt-5',
++            baseUrl: 'https://api.openai.com/v1',
++          },
++        });
++        await config.initialize();
++
++        const registerToolMock = (
++          (await vi.importMock('../tools/tool-registry')) as {
++            ToolRegistry: { prototype: { registerFactory: Mock } };
++          }
++        ).ToolRegistry.prototype.registerFactory;
++
++        expect(
++          (registerToolMock as Mock).mock.calls.map((call) => call[0]),
++        ).not.toContain(ToolNames.WEB_SEARCH);
++        expect(
++          config.getWarnings().filter((w) => w.includes('WebSearch')),
++        ).toEqual([]);
++      } finally {
++        vi.unstubAllEnvs();
++      }
++    });
++
++    it('does not activate a legacy model-only web search configuration', async () => {
++      process.env['DASHSCOPE_API_KEY'] = 'sk-test';
++      try {
++        const config = new Config({
++          ...baseParams,
++          authType: AuthType.USE_OPENAI,
++          model: 'qwen3.6-plus',
++          modelProvidersConfig: {
++            openai: [
++              {
++                id: 'qwen3.6-plus',
++                baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
++                envKey: 'DASHSCOPE_API_KEY',
++              },
++            ],
++          },
++          webSearch: { model: 'qwen3.6-plus' },
++        });
++        await config.initialize();
++
++        const registerToolMock = (
++          (await vi.importMock('../tools/tool-registry')) as {
++            ToolRegistry: { prototype: { registerFactory: Mock } };
++          }
++        ).ToolRegistry.prototype.registerFactory;
++        expect(
++          (registerToolMock as Mock).mock.calls.map((call) => call[0]),
++        ).not.toContain(ToolNames.WEB_SEARCH);
++      } finally {
++        delete process.env['DASHSCOPE_API_KEY'];
++      }
++    });
++
++    it('leaves web_search off without a notice when the primary model runs on a provider that cannot back it', async () => {
++      process.env['OPENROUTER_API_KEY'] = 'sk-or-test';
++      try {
++        const config = new Config({
++          ...baseParams,
++          authType: AuthType.USE_OPENAI,
++          model: 'z-ai/glm-4.5-air:free',
++          modelProvidersConfig: {
++            openai: [
++              {
++                id: 'z-ai/glm-4.5-air:free',
++                baseUrl: 'https://openrouter.ai/api/v1',
++                envKey: 'OPENROUTER_API_KEY',
++              },
++            ],
++          },
++        });
++        await config.initialize();
++
++        const registerToolMock = (
++          (await vi.importMock('../tools/tool-registry')) as {
++            ToolRegistry: { prototype: { registerFactory: Mock } };
++          }
++        ).ToolRegistry.prototype.registerFactory;
++
++        expect(
++          (registerToolMock as Mock).mock.calls.map((call) => call[0]),
++        ).not.toContain(ToolNames.WEB_SEARCH);
++        expect(
++          config.getWarnings().filter((w) => w.includes('WebSearch')),
++        ).toEqual([]);
++      } finally {
++        delete process.env['OPENROUTER_API_KEY'];
++      }
++    });
++
++    it('does not register web_search when it is turned off explicitly', async () => {
++      process.env['DASHSCOPE_API_KEY'] = 'sk-test';
++      try {
++        const config = new Config({
++          ...baseParams,
++          authType: AuthType.USE_OPENAI,
++          model: 'qwen3.6-plus',
++          modelProvidersConfig: {
++            openai: [
++              {
++                id: 'qwen3.6-plus',
++                baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
++                envKey: 'DASHSCOPE_API_KEY',
++              },
++            ],
++          },
++          webSearch: { enabled: false },
++        });
++        await config.initialize();
++
++        const registerToolMock = (
++          (await vi.importMock('../tools/tool-registry')) as {
++            ToolRegistry: { prototype: { registerFactory: Mock } };
++          }
++        ).ToolRegistry.prototype.registerFactory;
++
++        expect(
++          (registerToolMock as Mock).mock.calls.map((call) => call[0]),
++        ).not.toContain(ToolNames.WEB_SEARCH);
++        expect(
++          config.getWarnings().filter((w) => w.includes('WebSearch')),
++        ).toEqual([]);
++      } finally {
++        delete process.env['DASHSCOPE_API_KEY'];
++      }
++    });
++
+     it('pushes a one-time notice when web_search is enabled but misconfigured', async () => {
+       // Enabled without a model: the tool must stay off with a diagnostic
+       // notice, pushed exactly once across registry rebuilds.
+diff --git a/packages/core/src/providers/__tests__/presets/alibaba-coding-plan.test.ts b/packages/core/src/providers/__tests__/presets/alibaba-coding-plan.test.ts
+index 950774a653cd7ff2c6bb34f14e0a8fe7b23dcebe..96515f2865662afc44b9c96dc569c3a99e1fd99d 100644
+--- a/packages/core/src/providers/__tests__/presets/alibaba-coding-plan.test.ts
++++ b/packages/core/src/providers/__tests__/presets/alibaba-coding-plan.test.ts
+@@ -76,4 +76,10 @@ describe('coding plan provider', () => {
+       }),
+     ).toBe(false);
+   });
++
++  it('declares no built-in web search backend', () => {
++    // Whether the Coding Plan endpoints serve the Responses API search tools
++    // has not been verified; declaring it would turn the tool on implicitly.
++    expect(codingPlanProvider.webSearch).toBeUndefined();
++  });
+ });
+diff --git a/packages/core/src/providers/__tests__/presets/alibaba-standard.test.ts b/packages/core/src/providers/__tests__/presets/alibaba-standard.test.ts
+index 6c592ef3b3b769c0312f661a6d4d310eaab54150..b4c617964c8876bc22f04207d543b8bc95b5d497 100644
+--- a/packages/core/src/providers/__tests__/presets/alibaba-standard.test.ts
++++ b/packages/core/src/providers/__tests__/presets/alibaba-standard.test.ts
+@@ -150,4 +150,12 @@ describe('alibabaStandardProvider', () => {
+       ),
+     ).toBe(false);
+   });
++
++  it('declares the built-in web search backend', () => {
++    // The Responses API on these endpoints serves the search tools with the
++    // same key, so `web_search` registers without extra configuration.
++    expect(alibabaStandardProvider.webSearch).toEqual({
++      backend: 'dashscope',
++    });
++  });
+ });
+diff --git a/packages/core/src/providers/__tests__/presets/alibaba-token-plan.test.ts b/packages/core/src/providers/__tests__/presets/alibaba-token-plan.test.ts
+index 358295f6107e8578e484b565f534dbe3596e5ccd..7257bf9045c63392915f977f5cf9b418fe6e0d99 100644
+--- a/packages/core/src/providers/__tests__/presets/alibaba-token-plan.test.ts
++++ b/packages/core/src/providers/__tests__/presets/alibaba-token-plan.test.ts
+@@ -220,4 +220,8 @@ describe('token plan provider', () => {
+       }),
+     ).toBe(false);
+   });
++
++  it('declares the built-in web search backend', () => {
++    expect(tokenPlanProvider.webSearch).toEqual({ backend: 'dashscope' });
++  });
+ });
+diff --git a/packages/core/src/subagents/subagent-manager.test.ts b/packages/core/src/subagents/subagent-manager.test.ts
+index c90033f180f1f3cb804f61eb0746755ae8e5df02..e8e27f7e22ee67771c1bb556a5920139c6df5ac1 100644
+--- a/packages/core/src/subagents/subagent-manager.test.ts
++++ b/packages/core/src/subagents/subagent-manager.test.ts
+@@ -2307,6 +2307,7 @@ bad`);
+         });
+         vi.spyOn(mockConfig, 'getModelsConfig').mockReturnValue({
+           getResolvedModel: vi.fn().mockReturnValue(undefined),
++          getGenerationConfig: vi.fn().mockReturnValue({}),
+         } as unknown as ReturnType<Config['getModelsConfig']>);
+       });
+ 
+diff --git a/packages/core/src/tools/web-search.test.ts b/packages/core/src/tools/web-search.test.ts
+index e99f54cd6466204959438c2c105744e8509c996d..81cde057a7edf533f07bff741e54d817352270da 100644
+--- a/packages/core/src/tools/web-search.test.ts
++++ b/packages/core/src/tools/web-search.test.ts
+@@ -6,8 +6,24 @@
+ 
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+ import type { Config } from '../config/config.js';
++import { AuthType } from '../core/contentGenerator.js';
+ import { ToolErrorType } from './tool-error.js';
+ import { WebSearchTool, evaluateWebSearchGate } from './web-search.js';
++import { generateCustomEnvKey } from '../providers/presets/custom-provider.js';
++import { findProviderByCredentials } from '../providers/all-providers.js';
++import { alibabaStandardProvider } from '../providers/presets/alibaba-standard.js';
++import {
++  TOKEN_PLAN_CHINA_BASE_URL,
++  TOKEN_PLAN_ENV_KEY,
++} from '../providers/presets/alibaba-token-plan.js';
++import {
++  CODING_PLAN_CHINA_BASE_URL,
++  CODING_PLAN_ENV_KEY,
++} from '../providers/presets/alibaba-coding-plan.js';
++import {
++  OPENROUTER_BASE_URL,
++  OPENROUTER_ENV_KEY,
++} from '../providers/presets/openrouter.js';
+ 
+ const mockCreate = vi.hoisted(() => vi.fn());
+ const mockCtorOpts = vi.hoisted(() => ({ current: undefined as unknown }));
+@@ -40,6 +56,23 @@ interface ConfigOverrides {
+     baseUrl?: string;
+     generationConfig?: { customHeaders?: Record<string, string> };
+   }>;
++  /** Model id the registry currently has selected (drives the auto path). */
++  primaryModel?: string;
++  primaryAuthType?: string;
++  primaryRegistryBaseUrl?: string;
++  /**
++   * Resolved generation config, the only source for env-only setups. Mirrors
++   * the real shape: a pure env configuration carries no `apiKeyEnvKey`.
++   */
++  generationConfig?: {
++    model?: string;
++    authType?: string;
++    baseUrl?: string;
++    apiKeyEnvKey?: string;
++    apiKey?: string;
++    customHeaders?: Record<string, string>;
++  };
++  generationConfigSources?: Record<string, { kind: string; envKey?: string }>;
+ }
+ 
+ function makeConfig(overrides: ConfigOverrides = {}): Config {
+@@ -52,13 +85,19 @@ function makeConfig(overrides: ConfigOverrides = {}): Config {
+     },
+   ];
+   return {
++    // `settings: undefined` must mean "nothing configured" (the auto path),
++    // which `??` cannot express — check for the key instead.
+     getWebSearchSettings: () =>
+-      overrides.settings ?? { enabled: true, model: 'qwen3.6-plus' },
++      'settings' in overrides
++        ? overrides.settings
++        : { enabled: true, model: 'qwen3.6-plus' },
+     // The real Config disambiguates same-id entries by registry baseUrl;
+     // mirror that so multi-entry tests resolve the gate-selected entry, not
+     // the first (authType, id) match.
+-    getAllConfiguredModels: () =>
+-      models.map((m) => ({ ...m, registryBaseUrl: m.baseUrl })),
++    getAllConfiguredModels: (authTypes?: string[]) =>
++      models
++        .filter((m) => !authTypes || authTypes.includes(m.authType))
++        .map((m) => ({ ...m, registryBaseUrl: m.baseUrl })),
+     getResolvedModelConfig: (
+       authType: string,
+       id: string,
+@@ -79,8 +118,17 @@ function makeConfig(overrides: ConfigOverrides = {}): Config {
+       overrides.allowDynamicHeaderValues ?? false,
+     getCliVersion: () => '0.0.0-test',
+     getProxy: () => undefined,
+-    getModel: () => 'main-model',
++    getModel: () => overrides.primaryModel ?? 'main-model',
+     getContentGeneratorConfig: () => ({ authType: 'openai' }),
++    // The auto path reads the ModelsConfig view, which is populated before
++    // `refreshAuth` fills in the content generator config.
++    getCurrentAuthType: () =>
++      'primaryAuthType' in overrides ? overrides.primaryAuthType : 'openai',
++    getCurrentModelRegistryBaseUrl: () => overrides.primaryRegistryBaseUrl,
++    getModelsConfig: () => ({
++      getGenerationConfig: () => overrides.generationConfig ?? {},
++      getGenerationConfigSources: () => overrides.generationConfigSources ?? {},
++    }),
+     getFastModel: () => undefined,
+   } as unknown as Config;
+ }
+@@ -164,6 +212,7 @@ beforeEach(() => {
+ 
+ afterEach(() => {
+   delete process.env[TEST_ENV_KEY];
++  vi.unstubAllEnvs();
+   vi.useRealTimers();
+ });
+ 
+@@ -551,6 +600,720 @@ describe('evaluateWebSearchGate', () => {
+   });
+ });
+ 
++describe('evaluateWebSearchGate auto derivation', () => {
++  const standardBaseUrls = alibabaStandardProvider.baseUrl;
++  if (!Array.isArray(standardBaseUrls)) {
++    throw new Error('Standard provider must declare regional base URLs');
++  }
++  if (typeof alibabaStandardProvider.envKey !== 'string') {
++    throw new Error('Standard provider must declare a fixed env key');
++  }
++  const STANDARD = {
++    id: 'qwen3.6-plus',
++    authType: AuthType.USE_OPENAI,
++    envKey: alibabaStandardProvider.envKey,
++    baseUrl: standardBaseUrls[0].url,
++  };
++  const TOKEN_PLAN = {
++    id: 'qwen3.7-plus',
++    authType: AuthType.USE_OPENAI,
++    envKey: TOKEN_PLAN_ENV_KEY,
++    baseUrl: TOKEN_PLAN_CHINA_BASE_URL,
++  };
++  const CODING_PLAN = {
++    id: 'qwen3-coder-plus',
++    authType: AuthType.USE_OPENAI,
++    envKey: CODING_PLAN_ENV_KEY,
++    baseUrl: CODING_PLAN_CHINA_BASE_URL,
++  };
++  const OPENROUTER = {
++    id: 'z-ai/glm-4.5-air:free',
++    authType: AuthType.USE_OPENAI,
++    envKey: OPENROUTER_ENV_KEY,
++    baseUrl: OPENROUTER_BASE_URL,
++  };
++
++  /** Config with nothing under tools.webSearch: the auto path. */
++  const autoConfig = (
++    models: ConfigOverrides['models'],
++    primaryModel: string,
++    extra: Partial<ConfigOverrides> = {},
++  ) => makeConfig({ settings: undefined, models, primaryModel, ...extra });
++
++  it('derives the backend from a Standard API Key entry', () => {
++    expect(
++      findProviderByCredentials(STANDARD.baseUrl, STANDARD.envKey)?.id,
++    ).toBe('alibabaStandard');
++    vi.stubEnv(STANDARD.envKey, 'sk-standard');
++    const gate = evaluateWebSearchGate(autoConfig([STANDARD], STANDARD.id));
++    expect(gate.ok).toBe(true);
++    if (gate.ok) {
++      expect(gate.backend).toEqual({
++        // Not the primary model id: the search runs on the documented
++        // search model at the same endpoint.
++        modelId: 'qwen3.6-plus',
++        apiKeyEnvKey: STANDARD.envKey,
++        baseUrl: STANDARD.baseUrl,
++        webExtractor: true,
++      });
++    }
++  });
++
++  it('derives the backend from a Token Plan entry', () => {
++    expect(
++      findProviderByCredentials(TOKEN_PLAN.baseUrl, TOKEN_PLAN.envKey)?.id,
++    ).toBe('token-plan');
++    vi.stubEnv(TOKEN_PLAN.envKey, 'sk-token-plan');
++    const gate = evaluateWebSearchGate(autoConfig([TOKEN_PLAN], TOKEN_PLAN.id));
++    expect(gate.ok).toBe(true);
++    if (gate.ok) {
++      expect(gate.backend.baseUrl).toBe(TOKEN_PLAN.baseUrl);
++      expect(gate.backend.modelId).toBe('qwen3.6-plus');
++    }
++  });
++
++  it('derives the backend for a workspace-specific Token Plan host', () => {
++    // Preset matching compares base URLs exactly, so a workspace endpoint
++    // matches no preset and must be adopted by the host check instead.
++    const workspace = {
++      id: 'qwen3.7-plus',
++      authType: 'openai',
++      envKey: 'WS_WORKSPACE_KEY',
++      baseUrl:
++        'https://llm-1yxl3y53fm8pcr4z.cn-beijing.maas.aliyuncs.com/compatible-mode/v1',
++    };
++    vi.stubEnv(workspace.envKey, 'sk-workspace');
++    const gate = evaluateWebSearchGate(autoConfig([workspace], workspace.id));
++    expect(gate.ok).toBe(true);
++    if (gate.ok) {
++      expect(gate.backend.baseUrl).toBe(workspace.baseUrl);
++      expect(gate.backend.apiKeyEnvKey).toBe(workspace.envKey);
++    }
++  });
++
++  it('derives the backend for a hand-written DashScope entry', () => {
++    const handWritten = {
++      id: 'my-model',
++      authType: 'openai',
++      envKey: 'MY_DASHSCOPE_KEY',
++      baseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
++    };
++    vi.stubEnv(handWritten.envKey, 'sk-hand-written');
++    const gate = evaluateWebSearchGate(
++      autoConfig([handWritten], handWritten.id),
++    );
++    expect(gate.ok).toBe(true);
++  });
++
++  it('derives the backend for a custom-provider entry on a DashScope host', () => {
++    // The custom provider matches any endpoint the user typed in, so it must
++    // not veto an endpoint the host check would otherwise accept.
++    const custom = {
++      id: 'my-model',
++      authType: 'openai',
++      envKey: generateCustomEnvKey(AuthType.USE_OPENAI, DASHSCOPE_BASE_URL),
++      baseUrl: DASHSCOPE_BASE_URL,
++    };
++    vi.stubEnv(custom.envKey, 'sk-custom');
++    const gate = evaluateWebSearchGate(autoConfig([custom], custom.id));
++    expect(gate.ok).toBe(true);
++    if (gate.ok) {
++      expect(gate.backend.apiKeyEnvKey).toBe(custom.envKey);
++    }
++  });
++
++  it('derives the backend from an env-only generation config', () => {
++    // The resolver carries the env value plus its source metadata, but no
++    // apiKeyEnvKey. The source keeps searches following key rotation.
++    vi.stubEnv('OPENAI_API_KEY', 'sk-env-only');
++    const gate = evaluateWebSearchGate(
++      autoConfig([], 'env-model', {
++        generationConfig: {
++          model: 'env-model',
++          authType: 'openai',
++          baseUrl: DASHSCOPE_BASE_URL,
++          apiKey: 'sk-env-only',
++        },
++        generationConfigSources: {
++          apiKey: { kind: 'env', envKey: 'OPENAI_API_KEY' },
++        },
++      }),
++    );
++    expect(gate.ok).toBe(true);
++    if (gate.ok) {
++      expect(gate.backend.baseUrl).toBe(DASHSCOPE_BASE_URL);
++      expect(gate.backend.apiKeyEnvKey).toBe('OPENAI_API_KEY');
++      expect(gate.backend.apiKey).toBeUndefined();
++    }
++  });
++
++  it('carries a literal primary-model credential into the derived backend', () => {
++    vi.stubEnv('OPENAI_API_KEY', '');
++    const gate = evaluateWebSearchGate(
++      autoConfig([], 'env-model', {
++        generationConfig: {
++          model: 'env-model',
++          authType: AuthType.USE_OPENAI,
++          baseUrl: DASHSCOPE_BASE_URL,
++          apiKey: 'sk-cli-literal',
++        },
++        generationConfigSources: { apiKey: { kind: 'cli' } },
++      }),
++    );
++    expect(gate.ok).toBe(true);
++    if (gate.ok) {
++      expect(gate.backend.apiKey).toBe('sk-cli-literal');
++      expect(gate.backend.apiKeyEnvKey).toBeUndefined();
++    }
++  });
++
++  it('uses the generation config env key when deriving a backend', () => {
++    vi.stubEnv('PLAN_KEY', 'sk-plan');
++    const gate = evaluateWebSearchGate(
++      autoConfig([], 'env-model', {
++        generationConfig: {
++          model: 'env-model',
++          authType: AuthType.USE_OPENAI,
++          baseUrl: DASHSCOPE_BASE_URL,
++          apiKeyEnvKey: 'PLAN_KEY',
++        },
++      }),
++    );
++    expect(gate.ok).toBe(true);
++    if (gate.ok) expect(gate.backend.apiKeyEnvKey).toBe('PLAN_KEY');
++  });
++
++  it('uses a literal credential when a declared env key is unset', () => {
++    vi.stubEnv(STANDARD.envKey, '');
++    const gate = evaluateWebSearchGate(
++      autoConfig([STANDARD], STANDARD.id, {
++        primaryRegistryBaseUrl: STANDARD.baseUrl,
++        generationConfig: {
++          model: STANDARD.id,
++          authType: AuthType.USE_OPENAI,
++          baseUrl: STANDARD.baseUrl,
++          apiKeyEnvKey: STANDARD.envKey,
++          apiKey: 'sk-settings-literal',
++        },
++        generationConfigSources: { apiKey: { kind: 'settings' } },
++      }),
++    );
++    expect(gate.ok).toBe(true);
++    if (gate.ok) {
++      expect(gate.backend.apiKey).toBe('sk-settings-literal');
++      expect(gate.backend.apiKeyEnvKey).toBeUndefined();
++    }
++  });
++
++  it('forwards custom headers from an env-only generation config', () => {
++    const customHeaders = { 'X-DashScope-WorkSpace': 'llm-xyz' };
++    const gate = evaluateWebSearchGate(
++      autoConfig([], 'env-model', {
++        generationConfig: {
++          model: 'env-model',
++          authType: AuthType.USE_OPENAI,
++          baseUrl:
++            'https://llm-xyz.cn-beijing.maas.aliyuncs.com/compatible-mode/v1',
++          apiKey: 'sk-workspace',
++          customHeaders,
++        },
++        generationConfigSources: { apiKey: { kind: 'settings' } },
++      }),
++    );
++    expect(gate.ok).toBe(true);
++    if (gate.ok) expect(gate.backend.customHeaders).toEqual(customHeaders);
++  });
++
++  it('keeps auto-derived web extraction disabled when requested', () => {
++    vi.stubEnv(STANDARD.envKey, 'sk-standard');
++    const gate = evaluateWebSearchGate(
++      makeConfig({
++        settings: { webExtractor: false },
++        models: [STANDARD],
++        primaryModel: STANDARD.id,
++      }),
++    );
++    expect(gate.ok).toBe(true);
++    if (gate.ok) expect(gate.backend.webExtractor).toBe(false);
++  });
++
++  it('forwards custom headers from the selected provider entry', () => {
++    const model = {
++      ...STANDARD,
++      generationConfig: { customHeaders: { 'X-Gateway-Route': 'ds' } },
++    };
++    vi.stubEnv(model.envKey, 'sk-standard');
++    const gate = evaluateWebSearchGate(autoConfig([model], model.id));
++    expect(gate.ok).toBe(true);
++    if (gate.ok) {
++      expect(gate.backend.customHeaders).toEqual({ 'X-Gateway-Route': 'ds' });
++    }
++  });
++
++  it('uses the registry-selected entry when model ids are duplicated', () => {
++    const intl = {
++      ...STANDARD,
++      envKey: 'DASHSCOPE_INTL_KEY',
++      baseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
++    };
++    vi.stubEnv(STANDARD.envKey, 'sk-standard');
++    vi.stubEnv(intl.envKey, 'sk-intl');
++    const gate = evaluateWebSearchGate(
++      autoConfig([STANDARD, intl], STANDARD.id, {
++        primaryRegistryBaseUrl: intl.baseUrl,
++      }),
++    );
++    expect(gate.ok).toBe(true);
++    if (gate.ok) expect(gate.backend.baseUrl).toBe(intl.baseUrl);
++  });
++
++  it('falls back to the selected generation config instead of a keyed sibling', () => {
++    const selected = { ...STANDARD, envKey: undefined };
++    const sibling = {
++      ...STANDARD,
++      envKey: 'DASHSCOPE_INTL_KEY',
++      baseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
++    };
++    vi.stubEnv(sibling.envKey, 'sk-intl');
++    const gate = evaluateWebSearchGate(
++      autoConfig([selected, sibling], selected.id, {
++        primaryRegistryBaseUrl: selected.baseUrl,
++        generationConfig: {
++          model: selected.id,
++          authType: AuthType.USE_OPENAI,
++          baseUrl: selected.baseUrl,
++          apiKey: 'sk-selected',
++        },
++        generationConfigSources: { apiKey: { kind: 'settings' } },
++      }),
++    );
++    expect(gate.ok).toBe(true);
++    if (gate.ok) {
++      expect(gate.backend.baseUrl).toBe(selected.baseUrl);
++      expect(gate.backend.apiKey).toBe('sk-selected');
++    }
++  });
++
++  it('does not scan other auth types before authentication is selected', () => {
++    vi.stubEnv(STANDARD.envKey, 'sk-standard');
++    const gate = evaluateWebSearchGate(
++      autoConfig([STANDARD], STANDARD.id, {
++        primaryAuthType: undefined,
++      }),
++    );
++    expect(gate.ok).toBe(false);
++    if (!gate.ok) expect(gate.silent).toBe(true);
++  });
++
++  it('still uses the selected generation config before authentication is resolved', () => {
++    const gate = evaluateWebSearchGate(
++      autoConfig([STANDARD], STANDARD.id, {
++        primaryAuthType: undefined,
++        generationConfig: {
++          model: STANDARD.id,
++          authType: AuthType.USE_OPENAI,
++          baseUrl: STANDARD.baseUrl,
++          apiKey: 'sk-selected',
++        },
++        generationConfigSources: { apiKey: { kind: 'settings' } },
++      }),
++    );
++    expect(gate.ok).toBe(true);
++    if (gate.ok) {
++      expect(gate.backend.baseUrl).toBe(STANDARD.baseUrl);
++      expect(gate.backend.apiKey).toBe('sk-selected');
++    }
++  });
++
++  it('accepts a non-preset internal Alibaba host on the automatic path', () => {
++    const internal = {
++      id: 'internal-model',
++      authType: AuthType.USE_OPENAI,
++      envKey: 'INTERNAL_MODEL_KEY',
++      baseUrl: 'https://gw.some-team.alibaba-inc.com/v1',
++    };
++    vi.stubEnv(internal.envKey, 'sk-internal');
++    const gate = evaluateWebSearchGate(autoConfig([internal], internal.id));
++    expect(gate.ok).toBe(true);
++    if (gate.ok) expect(gate.backend.baseUrl).toBe(internal.baseUrl);
++  });
++
++  it('rejects a non-OpenAI primary provider on an accepted host', () => {
++    const anthropic = {
++      id: 'shared-model',
++      authType: AuthType.USE_ANTHROPIC,
++      envKey: 'IDEALAB_OPUS_API_KEY',
++      baseUrl: 'https://idealab.alibaba-inc.com/api/anthropic',
++    };
++    vi.stubEnv(anthropic.envKey, 'sk-anthropic');
++    const gate = evaluateWebSearchGate(
++      autoConfig([anthropic], anthropic.id, {
++        primaryAuthType: AuthType.USE_ANTHROPIC,
++      }),
++    );
++    expect(gate.ok).toBe(false);
++    if (!gate.ok) expect(gate.silent).toBe(true);
++  });
++
++  it('uses the primary auth type to disambiguate duplicate model ids', () => {
++    const anthropic = {
++      id: STANDARD.id,
++      authType: AuthType.USE_ANTHROPIC,
++      envKey: 'ANTHROPIC_GATEWAY_KEY',
++      baseUrl: 'https://gateway.aliyun-inc.com/anthropic',
++    };
++    vi.stubEnv(STANDARD.envKey, 'sk-standard');
++    vi.stubEnv(anthropic.envKey, 'sk-anthropic');
++    const gate = evaluateWebSearchGate(
++      autoConfig([STANDARD, anthropic], STANDARD.id, {
++        primaryAuthType: AuthType.USE_ANTHROPIC,
++      }),
++    );
++    expect(gate.ok).toBe(false);
++    if (!gate.ok) expect(gate.silent).toBe(true);
++  });
++
++  it('never derives a side request from Qwen OAuth credentials', () => {
++    const oauth = {
++      id: 'qwen3.6-plus',
++      authType: AuthType.QWEN_OAUTH,
++      envKey: 'API_KEY',
++      baseUrl: DASHSCOPE_BASE_URL,
++    };
++    vi.stubEnv(oauth.envKey, 'oauth-token');
++    const gate = evaluateWebSearchGate(
++      autoConfig([oauth], oauth.id, {
++        primaryAuthType: AuthType.QWEN_OAUTH,
++      }),
++    );
++    expect(gate.ok).toBe(false);
++    if (!gate.ok) expect(gate.silent).toBe(true);
++  });
++
++  it('stays silently off when the env-only key variable is unset', () => {
++    vi.stubEnv('OPENAI_API_KEY', '');
++    const gate = evaluateWebSearchGate(
++      autoConfig([], 'env-model', {
++        generationConfig: {
++          model: 'env-model',
++          authType: 'openai',
++          baseUrl: DASHSCOPE_BASE_URL,
++          apiKey: 'stale-env-value',
++        },
++        generationConfigSources: {
++          apiKey: { kind: 'env', envKey: 'OPENAI_API_KEY' },
++        },
++      }),
++    );
++    expect(gate.ok).toBe(false);
++    if (!gate.ok) {
++      expect(gate.silent).toBe(true);
++    }
++  });
++
++  it('stays silently off for an env-only config on a non-DashScope host', () => {
++    vi.stubEnv('OPENAI_API_KEY', 'sk-env-only');
++    const gate = evaluateWebSearchGate(
++      autoConfig([], 'env-model', {
++        generationConfig: {
++          model: 'env-model',
++          authType: 'openai',
++          baseUrl: 'https://api.openai.com/v1',
++        },
++      }),
++    );
++    expect(gate.ok).toBe(false);
++    if (!gate.ok) {
++      expect(gate.silent).toBe(true);
++    }
++  });
++
++  it('stays silently off on a Coding Plan entry', () => {
++    // The preset matches but declares no backend: the endpoint has not been
++    // verified to serve the Responses API search tools.
++    vi.stubEnv(CODING_PLAN.envKey, 'sk-sp-coding');
++    expect(
++      findProviderByCredentials(CODING_PLAN.baseUrl, CODING_PLAN.envKey)?.id,
++    ).toBe('coding-plan');
++    const gate = evaluateWebSearchGate(
++      autoConfig([CODING_PLAN], CODING_PLAN.id),
++    );
++    expect(gate.ok).toBe(false);
++    if (!gate.ok) {
++      expect(gate.silent).toBe(true);
++    }
++  });
++
++  it('stays silently off on a hand-written Coding Plan host', () => {
++    const handWritten = {
++      id: 'my-model',
++      authType: 'openai',
++      envKey: 'MY_CODING_KEY',
++      baseUrl: 'https://coding-intl.dashscope.aliyuncs.com/v1',
++    };
++    vi.stubEnv(handWritten.envKey, 'sk-sp-hand-written');
++    const gate = evaluateWebSearchGate(
++      autoConfig([handWritten], handWritten.id),
++    );
++    expect(gate.ok).toBe(false);
++    if (!gate.ok) {
++      expect(gate.silent).toBe(true);
++    }
++  });
++
++  it('stays silently off on a hand-written China Coding Plan host', () => {
++    const handWritten = {
++      id: 'my-model',
++      authType: AuthType.USE_OPENAI,
++      envKey: 'MY_CODING_KEY',
++      baseUrl: CODING_PLAN_CHINA_BASE_URL,
++    };
++    vi.stubEnv(handWritten.envKey, 'sk-sp-hand-written');
++    const gate = evaluateWebSearchGate(
++      autoConfig([handWritten], handWritten.id),
++    );
++    expect(gate.ok).toBe(false);
++    if (!gate.ok) expect(gate.silent).toBe(true);
++  });
++
++  it('honors a preset veto even when its host would otherwise be accepted', () => {
++    const idealab = {
++      id: 'qwen3.6-plus',
++      authType: AuthType.USE_OPENAI,
++      envKey: 'IDEALAB_API_KEY',
++      baseUrl: 'https://idealab.alibaba-inc.com/api/openai/v1',
++    };
++    vi.stubEnv(idealab.envKey, 'sk-idealab');
++    const gate = evaluateWebSearchGate(autoConfig([idealab], idealab.id));
++    expect(gate.ok).toBe(false);
++    if (!gate.ok) {
++      expect(gate.notice).toContain(
++        'provider "idealab" declares no built-in web search backend',
++      );
++    }
++  });
++
++  it.each([
++    [CODING_PLAN.baseUrl + '/', 'ALT_CODING_KEY'],
++    ['https://idealab.alibaba-inc.com/api/openai/v1/', 'ALT_IDEALAB_KEY'],
++  ])(
++    'honors an endpoint preset veto despite credential formatting: %s',
++    (baseUrl, envKey) => {
++      const entry = {
++        id: 'qwen3.6-plus',
++        authType: AuthType.USE_OPENAI,
++        envKey,
++        baseUrl,
++      };
++      vi.stubEnv(envKey, 'sk-test');
++      const gate = evaluateWebSearchGate(autoConfig([entry], entry.id));
++      expect(gate.ok).toBe(false);
++      if (!gate.ok) expect(gate.silent).toBe(true);
++    },
++  );
++
++  it('honors an endpoint preset veto for a literal credential', () => {
++    const gate = evaluateWebSearchGate(
++      autoConfig([], 'qwen3.6-plus', {
++        generationConfig: {
++          model: 'qwen3.6-plus',
++          authType: AuthType.USE_OPENAI,
++          baseUrl: 'https://idealab.alibaba-inc.com/api/openai/v1',
++          apiKey: 'sk-literal',
++        },
++        generationConfigSources: { apiKey: { kind: 'settings' } },
++      }),
++    );
++    expect(gate.ok).toBe(false);
++    if (!gate.ok) expect(gate.silent).toBe(true);
++  });
++
++  it.each([
++    'https://qwen-gw.alicloudapi.com/v1',
++    'https://dashscope-proxy.example.com/v1',
++  ])(
++    'does not assume an unverified proxy host serves search: %s',
++    (baseUrl) => {
++      const proxy = {
++        id: 'qwen3.6-plus',
++        authType: AuthType.USE_OPENAI,
++        envKey: 'PROXY_KEY',
++        baseUrl,
++      };
++      vi.stubEnv(proxy.envKey, 'sk-proxy');
++      const gate = evaluateWebSearchGate(autoConfig([proxy], proxy.id));
++      expect(gate.ok).toBe(false);
++      if (!gate.ok) expect(gate.silent).toBe(true);
++    },
++  );
++
++  it('does not expose credentials embedded in an unsupported base URL', () => {
++    const unsafe = {
++      id: 'qwen3.6-plus',
++      authType: AuthType.USE_OPENAI,
++      envKey: 'UNSAFE_URL_KEY',
++      baseUrl: 'https://user:sk-secret@api.openai.com/v1',
++    };
++    vi.stubEnv(unsafe.envKey, 'sk-env');
++    const gate = evaluateWebSearchGate(autoConfig([unsafe], unsafe.id));
++    expect(gate.ok).toBe(false);
++    if (!gate.ok) expect(gate.notice).not.toContain('sk-secret');
++  });
++
++  it('stays silently off on a third-party provider, without falling back to another DashScope entry', () => {
++    vi.stubEnv(OPENROUTER.envKey, 'sk-or');
++    vi.stubEnv(STANDARD.envKey, 'sk-standard');
++    expect(
++      findProviderByCredentials(OPENROUTER.baseUrl, OPENROUTER.envKey)?.id,
++    ).toBe('openrouter');
++    const gate = evaluateWebSearchGate(
++      autoConfig([STANDARD, OPENROUTER], OPENROUTER.id),
++    );
++    expect(gate.ok).toBe(false);
++    if (!gate.ok) {
++      expect(gate.silent).toBe(true);
++    }
++  });
++
++  it('stays silently off when the entry key variable is unset', () => {
++    vi.stubEnv(STANDARD.envKey, '');
++    const gate = evaluateWebSearchGate(autoConfig([STANDARD], STANDARD.id));
++    expect(gate.ok).toBe(false);
++    if (!gate.ok) {
++      expect(gate.silent).toBe(true);
++    }
++  });
++
++  it('stays silently off on a plaintext-HTTP DashScope host', () => {
++    const insecure = {
++      id: 'my-model',
++      authType: 'openai',
++      envKey: 'MY_INSECURE_KEY',
++      baseUrl: 'http://dashscope.aliyuncs.com/compatible-mode/v1',
++    };
++    vi.stubEnv(insecure.envKey, 'sk-insecure');
++    const gate = evaluateWebSearchGate(autoConfig([insecure], insecure.id));
++    expect(gate.ok).toBe(false);
++    if (!gate.ok) {
++      expect(gate.silent).toBe(true);
++    }
++  });
++
++  it('stays silently off when disabled explicitly', () => {
++    vi.stubEnv(STANDARD.envKey, 'sk-standard');
++    const gate = evaluateWebSearchGate(
++      makeConfig({
++        settings: { enabled: false },
++        models: [STANDARD],
++        primaryModel: STANDARD.id,
++      }),
++    );
++    expect(gate.ok).toBe(false);
++    if (!gate.ok) {
++      expect(gate.silent).toBe(true);
++    }
++  });
++
++  it('still reports the no-model notice when explicitly enabled', () => {
++    vi.stubEnv(OPENROUTER.envKey, 'sk-or');
++    const gate = evaluateWebSearchGate(
++      makeConfig({
++        settings: { enabled: true },
++        models: [OPENROUTER],
++        primaryModel: OPENROUTER.id,
++      }),
++    );
++    expect(gate.ok).toBe(false);
++    if (!gate.ok) {
++      expect(gate.silent).toBeFalsy();
++      expect(gate.notice).toContain('no search model');
++    }
++  });
++
++  it('derives the backend when explicitly enabled without a model', () => {
++    vi.stubEnv(STANDARD.envKey, 'sk-standard');
++    const gate = evaluateWebSearchGate(
++      makeConfig({
++        settings: { enabled: true },
++        models: [STANDARD],
++        primaryModel: STANDARD.id,
++      }),
++    );
++    expect(gate.ok).toBe(true);
++    if (gate.ok) expect(gate.backend.modelId).toBe('qwen3.6-plus');
++  });
++
++  it('stays silently off instead of throwing when the config surface is incomplete', () => {
++    // The gate runs while the tool registry is being built, for whatever
++    // Config shape the caller has. A missing accessor must cost web search,
++    // not every other tool in the registry.
++    const broken = {
++      getWebSearchSettings: () => undefined,
++      getModel: () => 'some-model',
++      getCurrentAuthType: () => 'openai',
++      getCurrentModelRegistryBaseUrl: () => undefined,
++      getAllConfiguredModels: () => [],
++      getModelsConfig: () => ({}),
++    } as unknown as Config;
++    const gate = evaluateWebSearchGate(broken);
++    expect(gate.ok).toBe(false);
++    if (!gate.ok) {
++      expect(gate.silent).toBe(true);
++    }
++  });
++
++  it('reports explicit opt-in when automatic derivation throws', () => {
++    const broken = {
++      getWebSearchSettings: () => ({ enabled: true }),
++      getModel: () => 'some-model',
++      getCurrentAuthType: () => 'openai',
++      getCurrentModelRegistryBaseUrl: () => undefined,
++      getAllConfiguredModels: () => [],
++      getModelsConfig: () => ({}),
++    } as unknown as Config;
++    const gate = evaluateWebSearchGate(broken);
++    expect(gate.ok).toBe(false);
++    if (!gate.ok) {
++      expect(gate.silent).toBeFalsy();
++      expect(gate.notice).toContain('no search model');
++    }
++  });
++
++  it('does not override a declared env backend when its model is missing', () => {
++    vi.stubEnv(STANDARD.envKey, 'sk-standard');
++    const gate = evaluateWebSearchGate(
++      makeConfig({
++        settings: {
++          baseUrl: DASHSCOPE_BASE_URL,
++          apiKeyEnv: TEST_ENV_KEY,
++        },
++        models: [STANDARD],
++        primaryModel: STANDARD.id,
++      }),
++    );
++    expect(gate.ok).toBe(false);
++    if (!gate.ok) {
++      expect(gate.silent).toBeFalsy();
++      expect(gate.notice).toContain('no search model');
++    }
++  });
++
++  it('prefers an explicitly configured search model over derivation', () => {
++    vi.stubEnv(STANDARD.envKey, 'sk-standard');
++    const gate = evaluateWebSearchGate(
++      makeConfig({
++        settings: { model: 'qwen3.7-plus' },
++        models: [{ ...STANDARD, id: 'qwen3.7-plus' }],
++        primaryModel: 'qwen3.7-plus',
++      }),
++    );
++    expect(gate.ok).toBe(true);
++    if (gate.ok) {
++      expect(gate.backend.modelId).toBe('qwen3.7-plus');
++    }
++  });
++});
++
+ describe('WebSearchTool confirmation', () => {
+   it('asks by default, shows the query, and offers the standard always-allow rule', async () => {
+     const tool = new WebSearchTool(makeConfig());
+@@ -585,6 +1348,29 @@ describe('WebSearchTool validation', () => {
+ });
+ 
+ describe('WebSearchTool execute', () => {
++  it('uses a literal credential derived from the primary model', async () => {
++    vi.stubEnv('OPENAI_API_KEY', '');
++    mockCreate.mockResolvedValueOnce(
++      makeStream(completedEvents([SEARCH_ITEM, MESSAGE_ITEM])),
++    );
++    await runSearch(
++      makeConfig({
++        settings: undefined,
++        models: [],
++        primaryModel: 'env-model',
++        generationConfig: {
++          model: 'env-model',
++          authType: AuthType.USE_OPENAI,
++          baseUrl: DASHSCOPE_BASE_URL,
++          apiKey: 'sk-cli-literal',
++        },
++        generationConfigSources: { apiKey: { kind: 'cli' } },
++      }),
++    );
++    const opts = mockCtorOpts.current as { apiKey: string };
++    expect(opts.apiKey).toBe('sk-cli-literal');
++  });
++
+   it('returns a structured result with answer, opened pages, candidates, queries, citation policy, and safety footer', async () => {
+     mockCreate.mockResolvedValueOnce(
+       makeStream(

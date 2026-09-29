@@ -1,0 +1,2220 @@
+[
+  {
+    "episode_id": "QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77",
+    "title": "Percentage-of-context-window budgets scale the wrong way: ToolSearch preload never engages, and the always-on context warning never fires, on large windows",
+    "before": "At parent commit 6cfa25c967e348104609ee17ab020635c23f6ca0, ordinary deferred tools were hidden from the initial declaration list and exposed through the existing on-demand discovery path; GeminiClient.startChat warmed the registry, handled resume-history reveals, and then resolved the deferred-tool reminder without any context-window budget decision. There was no user setting or Config field for a deferred-tool preload threshold, and ToolRegistry had no operation that estimated the combined schema footprint and revealed the deferred set atomically. The parent already contained an always-on-context warning calculation based on contextWindowSize multiplied by a fixed ratio, and the pinned diff does not modify that warning path, so the warning symptom in the issue title is not evidenced as fixed by this episode.",
+    "after": "The implementation adds a session-start deferred-tool budget policy. The CLI exposes tools.toolSearch.threshold with default 10, forwards it into Config, and forces it to 0 in bare or safe mode. During startChat, after registry warm-up and resume reconciliation but before deferred-reminder construction, the client skips the budget path when the discovery surface is unavailable, the threshold is non-finite or non-positive, or the context window is invalid; otherwise it uses the configured context window or the model input-token-limit fallback, clamps a runtime threshold above 100 to 100, and passes a floored token budget to the registry. The registry considers every current deferred tool, including bundled and MCP tools, except always-loaded or explicitly visible tools, estimates the union as ceil(serialized-schema-characters divided by CHARS_PER_TOKEN), and reveals all candidates only when the union fits. If the union exceeds the budget, no candidate is newly revealed; already-revealed candidates still count toward the total. Revealed tools then appear in the initial declarations and are removed from the deferred reminder, while late registrations remain deferred until a later session start. The always-on-context warning code remains unchanged.",
+    "diff": "The pinned commit adds the threshold configuration contract and generated settings schema, a core Config getter/default, CLI-to-core propagation, a client-side context-percentage-to-token-budget gate, and a ToolRegistry all-or-nothing schema-footprint preload operation. It inserts the preload stage before deferred-reminder setup, adds debug diagnostics for no-candidate, over-budget, and preload branches, bounds the setting to 0-100 in the schema, adds a runtime upper clamp for hand-edited values, updates user/design documentation, and adds focused client, registry, and CLI tests. The commit changes 11 files with 516 insertions and 1 deletion. No implementation change touches the existing always-on-context warning calculation.",
+    "repository": "QwenLM/qwen-code",
+    "revision": "github-issue-12029",
+    "evidence_ids": [
+      "ev-bundle-anchor",
+      "ev-commit-meta",
+      "ev-diffstat",
+      "ev-parent-behavior",
+      "ev-design-rationale",
+      "ev-config-contract",
+      "ev-cli-propagation",
+      "ev-schema-bound",
+      "ev-client-budget",
+      "ev-context-fallback",
+      "ev-startup-order",
+      "ev-registry-budget",
+      "ev-declaration-consumer",
+      "ev-reminder-consumer",
+      "ev-client-tests",
+      "ev-registry-tests",
+      "ev-cli-tests",
+      "ev-warning-unchanged",
+      "ev-validation-run"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "QwenLM/qwen-code",
+      "issue": 12029,
+      "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/qwen-code",
+      "manifest_metadata": {
+        "category": "bounded-resource-budget-control",
+        "role": "train_candidate",
+        "case_id": "QwenLM/qwen-code#12029:bounded-resource-budget-control:train_candidate"
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "QwenLM/qwen-code",
+        "issue_number": 12029,
+        "issue": {
+          "number": 12029,
+          "title": "Percentage-of-context-window budgets scale the wrong way: ToolSearch preload never engages, and the always-on context warning never fires, on large windows",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [],
+        "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/qwen-code",
+        "pinned_ref": "18cb393e4b59555d5e90f7003267fb69a43f6c77",
+        "resolved_commit": "18cb393e4b59555d5e90f7003267fb69a43f6c77",
+        "parent_commit": "6cfa25c967e348104609ee17ab020635c23f6ca0",
+        "commit_show_stat": "commit 18cb393e4b59555d5e90f7003267fb69a43f6c77\nAuthor:     Dragon <52599892+DragonnZhang@users.noreply.github.com>\nAuthorDate: Thu Jul 30 07:01:01 2026 +0800\nCommit:     GitHub <noreply@github.com>\nCommitDate: Wed Jul 29 23:01:01 2026 +0000\n\n    feat(core): preload deferred tools within a context-window threshold (#7922)\n    \n    * feat(core): preload deferred tools within a context-window threshold\n    \n    Adds tools.toolSearch.threshold (default 10, percent of the context\n    window). At session start, when the combined estimated schema footprint\n    of every deferred tool - bundled built-ins and MCP alike - fits within\n    the budget, all are revealed upfront so the declaration list stays\n    stable for the whole session and prefix KV caches survive; otherwise\n    everything stays deferred. Set 0 to always defer. Mirrors Claude Code's\n    ENABLE_TOOL_SEARCH=auto threshold mode, extended to bundled deferred\n    tools because here every reveal rewrites the declaration list and busts\n    the prompt-cache prefix.\n    \n    Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>\n    \n    * feat(core): log deferred-tool preload budget decision\n    \n    Emit debugLogger diagnostics in preloadDeferredToolsWithinBudget covering\n    the computed budget, estimated token footprint, candidate count, and which\n    branch of the all-or-nothing gate was taken (no candidates, over budget, or\n    preloaded). Lets an operator diagnosing session-startup cost tell from debug\n    logs whether the deferred set fit the budget or was left behind ToolSearch,\n    without adding temporary instrumentation. No behavior change.\n    \n    * fix(tools): bound toolSearch.threshold to 0-100%\n    \n    The threshold setting is a percentage of the context window but had no\n    upper bound, so a value like 200 (a typo or misreading of the \"(%)\"\n    label) made the preload budget exceed the whole window and\n    unconditionally preloaded every deferred tool — the opposite of the\n    prefix-stability the threshold buys.\n    \n    - Add minimum:0/maximum:100 to the setting schema (jsonSchemaOverride,\n      like autoCompactThreshold) and regenerate the VS Code settings schema.\n    - Add a symmetric runtime upper guard next to the existing\n      'thresholdPercent <= 0' lower guard in client.ts, clamping to 100% so a\n      hand-edited settings file cannot slip a larger budget past validation.\n    \n    Adds a client test asserting a 200% threshold clamps to a full-context\n    budget.\n    \n    * test(core): cover configured preload budget\n    \n    * fix(tool-search): harden preload threshold\n    \n    * test(tool-search): cover preload exclusions\n    \n    ---------\n    \n    Co-authored-by: Claude Fable 5 <noreply@anthropic.com>\n\n docs/design/toolsearch-preload-threshold.md        |  75 +++++++++++\n docs/users/configuration/settings.md               |   1 +\n packages/cli/src/config/config.test.ts             |  37 ++++++\n packages/cli/src/config/config.ts                  |   2 +\n packages/cli/src/config/settingsSchema.ts          |  20 +++\n packages/core/src/config/config.ts                 |  26 ++++\n packages/core/src/core/client.test.ts              |  97 ++++++++++++++\n packages/core/src/core/client.ts                   |  52 +++++++-\n packages/core/src/tools/tool-registry.test.ts      | 148 +++++++++++++++++++++\n packages/core/src/tools/tool-registry.ts           |  52 ++++++++\n .../schemas/settings.schema.json                   |   7 +\n 11 files changed, 516 insertions(+), 1 deletion(-)\n",
+        "changed_files_name_status": "A\tdocs/design/toolsearch-preload-threshold.md\nM\tdocs/users/configuration/settings.md\nM\tpackages/cli/src/config/config.test.ts\nM\tpackages/cli/src/config/config.ts\nM\tpackages/cli/src/config/settingsSchema.ts\nM\tpackages/core/src/config/config.ts\nM\tpackages/core/src/core/client.test.ts\nM\tpackages/core/src/core/client.ts\nM\tpackages/core/src/tools/tool-registry.test.ts\nM\tpackages/core/src/tools/tool-registry.ts\nM\tpackages/vscode-ide-companion/schemas/settings.schema.json\n",
+        "linked_issue_numbers": [
+          12029
+        ],
+        "manifest_metadata": {
+          "category": "bounded-resource-budget-control"
+        },
+        "fetched_at": "2026-09-28T19:32:04.505734+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77",
+          "title": "Percentage-of-context-window budgets scale the wrong way: ToolSearch preload never engages, and the always-on context warning never fires, on large windows",
+          "before": "At parent commit 6cfa25c967e348104609ee17ab020635c23f6ca0, ordinary deferred tools were hidden from the initial declaration list and exposed through the existing on-demand discovery path; GeminiClient.startChat warmed the registry, handled resume-history reveals, and then resolved the deferred-tool reminder without any context-window budget decision. There was no user setting or Config field for a deferred-tool preload threshold, and ToolRegistry had no operation that estimated the combined schema footprint and revealed the deferred set atomically. The parent already contained an always-on-context warning calculation based on contextWindowSize multiplied by a fixed ratio, and the pinned diff does not modify that warning path, so the warning symptom in the issue title is not evidenced as fixed by this episode.",
+          "after": "The implementation adds a session-start deferred-tool budget policy. The CLI exposes tools.toolSearch.threshold with default 10, forwards it into Config, and forces it to 0 in bare or safe mode. During startChat, after registry warm-up and resume reconciliation but before deferred-reminder construction, the client skips the budget path when the discovery surface is unavailable, the threshold is non-finite or non-positive, or the context window is invalid; otherwise it uses the configured context window or the model input-token-limit fallback, clamps a runtime threshold above 100 to 100, and passes a floored token budget to the registry. The registry considers every current deferred tool, including bundled and MCP tools, except always-loaded or explicitly visible tools, estimates the union as ceil(serialized-schema-characters divided by CHARS_PER_TOKEN), and reveals all candidates only when the union fits. If the union exceeds the budget, no candidate is newly revealed; already-revealed candidates still count toward the total. Revealed tools then appear in the initial declarations and are removed from the deferred reminder, while late registrations remain deferred until a later session start. The always-on-context warning code remains unchanged.",
+          "diff": "The pinned commit adds the threshold configuration contract and generated settings schema, a core Config getter/default, CLI-to-core propagation, a client-side context-percentage-to-token-budget gate, and a ToolRegistry all-or-nothing schema-footprint preload operation. It inserts the preload stage before deferred-reminder setup, adds debug diagnostics for no-candidate, over-budget, and preload branches, bounds the setting to 0-100 in the schema, adds a runtime upper clamp for hand-edited values, updates user/design documentation, and adds focused client, registry, and CLI tests. The commit changes 11 files with 516 insertions and 1 deletion. No implementation change touches the existing always-on-context warning calculation."
+        },
+        "evidence_units": [
+          {
+            "id": "ev-bundle-anchor",
+            "kind": "commit",
+            "claim": "The evidence bundle anchors issue 12029 to resolved commit 18cb393e4b59555d5e90f7003267fb69a43f6c77 with parent 6cfa25c967e348104609ee17ab020635c23f6ca0 and classifies the episode as bounded-resource-budget-control; issue body, comments, timeline, and linked pull-request metadata are unavailable.",
+            "source": "C:\\Users\\W\\AppData\\Local\\Temp\\arex-skill-graph-codex\\universal-batch-20260929\\codex-run-rest-stdin\\QwenLM__qwen-code__12029\\issue-bundle.json"
+          },
+          {
+            "id": "ev-commit-meta",
+            "kind": "commit",
+            "claim": "The pinned commit is implementation-bearing and is titled `feat(core): preload deferred tools within a context-window threshold (#7922)`; its recorded parent is 6cfa25c967e348104609ee17ab020635c23f6ca0.",
+            "source": "git show --format=fuller --no-patch 18cb393e4b59555d5e90f7003267fb69a43f6c77"
+          },
+          {
+            "id": "ev-diffstat",
+            "kind": "diff",
+            "claim": "The pinned commit changes 11 files with 516 insertions and 1 deletion, including core client/config/tool-registry implementation, CLI configuration, generated settings schema, documentation, and focused tests.",
+            "source": "git show --stat --oneline 18cb393e4b59555d5e90f7003267fb69a43f6c77"
+          },
+          {
+            "id": "ev-parent-behavior",
+            "kind": "diff",
+            "claim": "The parent startChat implementation warmed the tool registry and processed resume-history reveals before resolving deferred reminders, but had no deferred-tool preload stage; the parent ToolRegistry exposed reveal/deferred-summary behavior but had no budgeted preload operation.",
+            "source": "git show 6cfa25c967e348104609ee17ab020635c23f6ca0:packages/core/src/core/client.ts; git show 6cfa25c967e348104609ee17ab020635c23f6ca0:packages/core/src/tools/tool-registry.ts; parent-to-pinned diff for those files"
+          },
+          {
+            "id": "ev-design-rationale",
+            "kind": "implementation",
+            "claim": "The checked-in design identifies the resource tradeoff: deferred-tool reveals rewrite the function-declaration prefix and invalidate prompt KV cache; it specifies a 10% context-window threshold, a union budget over bundled and MCP tools, all-or-nothing reveal, a zero opt-out, and session-start-only application.",
+            "source": "docs/design/toolsearch-preload-threshold.md:3-18,20-41,43-75"
+          },
+          {
+            "id": "ev-config-contract",
+            "kind": "implementation",
+            "claim": "Core ConfigParameters accepts a toolSearchThreshold percentage, Config stores it with a default of 10, and getToolSearchThreshold exposes the effective value to runtime consumers.",
+            "source": "packages/core/src/config/config.ts:984-993,1770,2072-2073,4915-4921"
+          },
+          {
+            "id": "ev-cli-propagation",
+            "kind": "call_site",
+            "claim": "The CLI config assembly passes settings.tools.toolSearch.threshold into ConfigParameters and supplies 0 instead when bareMode or safeMode is active.",
+            "source": "packages/cli/src/config/config.ts:2084-2085"
+          },
+          {
+            "id": "ev-schema-bound",
+            "kind": "implementation",
+            "claim": "The settings schema defines the deferred-tool threshold as a number with default 10 and a JSON-schema minimum of 0 and maximum of 100; the generated VS Code schema mirrors type, bounds, and default.",
+            "source": "packages/cli/src/config/settingsSchema.ts:2363-2381; packages/vscode-ide-companion/schemas/settings.schema.json:1091-1099"
+          },
+          {
+            "id": "ev-client-budget",
+            "kind": "implementation",
+            "claim": "The session-start budget adapter skips when ToolSearch is absent, the threshold is non-finite or non-positive, or the context window is invalid; otherwise it clamps the percentage to 100, selects configured contextWindowSize or tokenLimit(model,'input'), and passes floor(contextWindow*boundedPercent/100) to the registry.",
+            "source": "packages/core/src/core/client.ts:1069-1111"
+          },
+          {
+            "id": "ev-context-fallback",
+            "kind": "implementation",
+            "claim": "The model input-token-limit helper returns a known model limit when available and otherwise falls back to DEFAULT_TOKEN_LIMIT, which is the fallback used by the client budget adapter.",
+            "source": "packages/core/src/core/tokenLimits.ts:292-350"
+          },
+          {
+            "id": "ev-startup-order",
+            "kind": "call_site",
+            "claim": "startChat invokes the new deferred_tool_preload stage after tool_registry_warm and resume_deferred_tool_reveal but before deferred_reminder_setup; setTools subsequently obtains the declaration list from the resulting registry state.",
+            "source": "packages/core/src/core/client.ts:1471-1509; packages/core/src/core/client.ts:735-750"
+          },
+          {
+            "id": "ev-registry-budget",
+            "kind": "implementation",
+            "claim": "The registry preload operation collects tools with shouldDefer while excluding alwaysLoad and visibleTools, sums JSON.stringify(tool.schema).length, converts the total with ceil(totalChars/CHARS_PER_TOKEN), leaves every candidate deferred when the union exceeds budget, and reveals every unrevealed candidate when it fits. Existing revealed candidates remain in the candidate set and therefore count toward the total.",
+            "source": "packages/core/src/tools/tool-registry.ts:833-881"
+          },
+          {
+            "id": "ev-declaration-consumer",
+            "kind": "call_site",
+            "claim": "The declaration path includes a deferred tool when it is not hidden; the hidden predicate requires shouldDefer, not alwaysLoad, not already revealed, and not listed in visibleTools. Therefore revealing a candidate makes its schema part of subsequent declarations, while always-loaded and visible tools do not need preload budget.",
+            "source": "packages/core/src/tools/tool-registry.ts:720-793"
+          },
+          {
+            "id": "ev-reminder-consumer",
+            "kind": "call_site",
+            "claim": "When ToolSearch is available, deferred-reminder setup filters out already-revealed tools; when ToolSearch is unavailable, the existing branch eagerly reveals all deferred summaries and returns no reminder. The new budget adapter intentionally returns before that existing eager-reveal branch when discovery is unavailable.",
+            "source": "packages/core/src/core/client.ts:1121-1145"
+          },
+          {
+            "id": "ev-client-tests",
+            "kind": "test",
+            "claim": "Client tests assert the default-token-limit fallback at a mocked 10% threshold, use of an explicit 50,000-token context window, no preload for threshold 0 or NaN, clamping a 200% threshold to a full-context budget, and no preload when ToolSearch is unavailable.",
+            "source": "packages/core/src/core/client.test.ts:1324-1414"
+          },
+          {
+            "id": "ev-registry-tests",
+            "kind": "test",
+            "claim": "Registry tests assert that bundled and MCP deferred tools are all revealed when the union fits, none are revealed when it exceeds, bundled tools participate in the all-or-nothing union, already-revealed tools still count, and visible or always-loaded tools are excluded from the preload budget.",
+            "source": "packages/core/src/tools/tool-registry.test.ts:569-713"
+          },
+          {
+            "id": "ev-cli-tests",
+            "kind": "test",
+            "claim": "CLI config tests assert threshold forwarding at 25, defaulting to 10, and forcing 0 in safe and bare modes.",
+            "source": "packages/cli/src/config/config.test.ts:2427-2462"
+          },
+          {
+            "id": "ev-warning-unchanged",
+            "kind": "diff",
+            "claim": "The parent and pinned versions use the same buildMemoryContextWarning logic: contextWindowSize is selected from configured/model/fallback sources, estimated tokens are compared with floor(contextWindowSize*MEMORY_CONTEXT_WARNING_RATIO), and the warning text is emitted above that threshold. The pinned diff adds threshold plumbing elsewhere but no hunk in this warning method.",
+            "source": "packages/core/src/config/config.ts:3409-3434; git show 6cfa25c967e348104609ee17ab020635c23f6ca0:packages/core/src/config/config.ts around buildMemoryContextWarning; parent-to-pinned diff for packages/core/src/config/config.ts"
+          },
+          {
+            "id": "ev-validation-run",
+            "kind": "validation",
+            "claim": "A focused validation attempt did not reach test execution: the packages had no local Vitest, npx fetched Vitest 5, startup failed on a missing native rolldown binding, and the host Node version was v20.13.1 while the repository instructions require Node >=22. The committed test files therefore remain direct validation oracles, but no green runtime result is claimed.",
+            "source": "Attempted `npx vitest run src/core/client.test.ts src/tools/tool-registry.test.ts` from packages/core and `npx vitest run src/config/config.test.ts` from packages/cli; command output reported missing native rolldown binding and Node engine mismatch"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "configure-deferred-preload-threshold",
+            "description": "Expose a session-start deferred-tool preload percentage, carry it from user settings into core configuration, default it to 10, and disable the policy in CLI bare/safe modes.",
+            "evidence_ids": [
+              "ev-config-contract",
+              "ev-cli-propagation",
+              "ev-schema-bound",
+              "ev-cli-tests"
+            ],
+            "semantic_action": {
+              "intent": "Make deferred-resource preloading an explicit, mode-aware session budget policy.",
+              "module_role": "user configuration and session-budget contract",
+              "operation": "propagate",
+              "pre_state": "No configuration value reaches core session startup to size deferred-tool preloading, so startup has no user-selectable percentage policy.",
+              "post_state": "A threshold percentage is available to startup with default 10; ordinary CLI sessions receive the configured value, while bare and safe sessions receive 0.",
+              "validation": "CLI tests assert configured forwarding at 25, default 10, and forced 0 in safe and bare modes; the settings schema supplies the declared numeric contract.",
+              "parameters": [
+                "threshold percentage",
+                "default percentage",
+                "execution safety mode"
+              ],
+              "evidence_ids": [
+                "ev-config-contract",
+                "ev-cli-propagation",
+                "ev-cli-tests"
+              ]
+            }
+          },
+          {
+            "name": "harden-threshold-domain",
+            "description": "Defend the percentage invariant at both the declarative settings boundary and runtime so a hand-edited value above 100 cannot allocate a budget larger than the full context window.",
+            "evidence_ids": [
+              "ev-schema-bound",
+              "ev-client-budget",
+              "ev-client-tests",
+              "ev-commit-meta"
+            ],
+            "semantic_action": {
+              "intent": "Prevent out-of-range percentage input from turning a bounded preload budget into an oversized or effectively unconditional preload.",
+              "module_role": "configuration and runtime invariant guard",
+              "operation": "clamp",
+              "pre_state": "The new percentage policy can be bypassed by hand-editing or otherwise supplying a value above 100 after static schema validation; the derived budget would otherwise exceed the whole context window.",
+              "post_state": "Declarative validation accepts only 0-100, and runtime input above 100 is clamped to 100 before token-budget calculation; non-finite and non-positive values still select the no-preload branch.",
+              "validation": "The generated and source schemas declare minimum 0 and maximum 100, and the client test supplies 200 and asserts a full-context budget rather than a budget above the context window.",
+              "parameters": [
+                "threshold percentage",
+                "maximum allowed percentage",
+                "context-window size",
+                "runtime settings source"
+              ],
+              "evidence_ids": [
+                "ev-schema-bound",
+                "ev-client-budget",
+                "ev-client-tests"
+              ]
+            }
+          },
+          {
+            "name": "derive-session-context-budget",
+            "description": "Convert an accepted positive threshold and available model capacity into a floored token budget at session start, using the configured context window or model-limit fallback and skipping unsupported branches.",
+            "evidence_ids": [
+              "ev-client-budget",
+              "ev-context-fallback",
+              "ev-client-tests"
+            ],
+            "semantic_action": {
+              "intent": "Translate a percentage resource policy into a concrete token budget before deferred-resource reconciliation.",
+              "module_role": "session-start resource-budget adapter",
+              "operation": "normalize",
+              "pre_state": "A threshold policy exists, but startup has not derived the number of schema tokens that may be declared up front; explicit context capacity may be absent.",
+              "post_state": "When deferred discovery is available and the threshold and context are usable, the registry receives floor(contextWindow*boundedThreshold/100); otherwise the budgeted preload call is omitted.",
+              "validation": "Client tests cover the model-limit fallback at 10%, an explicit 50,000-token context at 10%, threshold 0, non-finite threshold, over-100 input, and missing discovery surface.",
+              "parameters": [
+                "deferred-discovery availability",
+                "threshold percentage",
+                "configured context-window size",
+                "model input-token-limit fallback",
+                "token-budget rounding rule"
+              ],
+              "evidence_ids": [
+                "ev-client-budget",
+                "ev-context-fallback",
+                "ev-client-tests"
+              ]
+            }
+          },
+          {
+            "name": "atomically-preload-fitting-deferred-set",
+            "description": "Estimate the complete eligible deferred-tool schema union and reveal every candidate only when the combined estimate fits the supplied budget; preserve full deferral on overflow.",
+            "evidence_ids": [
+              "ev-registry-budget",
+              "ev-declaration-consumer",
+              "ev-registry-tests",
+              "ev-design-rationale"
+            ],
+            "semantic_action": {
+              "intent": "Avoid incremental declaration-list and prompt-prefix churn for a small deferred set while retaining on-demand discovery for a set that exceeds the budget.",
+              "module_role": "deferred-resource registry gate",
+              "operation": "guard",
+              "pre_state": "Deferred tool schemas are hidden behind discovery, and the registry has no combined footprint decision; bundled and MCP candidates may coexist with already-revealed, visible, or always-loaded tools.",
+              "post_state": "The registry estimates the union of eligible deferred schemas as ceil(serialized-schema-characters/CHARS_PER_TOKEN) and reveals all eligible unrevealed candidates iff that estimate is within budget; otherwise no candidate is newly revealed. Visible and always-loaded tools are excluded, while already-revealed candidates still count.",
+              "validation": "Registry tests cover fit, overflow, bundled-plus-MCP all-or-nothing behavior, already-revealed accounting, visible-tool exclusion, and always-loaded exclusion; declaration-path code shows that revealed schemas enter the function-declaration list.",
+              "parameters": [
+                "token budget",
+                "current deferred-resource set",
+                "serialized schemas",
+                "characters-per-token estimate",
+                "visible-resource set",
+                "always-loaded classification",
+                "already-revealed state"
+              ],
+              "evidence_ids": [
+                "ev-registry-budget",
+                "ev-declaration-consumer",
+                "ev-registry-tests"
+              ]
+            }
+          },
+          {
+            "name": "synchronize-startup-declarations",
+            "description": "Run the budgeted reveal after registry warm/resume handling and before deferred-reminder construction so the initial declaration list and reminder reflect the same revealed state without introducing a mid-session preload mutation.",
+            "evidence_ids": [
+              "ev-startup-order",
+              "ev-reminder-consumer",
+              "ev-client-tests",
+              "ev-design-rationale"
+            ],
+            "semantic_action": {
+              "intent": "Apply the resource decision at the stable startup boundary so preloaded schemas are declared initially and are not later reintroduced as deferred reminders.",
+              "module_role": "startup declaration synchronizer",
+              "operation": "sequence",
+              "pre_state": "Startup would resolve deferred reminders without a budget stage, so any preload decision would either be absent from initial declarations or require a later declaration-list change.",
+              "post_state": "Preload runs after warm/resume reconciliation and before reminder setup; revealed tools are included in the initial declarations and filtered from the deferred reminder, while the existing no-discovery eager-reveal branch and late-registration deferral remain intact.",
+              "validation": "The client startup call site establishes the stage ordering; reminder and declaration consumers show how revealed state is applied; client tests cover the preload stage and the no-discovery skip branch. No direct prompt-cache measurement is present.",
+              "parameters": [
+                "startup phase",
+                "registry reveal state",
+                "initial function-declaration list",
+                "deferred reminder",
+                "late resource registration",
+                "discovery-surface availability"
+              ],
+              "evidence_ids": [
+                "ev-startup-order",
+                "ev-reminder-consumer",
+                "ev-client-tests"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "bounded-startup-deferred-resource-preload",
+            "description": "Establish a bounded percentage policy, harden its domain, derive a token budget from actual context capacity, atomically reveal the complete eligible deferred set only when it fits, and construct the initial declarations/reminder from the resulting state.",
+            "atomic_names": [
+              "configure-deferred-preload-threshold",
+              "harden-threshold-domain",
+              "derive-session-context-budget",
+              "atomically-preload-fitting-deferred-set",
+              "synchronize-startup-declarations"
+            ],
+            "evidence_ids": [
+              "ev-parent-behavior",
+              "ev-config-contract",
+              "ev-cli-propagation",
+              "ev-schema-bound",
+              "ev-client-budget",
+              "ev-startup-order",
+              "ev-registry-budget",
+              "ev-reminder-consumer",
+              "ev-client-tests",
+              "ev-registry-tests",
+              "ev-cli-tests"
+            ],
+            "workflow_graph": {
+              "goal": "Bound the amount of deferred-resource schema declared up front by a percentage of available context while avoiding partial preload and preserving on-demand discovery when the union is too large.",
+              "entry_state": "The parent startup path hides ordinary deferred tools behind discovery without a context-scaled preload policy or combined schema-footprint gate.",
+              "exit_state": "For a valid positive policy and fitting current deferred set, all eligible deferred schemas are in the initial declaration list and absent from the deferred reminder; for over-budget, disabled, invalid, or unavailable branches, no invalid budgeted preload occurs and the existing deferral/eager-reveal behavior remains.",
+              "steps": [
+                {
+                  "action_name": "configure-deferred-preload-threshold",
+                  "role": "establish-contract",
+                  "optional": false
+                },
+                {
+                  "action_name": "harden-threshold-domain",
+                  "role": "repair",
+                  "optional": false
+                },
+                {
+                  "action_name": "derive-session-context-budget",
+                  "role": "implement",
+                  "optional": false
+                },
+                {
+                  "action_name": "atomically-preload-fitting-deferred-set",
+                  "role": "reconcile",
+                  "optional": false
+                },
+                {
+                  "action_name": "synchronize-startup-declarations",
+                  "role": "validate",
+                  "optional": false
+                }
+              ],
+              "edges": [
+                {
+                  "from": "configure-deferred-preload-threshold",
+                  "to": "harden-threshold-domain",
+                  "type": "requires"
+                },
+                {
+                  "from": "configure-deferred-preload-threshold",
+                  "to": "derive-session-context-budget",
+                  "type": "requires"
+                },
+                {
+                  "from": "harden-threshold-domain",
+                  "to": "derive-session-context-budget",
+                  "type": "repairs"
+                },
+                {
+                  "from": "derive-session-context-budget",
+                  "to": "atomically-preload-fitting-deferred-set",
+                  "type": "enables"
+                },
+                {
+                  "from": "atomically-preload-fitting-deferred-set",
+                  "to": "synchronize-startup-declarations",
+                  "type": "enables"
+                }
+              ],
+              "unresolved_or_deferred": [
+                "The no-preload branches are runtime predicates, not separate implementation stages: discovery unavailable, threshold non-finite or <=0, invalid context, and an over-budget union preserve the existing non-preload behavior.",
+                "Tools registered after startup remain deferred until a later session start; the design explicitly avoids calling this policy from mid-session setTools synchronization.",
+                "The prompt KV-cache stability benefit is reasoned from declaration-list ordering and design comments but has no direct end-to-end cache-hit measurement in the pinned episode.",
+                "The always-on-context warning named in the issue title is outside this workflow because its parent/current implementation is unchanged."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Can the issue-to-commit relationship be independently confirmed from GitHub discussion? The local bundle supplies the resolved-commit mapping, but issue body, comments, timeline, linked pull requests, and review discussion are unavailable; the commit subject itself references #7922 while the bundle issue is #12029.",
+          "Was the always-on-context warning symptom intended to be fixed by this pinned implementation? The parent and pinned versions contain the same context-warning calculation, so no evidence supports claiming that part of the issue was resolved here.",
+          "Can the focused client, registry, and CLI tests be executed under a Node >=22 environment with the repository's local dependencies? The attempted run could not start because Vitest was fetched transiently and failed on a missing native rolldown binding under Node v20.13.1.",
+          "Is there an end-to-end oracle measuring prompt-prefix KV-cache stability or startup cost? The pinned episode supplies unit-test oracles and design/code rationale, but no direct cache or latency measurement.",
+          "No cross-project Resolution Pattern is proposed because this extraction contains one repository episode and the required holdout evidence is not present."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "configure-deferred-preload-threshold",
+          "description": "Expose a session-start deferred-tool preload percentage, carry it from user settings into core configuration, default it to 10, and disable the policy in CLI bare/safe modes.",
+          "evidence_ids": [
+            "ev-config-contract",
+            "ev-cli-propagation",
+            "ev-schema-bound",
+            "ev-cli-tests"
+          ],
+          "semantic_action": {
+            "intent": "Make deferred-resource preloading an explicit, mode-aware session budget policy.",
+            "module_role": "user configuration and session-budget contract",
+            "operation": "propagate",
+            "pre_state": "No configuration value reaches core session startup to size deferred-tool preloading, so startup has no user-selectable percentage policy.",
+            "post_state": "A threshold percentage is available to startup with default 10; ordinary CLI sessions receive the configured value, while bare and safe sessions receive 0.",
+            "validation": "CLI tests assert configured forwarding at 25, default 10, and forced 0 in safe and bare modes; the settings schema supplies the declared numeric contract.",
+            "parameters": [
+              "threshold percentage",
+              "default percentage",
+              "execution safety mode"
+            ],
+            "evidence_ids": [
+              "ev-config-contract",
+              "ev-cli-propagation",
+              "ev-cli-tests"
+            ]
+          }
+        },
+        {
+          "name": "harden-threshold-domain",
+          "description": "Defend the percentage invariant at both the declarative settings boundary and runtime so a hand-edited value above 100 cannot allocate a budget larger than the full context window.",
+          "evidence_ids": [
+            "ev-schema-bound",
+            "ev-client-budget",
+            "ev-client-tests",
+            "ev-commit-meta"
+          ],
+          "semantic_action": {
+            "intent": "Prevent out-of-range percentage input from turning a bounded preload budget into an oversized or effectively unconditional preload.",
+            "module_role": "configuration and runtime invariant guard",
+            "operation": "clamp",
+            "pre_state": "The new percentage policy can be bypassed by hand-editing or otherwise supplying a value above 100 after static schema validation; the derived budget would otherwise exceed the whole context window.",
+            "post_state": "Declarative validation accepts only 0-100, and runtime input above 100 is clamped to 100 before token-budget calculation; non-finite and non-positive values still select the no-preload branch.",
+            "validation": "The generated and source schemas declare minimum 0 and maximum 100, and the client test supplies 200 and asserts a full-context budget rather than a budget above the context window.",
+            "parameters": [
+              "threshold percentage",
+              "maximum allowed percentage",
+              "context-window size",
+              "runtime settings source"
+            ],
+            "evidence_ids": [
+              "ev-schema-bound",
+              "ev-client-budget",
+              "ev-client-tests"
+            ]
+          }
+        },
+        {
+          "name": "derive-session-context-budget",
+          "description": "Convert an accepted positive threshold and available model capacity into a floored token budget at session start, using the configured context window or model-limit fallback and skipping unsupported branches.",
+          "evidence_ids": [
+            "ev-client-budget",
+            "ev-context-fallback",
+            "ev-client-tests"
+          ],
+          "semantic_action": {
+            "intent": "Translate a percentage resource policy into a concrete token budget before deferred-resource reconciliation.",
+            "module_role": "session-start resource-budget adapter",
+            "operation": "normalize",
+            "pre_state": "A threshold policy exists, but startup has not derived the number of schema tokens that may be declared up front; explicit context capacity may be absent.",
+            "post_state": "When deferred discovery is available and the threshold and context are usable, the registry receives floor(contextWindow*boundedThreshold/100); otherwise the budgeted preload call is omitted.",
+            "validation": "Client tests cover the model-limit fallback at 10%, an explicit 50,000-token context at 10%, threshold 0, non-finite threshold, over-100 input, and missing discovery surface.",
+            "parameters": [
+              "deferred-discovery availability",
+              "threshold percentage",
+              "configured context-window size",
+              "model input-token-limit fallback",
+              "token-budget rounding rule"
+            ],
+            "evidence_ids": [
+              "ev-client-budget",
+              "ev-context-fallback",
+              "ev-client-tests"
+            ]
+          }
+        },
+        {
+          "name": "atomically-preload-fitting-deferred-set",
+          "description": "Estimate the complete eligible deferred-tool schema union and reveal every candidate only when the combined estimate fits the supplied budget; preserve full deferral on overflow.",
+          "evidence_ids": [
+            "ev-registry-budget",
+            "ev-declaration-consumer",
+            "ev-registry-tests",
+            "ev-design-rationale"
+          ],
+          "semantic_action": {
+            "intent": "Avoid incremental declaration-list and prompt-prefix churn for a small deferred set while retaining on-demand discovery for a set that exceeds the budget.",
+            "module_role": "deferred-resource registry gate",
+            "operation": "guard",
+            "pre_state": "Deferred tool schemas are hidden behind discovery, and the registry has no combined footprint decision; bundled and MCP candidates may coexist with already-revealed, visible, or always-loaded tools.",
+            "post_state": "The registry estimates the union of eligible deferred schemas as ceil(serialized-schema-characters/CHARS_PER_TOKEN) and reveals all eligible unrevealed candidates iff that estimate is within budget; otherwise no candidate is newly revealed. Visible and always-loaded tools are excluded, while already-revealed candidates still count.",
+            "validation": "Registry tests cover fit, overflow, bundled-plus-MCP all-or-nothing behavior, already-revealed accounting, visible-tool exclusion, and always-loaded exclusion; declaration-path code shows that revealed schemas enter the function-declaration list.",
+            "parameters": [
+              "token budget",
+              "current deferred-resource set",
+              "serialized schemas",
+              "characters-per-token estimate",
+              "visible-resource set",
+              "always-loaded classification",
+              "already-revealed state"
+            ],
+            "evidence_ids": [
+              "ev-registry-budget",
+              "ev-declaration-consumer",
+              "ev-registry-tests"
+            ]
+          }
+        },
+        {
+          "name": "synchronize-startup-declarations",
+          "description": "Run the budgeted reveal after registry warm/resume handling and before deferred-reminder construction so the initial declaration list and reminder reflect the same revealed state without introducing a mid-session preload mutation.",
+          "evidence_ids": [
+            "ev-startup-order",
+            "ev-reminder-consumer",
+            "ev-client-tests",
+            "ev-design-rationale"
+          ],
+          "semantic_action": {
+            "intent": "Apply the resource decision at the stable startup boundary so preloaded schemas are declared initially and are not later reintroduced as deferred reminders.",
+            "module_role": "startup declaration synchronizer",
+            "operation": "sequence",
+            "pre_state": "Startup would resolve deferred reminders without a budget stage, so any preload decision would either be absent from initial declarations or require a later declaration-list change.",
+            "post_state": "Preload runs after warm/resume reconciliation and before reminder setup; revealed tools are included in the initial declarations and filtered from the deferred reminder, while the existing no-discovery eager-reveal branch and late-registration deferral remain intact.",
+            "validation": "The client startup call site establishes the stage ordering; reminder and declaration consumers show how revealed state is applied; client tests cover the preload stage and the no-discovery skip branch. No direct prompt-cache measurement is present.",
+            "parameters": [
+              "startup phase",
+              "registry reveal state",
+              "initial function-declaration list",
+              "deferred reminder",
+              "late resource registration",
+              "discovery-surface availability"
+            ],
+            "evidence_ids": [
+              "ev-startup-order",
+              "ev-reminder-consumer",
+              "ev-client-tests"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "bounded-startup-deferred-resource-preload",
+          "description": "Establish a bounded percentage policy, harden its domain, derive a token budget from actual context capacity, atomically reveal the complete eligible deferred set only when it fits, and construct the initial declarations/reminder from the resulting state.",
+          "atomic_names": [
+            "configure-deferred-preload-threshold",
+            "harden-threshold-domain",
+            "derive-session-context-budget",
+            "atomically-preload-fitting-deferred-set",
+            "synchronize-startup-declarations"
+          ],
+          "evidence_ids": [
+            "ev-parent-behavior",
+            "ev-config-contract",
+            "ev-cli-propagation",
+            "ev-schema-bound",
+            "ev-client-budget",
+            "ev-startup-order",
+            "ev-registry-budget",
+            "ev-reminder-consumer",
+            "ev-client-tests",
+            "ev-registry-tests",
+            "ev-cli-tests"
+          ],
+          "workflow_graph": {
+            "goal": "Bound the amount of deferred-resource schema declared up front by a percentage of available context while avoiding partial preload and preserving on-demand discovery when the union is too large.",
+            "entry_state": "The parent startup path hides ordinary deferred tools behind discovery without a context-scaled preload policy or combined schema-footprint gate.",
+            "exit_state": "For a valid positive policy and fitting current deferred set, all eligible deferred schemas are in the initial declaration list and absent from the deferred reminder; for over-budget, disabled, invalid, or unavailable branches, no invalid budgeted preload occurs and the existing deferral/eager-reveal behavior remains.",
+            "steps": [
+              {
+                "action_name": "configure-deferred-preload-threshold",
+                "role": "establish-contract",
+                "optional": false
+              },
+              {
+                "action_name": "harden-threshold-domain",
+                "role": "repair",
+                "optional": false
+              },
+              {
+                "action_name": "derive-session-context-budget",
+                "role": "implement",
+                "optional": false
+              },
+              {
+                "action_name": "atomically-preload-fitting-deferred-set",
+                "role": "reconcile",
+                "optional": false
+              },
+              {
+                "action_name": "synchronize-startup-declarations",
+                "role": "validate",
+                "optional": false
+              }
+            ],
+            "edges": [
+              {
+                "from": "configure-deferred-preload-threshold",
+                "to": "harden-threshold-domain",
+                "type": "requires"
+              },
+              {
+                "from": "configure-deferred-preload-threshold",
+                "to": "derive-session-context-budget",
+                "type": "requires"
+              },
+              {
+                "from": "harden-threshold-domain",
+                "to": "derive-session-context-budget",
+                "type": "repairs"
+              },
+              {
+                "from": "derive-session-context-budget",
+                "to": "atomically-preload-fitting-deferred-set",
+                "type": "enables"
+              },
+              {
+                "from": "atomically-preload-fitting-deferred-set",
+                "to": "synchronize-startup-declarations",
+                "type": "enables"
+              }
+            ],
+            "unresolved_or_deferred": [
+              "The no-preload branches are runtime predicates, not separate implementation stages: discovery unavailable, threshold non-finite or <=0, invalid context, and an over-budget union preserve the existing non-preload behavior.",
+              "Tools registered after startup remain deferred until a later session start; the design explicitly avoids calling this policy from mid-session setTools synchronization.",
+              "The prompt KV-cache stability benefit is reasoned from declaration-list ordering and design comments but has no direct end-to-end cache-hit measurement in the pinned episode.",
+              "The always-on-context warning named in the issue title is outside this workflow because its parent/current implementation is unchanged."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Can the issue-to-commit relationship be independently confirmed from GitHub discussion? The local bundle supplies the resolved-commit mapping, but issue body, comments, timeline, linked pull requests, and review discussion are unavailable; the commit subject itself references #7922 while the bundle issue is #12029.",
+        "Was the always-on-context warning symptom intended to be fixed by this pinned implementation? The parent and pinned versions contain the same context-warning calculation, so no evidence supports claiming that part of the issue was resolved here.",
+        "Can the focused client, registry, and CLI tests be executed under a Node >=22 environment with the repository's local dependencies? The attempted run could not start because Vitest was fetched transiently and failed on a missing native rolldown binding under Node v20.13.1.",
+        "Is there an end-to-end oracle measuring prompt-prefix KV-cache stability or startup cost? The pinned episode supplies unit-test oracles and design/code rationale, but no direct cache or latency measurement.",
+        "No cross-project Resolution Pattern is proposed because this extraction contains one repository episode and the required holdout evidence is not present."
+      ]
+    },
+    "call_sites": [
+      "The CLI config assembly passes settings.tools.toolSearch.threshold into ConfigParameters and supplies 0 instead when bareMode or safeMode is active.",
+      "startChat invokes the new deferred_tool_preload stage after tool_registry_warm and resume_deferred_tool_reveal but before deferred_reminder_setup; setTools subsequently obtains the declaration list from the resulting registry state.",
+      "The declaration path includes a deferred tool when it is not hidden; the hidden predicate requires shouldDefer, not alwaysLoad, not already revealed, and not listed in visibleTools. Therefore revealing a candidate makes its schema part of subsequent declarations, while always-loaded and visible tools do not need preload budget.",
+      "When ToolSearch is available, deferred-reminder setup filters out already-revealed tools; when ToolSearch is unavailable, the existing branch eagerly reveals all deferred summaries and returns no reminder. The new budget adapter intentionally returns before that existing eager-reveal branch when discovery is unavailable."
+    ],
+    "tests": [
+      "Client tests assert the default-token-limit fallback at a mocked 10% threshold, use of an explicit 50,000-token context window, no preload for threshold 0 or NaN, clamping a 200% threshold to a full-context budget, and no preload when ToolSearch is unavailable.",
+      "Registry tests assert that bundled and MCP deferred tools are all revealed when the union fits, none are revealed when it exceeds, bundled tools participate in the all-or-nothing union, already-revealed tools still count, and visible or always-loaded tools are excluded from the preload budget.",
+      "CLI config tests assert threshold forwarding at 25, defaulting to 10, and forcing 0 in safe and bare modes."
+    ]
+  },
+  {
+    "episode_id": "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+    "title": "perf(core): chat history O(n^2) re-serialization on every turn causes jank on long sessions",
+    "before": "The pinned commit's parent was af687798afe3b83fd8bf46e91d659c88347427ba. In the parent implementation, the interactive tool coordinator appended combined cancellation function responses to the durable chat history even when all model-initiated tools in the turn were cancelled. The interactive and legacy execution paths could also finish after a tool continuation that produced no visible response. For invalid-stream retries, GeminiChat appended retry nudges to the system instruction rather than to the end of the current request contents. The edit self-correction path did not reject a blank search string before invoking the correction helper, and no-match feedback was less specific.",
+    "after": "The interactive coordinator records a history-length checkpoint before sending a prepared query and truncates the current history back to that checkpoint when all model-initiated tools are cancelled, without appending cancellation responses or issuing another model request. Interactive continuations now detect empty post-tool output and submit a recovery nudge with a per-user-query budget of two automatic attempts. The legacy execution loop performs the corresponding post-tool empty-response recovery once per armed tool-response cycle. GeminiChat now keeps systemInstruction stable and applies invalid-stream retry nudges to request contents, preserving role alternation and reapplying the nudge after hook content replacement. The edit invocation rejects missing or whitespace-only old_string before LLM correction and returns more actionable exact-match guidance. The commit also adds outgoing empty-part normalization and a wording-only attribution cleanup.",
+    "diff": "Commit 812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8 changes nine files: interactive stream coordination and tests, legacy agent/session behavior and tests, GeminiChat retry/content handling and tests, and Edit-tool validation and tests. The semantic changes are bounded cancellation-history rollback, bounded recovery after silent tool continuations, end-of-context retry nudging, payload-part normalization, and early edit-input rejection. The available evidence contains regression tests for the primary rollback, recovery, retry-placement, and edit-guard paths, but no performance benchmark proving the reported O(n^2) symptom or a dedicated test for the new empty-part sanitizer.",
+    "repository": "google-gemini/gemini-cli",
+    "revision": "github-issue-29080",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10",
+      "E11",
+      "E12",
+      "E13",
+      "E14",
+      "E15",
+      "E16",
+      "E17",
+      "E18",
+      "E19",
+      "E20"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 29080,
+      "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/gemini-cli",
+      "manifest_metadata": {
+        "category": "bounded-resource-budget-control",
+        "role": "train_candidate",
+        "case_id": "google-gemini/gemini-cli#29080:bounded-resource-budget-control:train_candidate"
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "google-gemini/gemini-cli",
+        "issue_number": 29080,
+        "issue": {
+          "number": 29080,
+          "title": "perf(core): chat history O(n^2) re-serialization on every turn causes jank on long sessions",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [],
+        "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/gemini-cli",
+        "pinned_ref": "812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+        "resolved_commit": "812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+        "parent_commit": "af687798afe3b83fd8bf46e91d659c88347427ba",
+        "commit_show_stat": "commit 812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8\nAuthor:     David Pierce <davidapierce@google.com>\nAuthorDate: Mon Aug 24 18:41:54 2026 +0000\nCommit:     GitHub <noreply@github.com>\nCommitDate: Mon Aug 24 18:41:54 2026 +0000\n\n    (FIX) history rollback and retry nudge optimizations (#28934)\n\n .../cli/src/nonInteractiveCliAgentSession.test.ts  |  13 +-\n packages/cli/src/ui/hooks/useGeminiStream.test.tsx | 187 +++++++++++++++----\n packages/cli/src/ui/hooks/useGeminiStream.ts       |  62 +++++--\n .../core/src/agent/legacy-agent-session.test.ts    |  84 +++++++++\n packages/core/src/agent/legacy-agent-session.ts    |  19 ++\n packages/core/src/core/geminiChat.test.ts          | 199 ++++++++++++++++++++-\n packages/core/src/core/geminiChat.ts               | 175 +++++++++++++-----\n packages/core/src/tools/edit.test.ts               |  30 +++-\n packages/core/src/tools/edit.ts                    |  28 ++-\n 9 files changed, 695 insertions(+), 102 deletions(-)\n",
+        "changed_files_name_status": "M\tpackages/cli/src/nonInteractiveCliAgentSession.test.ts\nM\tpackages/cli/src/ui/hooks/useGeminiStream.test.tsx\nM\tpackages/cli/src/ui/hooks/useGeminiStream.ts\nM\tpackages/core/src/agent/legacy-agent-session.test.ts\nM\tpackages/core/src/agent/legacy-agent-session.ts\nM\tpackages/core/src/core/geminiChat.test.ts\nM\tpackages/core/src/core/geminiChat.ts\nM\tpackages/core/src/tools/edit.test.ts\nM\tpackages/core/src/tools/edit.ts\n",
+        "linked_issue_numbers": [
+          29080
+        ],
+        "manifest_metadata": {
+          "category": "bounded-resource-budget-control"
+        },
+        "fetched_at": "2026-09-28T19:43:05.436611+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+          "title": "perf(core): chat history O(n^2) re-serialization on every turn causes jank on long sessions",
+          "before": "The pinned commit's parent was af687798afe3b83fd8bf46e91d659c88347427ba. In the parent implementation, the interactive tool coordinator appended combined cancellation function responses to the durable chat history even when all model-initiated tools in the turn were cancelled. The interactive and legacy execution paths could also finish after a tool continuation that produced no visible response. For invalid-stream retries, GeminiChat appended retry nudges to the system instruction rather than to the end of the current request contents. The edit self-correction path did not reject a blank search string before invoking the correction helper, and no-match feedback was less specific.",
+          "after": "The interactive coordinator records a history-length checkpoint before sending a prepared query and truncates the current history back to that checkpoint when all model-initiated tools are cancelled, without appending cancellation responses or issuing another model request. Interactive continuations now detect empty post-tool output and submit a recovery nudge with a per-user-query budget of two automatic attempts. The legacy execution loop performs the corresponding post-tool empty-response recovery once per armed tool-response cycle. GeminiChat now keeps systemInstruction stable and applies invalid-stream retry nudges to request contents, preserving role alternation and reapplying the nudge after hook content replacement. The edit invocation rejects missing or whitespace-only old_string before LLM correction and returns more actionable exact-match guidance. The commit also adds outgoing empty-part normalization and a wording-only attribution cleanup.",
+          "diff": "Commit 812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8 changes nine files: interactive stream coordination and tests, legacy agent/session behavior and tests, GeminiChat retry/content handling and tests, and Edit-tool validation and tests. The semantic changes are bounded cancellation-history rollback, bounded recovery after silent tool continuations, end-of-context retry nudging, payload-part normalization, and early edit-input rejection. The available evidence contains regression tests for the primary rollback, recovery, retry-placement, and edit-guard paths, but no performance benchmark proving the reported O(n^2) symptom or a dedicated test for the new empty-part sanitizer."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "Issue 29080 is anchored to pinned commit 812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8, whose parent is af687798afe3b83fd8bf46e91d659c88347427ba.",
+            "source": "GitHub evidence bundle issue-bundle.json: pinned_ref, resolved_commit, and parent_commit"
+          },
+          {
+            "id": "E2",
+            "kind": "diff",
+            "claim": "The pinned commit modifies nine files with 695 insertions and 102 deletions; the recorded subject is “(FIX) history rollback and retry nudge optimizations (#28934).”",
+            "source": "GitHub evidence bundle issue-bundle.json: commit_show_stat and changed_files_name_status"
+          },
+          {
+            "id": "E3",
+            "kind": "implementation",
+            "claim": "The interactive stream records the Gemini history length before sending a prepared query, resets the automatic-nudge counter for a new user query, and stores a callback reference for continuation submissions.",
+            "source": "Pinned checkout, packages/cli/src/ui/hooks/useGeminiStream.ts, lines 261, 721-730, 1712-1746, and 1888"
+          },
+          {
+            "id": "E4",
+            "kind": "diff",
+            "claim": "When all model-initiated tools are cancelled, the pinned implementation replaces the parent behavior of appending combined cancellation responses with truncation of Gemini history to the saved pre-query length.",
+            "source": "Parent-versus-pinned diff for packages/cli/src/ui/hooks/useGeminiStream.ts, hunk around lines 2089-2140; pinned file lines 2119-2145"
+          },
+          {
+            "id": "E5",
+            "kind": "test",
+            "claim": "Interactive stream tests assert that cancelled tools do not call addHistory, history returns to the pre-model length, and no additional model request is made, for both one and multiple cancelled tools.",
+            "source": "Pinned checkout, packages/cli/src/ui/hooks/useGeminiStream.test.tsx, tests named “should handle all tool calls being cancelled by rolling back the history” and “should rollback multiple cancelled tool calls rather than appending them to history”"
+          },
+          {
+            "id": "E6",
+            "kind": "implementation",
+            "claim": "The interactive stream marks a request as a continuation, checks whether its completed response contains non-whitespace visible text, and submits a fixed post-tool recovery nudge when it is empty; the branch is capped at MAX_AUTO_NUDGE_ATTEMPTS equal to two.",
+            "source": "Pinned checkout, packages/cli/src/ui/hooks/useGeminiStream.ts, lines 1538-1654"
+          },
+          {
+            "id": "E7",
+            "kind": "test",
+            "claim": "The interactive stream regression test drives an empty first continuation after tool completion and asserts that a second send contains the exact post-tool recovery nudge.",
+            "source": "Pinned checkout, packages/cli/src/ui/hooks/useGeminiStream.test.tsx, auto-nudge test around lines 944-1050"
+          },
+          {
+            "id": "E8",
+            "kind": "implementation",
+            "claim": "The legacy agent loop records whether the prior iteration completed tools, tracks visible content events, and on a no-tool response with no visible text sends the post-tool recovery nudge before continuing; the armed state is cleared for that recovery iteration.",
+            "source": "Pinned checkout, packages/core/src/agent/legacy-agent-session.ts, lines 182-224, 251-260, and 342"
+          },
+          {
+            "id": "E9",
+            "kind": "test",
+            "claim": "The legacy-session test models a tool request, an empty response, and a final response, then asserts three stream calls, the exact nudge payload on the third call, tool events, and a final agent message.",
+            "source": "Pinned checkout, packages/core/src/agent/legacy-agent-session.test.ts, added test around lines 604-687"
+          },
+          {
+            "id": "E10",
+            "kind": "test",
+            "claim": "The non-interactive session regression test adds a third stream for empty post-tool recovery and changes the expected send count from two to three.",
+            "source": "Pinned checkout, packages/cli/src/nonInteractiveCliAgentSession.test.ts, lines 827-870"
+          },
+          {
+            "id": "E11",
+            "kind": "implementation",
+            "claim": "GeminiChat defines separate nudge messages for thought-only and no-response-text retries and provides applyRetryNudge, which clones contents, avoids a duplicate nudge in the final turn, appends to an ordinary final user turn, creates a user turn when needed, and inserts a synthetic model bridge before a nudge after a function response.",
+            "source": "Pinned checkout, packages/core/src/core/geminiChat.ts, lines 247-303"
+          },
+          {
+            "id": "E12",
+            "kind": "implementation",
+            "claim": "For THINKING_ONLY_RESPONSE and NO_RESPONSE_TEXT invalid-stream retries, GeminiChat now leaves systemInstruction unchanged and applies the nudge to request contents, reapplying it after a hook changes the model or replaces contents.",
+            "source": "Pinned checkout, packages/core/src/core/geminiChat.ts, lines 960-1050; parent-versus-pinned diff for the same hunks"
+          },
+          {
+            "id": "E13",
+            "kind": "test",
+            "claim": "GeminiChat tests assert that retry systemInstruction remains the initial instruction, the nudge appears in contents, hook-modified contents receive the nudge, and applyRetryNudge handles empty, model-final, function-response-final, and duplicate-nudge cases.",
+            "source": "Pinned checkout, packages/core/src/core/geminiChat.test.ts, lines 2723-2895 and 4955-5045"
+          },
+          {
+            "id": "E14",
+            "kind": "implementation",
+            "claim": "The final outgoing-content sanitizer removes an empty text key when a part also has an active payload and filters parts whose only meaningful field is an empty text value, while retaining payload-bearing parts.",
+            "source": "Pinned checkout, packages/core/src/core/geminiChat.ts, lines 1757-1795; parent-versus-pinned diff for stripToolCallIdPrefixes"
+          },
+          {
+            "id": "E15",
+            "kind": "implementation",
+            "claim": "The Edit tool changes no-match feedback to exact-match/current-content guidance and returns INVALID_TOOL_PARAMS before invoking the LLM correction helper when old_string is missing or whitespace-only.",
+            "source": "Pinned checkout, packages/core/src/tools/edit.ts, lines 365-371 and 551-570; parent-versus-pinned diff"
+          },
+          {
+            "id": "E16",
+            "kind": "test",
+            "claim": "Edit-tool tests assert the new exact-match wording for a zero-occurrence edit and assert that whitespace-only old_string fails without calling the correction helper, with INVALID_TOOL_PARAMS and ReadFile guidance.",
+            "source": "Pinned checkout, packages/core/src/tools/edit.test.ts, tests around lines 808-828 and 1360-1395"
+          },
+          {
+            "id": "E17",
+            "kind": "implementation",
+            "claim": "The Edit success message changes attribution from saying the user modified new_string to saying the confirmation step modified it; the commit adds no dedicated oracle for this wording-only change.",
+            "source": "Pinned checkout, packages/core/src/tools/edit.ts, line 1038; parent-versus-pinned diff"
+          },
+          {
+            "id": "E18",
+            "kind": "call_site",
+            "claim": "The non-interactive CLI constructs LegacyAgentSession as the owner of its agentic loop, so the legacy empty-post-tool recovery is exercised by the non-interactive path.",
+            "source": "Pinned checkout, packages/cli/src/nonInteractiveCliAgentSession.ts, lines 304-327"
+          },
+          {
+            "id": "E19",
+            "kind": "call_site",
+            "claim": "After model-initiated tools complete successfully, the interactive coordinator submits their response parts through submitQuery with isContinuation true, which is the call path consumed by the empty-continuation nudge check.",
+            "source": "Pinned checkout, packages/cli/src/ui/hooks/useGeminiStream.ts, lines 2149-2155"
+          },
+          {
+            "id": "E20",
+            "kind": "validation",
+            "claim": "The added and updated tests provide direct regression oracles for history rollback, exact post-tool nudge delivery, stable systemInstruction and retry-content placement, hook-content reapplication, and edit correction bypass.",
+            "source": "Pinned checkout tests in packages/cli/src/ui/hooks/useGeminiStream.test.tsx, packages/core/src/agent/legacy-agent-session.test.ts, packages/cli/src/nonInteractiveCliAgentSession.test.ts, packages/core/src/core/geminiChat.test.ts, and packages/core/src/tools/edit.test.ts"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "rollback-cancelled-tool-turn",
+            "description": "When every model-initiated tool in an interactive turn is cancelled, restore the conversation to the checkpoint taken before the current query instead of recording cancellation responses as a new user turn or sending another request.",
+            "evidence_ids": [
+              "E3",
+              "E4",
+              "E5"
+            ],
+            "semantic_action": {
+              "intent": "Prevent cancelled in-flight tool turns from persisting as transcript state and avoid unnecessary follow-up work.",
+              "module_role": "interactive conversation history coordinator",
+              "operation": "rollback",
+              "pre_state": "A prepared query has been sent, the model has appended a tool-call turn, all applicable model-initiated tools are terminally cancelled, and current history is longer than the saved query checkpoint.",
+              "post_state": "History is truncated to the saved checkpoint; cancellation response parts are not appended and no continuation request is emitted.",
+              "validation": "Interactive stream regression tests verify that addHistory is not called, history returns to the pre-model length, and the model stream is not called again for one or multiple cancelled tools.",
+              "parameters": [
+                "query history checkpoint length",
+                "current conversation history",
+                "model-initiated tool set",
+                "terminal cancellation status"
+              ],
+              "evidence_ids": [
+                "E3",
+                "E4",
+                "E5"
+              ]
+            }
+          },
+          {
+            "name": "bounded-interactive-post-tool-nudge",
+            "description": "Recover an interactive continuation that follows tool execution but ends without visible text by issuing a bounded recovery nudge through the normal continuation path.",
+            "evidence_ids": [
+              "E6",
+              "E7",
+              "E19"
+            ],
+            "semantic_action": {
+              "intent": "Remove silent post-tool turns while bounding automatic recovery work.",
+              "module_role": "interactive stream continuation coordinator",
+              "operation": "nudge",
+              "pre_state": "A continuation after tool execution finishes with no tool calls and no non-whitespace visible text; the current user query has fewer than two automatic nudge attempts.",
+              "post_state": "A continuation request carrying the recovery nudge is submitted and the per-user-query counter is incremented; no automatic nudge is submitted after the two-attempt budget is exhausted.",
+              "validation": "The interactive-hook test observes a second send containing the exact recovery nudge after an empty continuation.",
+              "parameters": [
+                "continuation flag",
+                "visible response buffer",
+                "automatic nudge attempt budget",
+                "recovery nudge text",
+                "prompt identifier"
+              ],
+              "evidence_ids": [
+                "E6",
+                "E7",
+                "E19"
+              ]
+            }
+          },
+          {
+            "name": "bounded-session-post-tool-nudge",
+            "description": "In the session execution loop, recover from an empty response immediately following completed tool calls by sending a dedicated nudge before allowing normal completion.",
+            "evidence_ids": [
+              "E8",
+              "E9",
+              "E10",
+              "E18"
+            ],
+            "semantic_action": {
+              "intent": "Prevent a tool-execution path from terminating without a user-facing explanation when the first post-tool response is empty.",
+              "module_role": "agent execution loop",
+              "operation": "nudge",
+              "pre_state": "At least one tool call has completed, the next stream has no tool calls, and it emits no non-whitespace content.",
+              "post_state": "The loop sends the recovery nudge as the next request, clears the armed-after-tool state, and continues; a visible response can then complete the session.",
+              "validation": "The legacy-session test asserts three stream calls, the exact nudge payload on the third call, tool request/response events, and the final agent message; the non-interactive regression test confirms the additional recovery call.",
+              "parameters": [
+                "after-tool state",
+                "completed tool responses",
+                "visible-content flag",
+                "recovery nudge text",
+                "abort signal"
+              ],
+              "evidence_ids": [
+                "E8",
+                "E9",
+                "E10",
+                "E18"
+              ]
+            }
+          },
+          {
+            "name": "end-of-context-retry-nudge",
+            "description": "Place invalid-stream retry guidance at the end of request contents while preserving API role ordering and hook modifications, instead of mutating the stable system instruction.",
+            "evidence_ids": [
+              "E11",
+              "E12",
+              "E13"
+            ],
+            "semantic_action": {
+              "intent": "Make retry guidance visible at the current context boundary without invalidating or expanding the stable system-instruction prefix.",
+              "module_role": "model request retry adapter",
+              "operation": "adapt",
+              "pre_state": "A retry follows a thought-only or no-response-text invalid stream; request contents may end in a model turn, an ordinary user turn, or a function-response user turn, and hooks may replace contents.",
+              "post_state": "System instruction is unchanged; the retry nudge is present at the end of valid contents, role alternation is preserved with a synthetic model bridge when required, and an existing final-turn nudge is not duplicated.",
+              "validation": "GeminiChat tests assert unchanged systemInstruction, nudge placement in contents, reapplication after hook-modified contents, handling of empty/model/function-response histories, and deduplication.",
+              "parameters": [
+                "invalid-stream error type",
+                "request content sequence",
+                "nudge message",
+                "hook-modified contents",
+                "role-alternation constraint"
+              ],
+              "evidence_ids": [
+                "E11",
+                "E12",
+                "E13"
+              ]
+            }
+          },
+          {
+            "name": "sanitize-empty-payload-parts",
+            "description": "Normalize outgoing content parts so an empty text field cannot invalidate a payload-bearing part or remain as a truly empty text-only part.",
+            "evidence_ids": [
+              "E14"
+            ],
+            "semantic_action": {
+              "intent": "Keep active tool, code, file, or similar payloads usable while removing empty text artifacts that can trigger request validation failures.",
+              "module_role": "outgoing content contract boundary",
+              "operation": "normalize",
+              "pre_state": "An outgoing part has text equal to the empty string, either alongside another active payload or as its only meaningful field.",
+              "post_state": "The empty text key is removed from payload-bearing parts; text-only empty parts are filtered; other payload-bearing parts remain.",
+              "validation": "The implementation contains separate payload-preservation and empty-part filtering branches, but no dedicated regression assertion for this newly added sanitizer behavior is present in the pinned commit tests.",
+              "parameters": [
+                "outgoing content parts",
+                "empty text field",
+                "active payload keys",
+                "request validation contract"
+              ],
+              "evidence_ids": [
+                "E14"
+              ]
+            }
+          },
+          {
+            "name": "reject-blank-edit-search",
+            "description": "Reject a blank or whitespace-only edit search string before the expensive LLM correction path is invoked and return a localized instruction to reread the target before retrying.",
+            "evidence_ids": [
+              "E15",
+              "E16"
+            ],
+            "semantic_action": {
+              "intent": "Avoid spending correction-model work on an invalid edit request and make the repair precondition explicit.",
+              "module_role": "edit invocation parameter validator",
+              "operation": "guard",
+              "pre_state": "An edit invocation reaches self-correction with old_string missing or containing only whitespace.",
+              "post_state": "Execution returns an INVALID_TOOL_PARAMS error without invoking the LLM edit fixer and tells the agent to inspect the target with ReadFile before supplying an exact search string.",
+              "validation": "The edit test uses whitespace-only old_string and asserts that the fixer is not called, the error type is INVALID_TOOL_PARAMS, and the returned message includes ReadFile guidance.",
+              "parameters": [
+                "old search string",
+                "target file content",
+                "correction-helper enabled state",
+                "read-before-retry guidance"
+              ],
+              "evidence_ids": [
+                "E15",
+                "E16"
+              ]
+            }
+          },
+          {
+            "name": "clarify-edit-no-match-guidance",
+            "description": "Replace vague no-occurrence edit feedback with exact-match guidance that points the agent to current file content before retrying.",
+            "evidence_ids": [
+              "E15",
+              "E16"
+            ],
+            "semantic_action": {
+              "intent": "Make a failed localized edit actionable by distinguishing an exact-match miss and directing the agent to inspect current content.",
+              "module_role": "edit failure feedback mapper",
+              "operation": "map",
+              "pre_state": "A nonblank edit search string produces zero matches in the current file.",
+              "post_state": "The tool reports an exact-match failure and advises rereading the target/current lines before retrying; the correction path remains available for valid nonblank input according to its existing policy.",
+              "validation": "The edit regression test checks that both LLM-facing content and display output contain the new exact-match wording.",
+              "parameters": [
+                "search string",
+                "target file",
+                "current file text",
+                "agent-facing failure message"
+              ],
+              "evidence_ids": [
+                "E15",
+                "E16"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "interactive-tool-turn-bounding",
+            "description": "The interactive path has two event-dependent recovery branches: remove a cancelled tool turn from durable history, or recover a silent successful tool continuation with a bounded nudge.",
+            "atomic_names": [
+              "rollback-cancelled-tool-turn",
+              "bounded-interactive-post-tool-nudge"
+            ],
+            "evidence_ids": [
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E19"
+            ],
+            "workflow_graph": {
+              "goal": "Keep interactive tool turns bounded and recoverable without growing invalid or silent conversation state.",
+              "entry_state": "A user query is being processed; the model may request tools, produce an empty continuation, or have all requested tools cancelled.",
+              "exit_state": "Cancelled turns are absent from durable history, or a post-tool continuation produces visible completion or stops after the automatic-nudge budget.",
+              "steps": [
+                {
+                  "action_name": "rollback-cancelled-tool-turn",
+                  "role": "repair",
+                  "optional": true
+                },
+                {
+                  "action_name": "bounded-interactive-post-tool-nudge",
+                  "role": "repair",
+                  "optional": true
+                }
+              ],
+              "edges": [],
+              "unresolved_or_deferred": [
+                "The two actions are predicate-selected branches of the same coordinator rather than a mandatory sequence: rollback applies to all-cancelled tool turns, while nudging applies to a successful tool continuation with no visible response. The tests do not establish a cross-branch ordering."
+              ]
+            }
+          },
+          {
+            "name": "session-tool-continuation-recovery",
+            "description": "The session loop arms recovery after completed tools, checks the next response for visible content, and nudges once before allowing normal completion.",
+            "atomic_names": [
+              "bounded-session-post-tool-nudge"
+            ],
+            "evidence_ids": [
+              "E8",
+              "E9",
+              "E10",
+              "E18"
+            ],
+            "workflow_graph": {
+              "goal": "Ensure a tool execution is followed by an explanatory model response even when the first continuation is empty.",
+              "entry_state": "The session has completed one or more model-initiated tool calls and is about to process the next model stream.",
+              "exit_state": "The model emits visible text after the recovery request or the session follows its normal completion/failure path.",
+              "steps": [
+                {
+                  "action_name": "bounded-session-post-tool-nudge",
+                  "role": "repair",
+                  "optional": false
+                }
+              ],
+              "edges": [],
+              "unresolved_or_deferred": [
+                "The implementation arms one recovery nudge per completed-tool cycle but does not expose a numeric retry budget; repeated empty output after the nudge follows the normal completion path."
+              ]
+            }
+          },
+          {
+            "name": "model-retry-request-integrity",
+            "description": "The model request path adapts invalid-stream retry guidance to the current contents and then normalizes outgoing parts before the API call.",
+            "atomic_names": [
+              "end-of-context-retry-nudge",
+              "sanitize-empty-payload-parts"
+            ],
+            "evidence_ids": [
+              "E11",
+              "E12",
+              "E13",
+              "E14"
+            ],
+            "workflow_graph": {
+              "goal": "Bound retry guidance and preserve valid request-content contracts at the model boundary.",
+              "entry_state": "A retry request contains an invalid-stream condition or outgoing parts with empty text artifacts.",
+              "exit_state": "Retry guidance is appended to valid request contents, the stable system instruction is preserved, and payload-bearing parts are not rejected solely because of an empty text key.",
+              "steps": [
+                {
+                  "action_name": "end-of-context-retry-nudge",
+                  "role": "implement",
+                  "optional": true
+                },
+                {
+                  "action_name": "sanitize-empty-payload-parts",
+                  "role": "validate",
+                  "optional": true
+                }
+              ],
+              "edges": [
+                {
+                  "from": "end-of-context-retry-nudge",
+                  "to": "sanitize-empty-payload-parts",
+                  "type": "enables"
+                }
+              ],
+              "unresolved_or_deferred": [
+                "The sanitizer is in the final request-construction path, but the pinned commit adds no direct regression assertion for its new empty-part branches. The edge captures request construction order, not a requirement that every retry contain an empty part."
+              ]
+            }
+          },
+          {
+            "name": "edit-request-budget-guard",
+            "description": "The edit path handles two predicate-dependent failures: reject blank selectors before correction-model work, or return exact-match guidance for nonblank selectors that do not match current content.",
+            "atomic_names": [
+              "reject-blank-edit-search",
+              "clarify-edit-no-match-guidance"
+            ],
+            "evidence_ids": [
+              "E15",
+              "E16"
+            ],
+            "workflow_graph": {
+              "goal": "Prevent invalid localized edits from consuming correction work and provide actionable repair guidance for stale or mismatched input.",
+              "entry_state": "An edit invocation supplies either a blank search string or a nonblank string with zero matches.",
+              "exit_state": "Blank input fails before LLM correction, or a no-match error tells the agent to reread current target lines and retry with an exact match.",
+              "steps": [
+                {
+                  "action_name": "reject-blank-edit-search",
+                  "role": "validate",
+                  "optional": true
+                },
+                {
+                  "action_name": "clarify-edit-no-match-guidance",
+                  "role": "validate",
+                  "optional": true
+                }
+              ],
+              "edges": [],
+              "unresolved_or_deferred": [
+                "The two edit actions are mutually exclusive predicate branches for a given invocation. The wording-only confirmation-attribution change is recorded as evidence but is not promoted to a separate semantic action."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "The issue bundle has no issue body, comments, timeline, author/review discussion, or linked pull-request metadata; the local commit and tests are the available resolution evidence.",
+          "The pinned commit subject references pull request #28934 while the bundle anchors issue 29080; the checkout establishes an implementation-bearing change but does not establish a direct issue-to-PR discussion link.",
+          "The commit groups several behavior clusters—history rollback, post-tool recovery, retry-content nudging, empty-part sanitation, and edit-tool validation. Available metadata does not prove whether the sanitizer, edit changes, and wording cleanup were all in the issue's intended scope.",
+          "The empty-part sanitizer has implementation evidence but no dedicated test oracle in the pinned commit. The wording-only confirmation-attribution change likewise has no dedicated new test and is not represented as a candidate atomic.",
+          "No target tests were executed because the checkout has no installed node_modules; validation claims are based on the added and updated test assertions inspected at the pinned ref.",
+          "No performance benchmark or runtime trace is present, so the extraction records the concrete history/retry/resource-control mechanisms and their regression oracles without claiming that the O(n^2) latency symptom was measured or fully eliminated.",
+          "The supplied universal class bounded-resource-budget-control is retained as a routing hypothesis. The observed mechanisms support that hypothesis through bounded cancellation-history state, bounded automatic recovery, stable-prefix-preserving retry guidance, and early rejection of invalid edit work, but issue discussion is unavailable to confirm the classification."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "rollback-cancelled-tool-turn",
+          "description": "When every model-initiated tool in an interactive turn is cancelled, restore the conversation to the checkpoint taken before the current query instead of recording cancellation responses as a new user turn or sending another request.",
+          "evidence_ids": [
+            "E3",
+            "E4",
+            "E5"
+          ],
+          "semantic_action": {
+            "intent": "Prevent cancelled in-flight tool turns from persisting as transcript state and avoid unnecessary follow-up work.",
+            "module_role": "interactive conversation history coordinator",
+            "operation": "rollback",
+            "pre_state": "A prepared query has been sent, the model has appended a tool-call turn, all applicable model-initiated tools are terminally cancelled, and current history is longer than the saved query checkpoint.",
+            "post_state": "History is truncated to the saved checkpoint; cancellation response parts are not appended and no continuation request is emitted.",
+            "validation": "Interactive stream regression tests verify that addHistory is not called, history returns to the pre-model length, and the model stream is not called again for one or multiple cancelled tools.",
+            "parameters": [
+              "query history checkpoint length",
+              "current conversation history",
+              "model-initiated tool set",
+              "terminal cancellation status"
+            ],
+            "evidence_ids": [
+              "E3",
+              "E4",
+              "E5"
+            ]
+          }
+        },
+        {
+          "name": "bounded-interactive-post-tool-nudge",
+          "description": "Recover an interactive continuation that follows tool execution but ends without visible text by issuing a bounded recovery nudge through the normal continuation path.",
+          "evidence_ids": [
+            "E6",
+            "E7",
+            "E19"
+          ],
+          "semantic_action": {
+            "intent": "Remove silent post-tool turns while bounding automatic recovery work.",
+            "module_role": "interactive stream continuation coordinator",
+            "operation": "nudge",
+            "pre_state": "A continuation after tool execution finishes with no tool calls and no non-whitespace visible text; the current user query has fewer than two automatic nudge attempts.",
+            "post_state": "A continuation request carrying the recovery nudge is submitted and the per-user-query counter is incremented; no automatic nudge is submitted after the two-attempt budget is exhausted.",
+            "validation": "The interactive-hook test observes a second send containing the exact recovery nudge after an empty continuation.",
+            "parameters": [
+              "continuation flag",
+              "visible response buffer",
+              "automatic nudge attempt budget",
+              "recovery nudge text",
+              "prompt identifier"
+            ],
+            "evidence_ids": [
+              "E6",
+              "E7",
+              "E19"
+            ]
+          }
+        },
+        {
+          "name": "bounded-session-post-tool-nudge",
+          "description": "In the session execution loop, recover from an empty response immediately following completed tool calls by sending a dedicated nudge before allowing normal completion.",
+          "evidence_ids": [
+            "E8",
+            "E9",
+            "E10",
+            "E18"
+          ],
+          "semantic_action": {
+            "intent": "Prevent a tool-execution path from terminating without a user-facing explanation when the first post-tool response is empty.",
+            "module_role": "agent execution loop",
+            "operation": "nudge",
+            "pre_state": "At least one tool call has completed, the next stream has no tool calls, and it emits no non-whitespace content.",
+            "post_state": "The loop sends the recovery nudge as the next request, clears the armed-after-tool state, and continues; a visible response can then complete the session.",
+            "validation": "The legacy-session test asserts three stream calls, the exact nudge payload on the third call, tool request/response events, and the final agent message; the non-interactive regression test confirms the additional recovery call.",
+            "parameters": [
+              "after-tool state",
+              "completed tool responses",
+              "visible-content flag",
+              "recovery nudge text",
+              "abort signal"
+            ],
+            "evidence_ids": [
+              "E8",
+              "E9",
+              "E10",
+              "E18"
+            ]
+          }
+        },
+        {
+          "name": "end-of-context-retry-nudge",
+          "description": "Place invalid-stream retry guidance at the end of request contents while preserving API role ordering and hook modifications, instead of mutating the stable system instruction.",
+          "evidence_ids": [
+            "E11",
+            "E12",
+            "E13"
+          ],
+          "semantic_action": {
+            "intent": "Make retry guidance visible at the current context boundary without invalidating or expanding the stable system-instruction prefix.",
+            "module_role": "model request retry adapter",
+            "operation": "adapt",
+            "pre_state": "A retry follows a thought-only or no-response-text invalid stream; request contents may end in a model turn, an ordinary user turn, or a function-response user turn, and hooks may replace contents.",
+            "post_state": "System instruction is unchanged; the retry nudge is present at the end of valid contents, role alternation is preserved with a synthetic model bridge when required, and an existing final-turn nudge is not duplicated.",
+            "validation": "GeminiChat tests assert unchanged systemInstruction, nudge placement in contents, reapplication after hook-modified contents, handling of empty/model/function-response histories, and deduplication.",
+            "parameters": [
+              "invalid-stream error type",
+              "request content sequence",
+              "nudge message",
+              "hook-modified contents",
+              "role-alternation constraint"
+            ],
+            "evidence_ids": [
+              "E11",
+              "E12",
+              "E13"
+            ]
+          }
+        },
+        {
+          "name": "sanitize-empty-payload-parts",
+          "description": "Normalize outgoing content parts so an empty text field cannot invalidate a payload-bearing part or remain as a truly empty text-only part.",
+          "evidence_ids": [
+            "E14"
+          ],
+          "semantic_action": {
+            "intent": "Keep active tool, code, file, or similar payloads usable while removing empty text artifacts that can trigger request validation failures.",
+            "module_role": "outgoing content contract boundary",
+            "operation": "normalize",
+            "pre_state": "An outgoing part has text equal to the empty string, either alongside another active payload or as its only meaningful field.",
+            "post_state": "The empty text key is removed from payload-bearing parts; text-only empty parts are filtered; other payload-bearing parts remain.",
+            "validation": "The implementation contains separate payload-preservation and empty-part filtering branches, but no dedicated regression assertion for this newly added sanitizer behavior is present in the pinned commit tests.",
+            "parameters": [
+              "outgoing content parts",
+              "empty text field",
+              "active payload keys",
+              "request validation contract"
+            ],
+            "evidence_ids": [
+              "E14"
+            ]
+          }
+        },
+        {
+          "name": "reject-blank-edit-search",
+          "description": "Reject a blank or whitespace-only edit search string before the expensive LLM correction path is invoked and return a localized instruction to reread the target before retrying.",
+          "evidence_ids": [
+            "E15",
+            "E16"
+          ],
+          "semantic_action": {
+            "intent": "Avoid spending correction-model work on an invalid edit request and make the repair precondition explicit.",
+            "module_role": "edit invocation parameter validator",
+            "operation": "guard",
+            "pre_state": "An edit invocation reaches self-correction with old_string missing or containing only whitespace.",
+            "post_state": "Execution returns an INVALID_TOOL_PARAMS error without invoking the LLM edit fixer and tells the agent to inspect the target with ReadFile before supplying an exact search string.",
+            "validation": "The edit test uses whitespace-only old_string and asserts that the fixer is not called, the error type is INVALID_TOOL_PARAMS, and the returned message includes ReadFile guidance.",
+            "parameters": [
+              "old search string",
+              "target file content",
+              "correction-helper enabled state",
+              "read-before-retry guidance"
+            ],
+            "evidence_ids": [
+              "E15",
+              "E16"
+            ]
+          }
+        },
+        {
+          "name": "clarify-edit-no-match-guidance",
+          "description": "Replace vague no-occurrence edit feedback with exact-match guidance that points the agent to current file content before retrying.",
+          "evidence_ids": [
+            "E15",
+            "E16"
+          ],
+          "semantic_action": {
+            "intent": "Make a failed localized edit actionable by distinguishing an exact-match miss and directing the agent to inspect current content.",
+            "module_role": "edit failure feedback mapper",
+            "operation": "map",
+            "pre_state": "A nonblank edit search string produces zero matches in the current file.",
+            "post_state": "The tool reports an exact-match failure and advises rereading the target/current lines before retrying; the correction path remains available for valid nonblank input according to its existing policy.",
+            "validation": "The edit regression test checks that both LLM-facing content and display output contain the new exact-match wording.",
+            "parameters": [
+              "search string",
+              "target file",
+              "current file text",
+              "agent-facing failure message"
+            ],
+            "evidence_ids": [
+              "E15",
+              "E16"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "interactive-tool-turn-bounding",
+          "description": "The interactive path has two event-dependent recovery branches: remove a cancelled tool turn from durable history, or recover a silent successful tool continuation with a bounded nudge.",
+          "atomic_names": [
+            "rollback-cancelled-tool-turn",
+            "bounded-interactive-post-tool-nudge"
+          ],
+          "evidence_ids": [
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E19"
+          ],
+          "workflow_graph": {
+            "goal": "Keep interactive tool turns bounded and recoverable without growing invalid or silent conversation state.",
+            "entry_state": "A user query is being processed; the model may request tools, produce an empty continuation, or have all requested tools cancelled.",
+            "exit_state": "Cancelled turns are absent from durable history, or a post-tool continuation produces visible completion or stops after the automatic-nudge budget.",
+            "steps": [
+              {
+                "action_name": "rollback-cancelled-tool-turn",
+                "role": "repair",
+                "optional": true
+              },
+              {
+                "action_name": "bounded-interactive-post-tool-nudge",
+                "role": "repair",
+                "optional": true
+              }
+            ],
+            "edges": [],
+            "unresolved_or_deferred": [
+              "The two actions are predicate-selected branches of the same coordinator rather than a mandatory sequence: rollback applies to all-cancelled tool turns, while nudging applies to a successful tool continuation with no visible response. The tests do not establish a cross-branch ordering."
+            ]
+          }
+        },
+        {
+          "name": "session-tool-continuation-recovery",
+          "description": "The session loop arms recovery after completed tools, checks the next response for visible content, and nudges once before allowing normal completion.",
+          "atomic_names": [
+            "bounded-session-post-tool-nudge"
+          ],
+          "evidence_ids": [
+            "E8",
+            "E9",
+            "E10",
+            "E18"
+          ],
+          "workflow_graph": {
+            "goal": "Ensure a tool execution is followed by an explanatory model response even when the first continuation is empty.",
+            "entry_state": "The session has completed one or more model-initiated tool calls and is about to process the next model stream.",
+            "exit_state": "The model emits visible text after the recovery request or the session follows its normal completion/failure path.",
+            "steps": [
+              {
+                "action_name": "bounded-session-post-tool-nudge",
+                "role": "repair",
+                "optional": false
+              }
+            ],
+            "edges": [],
+            "unresolved_or_deferred": [
+              "The implementation arms one recovery nudge per completed-tool cycle but does not expose a numeric retry budget; repeated empty output after the nudge follows the normal completion path."
+            ]
+          }
+        },
+        {
+          "name": "model-retry-request-integrity",
+          "description": "The model request path adapts invalid-stream retry guidance to the current contents and then normalizes outgoing parts before the API call.",
+          "atomic_names": [
+            "end-of-context-retry-nudge",
+            "sanitize-empty-payload-parts"
+          ],
+          "evidence_ids": [
+            "E11",
+            "E12",
+            "E13",
+            "E14"
+          ],
+          "workflow_graph": {
+            "goal": "Bound retry guidance and preserve valid request-content contracts at the model boundary.",
+            "entry_state": "A retry request contains an invalid-stream condition or outgoing parts with empty text artifacts.",
+            "exit_state": "Retry guidance is appended to valid request contents, the stable system instruction is preserved, and payload-bearing parts are not rejected solely because of an empty text key.",
+            "steps": [
+              {
+                "action_name": "end-of-context-retry-nudge",
+                "role": "implement",
+                "optional": true
+              },
+              {
+                "action_name": "sanitize-empty-payload-parts",
+                "role": "validate",
+                "optional": true
+              }
+            ],
+            "edges": [
+              {
+                "from": "end-of-context-retry-nudge",
+                "to": "sanitize-empty-payload-parts",
+                "type": "enables"
+              }
+            ],
+            "unresolved_or_deferred": [
+              "The sanitizer is in the final request-construction path, but the pinned commit adds no direct regression assertion for its new empty-part branches. The edge captures request construction order, not a requirement that every retry contain an empty part."
+            ]
+          }
+        },
+        {
+          "name": "edit-request-budget-guard",
+          "description": "The edit path handles two predicate-dependent failures: reject blank selectors before correction-model work, or return exact-match guidance for nonblank selectors that do not match current content.",
+          "atomic_names": [
+            "reject-blank-edit-search",
+            "clarify-edit-no-match-guidance"
+          ],
+          "evidence_ids": [
+            "E15",
+            "E16"
+          ],
+          "workflow_graph": {
+            "goal": "Prevent invalid localized edits from consuming correction work and provide actionable repair guidance for stale or mismatched input.",
+            "entry_state": "An edit invocation supplies either a blank search string or a nonblank string with zero matches.",
+            "exit_state": "Blank input fails before LLM correction, or a no-match error tells the agent to reread current target lines and retry with an exact match.",
+            "steps": [
+              {
+                "action_name": "reject-blank-edit-search",
+                "role": "validate",
+                "optional": true
+              },
+              {
+                "action_name": "clarify-edit-no-match-guidance",
+                "role": "validate",
+                "optional": true
+              }
+            ],
+            "edges": [],
+            "unresolved_or_deferred": [
+              "The two edit actions are mutually exclusive predicate branches for a given invocation. The wording-only confirmation-attribution change is recorded as evidence but is not promoted to a separate semantic action."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The issue bundle has no issue body, comments, timeline, author/review discussion, or linked pull-request metadata; the local commit and tests are the available resolution evidence.",
+        "The pinned commit subject references pull request #28934 while the bundle anchors issue 29080; the checkout establishes an implementation-bearing change but does not establish a direct issue-to-PR discussion link.",
+        "The commit groups several behavior clusters—history rollback, post-tool recovery, retry-content nudging, empty-part sanitation, and edit-tool validation. Available metadata does not prove whether the sanitizer, edit changes, and wording cleanup were all in the issue's intended scope.",
+        "The empty-part sanitizer has implementation evidence but no dedicated test oracle in the pinned commit. The wording-only confirmation-attribution change likewise has no dedicated new test and is not represented as a candidate atomic.",
+        "No target tests were executed because the checkout has no installed node_modules; validation claims are based on the added and updated test assertions inspected at the pinned ref.",
+        "No performance benchmark or runtime trace is present, so the extraction records the concrete history/retry/resource-control mechanisms and their regression oracles without claiming that the O(n^2) latency symptom was measured or fully eliminated.",
+        "The supplied universal class bounded-resource-budget-control is retained as a routing hypothesis. The observed mechanisms support that hypothesis through bounded cancellation-history state, bounded automatic recovery, stable-prefix-preserving retry guidance, and early rejection of invalid edit work, but issue discussion is unavailable to confirm the classification."
+      ]
+    },
+    "call_sites": [
+      "The non-interactive CLI constructs LegacyAgentSession as the owner of its agentic loop, so the legacy empty-post-tool recovery is exercised by the non-interactive path.",
+      "After model-initiated tools complete successfully, the interactive coordinator submits their response parts through submitQuery with isContinuation true, which is the call path consumed by the empty-continuation nudge check."
+    ],
+    "tests": [
+      "Interactive stream tests assert that cancelled tools do not call addHistory, history returns to the pre-model length, and no additional model request is made, for both one and multiple cancelled tools.",
+      "The interactive stream regression test drives an empty first continuation after tool completion and asserts that a second send contains the exact post-tool recovery nudge.",
+      "The legacy-session test models a tool request, an empty response, and a final response, then asserts three stream calls, the exact nudge payload on the third call, tool events, and a final agent message.",
+      "The non-interactive session regression test adds a third stream for empty post-tool recovery and changes the expected send count from two to three.",
+      "GeminiChat tests assert that retry systemInstruction remains the initial instruction, the nudge appears in contents, hook-modified contents receive the nudge, and applyRetryNudge handles empty, model-final, function-response-final, and duplicate-nudge cases.",
+      "Edit-tool tests assert the new exact-match wording for a zero-occurrence edit and assert that whitespace-only old_string fails without calling the correction helper, with INVALID_TOOL_PARAMS and ReadFile guidance."
+    ]
+  },
+  {
+    "episode_id": "issue-10062@d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31",
+    "title": "Skills loader swallows directory read errors: an unreadable skills directory yields no skills and no diagnostic",
+    "before": "At parent commit 04b5bad666830eb3a0dddc77a715eed95e12485a, the repository contains the existing skills loaders and their tests. The synchronous coding-agent directory loader catches exceptions from readdirSync without recording a diagnostic, so an unreadable directory can produce an empty skill and diagnostic result. A separate agent harness loader already returns a list_failed diagnostic for an env.listDir failure. The issue bundle supplies no issue body, comments, timeline, review discussion, or linked pull request to identify a different resolution.",
+    "after": "At pinned commit d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31, the only changed file is packages/durable/test/scratch.ts. It rewrites a durable Session API smoke test from three examples into four explanatory examples covering standalone conversations, document snapshots and forks, and a background task with a child conversation. The skills implementations, the resource-loader call site, and the relevant skill tests are unchanged, so the unreadable-directory behavior and its validation coverage remain unchanged. No implementation-bearing resolution for issue 10062 is established.",
+    "diff": "The exact parent-to-pinned diff is one modified file: packages/durable/test/scratch.ts, with 107 insertions and 62 deletions. The commit subject is \"docs(durable): clarify scratch examples\". The diff changes comments, example names, durable conversation/document/task setup, and console output; it does not modify a skills loader, resource-loader integration, or skill regression test. The relevant coding-agent loader still has an empty catch around recursive directory listing, but that code is outside the pinned diff.",
+    "repository": "earendil-works/pi",
+    "revision": "github-issue-10062",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "earendil-works/pi",
+      "issue": 10062,
+      "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/pi-agent",
+      "manifest_metadata": {
+        "category": "extension-resource-lifecycle",
+        "role": "train_candidate",
+        "case_id": "earendil-works/pi#10062:extension-resource-lifecycle:train_candidate"
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "earendil-works/pi",
+        "issue_number": 10062,
+        "issue": {
+          "number": 10062,
+          "title": "Skills loader swallows directory read errors: an unreadable skills directory yields no skills and no diagnostic",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [],
+        "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/pi-agent",
+        "pinned_ref": "d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31",
+        "resolved_commit": "d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31",
+        "parent_commit": "04b5bad666830eb3a0dddc77a715eed95e12485a",
+        "commit_show_stat": "commit d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31\nAuthor:     Mario Zechner <badlogicgames@gmail.com>\nAuthorDate: Fri Sep 25 18:05:22 2026 +0200\nCommit:     Mario Zechner <badlogicgames@gmail.com>\nCommitDate: Fri Sep 25 18:05:22 2026 +0200\n\n    docs(durable): clarify scratch examples\n\n packages/durable/test/scratch.ts | 169 +++++++++++++++++++++++++--------------\n 1 file changed, 107 insertions(+), 62 deletions(-)\n",
+        "changed_files_name_status": "M\tpackages/durable/test/scratch.ts\n",
+        "linked_issue_numbers": [
+          10062
+        ],
+        "manifest_metadata": {
+          "category": "extension-resource-lifecycle"
+        },
+        "fetched_at": "2026-09-28T19:53:12.795415+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "issue-10062@d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31",
+          "title": "Skills loader swallows directory read errors: an unreadable skills directory yields no skills and no diagnostic",
+          "before": "At parent commit 04b5bad666830eb3a0dddc77a715eed95e12485a, the repository contains the existing skills loaders and their tests. The synchronous coding-agent directory loader catches exceptions from readdirSync without recording a diagnostic, so an unreadable directory can produce an empty skill and diagnostic result. A separate agent harness loader already returns a list_failed diagnostic for an env.listDir failure. The issue bundle supplies no issue body, comments, timeline, review discussion, or linked pull request to identify a different resolution.",
+          "after": "At pinned commit d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31, the only changed file is packages/durable/test/scratch.ts. It rewrites a durable Session API smoke test from three examples into four explanatory examples covering standalone conversations, document snapshots and forks, and a background task with a child conversation. The skills implementations, the resource-loader call site, and the relevant skill tests are unchanged, so the unreadable-directory behavior and its validation coverage remain unchanged. No implementation-bearing resolution for issue 10062 is established.",
+          "diff": "The exact parent-to-pinned diff is one modified file: packages/durable/test/scratch.ts, with 107 insertions and 62 deletions. The commit subject is \"docs(durable): clarify scratch examples\". The diff changes comments, example names, durable conversation/document/task setup, and console output; it does not modify a skills loader, resource-loader integration, or skill regression test. The relevant coding-agent loader still has an empty catch around recursive directory listing, but that code is outside the pinned diff."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "The pinned commit d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 has parent 04b5bad666830eb3a0dddc77a715eed95e12485a and subject \"docs(durable): clarify scratch examples\".",
+            "source": "git show --format=raw d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31"
+          },
+          {
+            "id": "E2",
+            "kind": "diff",
+            "claim": "The parent-to-pinned diff changes only packages/durable/test/scratch.ts and reports 107 insertions and 62 deletions.",
+            "source": "git show --stat and git diff --name-status 04b5bad666830eb3a0dddc77a715eed95e12485a d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31"
+          },
+          {
+            "id": "E3",
+            "kind": "diff",
+            "claim": "The changed scratch file is rewritten as a four-example durable Session API tour: standalone conversation creation, rewindable document snapshots and conversation forks, and atomic setup of a background supervisor task, child conversation, and registry. These are example/documentation changes rather than skills-resource lifecycle changes.",
+            "source": "git diff --unified=80 04b5bad666830eb3a0dddc77a715eed95e12485a d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 -- packages/durable/test/scratch.ts"
+          },
+          {
+            "id": "E4",
+            "kind": "implementation",
+            "claim": "At the pinned ref, packages/coding-agent/src/core/skills.ts checks that a directory exists, calls readdirSync(dir, { withFileTypes: true }), and wraps the directory traversal in an empty catch before returning the accumulated skills and diagnostics. A directory-listing exception can therefore be swallowed without a diagnostic.",
+            "source": "git show d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31:packages/coding-agent/src/core/skills.ts, directory traversal around lines 183-274"
+          },
+          {
+            "id": "E5",
+            "kind": "implementation",
+            "claim": "At the pinned ref, packages/agent/src/harness/skills.ts handles an unsuccessful env.listDir result by appending a warning with code list_failed and the directory path, then returns the partial result. This alternative loader behavior is already present and is not changed by the pinned commit.",
+            "source": "git show d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31:packages/agent/src/harness/skills.ts, directory traversal around lines 138-142"
+          },
+          {
+            "id": "E6",
+            "kind": "call_site",
+            "claim": "At the pinned ref, packages/coding-agent/src/core/resource-loader.ts invokes the coding-agent loadSkills function from updateSkillsFromPaths, applies any skills override, maps source information, and stores the returned diagnostics in this.skillDiagnostics. This call site is unchanged by the pinned commit.",
+            "source": "git show d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31:packages/coding-agent/src/core/resource-loader.ts, updateSkillsFromPaths around lines 739-760"
+          },
+          {
+            "id": "E7",
+            "kind": "test",
+            "claim": "The coding-agent skill tests cover valid loading, metadata validation, recursive discovery, root-file precedence, prompt formatting, nonexistent directories, nonexistent explicit paths, and collision handling, but contain no unreadable-directory or readdir failure regression test.",
+            "source": "git show d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31:packages/coding-agent/test/skills.test.ts"
+          },
+          {
+            "id": "E8",
+            "kind": "test",
+            "claim": "The agent harness skill tests cover successful loading, symlinked directories, source propagation, invalid metadata diagnostics, root markdown handling, and ignored documentation files, but contain no directory-listing failure regression test.",
+            "source": "git show d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31:packages/agent/test/harness/skills.test.ts"
+          },
+          {
+            "id": "E9",
+            "kind": "validation",
+            "claim": "The relevant skills loader implementations, resource-loader call site, and skill test files have no parent-to-pinned diff; the only changed path is packages/durable/test/scratch.ts. Consequently, the pinned commit supplies no validation oracle for the issue's claimed behavior.",
+            "source": "git diff --exit-code 04b5bad666830eb3a0dddc77a715eed95e12485a d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 -- packages/agent/src/harness/skills.ts packages/agent/test/harness/skills.test.ts packages/coding-agent/src/core/skills.ts packages/coding-agent/src/core/resource-loader.ts packages/coding-agent/test/skills.test.ts; git diff --name-status 04b5bad666830eb3a0dddc77a715eed95e12485a d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31"
+          },
+          {
+            "id": "E10",
+            "kind": "commit",
+            "claim": "The issue bundle identifies issue 10062 by the unreadable-skills-directory title and maps its resolved_commit to d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31, while recording that issue body, comments, timeline, author/review discussion, and linked pull requests are unavailable.",
+            "source": "C:/Users/W/AppData/Local/Temp/arex-skill-graph-codex/universal-batch-20260929/codex-run-rest-stdin/earendil-works__pi__10062/issue-bundle.json"
+          }
+        ],
+        "candidate_atomics": [],
+        "candidate_workflows": [],
+        "unresolved_questions": [
+          "No implementation-bearing change for issue 10062 can be established at the pinned ref; the only changed file is a durable API example/documentation file.",
+          "The issue title is consistent with the unchanged empty catch around readdirSync in packages/coding-agent/src/core/skills.ts, but attributing a fix would require an unpinned hypothetical change. No Change Action is emitted.",
+          "The pinned commit adds no unreadable-directory test, no diagnostic propagation change, and no end-task validation oracle. The universal extension-resource-lifecycle class is therefore rejected for this bounded episode because the actual change is unrelated durable-session documentation/example work.",
+          "The issue bundle contains no linked resolution metadata beyond the mismatched documentation-only commit, so no usable Issue Workflow can be constructed."
+        ]
+      },
+      "candidate_atomics": [],
+      "candidate_workflows": [],
+      "unresolved_questions": [
+        "No implementation-bearing change for issue 10062 can be established at the pinned ref; the only changed file is a durable API example/documentation file.",
+        "The issue title is consistent with the unchanged empty catch around readdirSync in packages/coding-agent/src/core/skills.ts, but attributing a fix would require an unpinned hypothetical change. No Change Action is emitted.",
+        "The pinned commit adds no unreadable-directory test, no diagnostic propagation change, and no end-task validation oracle. The universal extension-resource-lifecycle class is therefore rejected for this bounded episode because the actual change is unrelated durable-session documentation/example work.",
+        "The issue bundle contains no linked resolution metadata beyond the mismatched documentation-only commit, so no usable Issue Workflow can be constructed."
+      ]
+    },
+    "call_sites": [
+      "At the pinned ref, packages/coding-agent/src/core/resource-loader.ts invokes the coding-agent loadSkills function from updateSkillsFromPaths, applies any skills override, maps source information, and stores the returned diagnostics in this.skillDiagnostics. This call site is unchanged by the pinned commit."
+    ],
+    "tests": [
+      "The coding-agent skill tests cover valid loading, metadata validation, recursive discovery, root-file precedence, prompt formatting, nonexistent directories, nonexistent explicit paths, and collision handling, but contain no unreadable-directory or readdir failure regression test.",
+      "The agent harness skill tests cover successful loading, symlinked directories, source propagation, invalid metadata diagnostics, root markdown handling, and ignored documentation files, but contain no directory-listing failure regression test."
+    ]
+  },
+  {
+    "episode_id": "github:openai/codex#46960",
+    "title": "[Linux Desktop] local stdio MCP launch inherits unrelated app-server file descriptors into MCP servers and their children",
+    "before": "The local Unix stdio launcher constructed a child command with piped stdin/stdout/stderr and a new process group, but did not set a descriptor-inheritance policy. The shared command builder therefore retained its default DescriptorPolicy::Inherit, allowing inheritable, unrelated descriptors held by the orchestrator to reach the local MCP server and any descendants it launched. The local runtime path selected LocalStdioServerLauncher for local stdio MCP configurations and passed that command through RmcpClient to the launcher.",
+    "after": "The local Unix stdio launcher sets DescriptorPolicy::StdioOnly on every locally constructed MCP command. The existing Unix spawn backend then closes inheritable descriptors other than the explicit transport stdio before exec, while retaining the internal exec-error reporting path; the macOS native backend uses its close-on-exec-default path. The server and descendants therefore inherit only the explicitly wired stdio transport, while the existing process group, arguments, environment, working directory, MCP protocol exchange, and launch-error behavior remain intact. The change is guarded by cfg(unix); Windows behavior is intentionally unchanged and remains a deferred handle-allowlist concern.",
+    "diff": "Commit afe4249cfe, parent b4b30dd5eb9994ddc51f915ecd74e9a8c1d93248, modifies codex-rs/rmcp-client/src/stdio_server_launcher.rs by adding Unix DescriptorPolicy support and applying command.descriptor_policy(DescriptorPolicy::StdioOnly) inside the local command builder. It adds codex-rs/rmcp-client/tests/stdio_descriptor_boundary.rs, a Unix-only integration test that creates inheritable pipe, socket, and file descriptors, verifies an unfiltered control launch sees them, then exercises absolute, relative, and shell-fallback local launches and asserts that neither the MCP server nor its descendant sees them. The test also checks MCP communication, arguments, environment, working directory, stderr, parent descriptor ownership after shutdown, and direct exec-failure reporting. No shared descriptor backend, remote executor path, or Windows implementation is changed.",
+    "repository": "openai/codex",
+    "revision": "github-issue-46960",
+    "evidence_ids": [
+      "ev-01",
+      "ev-02",
+      "ev-03",
+      "ev-04",
+      "ev-05",
+      "ev-06",
+      "ev-07",
+      "ev-08",
+      "ev-09",
+      "ev-10",
+      "ev-11",
+      "ev-12",
+      "ev-13"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "openai/codex",
+      "issue": 46960,
+      "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/codex-agent",
+      "manifest_metadata": {
+        "category": "extension-resource-lifecycle",
+        "role": "train_candidate",
+        "case_id": "openai/codex#46960:extension-resource-lifecycle:train_candidate"
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "openai/codex",
+        "issue_number": 46960,
+        "issue": {
+          "number": 46960,
+          "title": "[Linux Desktop] local stdio MCP launch inherits unrelated app-server file descriptors into MCP servers and their children",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [],
+        "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/codex-agent",
+        "pinned_ref": "afe4249cfe6bdf218ce8807a670fad122d2b60ed",
+        "resolved_commit": "afe4249cfe6bdf218ce8807a670fad122d2b60ed",
+        "parent_commit": "b4b30dd5eb9994ddc51f915ecd74e9a8c1d93248",
+        "commit_show_stat": "commit afe4249cfe6bdf218ce8807a670fad122d2b60ed\nAuthor:     Yuzhu Shen <yuzhu@openai.com>\nAuthorDate: Mon Sep 21 19:05:54 2026 +0000\nCommit:     copyberry <copyberry@app.openai.com>\nCommitDate: Mon Sep 21 19:37:46 2026 +0000\n\n    Restrict Unix local MCP servers to stdio descriptors (#47094)\n    \n    ## Why\n    \n    Local MCP servers communicate over stdio, so unrelated parent file descriptors should not propagate into the server or its descendants.\n    \n    ## What changed\n    \n    Apply `DescriptorPolicy::StdioOnly` when launching local stdio MCP servers on Unix, preserving their explicit transport stdio.\n    \n    ## Testing\n    \n    Add Unix integration tests that check inheritable pipe, socket, and file descriptors are absent from servers and descendants across absolute, relative, and shell-fallback launches. Verify MCP communication, arguments, environment, working directory, parent descriptor ownership, and exec failure reporting remain intact.\n    \n    GitOrigin-RevId: 37409a5673dbaafa851fd1f78e3a2443eda5f7c6\n\n codex-rs/rmcp-client/src/stdio_server_launcher.rs  |   9 +\n .../rmcp-client/tests/stdio_descriptor_boundary.rs | 231 +++++++++++++++++++++\n 2 files changed, 240 insertions(+)\n",
+        "changed_files_name_status": "M\tcodex-rs/rmcp-client/src/stdio_server_launcher.rs\nA\tcodex-rs/rmcp-client/tests/stdio_descriptor_boundary.rs\n",
+        "linked_issue_numbers": [
+          46960
+        ],
+        "manifest_metadata": {
+          "category": "extension-resource-lifecycle"
+        },
+        "fetched_at": "2026-09-28T19:57:14.494474+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "46960",
+          "title": "[Linux Desktop] local stdio MCP launch inherits unrelated app-server file descriptors into MCP servers and their children",
+          "before": "The local Unix stdio launcher constructed a child command with piped stdin/stdout/stderr and a new process group, but did not set a descriptor-inheritance policy. The shared command builder therefore retained its default DescriptorPolicy::Inherit, allowing inheritable, unrelated descriptors held by the orchestrator to reach the local MCP server and any descendants it launched. The local runtime path selected LocalStdioServerLauncher for local stdio MCP configurations and passed that command through RmcpClient to the launcher.",
+          "after": "The local Unix stdio launcher sets DescriptorPolicy::StdioOnly on every locally constructed MCP command. The existing Unix spawn backend then closes inheritable descriptors other than the explicit transport stdio before exec, while retaining the internal exec-error reporting path; the macOS native backend uses its close-on-exec-default path. The server and descendants therefore inherit only the explicitly wired stdio transport, while the existing process group, arguments, environment, working directory, MCP protocol exchange, and launch-error behavior remain intact. The change is guarded by cfg(unix); Windows behavior is intentionally unchanged and remains a deferred handle-allowlist concern.",
+          "diff": "Commit afe4249cfe, parent b4b30dd5eb9994ddc51f915ecd74e9a8c1d93248, modifies codex-rs/rmcp-client/src/stdio_server_launcher.rs by adding Unix DescriptorPolicy support and applying command.descriptor_policy(DescriptorPolicy::StdioOnly) inside the local command builder. It adds codex-rs/rmcp-client/tests/stdio_descriptor_boundary.rs, a Unix-only integration test that creates inheritable pipe, socket, and file descriptors, verifies an unfiltered control launch sees them, then exercises absolute, relative, and shell-fallback local launches and asserts that neither the MCP server nor its descendant sees them. The test also checks MCP communication, arguments, environment, working directory, stderr, parent descriptor ownership after shutdown, and direct exec-failure reporting. No shared descriptor backend, remote executor path, or Windows implementation is changed."
+        },
+        "evidence_units": [
+          {
+            "id": "ev-01",
+            "kind": "commit",
+            "claim": "The evidence bundle binds issue 46960 to resolved implementation commit afe4249cfe, identifies b4b30dd5eb9994ddc51f915ecd74e9a8c1d93248 as its parent, and records the issue as linked to the commit.",
+            "source": "issue-bundle.json: issue.number, pinned_ref, resolved_commit, parent_commit, linked_issue_numbers"
+          },
+          {
+            "id": "ev-02",
+            "kind": "commit",
+            "claim": "The pinned commit is titled “Restrict Unix local MCP servers to stdio descriptors (#47094)” and its commit message states that unrelated parent file descriptors should not propagate into local MCP servers or their descendants; it describes applying DescriptorPolicy::StdioOnly and adding Unix integration tests.",
+            "source": "git show --format=fuller afe4249cfe; issue-bundle.json: commit_show_stat"
+          },
+          {
+            "id": "ev-03",
+            "kind": "diff",
+            "claim": "The commit changes exactly one launcher implementation file and adds one integration-test file: the launcher receives 9 inserted lines and the new test contains 231 inserted lines.",
+            "source": "git diff --stat and git show --name-status b4b30dd5eb9994ddc51f915ecd74e9a8c1d93248 afe4249cfe"
+          },
+          {
+            "id": "ev-04",
+            "kind": "implementation",
+            "claim": "Before the change, LocalStdioServerLauncher::launch_server built a Command, applied current_dir, environment, arguments, and ProcessMode::NewGroup, and then returned the command without setting descriptor_policy; the parent version therefore relied on Command's default descriptor policy.",
+            "source": "git show b4b30dd5eb9994ddc51f915ecd74e9a8c1d93248:codex-rs/rmcp-client/src/stdio_server_launcher.rs, LocalStdioServerLauncher::launch_server build_command closure"
+          },
+          {
+            "id": "ev-05",
+            "kind": "implementation",
+            "claim": "At the pinned ref, stdio_server_launcher.rs imports DescriptorPolicy only under cfg(unix) and applies command.descriptor_policy(DescriptorPolicy::StdioOnly) immediately after setting ProcessMode::NewGroup. The adjacent implementation comment states that unrelated orchestrator descriptors must not propagate into the server or commands it launches and that Windows still needs a separate handle allowlist.",
+            "source": "codex-rs/rmcp-client/src/stdio_server_launcher.rs:13,44,281-290 at afe4249cfe"
+          },
+          {
+            "id": "ev-06",
+            "kind": "implementation",
+            "claim": "The shared Command type defaults to DescriptorPolicy::Inherit; its Unix StdioOnly path installs pre-exec cleanup that closes inherited descriptors other than standard descriptors while preserving close-on-exec descriptors used for spawn-error reporting. The macOS native path maps StdioOnly to POSIX_SPAWN_CLOEXEC_DEFAULT.",
+            "source": "codex-rs/utils/pty/src/child_command.rs:27-29,69,150-168 and codex-rs/utils/pty/src/macos_child.rs:135-142 at afe4249cfe"
+          },
+          {
+            "id": "ev-07",
+            "kind": "call_site",
+            "claim": "The production MCP setup selects LocalStdioServerLauncher for local McpServerTransportConfig::Stdio configurations and passes it to RmcpClient::new_stdio_client_with_protocol_mode; non-local configurations use the executor-backed launcher instead.",
+            "source": "codex-rs/codex-mcp/src/rmcp_client.rs:1190-1223 at afe4249cfe"
+          },
+          {
+            "id": "ev-08",
+            "kind": "call_site",
+            "claim": "RmcpClient packages the program, arguments, environment, environment variables, cwd, and protocol mode into StdioServerCommand and dispatches the command through launcher.launch(command.clone()), so the local launcher policy is on the actual stdio process-creation path.",
+            "source": "codex-rs/rmcp-client/src/rmcp_client.rs:472-510,1090-1095 at afe4249cfe"
+          },
+          {
+            "id": "ev-09",
+            "kind": "test",
+            "claim": "The new Unix integration test creates inheritable duplicates of a pipe, Unix socket, and file descriptor. A control process launched without the MCP descriptor policy must observe all three sentinels as present, establishing that the fixture can detect inheritance.",
+            "source": "codex-rs/rmcp-client/tests/stdio_descriptor_boundary.rs:83-116 at afe4249cfe"
+          },
+          {
+            "id": "ev-10",
+            "kind": "test",
+            "claim": "The same integration test runs local MCP launches through absolute, relative, and shell-fallback command forms, initializes the MCP connection, lists tools, calls the probe tool, and asserts that both the server and its descendant observe [false, false, false] for the pipe/socket/file sentinels while stdio round-trip, stderr, cwd, environment, argument handling, and request arguments remain correct.",
+            "source": "codex-rs/rmcp-client/tests/stdio_descriptor_boundary.rs:118-196 at afe4249cfe"
+          },
+          {
+            "id": "ev-11",
+            "kind": "test",
+            "claim": "After shutting down the MCP clients, the test reads the parent descriptors' F_GETFD flags and asserts they remain open and unchanged, proving descriptor cleanup is confined to the spawned process rather than mutating parent ownership.",
+            "source": "codex-rs/rmcp-client/tests/stdio_descriptor_boundary.rs:198-203 at afe4249cfe"
+          },
+          {
+            "id": "ev-12",
+            "kind": "test",
+            "claim": "A second Unix integration test creates an executable script whose interpreter is missing, then asserts that local stdio client creation returns an error; its comment specifically protects direct exec-failure reporting when descriptor cleanup is enabled.",
+            "source": "codex-rs/rmcp-client/tests/stdio_descriptor_boundary.rs:208-230 at afe4249cfe"
+          },
+          {
+            "id": "ev-13",
+            "kind": "validation",
+            "claim": "The commit's Testing section identifies the intended validation scope: absence of inheritable pipe, socket, and file descriptors in servers and descendants across absolute, relative, and shell-fallback launches, plus preserved MCP communication, arguments, environment, working directory, parent descriptor ownership, and exec-failure reporting.",
+            "source": "git show --format=fuller afe4249cfe, commit message Testing section"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "guard_local_unix_stdio_descriptor_boundary",
+            "description": "Configure the local Unix stdio extension-process launch so unrelated descriptors inherited by the orchestrator do not cross into the extension server or its descendants, while the explicit stdio transport and existing launch settings remain usable.",
+            "evidence_ids": [
+              "ev-04",
+              "ev-05",
+              "ev-06",
+              "ev-07",
+              "ev-08",
+              "ev-09",
+              "ev-10",
+              "ev-11",
+              "ev-12"
+            ],
+            "semantic_action": {
+              "intent": "Prevent unrelated parent file descriptors from leaking into a local stdio extension process tree while preserving the explicit transport stdio.",
+              "module_role": "local stdio extension-process launcher",
+              "operation": "guard",
+              "pre_state": "The local launch command has piped standard streams and a new process group but leaves descriptor policy at Inherit, so inheritable parent descriptors can be inherited by the server and by commands it launches.",
+              "post_state": "On Unix, local stdio launches enforce a stdio-only inheritance boundary: the server and descendants inherit the explicit transport stdio but not unrelated inheritable parent descriptors, with existing arguments, environment, cwd, process-group, and exec-error behavior preserved.",
+              "validation": "The added Unix integration oracle first proves that an unfiltered control launch sees the pipe, socket, and file sentinels, then verifies [false, false, false] in both the local server and a close_fds=False descendant across absolute, relative, and shell-fallback launches; it also checks MCP round-trip behavior, parent descriptor ownership, and failed-exec reporting.",
+              "parameters": [
+                "local stdio extension command",
+                "explicit stdin/stdout/stderr transport",
+                "unrelated inheritable pipe, socket, and file descriptors",
+                "Unix server and descendant process tree"
+              ],
+              "evidence_ids": [
+                "ev-04",
+                "ev-05",
+                "ev-06",
+                "ev-07",
+                "ev-08",
+                "ev-09",
+                "ev-10",
+                "ev-11",
+                "ev-12"
+              ]
+            }
+          },
+          {
+            "name": "validate_local_unix_stdio_boundary",
+            "description": "Add an executable regression oracle for descriptor isolation and for the compatibility behaviors that must survive the new process boundary.",
+            "evidence_ids": [
+              "ev-09",
+              "ev-10",
+              "ev-11",
+              "ev-12",
+              "ev-13"
+            ],
+            "semantic_action": {
+              "intent": "Make the local Unix stdio descriptor invariant and its non-regression requirements directly testable.",
+              "module_role": "Unix local stdio launch integration oracle",
+              "operation": "validate",
+              "pre_state": "The launch policy needs coverage proving both descriptor exclusion and preservation of protocol, argument, environment, cwd, parent-ownership, fallback, and exec-failure behavior.",
+              "post_state": "The checked-in Unix tests distinguish an unfiltered launch from the policy-enabled launch and provide assertions for server/descendant exclusion and preserved behavior across all three launch forms.",
+              "validation": "The integration tests assert control presence, policy-enabled absence, MCP initialize/list/call results, preserved stderr/cwd/environment/arguments, unchanged parent F_GETFD state, and an error for a missing interpreter.",
+              "parameters": [
+                "inheritable descriptor sentinels",
+                "absolute, relative, and shell-fallback launch forms",
+                "descendant process spawn",
+                "MCP initialize/list/call exchange",
+                "missing interpreter exec failure"
+              ],
+              "evidence_ids": [
+                "ev-09",
+                "ev-10",
+                "ev-11",
+                "ev-12",
+                "ev-13"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "local_unix_stdio_descriptor_lifecycle",
+            "description": "At the local stdio extension-process boundary, apply the Unix-only descriptor guard and then validate that the server tree receives only transport stdio without regressing communication, launch compatibility, parent ownership, or failure reporting.",
+            "atomic_names": [
+              "guard_local_unix_stdio_descriptor_boundary",
+              "validate_local_unix_stdio_boundary"
+            ],
+            "evidence_ids": [
+              "ev-01",
+              "ev-02",
+              "ev-03",
+              "ev-04",
+              "ev-05",
+              "ev-06",
+              "ev-07",
+              "ev-08",
+              "ev-09",
+              "ev-10",
+              "ev-11",
+              "ev-12",
+              "ev-13"
+            ],
+            "workflow_graph": {
+              "goal": "Ensure local Unix stdio extension servers and their descendants cannot inherit unrelated orchestrator descriptors while the stdio transport and established launch contract remain functional.",
+              "entry_state": "A local stdio server is launched with the shared command's default inherited-descriptor policy, so unrelated inheritable descriptors may enter the server process tree and the regression boundary is not covered by an end-to-end oracle.",
+              "exit_state": "The local Unix launch path enforces stdio-only descriptor inheritance, server and descendant probes report no unrelated sentinels, and the integration oracle confirms MCP communication, launch variants, arguments, environment, cwd, parent descriptor ownership, and exec-failure reporting.",
+              "steps": [
+                {
+                  "action_name": "guard_local_unix_stdio_descriptor_boundary",
+                  "role": "implement",
+                  "optional": false
+                },
+                {
+                  "action_name": "validate_local_unix_stdio_boundary",
+                  "role": "validate",
+                  "optional": false
+                }
+              ],
+              "edges": [
+                {
+                  "from": "guard_local_unix_stdio_descriptor_boundary",
+                  "to": "validate_local_unix_stdio_boundary",
+                  "type": "enables"
+                }
+              ],
+              "unresolved_or_deferred": [
+                "The implementation is gated by cfg(unix); the commit explicitly leaves Windows unrelated-handle inheritance to a future shared-spawn handle allowlist, and the added integration test is Unix-only.",
+                "The issue bundle contains no issue body, comments, timeline, or linked pull-request metadata, so acceptance criteria beyond the local implementation and commit testing note are unavailable."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "The issue bundle has no issue body, comments, timeline, or linked pull-request metadata; the implementation-bearing commit and checked-out tests are the available resolution evidence.",
+          "Windows local stdio handle filtering is explicitly outside this change: the launcher applies StdioOnly only on Unix, and the implementation comment says Windows still needs a handle allowlist in the shared spawn backend.",
+          "No fresh execution of the Unix-only integration test was performed during extraction, so validation is represented by the checked-in assertions and the commit's stated testing scope rather than a newly observed test result."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "guard_local_unix_stdio_descriptor_boundary",
+          "description": "Configure the local Unix stdio extension-process launch so unrelated descriptors inherited by the orchestrator do not cross into the extension server or its descendants, while the explicit stdio transport and existing launch settings remain usable.",
+          "evidence_ids": [
+            "ev-04",
+            "ev-05",
+            "ev-06",
+            "ev-07",
+            "ev-08",
+            "ev-09",
+            "ev-10",
+            "ev-11",
+            "ev-12"
+          ],
+          "semantic_action": {
+            "intent": "Prevent unrelated parent file descriptors from leaking into a local stdio extension process tree while preserving the explicit transport stdio.",
+            "module_role": "local stdio extension-process launcher",
+            "operation": "guard",
+            "pre_state": "The local launch command has piped standard streams and a new process group but leaves descriptor policy at Inherit, so inheritable parent descriptors can be inherited by the server and by commands it launches.",
+            "post_state": "On Unix, local stdio launches enforce a stdio-only inheritance boundary: the server and descendants inherit the explicit transport stdio but not unrelated inheritable parent descriptors, with existing arguments, environment, cwd, process-group, and exec-error behavior preserved.",
+            "validation": "The added Unix integration oracle first proves that an unfiltered control launch sees the pipe, socket, and file sentinels, then verifies [false, false, false] in both the local server and a close_fds=False descendant across absolute, relative, and shell-fallback launches; it also checks MCP round-trip behavior, parent descriptor ownership, and failed-exec reporting.",
+            "parameters": [
+              "local stdio extension command",
+              "explicit stdin/stdout/stderr transport",
+              "unrelated inheritable pipe, socket, and file descriptors",
+              "Unix server and descendant process tree"
+            ],
+            "evidence_ids": [
+              "ev-04",
+              "ev-05",
+              "ev-06",
+              "ev-07",
+              "ev-08",
+              "ev-09",
+              "ev-10",
+              "ev-11",
+              "ev-12"
+            ]
+          }
+        },
+        {
+          "name": "validate_local_unix_stdio_boundary",
+          "description": "Add an executable regression oracle for descriptor isolation and for the compatibility behaviors that must survive the new process boundary.",
+          "evidence_ids": [
+            "ev-09",
+            "ev-10",
+            "ev-11",
+            "ev-12",
+            "ev-13"
+          ],
+          "semantic_action": {
+            "intent": "Make the local Unix stdio descriptor invariant and its non-regression requirements directly testable.",
+            "module_role": "Unix local stdio launch integration oracle",
+            "operation": "validate",
+            "pre_state": "The launch policy needs coverage proving both descriptor exclusion and preservation of protocol, argument, environment, cwd, parent-ownership, fallback, and exec-failure behavior.",
+            "post_state": "The checked-in Unix tests distinguish an unfiltered launch from the policy-enabled launch and provide assertions for server/descendant exclusion and preserved behavior across all three launch forms.",
+            "validation": "The integration tests assert control presence, policy-enabled absence, MCP initialize/list/call results, preserved stderr/cwd/environment/arguments, unchanged parent F_GETFD state, and an error for a missing interpreter.",
+            "parameters": [
+              "inheritable descriptor sentinels",
+              "absolute, relative, and shell-fallback launch forms",
+              "descendant process spawn",
+              "MCP initialize/list/call exchange",
+              "missing interpreter exec failure"
+            ],
+            "evidence_ids": [
+              "ev-09",
+              "ev-10",
+              "ev-11",
+              "ev-12",
+              "ev-13"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "local_unix_stdio_descriptor_lifecycle",
+          "description": "At the local stdio extension-process boundary, apply the Unix-only descriptor guard and then validate that the server tree receives only transport stdio without regressing communication, launch compatibility, parent ownership, or failure reporting.",
+          "atomic_names": [
+            "guard_local_unix_stdio_descriptor_boundary",
+            "validate_local_unix_stdio_boundary"
+          ],
+          "evidence_ids": [
+            "ev-01",
+            "ev-02",
+            "ev-03",
+            "ev-04",
+            "ev-05",
+            "ev-06",
+            "ev-07",
+            "ev-08",
+            "ev-09",
+            "ev-10",
+            "ev-11",
+            "ev-12",
+            "ev-13"
+          ],
+          "workflow_graph": {
+            "goal": "Ensure local Unix stdio extension servers and their descendants cannot inherit unrelated orchestrator descriptors while the stdio transport and established launch contract remain functional.",
+            "entry_state": "A local stdio server is launched with the shared command's default inherited-descriptor policy, so unrelated inheritable descriptors may enter the server process tree and the regression boundary is not covered by an end-to-end oracle.",
+            "exit_state": "The local Unix launch path enforces stdio-only descriptor inheritance, server and descendant probes report no unrelated sentinels, and the integration oracle confirms MCP communication, launch variants, arguments, environment, cwd, parent descriptor ownership, and exec-failure reporting.",
+            "steps": [
+              {
+                "action_name": "guard_local_unix_stdio_descriptor_boundary",
+                "role": "implement",
+                "optional": false
+              },
+              {
+                "action_name": "validate_local_unix_stdio_boundary",
+                "role": "validate",
+                "optional": false
+              }
+            ],
+            "edges": [
+              {
+                "from": "guard_local_unix_stdio_descriptor_boundary",
+                "to": "validate_local_unix_stdio_boundary",
+                "type": "enables"
+              }
+            ],
+            "unresolved_or_deferred": [
+              "The implementation is gated by cfg(unix); the commit explicitly leaves Windows unrelated-handle inheritance to a future shared-spawn handle allowlist, and the added integration test is Unix-only.",
+              "The issue bundle contains no issue body, comments, timeline, or linked pull-request metadata, so acceptance criteria beyond the local implementation and commit testing note are unavailable."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The issue bundle has no issue body, comments, timeline, or linked pull-request metadata; the implementation-bearing commit and checked-out tests are the available resolution evidence.",
+        "Windows local stdio handle filtering is explicitly outside this change: the launcher applies StdioOnly only on Unix, and the implementation comment says Windows still needs a handle allowlist in the shared spawn backend.",
+        "No fresh execution of the Unix-only integration test was performed during extraction, so validation is represented by the checked-in assertions and the commit's stated testing scope rather than a newly observed test result."
+      ]
+    },
+    "call_sites": [
+      "The production MCP setup selects LocalStdioServerLauncher for local McpServerTransportConfig::Stdio configurations and passes it to RmcpClient::new_stdio_client_with_protocol_mode; non-local configurations use the executor-backed launcher instead.",
+      "RmcpClient packages the program, arguments, environment, environment variables, cwd, and protocol mode into StdioServerCommand and dispatches the command through launcher.launch(command.clone()), so the local launcher policy is on the actual stdio process-creation path."
+    ],
+    "tests": [
+      "The new Unix integration test creates inheritable duplicates of a pipe, Unix socket, and file descriptor. A control process launched without the MCP descriptor policy must observe all three sentinels as present, establishing that the fixture can detect inheritance.",
+      "The same integration test runs local MCP launches through absolute, relative, and shell-fallback command forms, initializes the MCP connection, lists tools, calls the probe tool, and asserts that both the server and its descendant observe [false, false, false] for the pipe/socket/file sentinels while stdio round-trip, stderr, cwd, environment, argument handling, and request arguments remain correct.",
+      "After shutting down the MCP clients, the test reads the parent descriptors' F_GETFD flags and asserts they remain open and unchanged, proving descriptor cleanup is confined to the spawned process rather than mutating parent ownership.",
+      "A second Unix integration test creates an executable script whose interpreter is missing, then asserts that local stdio client creation returns an error; its comment specifically protects direct exec-failure reporting when descriptor cleanup is enabled."
+    ]
+  }
+]

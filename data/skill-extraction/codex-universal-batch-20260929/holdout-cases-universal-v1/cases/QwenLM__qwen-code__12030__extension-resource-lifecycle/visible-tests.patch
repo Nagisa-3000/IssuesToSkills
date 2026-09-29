@@ -1,0 +1,325 @@
+diff --git a/packages/core/src/config/config.test.ts b/packages/core/src/config/config.test.ts
+index b35bda873daa6c14a5a5edc31b95eb4eb872b10f..7a1ff265cee10340d7881440f5b76f798bf492a7 100644
+--- a/packages/core/src/config/config.test.ts
++++ b/packages/core/src/config/config.test.ts
+@@ -9685,6 +9685,89 @@ describe('Server Config (config.ts)', () => {
+     );
+   });
+ 
++  // #12029: the ratio alone means a large window never warns. 15% of a 1M
++  // window is 150,000 tokens of always-on context — an absolute ceiling is what
++  // makes the warning fire where the cost is actually paid.
++  it('warns about a large always-on context on a large window, naming the token bound', async () => {
++    const config = new Config({
++      ...baseParams,
++      userMemory: 'a'.repeat(48_000), // ~12,000 tokens
++      generationConfig: { contextWindowSize: 1_000_000 },
++    });
++
++    const warnings = config.getWarnings();
++
++    expect(warnings).toContainEqual(
++      expect.stringContaining('uses about 12,000 tokens'),
++    );
++    // The bound that actually fired, not a percentage that did not.
++    expect(warnings).toContainEqual(
++      expect.stringContaining(
++        'more than 10,000 tokens, which every request of this session carries',
++      ),
++    );
++    expect(warnings.join('\n')).not.toContain('more than 15%');
++  });
++
++  it('keeps naming the percentage when the ratio is the binding bound', async () => {
++    const config = new Config({
++      ...baseParams,
++      userMemory: 'a'.repeat(800), // 200 tokens, against 15% of 1,000
++      generationConfig: { contextWindowSize: 1_000 },
++    });
++
++    expect(config.getWarnings()).toContainEqual(
++      expect.stringContaining("more than 15% of this model's 1,000 token"),
++    );
++  });
++
++  // The author of an extension rule that was dropped has to be told, or the
++  // documented mechanism silently does nothing for them (#12030).
++  it('warns for each extension rule skipped for having no paths', async () => {
++    const config = new Config(baseParams);
++    vi.mocked(loadServerHierarchicalMemory).mockResolvedValue({
++      memoryContent: '',
++      fileCount: 0,
++      contextFilePaths: [],
++      ruleCount: 0,
++      conditionalRules: [],
++      ignoredExtensionRules: ['charts:rules/always.md'],
++      projectRoot: '/tmp',
++    });
++
++    await config.refreshHierarchicalMemory();
++
++    expect(config.getWarnings()).toContainEqual(
++      expect.stringContaining(
++        'Extension rule charts:rules/always.md has no `paths:` and was skipped',
++      ),
++    );
++  });
++
++  // A refresh replaces the list rather than appending to it, or a session that
++  // reloads memory a few times shows the same warning several times over.
++  it('does not accumulate the same extension-rule warning across refreshes', async () => {
++    const config = new Config(baseParams);
++    vi.mocked(loadServerHierarchicalMemory).mockResolvedValue({
++      memoryContent: '',
++      fileCount: 0,
++      contextFilePaths: [],
++      ruleCount: 0,
++      conditionalRules: [],
++      ignoredExtensionRules: ['charts:rules/always.md'],
++      projectRoot: '/tmp',
++    });
++
++    await config.refreshHierarchicalMemory();
++    await config.refreshHierarchicalMemory();
++
++    expect(
++      config
++        .getWarnings()
++        .filter((warning) => warning.includes('charts:rules/always.md')),
++    ).toHaveLength(1);
++  });
++
+   it('refreshHierarchicalMemory should expose loaded context file paths', async () => {
+     const config = new Config(baseParams);
+ 
+diff --git a/packages/core/src/config/rulesDiscovery.test.ts b/packages/core/src/config/rulesDiscovery.test.ts
+index 370327a1d37b40abd91c26dd62df95e5012d2cac..d0f6120c9d4acef7b194349c3750f63e878d38f0 100644
+--- a/packages/core/src/config/rulesDiscovery.test.ts
++++ b/packages/core/src/config/rulesDiscovery.test.ts
+@@ -360,6 +360,127 @@ Use hooks.`,
+   // ConditionalRulesRegistry
+   // ─────────────────────────────────────────────────────────────────────────
+ 
++  // ───────────────────────────────────────────────────────────────────────
++  // Extension-contributed rules (#12030)
++  // ───────────────────────────────────────────────────────────────────────
++
++  describe('extension rules', () => {
++    async function writeExtensionRule(
++      extensionName: string,
++      fileName: string,
++      content: string,
++    ) {
++      const dir = path.join(testRootDir, 'extensions', extensionName, 'rules');
++      await createTestFile(path.join(dir, fileName), content);
++      return { name: extensionName, dir };
++    }
++
++    it('takes a conditional rule from an extension', async () => {
++      const source = await writeExtensionRule(
++        'charts',
++        'charting.md',
++        `---
++paths:
++  - 'src/**/*.tsx'
++---
++
++Use the chart palette.`,
++      );
++
++      const result = await loadRules(projectRoot, true, [], [source]);
++
++      // Conditional: it must not be in the session-start content.
++      expect(result.ruleCount).toBe(0);
++      expect(result.content).toBe('');
++      expect(result.conditionalRules).toHaveLength(1);
++      expect(result.conditionalRules[0].content).toContain(
++        'Use the chart palette.',
++      );
++      expect(result.ignoredExtensionRules).toEqual([]);
++    });
++
++    /**
++     * The whole point of the mechanism: a baseline rule is resident on every
++     * request, which is the cost an extension's context file already imposes.
++     * Accepting one here would recreate #12030 inside its own fix, so it is
++     * dropped — and reported, or the author sees nothing happen.
++     */
++    it('drops an extension rule with no paths, and names it', async () => {
++      const source = await writeExtensionRule(
++        'charts',
++        'always.md',
++        'Always follow the chart palette.',
++      );
++
++      const result = await loadRules(projectRoot, true, [], [source]);
++
++      expect(result.ruleCount).toBe(0);
++      expect(result.content).toBe('');
++      expect(result.conditionalRules).toEqual([]);
++      expect(result.ignoredExtensionRules).toEqual(['charts:rules/always.md']);
++    });
++
++    it('labels an extension rule by extension, not by a path out of the project', async () => {
++      const source = await writeExtensionRule(
++        'charts',
++        'charting.md',
++        `---
++paths:
++  - 'src/**/*.tsx'
++---
++
++Use the chart palette.`,
++      );
++
++      const result = await loadRules(projectRoot, true, [], [source]);
++      const registry = new ConditionalRulesRegistry(
++        result.conditionalRules,
++        projectRoot,
++      );
++      const injected = await registry.matchAndConsume(
++        path.join(projectRoot, 'src', 'Chart.tsx'),
++      );
++
++      expect(injected).toContain('--- Rule from: charts:rules/charting.md ---');
++      // A path relative to the project root would be a stack of `../`.
++      expect(injected).not.toContain('..');
++    });
++
++    it('is unaffected by a missing rules directory', async () => {
++      const result = await loadRules(
++        projectRoot,
++        true,
++        [],
++        [{ name: 'no-rules', dir: path.join(testRootDir, 'nowhere', 'rules') }],
++      );
++
++      expect(result.conditionalRules).toEqual([]);
++      expect(result.ignoredExtensionRules).toEqual([]);
++    });
++
++    it('honours exclude patterns for extension rules too', async () => {
++      const source = await writeExtensionRule(
++        'charts',
++        'charting.md',
++        `---
++paths:
++  - 'src/**'
++---
++
++Use the chart palette.`,
++      );
++
++      const result = await loadRules(
++        projectRoot,
++        true,
++        ['**/extensions/charts/**'],
++        [source],
++      );
++
++      expect(result.conditionalRules).toEqual([]);
++    });
++  });
++
+   describe('ConditionalRulesRegistry', () => {
+     const rule = (fp: string, pats: string[], body: string) => ({
+       filePath: fp,
+diff --git a/packages/core/src/core/client.test.ts b/packages/core/src/core/client.test.ts
+index b63b1f6490671c68aa314a6a8ac4e3dfb0411afb..1c72e1c66336059ae666c899453de378389919ac 100644
+--- a/packages/core/src/core/client.test.ts
++++ b/packages/core/src/core/client.test.ts
+@@ -1750,6 +1750,94 @@ describe('Gemini Client (client.ts)', () => {
+       expect(reg.preloadDeferredToolsWithinBudget).toHaveBeenCalledWith(5_000);
+     });
+ 
++    // #12029: the percentage alone scales with the window, which is not what
++    // decides the trade. These four pin the absolute cap that bounds it. The
++    // shared mockConfig deliberately does not define the getter, so every test
++    // above measures the uncapped percentage — the pre-#12029 behaviour.
++    function setMaxPreloadTokens(value: number | undefined) {
++      (
++        mockConfig as unknown as {
++          getToolSearchMaxPreloadTokens?: () => number | undefined;
++        }
++      ).getToolSearchMaxPreloadTokens = () => value;
++    }
++
++    it('caps the preload budget at the absolute token ceiling', async () => {
++      const reg = getRegistryMock();
++      reg.getTool.mockImplementation((n: string) =>
++        n === 'tool_search' ? ({} as never) : null,
++      );
++      // 10% of the default window is far above the cap, so the cap binds.
++      setMaxPreloadTokens(8_000);
++      reg.preloadDeferredToolsWithinBudget.mockClear();
++
++      await client.startChat();
++
++      expect(reg.preloadDeferredToolsWithinBudget).toHaveBeenCalledWith(8_000);
++    });
++
++    it('keeps the percentage when it is the smaller of the two', async () => {
++      const reg = getRegistryMock();
++      reg.getTool.mockImplementation((n: string) =>
++        n === 'tool_search' ? ({} as never) : null,
++      );
++      vi.mocked(mockConfig.getContentGeneratorConfig).mockReturnValue({
++        model: 'test-model',
++        apiKey: 'test-key',
++        vertexai: false,
++        authType: AuthType.USE_GEMINI,
++        contextWindowSize: 50_000,
++      });
++      setMaxPreloadTokens(8_000);
++      reg.preloadDeferredToolsWithinBudget.mockClear();
++
++      await client.startChat();
++
++      expect(reg.preloadDeferredToolsWithinBudget).toHaveBeenCalledWith(5_000);
++    });
++
++    it('skips deferred preload when the cap is 0', async () => {
++      const reg = getRegistryMock();
++      reg.getTool.mockImplementation((n: string) =>
++        n === 'tool_search' ? ({} as never) : null,
++      );
++      // Same meaning as a threshold of 0: never preload.
++      setMaxPreloadTokens(0);
++      reg.preloadDeferredToolsWithinBudget.mockClear();
++
++      await client.startChat();
++
++      expect(reg.preloadDeferredToolsWithinBudget).not.toHaveBeenCalled();
++    });
++
++    it('treats a negative cap as 0 rather than inverting the bound', async () => {
++      const reg = getRegistryMock();
++      reg.getTool.mockImplementation((n: string) =>
++        n === 'tool_search' ? ({} as never) : null,
++      );
++      setMaxPreloadTokens(-5_000);
++      reg.preloadDeferredToolsWithinBudget.mockClear();
++
++      await client.startChat();
++
++      expect(reg.preloadDeferredToolsWithinBudget).not.toHaveBeenCalled();
++    });
++
++    it('ignores a non-finite cap and uses the percentage', async () => {
++      const reg = getRegistryMock();
++      reg.getTool.mockImplementation((n: string) =>
++        n === 'tool_search' ? ({} as never) : null,
++      );
++      setMaxPreloadTokens(NaN);
++      reg.preloadDeferredToolsWithinBudget.mockClear();
++
++      await client.startChat();
++
++      expect(reg.preloadDeferredToolsWithinBudget).toHaveBeenCalledWith(
++        Math.floor(DEFAULT_TOKEN_LIMIT / 10),
++      );
++    });
++
+     it('skips deferred preload when the threshold is 0', async () => {
+       const reg = getRegistryMock();
+       reg.getTool.mockImplementation((n: string) =>

@@ -1,0 +1,139 @@
+{
+  "schema_version": "universal-resolution-graph-v1",
+  "extraction_policy": {
+    "training_only": true,
+    "holdout_refused": true,
+    "unknown_semantics_are_not_deduplicated": true,
+    "pattern_promotion_requires_llm_judge_and_holdout": true
+  },
+  "actions": [
+    {
+      "id": "semantic-action:1941f701663bd284",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Bound each cache-warming provider request to one output token without permanently reducing the normal completion budget or triggering repeated one-token prefill continuations.",
+      "module_role": "Request-parameter isolation at the boundary between background cache maintenance and foreground model completion.",
+      "operation": "isolate",
+      "pre_state": "The warming worker aliases the model's extra-parameter mapping, overwrites its max_tokens entry with 1, and the normal send path later consumes that same mapping.",
+      "post_state": "The warming worker uses a distinct kwargs mapping with max_tokens=1, while the model's extra_params retains its configured entries, such as the normal max_tokens budget, for later requests.",
+      "validation": "The parent and pinned diff plus the call sites provide a static invariant oracle: the warming completion consumes the copied kwargs while the foreground path still consumes model.extra_params. Existing cache-option tests cover activation only; a mocked-provider regression test for both the one-token warm ping and preserved normal budget is absent.",
+      "parameters": [
+        "model extra-parameter mapping",
+        "temporary cache-warming output-token cap",
+        "normal foreground completion output-token budget",
+        "cacheable message set",
+        "provider completion request"
+      ],
+      "evidence_ids": [
+        "diff-1842-one-line",
+        "impl-1842-parent-alias",
+        "impl-1842-pinned-copy",
+        "callsite-1842-normal-send",
+        "callsite-1842-prefill-loop",
+        "config-1842-budget"
+      ],
+      "source_name": "localize_cache_warming_budget_override",
+      "description": "Create request-local cache-warming kwargs before applying the one-token maintenance cap, preserving the model's configured parameters for subsequent foreground and prefill completions.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "github:Aider-AI/aider#1842"
+      ],
+      "supporting_repositories": [
+        "Aider-AI/aider"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    }
+  ],
+  "workflows": [
+    {
+      "id": "workflow:edfd47b68de2afce",
+      "node_type": "issue_workflow",
+      "category": "bounded-resource-budget-control",
+      "repository": "Aider-AI/aider",
+      "issue": 1842,
+      "episode_id": "github:Aider-AI/aider#1842",
+      "name": "preserve_foreground_budget_during_cache_keepalive",
+      "description": "For an enabled prompt-cache keepalive flow, isolate the one-token maintenance override from the shared model configuration so delayed cache pings remain bounded and later prefill-capable completions retain their normal output budget.",
+      "goal": "Keep the prompt cache alive with bounded maintenance calls while preserving the foreground completion budget and avoiding a one-token prefill loop.",
+      "entry_state": "Prompt-cache keepalive is enabled for a cache-capable model; send_message schedules or runs cache warming before the foreground send, and the parent implementation shares the model extra-parameter mapping with the warming request.",
+      "exit_state": "Each warming request receives max_tokens=1 through a local kwargs copy, the model extra_params mapping remains unchanged for foreground and prefill-capable calls, and the length-continuation path is no longer forced into one-token responses by cache warming.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:1941f701663bd284",
+          "role": "implement",
+          "optional": false
+        }
+      ],
+      "edges": [],
+      "unresolved_or_deferred": [
+        "The checkout has no targeted regression test that mocks the warming provider and asserts both the one-token warm request and preservation of the next normal request's configured max_tokens.",
+        "ModelSettings declares extra_params as Optional[dict], while the pinned expression calls dict(...) without an explicit None guard; built-in cache-capable settings inspected here provide mappings, but the custom or None case remains unresolved.",
+        "The cache-disabled and zero-ping early-return branches are unchanged by the commit and are not represented as separate change actions."
+      ],
+      "evidence_ids": [
+        "callsite-1842-lifecycle",
+        "impl-1842-parent-alias",
+        "impl-1842-pinned-copy",
+        "callsite-1842-normal-send",
+        "callsite-1842-prefill-loop",
+        "validation-1842-diff-check"
+      ],
+      "supporting_repositories": [
+        "Aider-AI/aider"
+      ],
+      "source_case": "Aider-AI/aider#1842"
+    }
+  ],
+  "patterns": [
+    {
+      "id": "pattern:dde0e64126085639",
+      "node_type": "resolution_pattern",
+      "category": "bounded-resource-budget-control",
+      "intent": "Resolve bounded resource budget control through a contract-first, evidence-validated change chain.",
+      "mandatory_actions": [],
+      "optional_actions": [],
+      "workflow_template": [],
+      "ordering_constraints": [],
+      "decision_points": [],
+      "invariants": [],
+      "validation_ladder": [],
+      "known_failure_modes": [],
+      "supporting_workflows": [
+        "workflow:edfd47b68de2afce"
+      ],
+      "supporting_repositories": [
+        "Aider-AI/aider"
+      ],
+      "counterexamples": [],
+      "confidence": 0.0,
+      "promotion_status": "insufficient-structural-support",
+      "held_out_results": [],
+      "extraction_method": "structural-action-fingerprint-v1; semantic judge required before promotion"
+    }
+  ],
+  "edges": [
+    {
+      "from": "semantic-action:1941f701663bd284",
+      "to": "evidence:github:Aider-AI/aider#1842",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "pattern:dde0e64126085639",
+      "to": "workflow:edfd47b68de2afce",
+      "type": "supported_by"
+    }
+  ],
+  "rejected": [],
+  "summary": {
+    "episodes_input": 1,
+    "episodes_used": 1,
+    "actions": 1,
+    "grounded_actions": 1,
+    "workflows": 1,
+    "patterns": 1,
+    "patterns_with_cross_repository_support": 0,
+    "rejected": 0
+  }
+}

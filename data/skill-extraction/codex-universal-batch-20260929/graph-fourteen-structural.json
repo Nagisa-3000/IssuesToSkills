@@ -1,0 +1,2552 @@
+{
+  "schema_version": "universal-resolution-graph-v1",
+  "extraction_policy": {
+    "training_only": true,
+    "holdout_refused": true,
+    "unknown_semantics_are_not_deduplicated": true,
+    "pattern_promotion_requires_llm_judge_and_holdout": true
+  },
+  "actions": [
+    {
+      "id": "semantic-action:004c33e49d9cf153",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Remove silent post-tool turns while bounding automatic recovery work.",
+      "module_role": "interactive stream continuation coordinator",
+      "operation": "nudge",
+      "pre_state": "A continuation after tool execution finishes with no tool calls and no non-whitespace visible text; the current user query has fewer than two automatic nudge attempts.",
+      "post_state": "A continuation request carrying the recovery nudge is submitted and the per-user-query counter is incremented; no automatic nudge is submitted after the two-attempt budget is exhausted.",
+      "validation": "The interactive-hook test observes a second send containing the exact recovery nudge after an empty continuation.",
+      "parameters": [
+        "continuation flag",
+        "visible response buffer",
+        "automatic nudge attempt budget",
+        "recovery nudge text",
+        "prompt identifier"
+      ],
+      "evidence_ids": [
+        "E6",
+        "E7",
+        "E19"
+      ],
+      "source_name": "bounded-interactive-post-tool-nudge",
+      "description": "Recover an interactive continuation that follows tool execution but ends without visible text by issuing a bounded recovery nudge through the normal continuation path.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:0b34e5064158be26",
+      "node_type": "change_action",
+      "category": "concurrent-work-coordination",
+      "intent": "Detect regressions that return a startup session-context request as historical content or an empty pending API segment.",
+      "module_role": "context-boundary partition validation oracle",
+      "operation": "validate",
+      "pre_state": "The normal pending split is covered, but a first pending turn beginning with <session_context> can be assigned the environment-context identity and be misclassified by the boundary logic.",
+      "post_state": "The regression suite requires exactly one pending API item containing <session_context>, while the existing test continues to require that an ordinary active prompt is the only pending item and that the combined sequence alternates roles.",
+      "validation": "The assertions in contextManager.test.ts directly inspect pendingApiHistory and the combined role sequence; the test was not executable in this checkout because vitest was unavailable.",
+      "parameters": [
+        "pending session-context content",
+        "pendingApiHistory result",
+        "historical API content",
+        "role alternation invariant"
+      ],
+      "evidence_ids": [
+        "E-BASELINE-LATE-BIND-TEST",
+        "E-REGRESSION-SESSION-CONTEXT-TEST",
+        "E-TEST-EXECUTION-LIMIT"
+      ],
+      "source_name": "assert_startup_pending_partition_regression",
+      "description": "Add a focused regression oracle for the special startup session-context boundary while retaining the existing normal late-binding split and role-alternation checks.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "google-gemini/gemini-cli#28518@571851b1077a51cef757146ce13f9da887326bec"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:0bcbf481f0b33e67",
+      "node_type": "change_action",
+      "category": "concurrent-work-coordination",
+      "intent": "Serialize turns that target the same persisted conversation across process boundaries.",
+      "module_role": "Cross-process persistence coordination",
+      "operation": "establish",
+      "pre_state": "Turn ownership exists only in process-local registries, so independent runtimes can enter the same persisted conversation without a shared admission record.",
+      "post_state": "A unique conversation-scoped lease record stores an explicit holder and bounded lifetime; acquisition is atomic, expired or dead holders can be reclaimed, waiters poll without retaining a database write lock, and holder-qualified refresh/release operations fence stale owners.",
+      "validation": "The state tests show contention across separate database handles, blocking until release or expiry, successful stale-holder reclamation, and rejection of non-owner refresh/release operations.",
+      "parameters": [
+        "shared state database",
+        "conversation identity",
+        "holder token",
+        "lease TTL",
+        "wait budget",
+        "poll interval"
+      ],
+      "evidence_ids": [
+        "E5",
+        "E6",
+        "E7",
+        "E12"
+      ],
+      "source_name": "establish_durable_turn_lease_protocol",
+      "description": "Add a durable per-conversation admission protocol in the shared state database so independent runtimes can coordinate ownership of a turn.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "hermes-agent#125124@6e929a96946a5c69644d08bd59c9dcfdc757e91b"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:0c19423512bf00ef",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Prevent out-of-range percentage input from turning a bounded preload budget into an oversized or effectively unconditional preload.",
+      "module_role": "configuration and runtime invariant guard",
+      "operation": "clamp",
+      "pre_state": "The new percentage policy can be bypassed by hand-editing or otherwise supplying a value above 100 after static schema validation; the derived budget would otherwise exceed the whole context window.",
+      "post_state": "Declarative validation accepts only 0-100, and runtime input above 100 is clamped to 100 before token-budget calculation; non-finite and non-positive values still select the no-preload branch.",
+      "validation": "The generated and source schemas declare minimum 0 and maximum 100, and the client test supplies 200 and asserts a full-context budget rather than a budget above the context window.",
+      "parameters": [
+        "threshold percentage",
+        "maximum allowed percentage",
+        "context-window size",
+        "runtime settings source"
+      ],
+      "evidence_ids": [
+        "ev-schema-bound",
+        "ev-client-budget",
+        "ev-client-tests"
+      ],
+      "source_name": "harden-threshold-domain",
+      "description": "Defend the percentage invariant at both the declarative settings boundary and runtime so a hand-edited value above 100 cannot allocate a budget larger than the full context window.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77"
+      ],
+      "supporting_repositories": [
+        "QwenLM/qwen-code"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:1753f7113f4e997a",
+      "node_type": "change_action",
+      "category": "effect-control-and-isolation",
+      "intent": "Prevent cross-profile working-directory state bleed for equal raw session ids and preserve symmetric cleanup.",
+      "module_role": "session working-directory state store",
+      "operation": "qualify",
+      "pre_state": "The cwd map records, reads, and clears by raw session id, so a profile sharing the id can observe or overwrite another profile's directory and can clear its record.",
+      "post_state": "Record, get, and clear all address the same scope-qualified slot; a different routed profile sees no prior record, owns its own cwd, and can clear only that slot, while no override continues to use the raw slot.",
+      "validation": "The cwd regression test records profile A's directory, verifies profile B starts empty, records and clears B, and then verifies A remains unchanged; a separate no-override assertion verifies raw map storage.",
+      "parameters": [
+        "raw session key",
+        "recorded working directory",
+        "active routed profile/home scope"
+      ],
+      "evidence_ids": [
+        "ev-cwd-implementation",
+        "ev-call-sites",
+        "ev-regression-tests"
+      ],
+      "source_name": "qualify_session_cwd_state",
+      "description": "Apply the same routed scope qualification to session working-directory record, lookup, and teardown operations so cwd state cannot cross profile boundaries or be cleared asymmetrically.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "NousResearch/hermes-agent#123989@b5f587dba8b1852127c6cc3d7e3d98dceedbf94d"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:1941f701663bd284",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Bound each cache-warming provider request to one output token without permanently reducing the normal completion budget or triggering repeated one-token prefill continuations.",
+      "module_role": "Request-parameter isolation at the boundary between background cache maintenance and foreground model completion.",
+      "operation": "isolate",
+      "pre_state": "The warming worker aliases the model's extra-parameter mapping, overwrites its max_tokens entry with 1, and the normal send path later consumes that same mapping.",
+      "post_state": "The warming worker uses a distinct kwargs mapping with max_tokens=1, while the model's extra_params retains its configured entries, such as the normal max_tokens budget, for later requests.",
+      "validation": "The parent and pinned diff plus the call sites provide a static invariant oracle: the warming completion consumes the copied kwargs while the foreground path still consumes model.extra_params. Existing cache-option tests cover activation only; a mocked-provider regression test for both the one-token warm ping and preserved normal budget is absent.",
+      "parameters": [
+        "model extra-parameter mapping",
+        "temporary cache-warming output-token cap",
+        "normal foreground completion output-token budget",
+        "cacheable message set",
+        "provider completion request"
+      ],
+      "evidence_ids": [
+        "diff-1842-one-line",
+        "impl-1842-parent-alias",
+        "impl-1842-pinned-copy",
+        "callsite-1842-normal-send",
+        "callsite-1842-prefill-loop",
+        "config-1842-budget"
+      ],
+      "source_name": "localize_cache_warming_budget_override",
+      "description": "Create request-local cache-warming kwargs before applying the one-token maintenance cap, preserving the model's configured parameters for subsequent foreground and prefill completions.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "github:Aider-AI/aider#1842"
+      ],
+      "supporting_repositories": [
+        "Aider-AI/aider"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:24e77d8afdb1dce6",
+      "node_type": "change_action",
+      "category": "concurrent-work-coordination",
+      "intent": "Preserve active startup or sub-agent handoff content for the upcoming main-model request instead of losing it at the history/pending boundary.",
+      "module_role": "late-bound context history partitioner",
+      "operation": "classify",
+      "pre_state": "A pending request containing <session_context> is mapped as the stable environment-context turn; after hardening, its identity may be raw or turn_-prefixed, and the previous classifier excluded that identity even when it was the final turn.",
+      "post_state": "Pending-ID variants are recognized, and the environment-context identity is suppressed only for an earlier startup context; when it is the final hardened turn, it starts the pending segment and the request appears in pendingApiHistory.",
+      "validation": "The added ContextManager regression test requires one pending API item whose text contains <session_context>; the client call site then consumes that pending item as the final content appended to apiHistoryOverride.",
+      "parameters": [
+        "pending HistoryTurn",
+        "stable environment-context identifier",
+        "raw or turn_-prefixed normalized turn identifier",
+        "hardened history order",
+        "late-binding mode"
+      ],
+      "evidence_ids": [
+        "E-DIFF-PENDING-BOUNDARY",
+        "E-GRAPH-ENV-ID",
+        "E-RENDER-LATE-BIND",
+        "E-CONTEXT-SPLIT",
+        "E-CLIENT-PENDING-CONSUMER",
+        "E-REGRESSION-SESSION-CONTEXT-TEST"
+      ],
+      "source_name": "classify_final_startup_context_as_pending",
+      "description": "Preserve a late-bound startup request carrying session context in the pending API segment when its normalized environment-context identity is the final hardened turn, while continuing to treat an earlier environment context turn as historical.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "google-gemini/gemini-cli#28518@571851b1077a51cef757146ce13f9da887326bec"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:26186cfe5470ed34",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Prevent a tool-execution path from terminating without a user-facing explanation when the first post-tool response is empty.",
+      "module_role": "agent execution loop",
+      "operation": "nudge",
+      "pre_state": "At least one tool call has completed, the next stream has no tool calls, and it emits no non-whitespace content.",
+      "post_state": "The loop sends the recovery nudge as the next request, clears the armed-after-tool state, and continues; a visible response can then complete the session.",
+      "validation": "The legacy-session test asserts three stream calls, the exact nudge payload on the third call, tool request/response events, and the final agent message; the non-interactive regression test confirms the additional recovery call.",
+      "parameters": [
+        "after-tool state",
+        "completed tool responses",
+        "visible-content flag",
+        "recovery nudge text",
+        "abort signal"
+      ],
+      "evidence_ids": [
+        "E8",
+        "E9",
+        "E10",
+        "E18"
+      ],
+      "source_name": "bounded-session-post-tool-nudge",
+      "description": "In the session execution loop, recover from an empty response immediately following completed tool calls by sending a dedicated nudge before allowing normal completion.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:265d94ab13ba6de8",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Make deferred-resource preloading an explicit, mode-aware session budget policy.",
+      "module_role": "user configuration and session-budget contract",
+      "operation": "propagate",
+      "pre_state": "No configuration value reaches core session startup to size deferred-tool preloading, so startup has no user-selectable percentage policy.",
+      "post_state": "A threshold percentage is available to startup with default 10; ordinary CLI sessions receive the configured value, while bare and safe sessions receive 0.",
+      "validation": "CLI tests assert configured forwarding at 25, default 10, and forced 0 in safe and bare modes; the settings schema supplies the declared numeric contract.",
+      "parameters": [
+        "threshold percentage",
+        "default percentage",
+        "execution safety mode"
+      ],
+      "evidence_ids": [
+        "ev-config-contract",
+        "ev-cli-propagation",
+        "ev-cli-tests"
+      ],
+      "source_name": "configure-deferred-preload-threshold",
+      "description": "Expose a session-start deferred-tool preload percentage, carry it from user settings into core configuration, default it to 10, and disable the policy in CLI bare/safe modes.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77"
+      ],
+      "supporting_repositories": [
+        "QwenLM/qwen-code"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:2737db000d011d35",
+      "node_type": "change_action",
+      "category": "failure-recovery-and-retry",
+      "intent": "Stop retrying an exhausted model when the upstream supplies no retry schedule, so persistent fallback handling can be reached.",
+      "module_role": "Structured upstream-failure classifier at the retry and fallback boundary",
+      "operation": "classify",
+      "pre_state": "A structured quota failure is recognized as a retryable-status error, but its capacity-exhaustion reason is not distinguished and no parsed server retry delay is available; it falls through to generic transient handling.",
+      "post_state": "The no-delay capacity-exhaustion condition is classified as terminal and retains the parsed error and reason for downstream fallback handling; a present server delay takes the existing retryable, delay-aware path.",
+      "validation": "The added focused tests assert terminal classification for both capacity-reason variants with no delay, including a non-Cloud-Code domain, while the existing 9-second RetryInfo case asserts retryable classification with a 9000 ms delay. The assertions were not executed in this checkout because the Vitest binary is absent.",
+      "parameters": [
+        "structured quota status",
+        "capacity-exhaustion reason",
+        "optional server retry delay",
+        "parsed API error payload and details"
+      ],
+      "evidence_ids": [
+        "ev-impl-001",
+        "ev-call-001",
+        "ev-call-002",
+        "ev-test-001",
+        "ev-test-002",
+        "ev-validation-001"
+      ],
+      "source_name": "classify-undelayed-model-capacity-exhaustion-as-terminal",
+      "description": "Add a classifier rule that maps structured model-capacity exhaustion with no server delay to terminal handling, while preserving retryable handling for capacity failures that carry a server delay.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "google-gemini/gemini-cli#28339@d55e366f6ab393e024c613d940fead3696d56eac"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:2afbbccc99b60af5",
+      "node_type": "change_action",
+      "category": "concurrent-work-coordination",
+      "intent": "Prevent a long-running turn from expiring into a concurrent successor and prevent late cleanup from releasing a successor's lease.",
+      "module_role": "Turn lease lifecycle ownership",
+      "operation": "refresh",
+      "pre_state": "A fixed-TTL lease can expire before a long turn finishes, and a late refresher or unwind may run after another holder has acquired the conversation lease.",
+      "post_state": "A background refresher extends only the current holder's lease while the turn is active; finalization stops and joins the refresher and deletes only the matching holder row, leaving a successor lease intact.",
+      "validation": "State tests reject stale refresh/release and allow the next holder only after valid release or expiry; the integration test verifies release after the delegated turn and the implementation places cleanup in the outer finally path.",
+      "parameters": [
+        "holder token",
+        "conversation/session id",
+        "lease TTL",
+        "refresh cadence",
+        "turn exit path"
+      ],
+      "evidence_ids": [
+        "E7",
+        "E10",
+        "E12",
+        "E13"
+      ],
+      "source_name": "maintain_and_release_turn_ownership",
+      "description": "Keep the lease alive through long model/tool/compression work and release it safely on every exit path.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "hermes-agent#125124@6e929a96946a5c69644d08bd59c9dcfdc757e91b"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:341c32a111cda69a",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Avoid spending correction-model work on an invalid edit request and make the repair precondition explicit.",
+      "module_role": "edit invocation parameter validator",
+      "operation": "guard",
+      "pre_state": "An edit invocation reaches self-correction with old_string missing or containing only whitespace.",
+      "post_state": "Execution returns an INVALID_TOOL_PARAMS error without invoking the LLM edit fixer and tells the agent to inspect the target with ReadFile before supplying an exact search string.",
+      "validation": "The edit test uses whitespace-only old_string and asserts that the fixer is not called, the error type is INVALID_TOOL_PARAMS, and the returned message includes ReadFile guidance.",
+      "parameters": [
+        "old search string",
+        "target file content",
+        "correction-helper enabled state",
+        "read-before-retry guidance"
+      ],
+      "evidence_ids": [
+        "E15",
+        "E16"
+      ],
+      "source_name": "reject-blank-edit-search",
+      "description": "Reject a blank or whitespace-only edit search string before the expensive LLM correction path is invoked and return a localized instruction to reread the target before retrying.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:3f27476e3dc706dd",
+      "node_type": "change_action",
+      "category": "effect-control-and-isolation",
+      "intent": "Prevent cross-profile reuse of a session-isolated sandbox when different profiles generate the same raw API-session fingerprint.",
+      "module_role": "session-isolated sandbox identity resolution",
+      "operation": "qualify",
+      "pre_state": "For a session-isolated backend, the alias-resolved raw task id is used directly as the environment-cache identity, so identical raw ids from different routed profiles can attach to one sandbox.",
+      "post_state": "The alias-resolved task identity is prefixed by the active routed scope, making equal raw ids from different profiles distinct; subagent aliases still resolve to the parent's qualified identity, while no routed override keeps the raw key and earlier explicit isolation overrides remain authoritative.",
+      "validation": "The regression tests prove named-profile qualification, distinct keys for a research/default fingerprint collision, qualified subagent-parent resolution, and raw behavior without an override. The commit also reports live Docker isolation in both profile directions.",
+      "parameters": [
+        "raw task or session id",
+        "alias-resolved parent id",
+        "session-isolated backend predicate",
+        "active routed profile/home scope"
+      ],
+      "evidence_ids": [
+        "ev-scope-predicate",
+        "ev-container-implementation",
+        "ev-regression-tests",
+        "ev-commit-validation"
+      ],
+      "source_name": "qualify_session_isolated_container_key",
+      "description": "Namespace the alias-resolved task identity used for a session-isolated sandbox by the active routed profile/home, preventing same-fingerprint profiles from sharing an environment cache slot while preserving subagent aliasing and legacy raw behavior.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "NousResearch/hermes-agent#123989@b5f587dba8b1852127c6cc3d7e3d98dceedbf94d"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:4546979be694d603",
+      "node_type": "change_action",
+      "category": "extension-resource-lifecycle",
+      "intent": "Make the local Unix stdio descriptor invariant and its non-regression requirements directly testable.",
+      "module_role": "Unix local stdio launch integration oracle",
+      "operation": "validate",
+      "pre_state": "The launch policy needs coverage proving both descriptor exclusion and preservation of protocol, argument, environment, cwd, parent-ownership, fallback, and exec-failure behavior.",
+      "post_state": "The checked-in Unix tests distinguish an unfiltered launch from the policy-enabled launch and provide assertions for server/descendant exclusion and preserved behavior across all three launch forms.",
+      "validation": "The integration tests assert control presence, policy-enabled absence, MCP initialize/list/call results, preserved stderr/cwd/environment/arguments, unchanged parent F_GETFD state, and an error for a missing interpreter.",
+      "parameters": [
+        "inheritable descriptor sentinels",
+        "absolute, relative, and shell-fallback launch forms",
+        "descendant process spawn",
+        "MCP initialize/list/call exchange",
+        "missing interpreter exec failure"
+      ],
+      "evidence_ids": [
+        "ev-09",
+        "ev-10",
+        "ev-11",
+        "ev-12",
+        "ev-13"
+      ],
+      "source_name": "validate_local_unix_stdio_boundary",
+      "description": "Add an executable regression oracle for descriptor isolation and for the compatibility behaviors that must survive the new process boundary.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "github:openai/codex#46960"
+      ],
+      "supporting_repositories": [
+        "openai/codex"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:6623a0eab1e4e2dc",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Keep active tool, code, file, or similar payloads usable while removing empty text artifacts that can trigger request validation failures.",
+      "module_role": "outgoing content contract boundary",
+      "operation": "normalize",
+      "pre_state": "An outgoing part has text equal to the empty string, either alongside another active payload or as its only meaningful field.",
+      "post_state": "The empty text key is removed from payload-bearing parts; text-only empty parts are filtered; other payload-bearing parts remain.",
+      "validation": "The implementation contains separate payload-preservation and empty-part filtering branches, but no dedicated regression assertion for this newly added sanitizer behavior is present in the pinned commit tests.",
+      "parameters": [
+        "outgoing content parts",
+        "empty text field",
+        "active payload keys",
+        "request validation contract"
+      ],
+      "evidence_ids": [
+        "E14"
+      ],
+      "source_name": "sanitize-empty-payload-parts",
+      "description": "Normalize outgoing content parts so an empty text field cannot invalidate a payload-bearing part or remain as a truly empty text-only part.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:704911df2cf56208",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Make a failed localized edit actionable by distinguishing an exact-match miss and directing the agent to inspect current content.",
+      "module_role": "edit failure feedback mapper",
+      "operation": "map",
+      "pre_state": "A nonblank edit search string produces zero matches in the current file.",
+      "post_state": "The tool reports an exact-match failure and advises rereading the target/current lines before retrying; the correction path remains available for valid nonblank input according to its existing policy.",
+      "validation": "The edit regression test checks that both LLM-facing content and display output contain the new exact-match wording.",
+      "parameters": [
+        "search string",
+        "target file",
+        "current file text",
+        "agent-facing failure message"
+      ],
+      "evidence_ids": [
+        "E15",
+        "E16"
+      ],
+      "source_name": "clarify-edit-no-match-guidance",
+      "description": "Replace vague no-occurrence edit feedback with exact-match guidance that points the agent to current file content before retrying.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:7b1f9e18054eb59e",
+      "node_type": "change_action",
+      "category": "observable-validation-and-diagnostics",
+      "intent": "Provide a reproducible oracle that detects stale or version-misaligned generated protocol artifacts after a Rust schema-definition change.",
+      "module_role": "generated protocol fixture validation",
+      "operation": "validate",
+      "pre_state": "The Rust protocol derives and checked-in generated artifacts can diverge, allowing a corrected versioned type definition to remain absent or an aggregate type to keep importing the wrong definition.",
+      "post_state": "Freshly generated TypeScript and JSON fixture trees match the checked-in artifacts, including the v2 WebSearchAction file, ThreadItem import, and v2 index export.",
+      "validation": "The `schema_fixtures_match_generated` integration test generates into a temporary directory and compares paths and normalized file contents; the commit records running the corresponding schema-generation command.",
+      "parameters": [
+        "schema root",
+        "Rust protocol derives",
+        "generated TypeScript fixture tree",
+        "generated JSON fixture tree"
+      ],
+      "evidence_ids": [
+        "E1",
+        "E6",
+        "E7",
+        "E12",
+        "E13"
+      ],
+      "source_name": "regenerate_and_validate_protocol_schema_fixtures",
+      "description": "Regenerate the checked-in app-server TypeScript/JSON schema artifacts after changing the Rust type export and compare the resulting fixture tree with the repository's committed schema output.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "github:openai/codex#45773"
+      ],
+      "supporting_repositories": [
+        "openai/codex"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:7d1633b29680d745",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Remove a stale materialized default from existing configuration files so the new policy takes effect after upgrade without clobbering user-selected resource budgets.",
+      "module_role": "Versioned configuration migration and user-choice preservation",
+      "operation": "reconcile",
+      "pre_state": "A versioned configuration below schema v47 may contain compression.threshold_tokens: 256000 copied from the old template or doctor seeding; the same field may instead contain another explicit positive integer or null.",
+      "post_state": "The v47 migration deletes the field only when its raw value equals exactly 256000, allowing the new DEFAULT_CONFIG None to apply; other explicit caps, explicit null, and unrelated configuration values remain intact.",
+      "validation": "The new registry entry and the existing equality-gated deletion helper directly encode the exact-value guard. The generic upgrade property test dynamically includes registered migration versions and checks latest-version convergence, user-value preservation, idempotence, and reapplication stability, but does not directly generate threshold_tokens: 256000.",
+      "parameters": [
+        "on-disk config schema version",
+        "raw compression.threshold_tokens value",
+        "stale old default 256000",
+        "new default None",
+        "explicit user cap or null"
+      ],
+      "evidence_ids": [
+        "ev-08-migration-diff",
+        "ev-09-migration-helper",
+        "ev-16-migration-property-test"
+      ],
+      "source_name": "reconcile_stale_persisted_compression_cap",
+      "description": "Migrate configurations that persisted the temporary 256000 default so they inherit the new ratio-only default, without rewriting an intentional cap or explicit null.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "NousResearch/hermes-agent#125235@98278833e29b167fe930e276eed7cb16bee68673"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:88b4f2fa5276d3b7",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Translate a percentage resource policy into a concrete token budget before deferred-resource reconciliation.",
+      "module_role": "session-start resource-budget adapter",
+      "operation": "normalize",
+      "pre_state": "A threshold policy exists, but startup has not derived the number of schema tokens that may be declared up front; explicit context capacity may be absent.",
+      "post_state": "When deferred discovery is available and the threshold and context are usable, the registry receives floor(contextWindow*boundedThreshold/100); otherwise the budgeted preload call is omitted.",
+      "validation": "Client tests cover the model-limit fallback at 10%, an explicit 50,000-token context at 10%, threshold 0, non-finite threshold, over-100 input, and missing discovery surface.",
+      "parameters": [
+        "deferred-discovery availability",
+        "threshold percentage",
+        "configured context-window size",
+        "model input-token-limit fallback",
+        "token-budget rounding rule"
+      ],
+      "evidence_ids": [
+        "ev-client-budget",
+        "ev-context-fallback",
+        "ev-client-tests"
+      ],
+      "source_name": "derive-session-context-budget",
+      "description": "Convert an accepted positive threshold and available model capacity into a floored token budget at session start, using the configured context window or model-limit fallback and skipping unsupported branches.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77"
+      ],
+      "supporting_repositories": [
+        "QwenLM/qwen-code"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:8a894318c6e2b3ab",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Make retry guidance visible at the current context boundary without invalidating or expanding the stable system-instruction prefix.",
+      "module_role": "model request retry adapter",
+      "operation": "adapt",
+      "pre_state": "A retry follows a thought-only or no-response-text invalid stream; request contents may end in a model turn, an ordinary user turn, or a function-response user turn, and hooks may replace contents.",
+      "post_state": "System instruction is unchanged; the retry nudge is present at the end of valid contents, role alternation is preserved with a synthetic model bridge when required, and an existing final-turn nudge is not duplicated.",
+      "validation": "GeminiChat tests assert unchanged systemInstruction, nudge placement in contents, reapplication after hook-modified contents, handling of empty/model/function-response histories, and deduplication.",
+      "parameters": [
+        "invalid-stream error type",
+        "request content sequence",
+        "nudge message",
+        "hook-modified contents",
+        "role-alternation constraint"
+      ],
+      "evidence_ids": [
+        "E11",
+        "E12",
+        "E13"
+      ],
+      "source_name": "end-of-context-retry-nudge",
+      "description": "Place invalid-stream retry guidance at the end of request contents while preserving API role ordering and hook modifications, instead of mutating the stable system instruction.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:8e3e370e9a79a993",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Avoid incremental declaration-list and prompt-prefix churn for a small deferred set while retaining on-demand discovery for a set that exceeds the budget.",
+      "module_role": "deferred-resource registry gate",
+      "operation": "guard",
+      "pre_state": "Deferred tool schemas are hidden behind discovery, and the registry has no combined footprint decision; bundled and MCP candidates may coexist with already-revealed, visible, or always-loaded tools.",
+      "post_state": "The registry estimates the union of eligible deferred schemas as ceil(serialized-schema-characters/CHARS_PER_TOKEN) and reveals all eligible unrevealed candidates iff that estimate is within budget; otherwise no candidate is newly revealed. Visible and always-loaded tools are excluded, while already-revealed candidates still count.",
+      "validation": "Registry tests cover fit, overflow, bundled-plus-MCP all-or-nothing behavior, already-revealed accounting, visible-tool exclusion, and always-loaded exclusion; declaration-path code shows that revealed schemas enter the function-declaration list.",
+      "parameters": [
+        "token budget",
+        "current deferred-resource set",
+        "serialized schemas",
+        "characters-per-token estimate",
+        "visible-resource set",
+        "always-loaded classification",
+        "already-revealed state"
+      ],
+      "evidence_ids": [
+        "ev-registry-budget",
+        "ev-declaration-consumer",
+        "ev-registry-tests"
+      ],
+      "source_name": "atomically-preload-fitting-deferred-set",
+      "description": "Estimate the complete eligible deferred-tool schema union and reveal every candidate only when the combined estimate fits the supplied budget; preserve full deferral on overflow.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77"
+      ],
+      "supporting_repositories": [
+        "QwenLM/qwen-code"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:93c1d7660d38de6f",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Apply the resource decision at the stable startup boundary so preloaded schemas are declared initially and are not later reintroduced as deferred reminders.",
+      "module_role": "startup declaration synchronizer",
+      "operation": "sequence",
+      "pre_state": "Startup would resolve deferred reminders without a budget stage, so any preload decision would either be absent from initial declarations or require a later declaration-list change.",
+      "post_state": "Preload runs after warm/resume reconciliation and before reminder setup; revealed tools are included in the initial declarations and filtered from the deferred reminder, while the existing no-discovery eager-reveal branch and late-registration deferral remain intact.",
+      "validation": "The client startup call site establishes the stage ordering; reminder and declaration consumers show how revealed state is applied; client tests cover the preload stage and the no-discovery skip branch. No direct prompt-cache measurement is present.",
+      "parameters": [
+        "startup phase",
+        "registry reveal state",
+        "initial function-declaration list",
+        "deferred reminder",
+        "late resource registration",
+        "discovery-surface availability"
+      ],
+      "evidence_ids": [
+        "ev-startup-order",
+        "ev-reminder-consumer",
+        "ev-client-tests"
+      ],
+      "source_name": "synchronize-startup-declarations",
+      "description": "Run the budgeted reveal after registry warm/resume handling and before deferred-reminder construction so the initial declaration list and reminder reflect the same revealed state without introducing a mid-session preload mutation.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77"
+      ],
+      "supporting_repositories": [
+        "QwenLM/qwen-code"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:acf6e4f30f25936d",
+      "node_type": "change_action",
+      "category": "concurrent-work-coordination",
+      "intent": "Prevent concurrent requests from running against the same stale transcript snapshot and losing or interleaving their user/assistant exchanges.",
+      "module_role": "Persistent turn admission and state reconciliation",
+      "operation": "guard",
+      "pre_state": "An existing durable session can be invoked with caller-provided history that was loaded before another process's turn completed, and the supplied history may no longer represent the current compression tip.",
+      "post_state": "The turn does not enter the model/run/flush region until it owns the durable lease; after admission it resolves the current compression tip and reloads durable history, while absent-row fresh sessions preserve their caller-provided seed.",
+      "validation": "The integration test observes acquisition before tip resolution and reload, passes the reloaded history and updated session id into the conversation loop, releases after completion, and confirms that the fresh absent-row path performs no durable admission and preserves seed object identity.",
+      "parameters": [
+        "agent session id",
+        "persistent database",
+        "caller history snapshot",
+        "resolved compression tip",
+        "alternation-repair mode",
+        "persistence-disabled flag"
+      ],
+      "evidence_ids": [
+        "E4",
+        "E9",
+        "E11",
+        "E13"
+      ],
+      "source_name": "admit_turn_and_reload_durable_tip",
+      "description": "Guard an existing persistent turn with the durable lease and replace its caller snapshot with the latest committed conversation after admission.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "hermes-agent#125124@6e929a96946a5c69644d08bd59c9dcfdc757e91b"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:b1038e6640f979a5",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Remove an unintended fixed token ceiling that makes compression fire at a non-proportional point across heterogeneous context windows, while preserving an explicit user-controlled absolute cost ceiling.",
+      "module_role": "Compression budget policy and configuration defaulting",
+      "operation": "normalize",
+      "pre_state": "When compression.threshold_tokens is absent, the defaulted configuration supplies 256000; agent construction passes that value as an absolute cap and the compressor lowers the ratio/model trigger to min(ratio_trigger, 256000).",
+      "post_state": "When compression.threshold_tokens is absent, the canonical value is None and the effective trigger is the ratio/model-derived threshold with no absolute cap; a positive explicit cap still lowers the trigger and remains durable across model switches.",
+      "validation": "The changed compressor test covers 128000 and 1000000 context windows and asserts no default cap plus equality with the ratio-only trigger; the explicit-cap test asserts a 200000 cap survives a switch. Gateway-cache and TUI tests verify that consumers use the canonical default and distinguish explicit positive caps.",
+      "parameters": [
+        "model context window",
+        "compression.threshold ratio",
+        "compression.model_thresholds overrides",
+        "optional compression.threshold_tokens cap",
+        "active model and provider"
+      ],
+      "evidence_ids": [
+        "ev-03-default-policy-diff",
+        "ev-05-agent-init-call-site",
+        "ev-06-compressor-call_site",
+        "ev-12-compressor-tests",
+        "ev-13-cache-tests",
+        "ev-14-tui-tests"
+      ],
+      "source_name": "restore_ratio_driven_compression_default",
+      "description": "Make the absolute compression-trigger cap opt-in by changing the canonical default and its seeded template from 256000 to null/None, while retaining explicit positive caps as lower-of ratio-versus-absolute controls.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "NousResearch/hermes-agent#125235@98278833e29b167fe930e276eed7cb16bee68673"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:bb074f18f942bada",
+      "node_type": "change_action",
+      "category": "configuration-and-environment-resolution",
+      "intent": "Prevent an MCP-discovery-only configuration from spawning an unused LSP runtime when the parent ACP process has opted into LSP.",
+      "module_role": "secondary runtime configuration builder",
+      "operation": "override",
+      "pre_state": "The secondary configuration derives its argv by spreading the parent ACP argument set, so the LSP feature flag may be true even though this runtime only performs MCP discovery.",
+      "post_state": "The argv passed to the secondary configuration resolver has experimentalLsp set to false, so the resolved discovery Config cannot enter the LSP startup branch while its MCP discovery lifecycle remains enabled.",
+      "validation": "The committed ACP unit test finds the loadCliConfig call for the workspace-mcp-discovery session and expects experimentalLsp to be false; the configuration resolver independently shows that false prevents NativeLspService construction and startup.",
+      "parameters": [
+        "parent ACP argument set",
+        "workspace discovery session identifier",
+        "MCP-only discovery capability boundary",
+        "experimental LSP feature flag"
+      ],
+      "evidence_ids": [
+        "ev-3",
+        "ev-4",
+        "ev-6",
+        "ev-7",
+        "ev-9"
+      ],
+      "source_name": "disable-inapplicable-lsp-in-discovery-config",
+      "description": "Apply a local capability override when building the secondary MCP discovery configuration so an LSP opt-in inherited from the parent ACP runtime cannot start an unused LSP stack.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "QwenLM/qwen-code#12216@d439660e32adc2a160db7e88ca6147698320db6f"
+      ],
+      "supporting_repositories": [
+        "QwenLM/qwen-code"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:e6b880e79914329c",
+      "node_type": "change_action",
+      "category": "effect-control-and-isolation",
+      "intent": "Provide a profile/home discriminator for mutable terminal state when one process serves multiple routed scopes.",
+      "module_role": "routed terminal state identity",
+      "operation": "derive",
+      "pre_state": "Raw terminal state keys have no common scope component, even when a call is executing under a context-local routed home override; calls without an override must retain the historical unqualified identity.",
+      "post_state": "The active scope yields profile:default for the canonical default, profile:<name> for a named profile, or home:<realpath> with a safe textual fallback for an otherwise unclassified home; no override yields an empty qualifier.",
+      "validation": "The routed-profile key test observes the profile-qualified result and the no-override tests observe the unchanged raw result. The helper is validated indirectly through its container-key and cwd-state consumers rather than by a direct helper-only test.",
+      "parameters": [
+        "active context-local routed home override",
+        "canonical profile identity",
+        "resolved home realpath"
+      ],
+      "evidence_ids": [
+        "ev-qualifier-implementation",
+        "ev-regression-tests"
+      ],
+      "source_name": "derive_routed_scope_qualifier",
+      "description": "Derive a stable namespace component from the active routed profile/home context, with an empty result when no routed override is active so legacy identity remains intact.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "NousResearch/hermes-agent#123989@b5f587dba8b1852127c6cc3d7e3d98dceedbf94d"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:f03329db7fe2f96c",
+      "node_type": "change_action",
+      "category": "extension-resource-lifecycle",
+      "intent": "Prevent unrelated parent file descriptors from leaking into a local stdio extension process tree while preserving the explicit transport stdio.",
+      "module_role": "local stdio extension-process launcher",
+      "operation": "guard",
+      "pre_state": "The local launch command has piped standard streams and a new process group but leaves descriptor policy at Inherit, so inheritable parent descriptors can be inherited by the server and by commands it launches.",
+      "post_state": "On Unix, local stdio launches enforce a stdio-only inheritance boundary: the server and descendants inherit the explicit transport stdio but not unrelated inheritable parent descriptors, with existing arguments, environment, cwd, process-group, and exec-error behavior preserved.",
+      "validation": "The added Unix integration oracle first proves that an unfiltered control launch sees the pipe, socket, and file sentinels, then verifies [false, false, false] in both the local server and a close_fds=False descendant across absolute, relative, and shell-fallback launches; it also checks MCP round-trip behavior, parent descriptor ownership, and failed-exec reporting.",
+      "parameters": [
+        "local stdio extension command",
+        "explicit stdin/stdout/stderr transport",
+        "unrelated inheritable pipe, socket, and file descriptors",
+        "Unix server and descendant process tree"
+      ],
+      "evidence_ids": [
+        "ev-04",
+        "ev-05",
+        "ev-06",
+        "ev-07",
+        "ev-08",
+        "ev-09",
+        "ev-10",
+        "ev-11",
+        "ev-12"
+      ],
+      "source_name": "guard_local_unix_stdio_descriptor_boundary",
+      "description": "Configure the local Unix stdio extension-process launch so unrelated descriptors inherited by the orchestrator do not cross into the extension server or its descendants, while the explicit stdio transport and existing launch settings remain usable.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "github:openai/codex#46960"
+      ],
+      "supporting_repositories": [
+        "openai/codex"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:f540857c7dc54b95",
+      "node_type": "change_action",
+      "category": "concurrent-work-coordination",
+      "intent": "Prevent a compression-created child session from bypassing the lease held for the logical conversation while avoiding serialization of unrelated delegated work.",
+      "module_role": "Conversation lineage identity resolution",
+      "operation": "map",
+      "pre_state": "Compression rotates a session into a child linked by parent_session_id, while delegate and branch sessions can also have a parent_session_id but must remain independent.",
+      "post_state": "A compression continuation maps to the stable lineage root for lease acquisition, refresh, and release; explicit delegate or branch children retain their own coordination domain.",
+      "validation": "The lineage tests reject a child acquisition while the root is held and allow a delegate child to acquire while its parent is held.",
+      "parameters": [
+        "session id",
+        "parent session id",
+        "compression end reason",
+        "delegate marker",
+        "branch marker"
+      ],
+      "evidence_ids": [
+        "E8",
+        "E12"
+      ],
+      "source_name": "scope_compression_continuations_to_root_lease",
+      "description": "Use the compression-lineage root as the lease domain while keeping delegate and explicit branch sessions independent.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "hermes-agent#125124@6e929a96946a5c69644d08bd59c9dcfdc757e91b"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:f57c30b94d1d7d06",
+      "node_type": "change_action",
+      "category": "observable-validation-and-diagnostics",
+      "intent": "Make v2 web-search action payloads parseable and observable with the same discriminator and nullability contract used by the v2 producer, preventing page-open actions from falling through to an incompatible unknown/`other` interpretation.",
+      "module_role": "versioned app-server protocol schema generation and aggregate-type binding",
+      "operation": "align",
+      "pre_state": "The v2 Rust `WebSearchAction` was already used by `ThreadItem`, but it was not exported into the v2 generated type set. Generated v2 `ThreadItem` consequently resolved the same-named type to the root snake_case contract with `open_page`/`find_in_page` and optional fields.",
+      "post_state": "A v2-local generated `WebSearchAction` union exists with camelCase `openPage`/`findInPage` discriminators and nullable action fields, `ThreadItem.action` imports it locally, and the v2 index exposes it.",
+      "validation": "The generated v2 artifact, local ThreadItem import, and v2 index export are checked by schema fixture regeneration/comparison; the existing Rust conversion test verifies that the runtime ThreadItem contains a populated WebSearchAction before serialization.",
+      "parameters": [
+        "protocol version",
+        "web-search action discriminator",
+        "query/queries/url/pattern fields",
+        "ThreadItem action dependency",
+        "generated type-set export surface"
+      ],
+      "evidence_ids": [
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E11",
+        "E12",
+        "E13",
+        "E14"
+      ],
+      "source_name": "align_v2_web_search_action_schema_binding",
+      "description": "Make the generated v2 client contract for web-search actions version-specific and bind `ThreadItem.action` to it, so the client-facing representation matches the v2 producer instead of the root/v1 representation.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "github:openai/codex#45773"
+      ],
+      "supporting_repositories": [
+        "openai/codex"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:f6213c288ee4f3e7",
+      "node_type": "change_action",
+      "category": "concurrent-work-coordination",
+      "intent": "Prevent side effects and post-execution hooks for prepared tool calls after a later preflight abort while preserving one explicit aborted outcome for each recorded call.",
+      "module_role": "Abort-aware deferred executor for a parallel tool-call batch",
+      "operation": "guard",
+      "pre_state": "A tool call has passed validation and preflight and is stored for deferred execution; before its deferred entry runs, another preflight aborts the shared run signal.",
+      "post_state": "The deferred entry does not invoke the tool or after-execution hook; it emits a tool_execution_end error outcome with \"Operation aborted\", and the common ordered path persists the corresponding error tool-result message.",
+      "validation": "The committed regression test aborts in the second preflight, then observes zero external executions and zero extension tool_result hooks, two matching start/end call identities, error end events for both calls, and two source-ordered \"Operation aborted\" toolResult messages.",
+      "parameters": [
+        "shared run abort signal",
+        "prepared tool-call entry",
+        "tool-execution event sink",
+        "source-ordered tool-result message sink",
+        "post-execution hook"
+      ],
+      "evidence_ids": [
+        "ev-preflight-abort",
+        "ev-after-guard",
+        "ev-ordered-result-path",
+        "ev-hook-binding",
+        "ev-regression-setup",
+        "ev-regression-oracle"
+      ],
+      "source_name": "abort-deferred-parallel-tool-execution",
+      "description": "Recheck cancellation when a prepared parallel-call entry is finally invoked. If the batch was aborted after preflight, convert that recorded entry into an error outcome and execution-end event so the existing ordered path can persist a corresponding tool result without starting the side effect or post-execution hook.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "github:earendil-works/pi#9994"
+      ],
+      "supporting_repositories": [
+        "earendil-works/pi"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:f6dd64c00f078f80",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Prevent cancelled in-flight tool turns from persisting as transcript state and avoid unnecessary follow-up work.",
+      "module_role": "interactive conversation history coordinator",
+      "operation": "rollback",
+      "pre_state": "A prepared query has been sent, the model has appended a tool-call turn, all applicable model-initiated tools are terminally cancelled, and current history is longer than the saved query checkpoint.",
+      "post_state": "History is truncated to the saved checkpoint; cancellation response parts are not appended and no continuation request is emitted.",
+      "validation": "Interactive stream regression tests verify that addHistory is not called, history returns to the pre-model length, and the model stream is not called again for one or multiple cancelled tools.",
+      "parameters": [
+        "query history checkpoint length",
+        "current conversation history",
+        "model-initiated tool set",
+        "terminal cancellation status"
+      ],
+      "evidence_ids": [
+        "E3",
+        "E4",
+        "E5"
+      ],
+      "source_name": "rollback-cancelled-tool-turn",
+      "description": "When every model-initiated tool in an interactive turn is cancelled, restore the conversation to the checkpoint taken before the current query instead of recording cancellation responses as a new user turn or sending another request.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:f834e1d4ff34a26b",
+      "node_type": "change_action",
+      "category": "concurrent-work-coordination",
+      "intent": "Provide cause-accurate user guidance when persistence is refused because another process is compressing the session.",
+      "module_role": "Persistence failure classification and turn-completion explanation",
+      "operation": "classify",
+      "pre_state": "Typed compression lease exceptions and their serialized error phrases are classified as generic locked contention, causing ordinary storage-busy guidance.",
+      "post_state": "Compression lease failures map to a dedicated compression cause, the cause enumeration includes it, and turn completion explains that compression is active while preserving locked, disk, and unknown behavior.",
+      "validation": "Classifier tests cover typed and RPC-wrapped compression failures; explanation tests require compression wording and reject generic database/disk wording.",
+      "parameters": [
+        "persistence exception or serialized error text",
+        "cause bucket",
+        "turn exit reason",
+        "user-facing recovery explanation"
+      ],
+      "evidence_ids": [
+        "E15",
+        "E16"
+      ],
+      "source_name": "classify_compression_persistence_failures",
+      "description": "Keep active compression-lease refusal distinct from ordinary SQLite write-lock contention so recovery guidance names the actual transient cause. This is an implementation-bearing ancillary change co-committed with the turn-serialization fix.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "hermes-agent#125124@6e929a96946a5c69644d08bd59c9dcfdc757e91b"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    }
+  ],
+  "workflows": [
+    {
+      "id": "workflow:03677ac1471c8998",
+      "node_type": "issue_workflow",
+      "category": "bounded-resource-budget-control",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 29080,
+      "episode_id": "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+      "name": "session-tool-continuation-recovery",
+      "description": "The session loop arms recovery after completed tools, checks the next response for visible content, and nudges once before allowing normal completion.",
+      "goal": "Ensure a tool execution is followed by an explanatory model response even when the first continuation is empty.",
+      "entry_state": "The session has completed one or more model-initiated tool calls and is about to process the next model stream.",
+      "exit_state": "The model emits visible text after the recovery request or the session follows its normal completion/failure path.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:26186cfe5470ed34",
+          "role": "repair",
+          "optional": false
+        }
+      ],
+      "edges": [],
+      "unresolved_or_deferred": [
+        "The implementation arms one recovery nudge per completed-tool cycle but does not expose a numeric retry budget; repeated empty output after the nudge follows the normal completion path."
+      ],
+      "evidence_ids": [
+        "E8",
+        "E9",
+        "E10",
+        "E18"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "source_case": "google-gemini/gemini-cli#29080"
+    },
+    {
+      "id": "workflow:0e97359a43ec4400",
+      "node_type": "issue_workflow",
+      "category": "bounded-resource-budget-control",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 29080,
+      "episode_id": "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+      "name": "interactive-tool-turn-bounding",
+      "description": "The interactive path has two event-dependent recovery branches: remove a cancelled tool turn from durable history, or recover a silent successful tool continuation with a bounded nudge.",
+      "goal": "Keep interactive tool turns bounded and recoverable without growing invalid or silent conversation state.",
+      "entry_state": "A user query is being processed; the model may request tools, produce an empty continuation, or have all requested tools cancelled.",
+      "exit_state": "Cancelled turns are absent from durable history, or a post-tool continuation produces visible completion or stops after the automatic-nudge budget.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:f6dd64c00f078f80",
+          "role": "repair",
+          "optional": true
+        },
+        {
+          "step_id": "step-2",
+          "action_id": "semantic-action:004c33e49d9cf153",
+          "role": "repair",
+          "optional": true
+        }
+      ],
+      "edges": [
+        {
+          "from": "step-1",
+          "to": "step-2",
+          "type": "requires"
+        }
+      ],
+      "unresolved_or_deferred": [
+        "The two actions are predicate-selected branches of the same coordinator rather than a mandatory sequence: rollback applies to all-cancelled tool turns, while nudging applies to a successful tool continuation with no visible response. The tests do not establish a cross-branch ordering."
+      ],
+      "evidence_ids": [
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E19"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "source_case": "google-gemini/gemini-cli#29080"
+    },
+    {
+      "id": "workflow:1462bc0c924a29cc",
+      "node_type": "issue_workflow",
+      "category": "bounded-resource-budget-control",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 125235,
+      "episode_id": "NousResearch/hermes-agent#125235@98278833e29b167fe930e276eed7cb16bee68673",
+      "name": "restore_proportional_compression_budget_and_upgrade_stale_configs",
+      "description": "Establish the ratio-driven default for compression triggers, then reconcile versioned configurations that persisted the temporary 256000 default; leave explicit absolute caps available as an opt-in branch and verify the existing cache/live-session consumers follow the canonical value.",
+      "goal": "Compression follows the configured ratio and model/window semantics by default, while an explicit absolute threshold remains available and old seeded configurations stop imposing the stale fixed cap.",
+      "entry_state": "The parent v46 policy supplies a 256000 cap when threshold_tokens is absent, templates can persist that value, and a large-window session can compact at the fixed cap instead of its proportional trigger.",
+      "exit_state": "The v47 default and template represent no absolute cap, fresh and live configurations treat absence as ratio-only, versioned old literals are removed, and explicit positive caps still clamp triggers and survive model switches.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:b1038e6640f979a5",
+          "role": "implement",
+          "optional": false
+        },
+        {
+          "step_id": "step-2",
+          "action_id": "semantic-action:7d1633b29680d745",
+          "role": "reconcile",
+          "optional": true
+        }
+      ],
+      "edges": [
+        {
+          "from": "step-1",
+          "to": "step-2",
+          "type": "enables"
+        }
+      ],
+      "unresolved_or_deferred": [
+        "The migration branch is conditional: it runs for versioned configurations below v47 whose raw value is exactly 256000; unversioned files and current-version explicit values remain outside this stale-default rewrite.",
+        "No changed test directly constructs a v46 file with threshold_tokens: 256000 and asserts both deletion and preservation of alternate values; exact behavior is supported by the implementation guard and indirectly by the generic migration properties.",
+        "The targeted runtime test suite was not executed because the repository environment could not activate with the locked dependency file."
+      ],
+      "evidence_ids": [
+        "ev-02-commit-rationale",
+        "ev-03-default-policy-diff",
+        "ev-04-template-diff",
+        "ev-05-agent-init-call-site",
+        "ev-06-compressor-call_site",
+        "ev-07-seeding-call-sites",
+        "ev-08-migration-diff",
+        "ev-09-migration-helper",
+        "ev-10-cache-call-site",
+        "ev-11-live-reload-call_site",
+        "ev-12-compressor-tests",
+        "ev-13-cache-tests",
+        "ev-14-tui-tests",
+        "ev-16-migration-property-test",
+        "ev-17-documentation-diff"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent"
+      ],
+      "source_case": "NousResearch/hermes-agent#125235"
+    },
+    {
+      "id": "workflow:154418c5ae6b80fd",
+      "node_type": "issue_workflow",
+      "category": "concurrent-work-coordination",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 28518,
+      "episode_id": "google-gemini/gemini-cli#28518@571851b1077a51cef757146ce13f9da887326bec",
+      "name": "preserve_startup_session_context_in_late_bound_main_model_input",
+      "description": "Partition the hardened context so a final startup session-context request remains pending, then verify that the pending segment is the content passed through the main-model API override.",
+      "goal": "Deliver the active startup or sub-agent handoff content, including session context, through the late-bound API history used for the main-model request.",
+      "entry_state": "Context management receives a pending HistoryTurn whose text begins with <session_context>; graph mapping gives it the stable environment-context turn identity, and the old boundary classifier can exclude that identity from the pending segment.",
+      "exit_state": "The final startup request is present in pendingApiHistory as one content item, and the client can construct apiHistoryOverride from historical API content plus that pending item while earlier startup context remains historical.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:24e77d8afdb1dce6",
+          "role": "implement",
+          "optional": false
+        },
+        {
+          "step_id": "step-2",
+          "action_id": "semantic-action:0b34e5064158be26",
+          "role": "validate",
+          "optional": false
+        }
+      ],
+      "edges": [
+        {
+          "from": "step-1",
+          "to": "step-2",
+          "type": "validates"
+        }
+      ],
+      "unresolved_or_deferred": [
+        "The checkout does not contain an end-to-end sub-agent handoff trace or a token-count assertion proving the exact reported zero-token symptom; the directly established invariant is restoration of the pending API-history partition.",
+        "The committed regression test is the validation oracle, but its runtime result was not observed because the vitest executable was unavailable in the checkout."
+      ],
+      "evidence_ids": [
+        "E-ISSUE-28518",
+        "E-COMMIT-571851",
+        "E-DIFF-PENDING-BOUNDARY",
+        "E-GRAPH-ENV-ID",
+        "E-RENDER-LATE-BIND",
+        "E-CONTEXT-SPLIT",
+        "E-CLIENT-PENDING-CONSUMER",
+        "E-API-HANDOFF",
+        "E-BASELINE-LATE-BIND-TEST",
+        "E-REGRESSION-SESSION-CONTEXT-TEST"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "source_case": "google-gemini/gemini-cli#28518"
+    },
+    {
+      "id": "workflow:3329cbf7b02a8c48",
+      "node_type": "issue_workflow",
+      "category": "bounded-resource-budget-control",
+      "repository": "QwenLM/qwen-code",
+      "issue": 12029,
+      "episode_id": "QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77",
+      "name": "bounded-startup-deferred-resource-preload",
+      "description": "Establish a bounded percentage policy, harden its domain, derive a token budget from actual context capacity, atomically reveal the complete eligible deferred set only when it fits, and construct the initial declarations/reminder from the resulting state.",
+      "goal": "Bound the amount of deferred-resource schema declared up front by a percentage of available context while avoiding partial preload and preserving on-demand discovery when the union is too large.",
+      "entry_state": "The parent startup path hides ordinary deferred tools behind discovery without a context-scaled preload policy or combined schema-footprint gate.",
+      "exit_state": "For a valid positive policy and fitting current deferred set, all eligible deferred schemas are in the initial declaration list and absent from the deferred reminder; for over-budget, disabled, invalid, or unavailable branches, no invalid budgeted preload occurs and the existing deferral/eager-reveal behavior remains.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:265d94ab13ba6de8",
+          "role": "establish-contract",
+          "optional": false
+        },
+        {
+          "step_id": "step-2",
+          "action_id": "semantic-action:0c19423512bf00ef",
+          "role": "repair",
+          "optional": false
+        },
+        {
+          "step_id": "step-3",
+          "action_id": "semantic-action:88b4f2fa5276d3b7",
+          "role": "implement",
+          "optional": false
+        },
+        {
+          "step_id": "step-4",
+          "action_id": "semantic-action:8e3e370e9a79a993",
+          "role": "reconcile",
+          "optional": false
+        },
+        {
+          "step_id": "step-5",
+          "action_id": "semantic-action:93c1d7660d38de6f",
+          "role": "validate",
+          "optional": false
+        }
+      ],
+      "edges": [
+        {
+          "from": "step-1",
+          "to": "step-2",
+          "type": "requires"
+        },
+        {
+          "from": "step-1",
+          "to": "step-3",
+          "type": "requires"
+        },
+        {
+          "from": "step-2",
+          "to": "step-3",
+          "type": "repairs"
+        },
+        {
+          "from": "step-3",
+          "to": "step-4",
+          "type": "enables"
+        },
+        {
+          "from": "step-4",
+          "to": "step-5",
+          "type": "enables"
+        }
+      ],
+      "unresolved_or_deferred": [
+        "The no-preload branches are runtime predicates, not separate implementation stages: discovery unavailable, threshold non-finite or <=0, invalid context, and an over-budget union preserve the existing non-preload behavior.",
+        "Tools registered after startup remain deferred until a later session start; the design explicitly avoids calling this policy from mid-session setTools synchronization.",
+        "The prompt KV-cache stability benefit is reasoned from declaration-list ordering and design comments but has no direct end-to-end cache-hit measurement in the pinned episode.",
+        "The always-on-context warning named in the issue title is outside this workflow because its parent/current implementation is unchanged."
+      ],
+      "evidence_ids": [
+        "ev-parent-behavior",
+        "ev-config-contract",
+        "ev-cli-propagation",
+        "ev-schema-bound",
+        "ev-client-budget",
+        "ev-startup-order",
+        "ev-registry-budget",
+        "ev-reminder-consumer",
+        "ev-client-tests",
+        "ev-registry-tests",
+        "ev-cli-tests"
+      ],
+      "supporting_repositories": [
+        "QwenLM/qwen-code"
+      ],
+      "source_case": "QwenLM/qwen-code#12029"
+    },
+    {
+      "id": "workflow:3f021addaa867fed",
+      "node_type": "issue_workflow",
+      "category": "observable-validation-and-diagnostics",
+      "repository": "openai/codex",
+      "issue": 45773,
+      "episode_id": "github:openai/codex#45773",
+      "name": "repair_versioned_generated_protocol_contract",
+      "description": "Correct a generated client contract when a shared type name resolves to the wrong protocol version, then validate the regenerated artifact set while preserving the existing runtime conversion path.",
+      "goal": "Allow v2 clients to recognize streamed web-search action variants and retain their typed action fields in `ThreadItem` events.",
+      "entry_state": "Core web-search events already become v2 ThreadItem values, but generated v2 TypeScript points `ThreadItem.action` at the incompatible root snake_case `WebSearchAction` contract and no v2 action artifact exists.",
+      "exit_state": "The v2 generated contract points `ThreadItem.action` at a local camelCase/nullable `WebSearchAction` union, the v2 public index exposes that type, and generated fixtures agree with the Rust protocol definitions.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:f57c30b94d1d7d06",
+          "role": "implement",
+          "optional": false
+        },
+        {
+          "step_id": "step-2",
+          "action_id": "semantic-action:7b1f9e18054eb59e",
+          "role": "validate",
+          "optional": false
+        }
+      ],
+      "edges": [
+        {
+          "from": "step-1",
+          "to": "step-2",
+          "type": "validates"
+        }
+      ],
+      "unresolved_or_deferred": [
+        "The existing protocol unit test covers core-to-v2 Search conversion, not an end-to-end TypeScript parse of `openPage` or `findInPage`.",
+        "The issue title mentions dropped `results`, but the changed WebSearchAction definitions contain no `results` field; the checkout establishes the discriminator/type mismatch but not the exact downstream result-dropping implementation.",
+        "The runtime conversion and notification plumbing were already present and were intentionally left unchanged; the fix is at the generated versioned contract boundary."
+      ],
+      "evidence_ids": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9",
+        "E10",
+        "E11",
+        "E12",
+        "E13",
+        "E14"
+      ],
+      "supporting_repositories": [
+        "openai/codex"
+      ],
+      "source_case": "openai/codex#45773"
+    },
+    {
+      "id": "workflow:45121f5bcf3f4cdc",
+      "node_type": "issue_workflow",
+      "category": "effect-control-and-isolation",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 123989,
+      "episode_id": "NousResearch/hermes-agent#123989@b5f587dba8b1852127c6cc3d7e3d98dceedbf94d",
+      "name": "routed_profile_terminal_isolation",
+      "description": "Establish one reusable routed-scope namespace and apply it to the two mutable terminal state boundaries implicated by the collision: session-isolated environment identities and session cwd records.",
+      "goal": "Ensure profiles served by one process cannot share a session-isolated sandbox or cwd record merely because their raw API-session fingerprints match, while preserving unqualified single-profile behavior.",
+      "entry_state": "One process serves routed profiles A and B; identical opening messages can produce the same raw session id, and raw per-session environment and cwd state are profile-blind.",
+      "exit_state": "The same raw id resolves to distinct environment identities and independent cwd slots under different routed profiles; no-override behavior remains raw and persistent-Docker profile scoping remains stable.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:e6b880e79914329c",
+          "role": "establish-contract",
+          "optional": false
+        },
+        {
+          "step_id": "step-2",
+          "action_id": "semantic-action:3f27476e3dc706dd",
+          "role": "implement",
+          "optional": false
+        },
+        {
+          "step_id": "step-3",
+          "action_id": "semantic-action:1753f7113f4e997a",
+          "role": "implement",
+          "optional": false
+        }
+      ],
+      "edges": [
+        {
+          "from": "step-1",
+          "to": "step-2",
+          "type": "enables"
+        },
+        {
+          "from": "step-1",
+          "to": "step-3",
+          "type": "enables"
+        }
+      ],
+      "unresolved_or_deferred": [
+        "The issue body, comments, timeline, author discussion, and linked pull request are unavailable in the supplied bundle; the detailed reproduction narrative is therefore commit-reported.",
+        "The added tests exercise Docker directly. Plugin backends are covered by the shared session-isolated predicate in implementation, but no plugin-specific integration test is present in this commit.",
+        "The targeted repository test runner could not reach pytest locally because activation stopped on a uv.lock freshness error under --locked; the reported post-fix pass was not independently rerun in this environment."
+      ],
+      "evidence_ids": [
+        "ev-issue-anchor",
+        "ev-parent-before",
+        "ev-qualifier-implementation",
+        "ev-container-implementation",
+        "ev-cwd-implementation",
+        "ev-regression-tests",
+        "ev-commit-validation"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent"
+      ],
+      "source_case": "NousResearch/hermes-agent#123989"
+    },
+    {
+      "id": "workflow:4645ac2001ecf7d2",
+      "node_type": "issue_workflow",
+      "category": "concurrent-work-coordination",
+      "repository": "earendil-works/pi",
+      "issue": 9994,
+      "episode_id": "github:earendil-works/pi#9994",
+      "name": "parallel-preflight-abort-reconciliation",
+      "description": "When sequential preflight of a concurrent tool batch aborts the run after a call has been prepared, reconcile the already-recorded deferred entry into a standardized aborted result before returning the batch.",
+      "goal": "Return a cancellation-consistent tool batch after a later preflight abort, with no deferred side effect and a result artifact for every recorded call.",
+      "entry_state": "An assistant message contains multiple tool calls; preflight is sequential, at least one call is prepared for deferred parallel execution, and a later preflight aborts the shared run.",
+      "exit_state": "All recorded calls have tool_execution_end error outcomes and source-ordered toolResult messages, with no prepared tool execution or post-execution result hook after the abort.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:f6213c288ee4f3e7",
+          "role": "repair",
+          "optional": false
+        }
+      ],
+      "edges": [],
+      "unresolved_or_deferred": [
+        "The patch preserves the existing break after an immediate aborted preparation; no evidence shows placeholder results for tool calls that were never started or recorded before that break.",
+        "The committed test is the direct validation oracle; no separate workflow stage is needed for a second independent validator."
+      ],
+      "evidence_ids": [
+        "ev-parallel-call-site",
+        "ev-preflight-abort",
+        "ev-after-guard",
+        "ev-regression-oracle"
+      ],
+      "supporting_repositories": [
+        "earendil-works/pi"
+      ],
+      "source_case": "earendil-works/pi#9994"
+    },
+    {
+      "id": "workflow:574b2e5fae215818",
+      "node_type": "issue_workflow",
+      "category": "concurrent-work-coordination",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 125124,
+      "episode_id": "hermes-agent#125124@6e929a96946a5c69644d08bd59c9dcfdc757e91b",
+      "name": "co_committed_compression_persistence_explanation",
+      "description": "When a persistence failure is specifically caused by compression, classify it separately and expose compression-specific recovery guidance. The implementation and tests support this workflow, but the available issue evidence does not establish that this hunk was required for issue 125124.",
+      "goal": "Distinguish compression-lease refusal from database lock or disk failure in turn-completion guidance.",
+      "entry_state": "A persistence failure occurs while a compression lease is active, but the error is classified as generic lock contention.",
+      "exit_state": "The failure is classified as compression and the user receives compression-specific retry guidance without disk/database misdiagnosis.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:f834e1d4ff34a26b",
+          "role": "validate",
+          "optional": false
+        }
+      ],
+      "edges": [],
+      "unresolved_or_deferred": [
+        "The issue bundle has no body, comments, timeline, or linked pull request, so the direct attribution of this ancillary change to issue 125124 cannot be established."
+      ],
+      "evidence_ids": [
+        "E15",
+        "E16"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent"
+      ],
+      "source_case": "NousResearch/hermes-agent#125124"
+    },
+    {
+      "id": "workflow:805ace572989954b",
+      "node_type": "issue_workflow",
+      "category": "bounded-resource-budget-control",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 29080,
+      "episode_id": "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+      "name": "edit-request-budget-guard",
+      "description": "The edit path handles two predicate-dependent failures: reject blank selectors before correction-model work, or return exact-match guidance for nonblank selectors that do not match current content.",
+      "goal": "Prevent invalid localized edits from consuming correction work and provide actionable repair guidance for stale or mismatched input.",
+      "entry_state": "An edit invocation supplies either a blank search string or a nonblank string with zero matches.",
+      "exit_state": "Blank input fails before LLM correction, or a no-match error tells the agent to reread current target lines and retry with an exact match.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:341c32a111cda69a",
+          "role": "validate",
+          "optional": true
+        },
+        {
+          "step_id": "step-2",
+          "action_id": "semantic-action:704911df2cf56208",
+          "role": "validate",
+          "optional": true
+        }
+      ],
+      "edges": [
+        {
+          "from": "step-1",
+          "to": "step-2",
+          "type": "requires"
+        }
+      ],
+      "unresolved_or_deferred": [
+        "The two edit actions are mutually exclusive predicate branches for a given invocation. The wording-only confirmation-attribution change is recorded as evidence but is not promoted to a separate semantic action."
+      ],
+      "evidence_ids": [
+        "E15",
+        "E16"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "source_case": "google-gemini/gemini-cli#29080"
+    },
+    {
+      "id": "workflow:8fd00ec6e7d74f75",
+      "node_type": "issue_workflow",
+      "category": "extension-resource-lifecycle",
+      "repository": "openai/codex",
+      "issue": 46960,
+      "episode_id": "github:openai/codex#46960",
+      "name": "local_unix_stdio_descriptor_lifecycle",
+      "description": "At the local stdio extension-process boundary, apply the Unix-only descriptor guard and then validate that the server tree receives only transport stdio without regressing communication, launch compatibility, parent ownership, or failure reporting.",
+      "goal": "Ensure local Unix stdio extension servers and their descendants cannot inherit unrelated orchestrator descriptors while the stdio transport and established launch contract remain functional.",
+      "entry_state": "A local stdio server is launched with the shared command's default inherited-descriptor policy, so unrelated inheritable descriptors may enter the server process tree and the regression boundary is not covered by an end-to-end oracle.",
+      "exit_state": "The local Unix launch path enforces stdio-only descriptor inheritance, server and descendant probes report no unrelated sentinels, and the integration oracle confirms MCP communication, launch variants, arguments, environment, cwd, parent descriptor ownership, and exec-failure reporting.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:f03329db7fe2f96c",
+          "role": "implement",
+          "optional": false
+        },
+        {
+          "step_id": "step-2",
+          "action_id": "semantic-action:4546979be694d603",
+          "role": "validate",
+          "optional": false
+        }
+      ],
+      "edges": [
+        {
+          "from": "step-1",
+          "to": "step-2",
+          "type": "enables"
+        }
+      ],
+      "unresolved_or_deferred": [
+        "The implementation is gated by cfg(unix); the commit explicitly leaves Windows unrelated-handle inheritance to a future shared-spawn handle allowlist, and the added integration test is Unix-only.",
+        "The issue bundle contains no issue body, comments, timeline, or linked pull-request metadata, so acceptance criteria beyond the local implementation and commit testing note are unavailable."
+      ],
+      "evidence_ids": [
+        "ev-01",
+        "ev-02",
+        "ev-03",
+        "ev-04",
+        "ev-05",
+        "ev-06",
+        "ev-07",
+        "ev-08",
+        "ev-09",
+        "ev-10",
+        "ev-11",
+        "ev-12",
+        "ev-13"
+      ],
+      "supporting_repositories": [
+        "openai/codex"
+      ],
+      "source_case": "openai/codex#46960"
+    },
+    {
+      "id": "workflow:a34b6f8cb58b91c1",
+      "node_type": "issue_workflow",
+      "category": "concurrent-work-coordination",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 125124,
+      "episode_id": "hermes-agent#125124@6e929a96946a5c69644d08bd59c9dcfdc757e91b",
+      "name": "serialize_persistent_conversation_turn_across_processes",
+      "description": "Coordinate a persisted conversation across independent runtimes by establishing a durable lease domain, optionally collapsing compression descendants onto the lineage root, admitting only after lease acquisition and durable reload, and maintaining ownership until turn completion and flush.",
+      "goal": "Ensure each persistent conversation turn observes and commits a coherent serial order across independent processes.",
+      "entry_state": "Two or more requests can target an existing persisted session from different processes, each with a potentially stale history snapshot and no shared process-local lock.",
+      "exit_state": "One admitted turn owns the durable conversation lease through history load, model/tool/compression work, and flush; a later turn acquires after release or valid expiry, reloads the current tip, and stale cleanup cannot release a successor lease.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:0bcbf481f0b33e67",
+          "role": "establish-contract",
+          "optional": false
+        },
+        {
+          "step_id": "step-2",
+          "action_id": "semantic-action:f540857c7dc54b95",
+          "role": "implement",
+          "optional": true
+        },
+        {
+          "step_id": "step-3",
+          "action_id": "semantic-action:acf6e4f30f25936d",
+          "role": "reconcile",
+          "optional": false
+        },
+        {
+          "step_id": "step-4",
+          "action_id": "semantic-action:2afbbccc99b60af5",
+          "role": "reconcile",
+          "optional": false
+        }
+      ],
+      "edges": [
+        {
+          "from": "step-1",
+          "to": "step-2",
+          "type": "enables"
+        },
+        {
+          "from": "step-1",
+          "to": "step-3",
+          "type": "requires"
+        },
+        {
+          "from": "step-2",
+          "to": "step-3",
+          "type": "enables"
+        },
+        {
+          "from": "step-3",
+          "to": "step-4",
+          "type": "requires"
+        },
+        {
+          "from": "step-1",
+          "to": "step-4",
+          "type": "enables"
+        }
+      ],
+      "unresolved_or_deferred": [
+        "The changed state tests use separate SessionDB handles in one process/thread to model shared-database contention; no changed test launches two actual operating-system processes.",
+        "The refresher logs and stops if a holder-qualified refresh returns false, but the current turn is not explicitly aborted; behavior after a live lease is lost is not covered by the changed tests.",
+        "Absent-row fresh sessions intentionally bypass the durable lease to preserve in-memory seed history; the safety assumption is that such session ids are process-unique and are not already shared by another durable turn."
+      ],
+      "evidence_ids": [
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9",
+        "E10",
+        "E11",
+        "E12",
+        "E13",
+        "E14"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent"
+      ],
+      "source_case": "NousResearch/hermes-agent#125124"
+    },
+    {
+      "id": "workflow:b56320928ee6cf47",
+      "node_type": "issue_workflow",
+      "category": "configuration-and-environment-resolution",
+      "repository": "QwenLM/qwen-code",
+      "issue": 12216,
+      "episode_id": "QwenLM/qwen-code#12216@d439660e32adc2a160db7e88ca6147698320db6f",
+      "name": "scope-inherited-capabilities-for-secondary-discovery-runtime",
+      "description": "At the secondary workspace MCP configuration boundary, preserve the parent runtime arguments needed for discovery but explicitly disable the unrelated LSP capability, then let the existing MCP initialization and test oracle validate the resulting configuration.",
+      "goal": "Keep workspace MCP discovery dedicated to MCP tooling without spawning a second LSP stack.",
+      "entry_state": "An ACP process is constructing a workspace MCP discovery Config from parent arguments that may contain an LSP opt-in.",
+      "exit_state": "The workspace discovery Config is resolved with LSP disabled, MCP discovery proceeds through its manager, and the parent ACP configuration is not changed.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:bb074f18f942bada",
+          "role": "implement",
+          "optional": false
+        }
+      ],
+      "edges": [],
+      "unresolved_or_deferred": [
+        "The committed test asserts the explicit false override, but the inherited-true assignment is in a separate test case and is reset by beforeEach; a same-case true-to-false regression test would provide stronger coverage.",
+        "The target test could not be executed in the checkout environment because workspace dependencies were absent; npx vitest failed on a missing native rolldown binding and corepack pnpm could not verify its package-manager signature."
+      ],
+      "evidence_ids": [
+        "ev-3",
+        "ev-4",
+        "ev-5",
+        "ev-6",
+        "ev-7",
+        "ev-9"
+      ],
+      "supporting_repositories": [
+        "QwenLM/qwen-code"
+      ],
+      "source_case": "QwenLM/qwen-code#12216"
+    },
+    {
+      "id": "workflow:d91e03cb24379dee",
+      "node_type": "issue_workflow",
+      "category": "failure-recovery-and-retry",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 28339,
+      "episode_id": "google-gemini/gemini-cli#28339@d55e366f6ab393e024c613d940fead3696d56eac",
+      "name": "classify-capacity-exhaustion-before-retry",
+      "description": "When a structured model-capacity failure lacks a server-directed delay, classify it as terminal at the error-normalization boundary so persistent fallback handling is reached without normal retry churn; retain delay-based retry for explicitly delayed capacity failures.",
+      "goal": "Route a no-delay model-capacity failure to terminal and fallback handling without retrying the same exhausted model through the normal transient path.",
+      "entry_state": "A detailed retryable-status API error reaches classification with a model-capacity exhaustion reason and no parsed server retry delay.",
+      "exit_state": "Capacity exhaustion without a server delay is terminal and eligible for immediate persistent fallback; capacity errors with a server delay remain delay-aware retryable failures.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:2737db000d011d35",
+          "role": "implement",
+          "optional": false
+        }
+      ],
+      "edges": [],
+      "unresolved_or_deferred": [
+        "The delay-present branch is preserved inside the single classifier action rather than represented as a separate changed action; its behavior is directly covered by the existing 9-second retry test.",
+        "Execution of the focused test suite was not observed because the checkout has no root node_modules/.bin/vitest."
+      ],
+      "evidence_ids": [
+        "ev-before-001",
+        "ev-impl-001",
+        "ev-call-001",
+        "ev-call-002",
+        "ev-test-001",
+        "ev-test-002"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "source_case": "google-gemini/gemini-cli#28339"
+    },
+    {
+      "id": "workflow:edfd47b68de2afce",
+      "node_type": "issue_workflow",
+      "category": "bounded-resource-budget-control",
+      "repository": "Aider-AI/aider",
+      "issue": 1842,
+      "episode_id": "github:Aider-AI/aider#1842",
+      "name": "preserve_foreground_budget_during_cache_keepalive",
+      "description": "For an enabled prompt-cache keepalive flow, isolate the one-token maintenance override from the shared model configuration so delayed cache pings remain bounded and later prefill-capable completions retain their normal output budget.",
+      "goal": "Keep the prompt cache alive with bounded maintenance calls while preserving the foreground completion budget and avoiding a one-token prefill loop.",
+      "entry_state": "Prompt-cache keepalive is enabled for a cache-capable model; send_message schedules or runs cache warming before the foreground send, and the parent implementation shares the model extra-parameter mapping with the warming request.",
+      "exit_state": "Each warming request receives max_tokens=1 through a local kwargs copy, the model extra_params mapping remains unchanged for foreground and prefill-capable calls, and the length-continuation path is no longer forced into one-token responses by cache warming.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:1941f701663bd284",
+          "role": "implement",
+          "optional": false
+        }
+      ],
+      "edges": [],
+      "unresolved_or_deferred": [
+        "The checkout has no targeted regression test that mocks the warming provider and asserts both the one-token warm request and preservation of the next normal request's configured max_tokens.",
+        "ModelSettings declares extra_params as Optional[dict], while the pinned expression calls dict(...) without an explicit None guard; built-in cache-capable settings inspected here provide mappings, but the custom or None case remains unresolved.",
+        "The cache-disabled and zero-ping early-return branches are unchanged by the commit and are not represented as separate change actions."
+      ],
+      "evidence_ids": [
+        "callsite-1842-lifecycle",
+        "impl-1842-parent-alias",
+        "impl-1842-pinned-copy",
+        "callsite-1842-normal-send",
+        "callsite-1842-prefill-loop",
+        "validation-1842-diff-check"
+      ],
+      "supporting_repositories": [
+        "Aider-AI/aider"
+      ],
+      "source_case": "Aider-AI/aider#1842"
+    },
+    {
+      "id": "workflow:eefbc06dccc9737d",
+      "node_type": "issue_workflow",
+      "category": "bounded-resource-budget-control",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 29080,
+      "episode_id": "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+      "name": "model-retry-request-integrity",
+      "description": "The model request path adapts invalid-stream retry guidance to the current contents and then normalizes outgoing parts before the API call.",
+      "goal": "Bound retry guidance and preserve valid request-content contracts at the model boundary.",
+      "entry_state": "A retry request contains an invalid-stream condition or outgoing parts with empty text artifacts.",
+      "exit_state": "Retry guidance is appended to valid request contents, the stable system instruction is preserved, and payload-bearing parts are not rejected solely because of an empty text key.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:8a894318c6e2b3ab",
+          "role": "implement",
+          "optional": true
+        },
+        {
+          "step_id": "step-2",
+          "action_id": "semantic-action:6623a0eab1e4e2dc",
+          "role": "validate",
+          "optional": true
+        }
+      ],
+      "edges": [
+        {
+          "from": "step-1",
+          "to": "step-2",
+          "type": "enables"
+        }
+      ],
+      "unresolved_or_deferred": [
+        "The sanitizer is in the final request-construction path, but the pinned commit adds no direct regression assertion for its new empty-part branches. The edge captures request construction order, not a requirement that every retry contain an empty part."
+      ],
+      "evidence_ids": [
+        "E11",
+        "E12",
+        "E13",
+        "E14"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "source_case": "google-gemini/gemini-cli#29080"
+    }
+  ],
+  "patterns": [
+    {
+      "id": "pattern:331e9fe7c100003e",
+      "node_type": "resolution_pattern",
+      "category": "effect-control-and-isolation",
+      "intent": "Resolve effect control and isolation through a contract-first, evidence-validated change chain.",
+      "mandatory_actions": [],
+      "optional_actions": [],
+      "workflow_template": [],
+      "ordering_constraints": [],
+      "decision_points": [],
+      "invariants": [],
+      "validation_ladder": [],
+      "known_failure_modes": [],
+      "supporting_workflows": [
+        "workflow:45121f5bcf3f4cdc"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent"
+      ],
+      "counterexamples": [],
+      "confidence": 0.0,
+      "promotion_status": "insufficient-structural-support",
+      "held_out_results": [],
+      "extraction_method": "structural-action-fingerprint-v1; semantic judge required before promotion"
+    },
+    {
+      "id": "pattern:3dce5267539b9697",
+      "node_type": "resolution_pattern",
+      "category": "observable-validation-and-diagnostics",
+      "intent": "Resolve observable validation and diagnostics through a contract-first, evidence-validated change chain.",
+      "mandatory_actions": [],
+      "optional_actions": [],
+      "workflow_template": [],
+      "ordering_constraints": [],
+      "decision_points": [],
+      "invariants": [],
+      "validation_ladder": [],
+      "known_failure_modes": [],
+      "supporting_workflows": [
+        "workflow:3f021addaa867fed"
+      ],
+      "supporting_repositories": [
+        "openai/codex"
+      ],
+      "counterexamples": [],
+      "confidence": 0.0,
+      "promotion_status": "insufficient-structural-support",
+      "held_out_results": [],
+      "extraction_method": "structural-action-fingerprint-v1; semantic judge required before promotion"
+    },
+    {
+      "id": "pattern:7c5d2c4187cf147e",
+      "node_type": "resolution_pattern",
+      "category": "configuration-and-environment-resolution",
+      "intent": "Resolve configuration and environment resolution through a contract-first, evidence-validated change chain.",
+      "mandatory_actions": [],
+      "optional_actions": [],
+      "workflow_template": [],
+      "ordering_constraints": [],
+      "decision_points": [],
+      "invariants": [],
+      "validation_ladder": [],
+      "known_failure_modes": [],
+      "supporting_workflows": [
+        "workflow:b56320928ee6cf47"
+      ],
+      "supporting_repositories": [
+        "QwenLM/qwen-code"
+      ],
+      "counterexamples": [],
+      "confidence": 0.0,
+      "promotion_status": "insufficient-structural-support",
+      "held_out_results": [],
+      "extraction_method": "structural-action-fingerprint-v1; semantic judge required before promotion"
+    },
+    {
+      "id": "pattern:b21acc8b211cfac4",
+      "node_type": "resolution_pattern",
+      "category": "concurrent-work-coordination",
+      "intent": "Resolve concurrent work coordination through a contract-first, evidence-validated change chain.",
+      "mandatory_actions": [],
+      "optional_actions": [],
+      "workflow_template": [],
+      "ordering_constraints": [],
+      "decision_points": [],
+      "invariants": [],
+      "validation_ladder": [],
+      "known_failure_modes": [],
+      "supporting_workflows": [
+        "workflow:154418c5ae6b80fd",
+        "workflow:4645ac2001ecf7d2",
+        "workflow:574b2e5fae215818",
+        "workflow:a34b6f8cb58b91c1"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent",
+        "earendil-works/pi",
+        "google-gemini/gemini-cli"
+      ],
+      "counterexamples": [],
+      "confidence": 0.0,
+      "promotion_status": "insufficient-structural-support",
+      "held_out_results": [],
+      "extraction_method": "structural-action-fingerprint-v1; semantic judge required before promotion"
+    },
+    {
+      "id": "pattern:be946de4210443d0",
+      "node_type": "resolution_pattern",
+      "category": "extension-resource-lifecycle",
+      "intent": "Resolve extension resource lifecycle through a contract-first, evidence-validated change chain.",
+      "mandatory_actions": [],
+      "optional_actions": [],
+      "workflow_template": [],
+      "ordering_constraints": [],
+      "decision_points": [],
+      "invariants": [],
+      "validation_ladder": [],
+      "known_failure_modes": [],
+      "supporting_workflows": [
+        "workflow:8fd00ec6e7d74f75"
+      ],
+      "supporting_repositories": [
+        "openai/codex"
+      ],
+      "counterexamples": [],
+      "confidence": 0.0,
+      "promotion_status": "insufficient-structural-support",
+      "held_out_results": [],
+      "extraction_method": "structural-action-fingerprint-v1; semantic judge required before promotion"
+    },
+    {
+      "id": "pattern:dde0e64126085639",
+      "node_type": "resolution_pattern",
+      "category": "bounded-resource-budget-control",
+      "intent": "Resolve bounded resource budget control through a contract-first, evidence-validated change chain.",
+      "mandatory_actions": [],
+      "optional_actions": [],
+      "workflow_template": [],
+      "ordering_constraints": [],
+      "decision_points": [],
+      "invariants": [],
+      "validation_ladder": [],
+      "known_failure_modes": [],
+      "supporting_workflows": [
+        "workflow:03677ac1471c8998",
+        "workflow:0e97359a43ec4400",
+        "workflow:1462bc0c924a29cc",
+        "workflow:3329cbf7b02a8c48",
+        "workflow:805ace572989954b",
+        "workflow:edfd47b68de2afce",
+        "workflow:eefbc06dccc9737d"
+      ],
+      "supporting_repositories": [
+        "Aider-AI/aider",
+        "NousResearch/hermes-agent",
+        "QwenLM/qwen-code",
+        "google-gemini/gemini-cli"
+      ],
+      "counterexamples": [],
+      "confidence": 0.0,
+      "promotion_status": "insufficient-structural-support",
+      "held_out_results": [],
+      "extraction_method": "structural-action-fingerprint-v1; semantic judge required before promotion"
+    },
+    {
+      "id": "pattern:e07885e4c906ae03",
+      "node_type": "resolution_pattern",
+      "category": "failure-recovery-and-retry",
+      "intent": "Resolve failure recovery and retry through a contract-first, evidence-validated change chain.",
+      "mandatory_actions": [],
+      "optional_actions": [],
+      "workflow_template": [],
+      "ordering_constraints": [],
+      "decision_points": [],
+      "invariants": [],
+      "validation_ladder": [],
+      "known_failure_modes": [],
+      "supporting_workflows": [
+        "workflow:d91e03cb24379dee"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "counterexamples": [],
+      "confidence": 0.0,
+      "promotion_status": "insufficient-structural-support",
+      "held_out_results": [],
+      "extraction_method": "structural-action-fingerprint-v1; semantic judge required before promotion"
+    }
+  ],
+  "edges": [
+    {
+      "from": "semantic-action:1941f701663bd284",
+      "to": "evidence:github:Aider-AI/aider#1842",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:b1038e6640f979a5",
+      "to": "evidence:NousResearch/hermes-agent#125235@98278833e29b167fe930e276eed7cb16bee68673",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:7d1633b29680d745",
+      "to": "evidence:NousResearch/hermes-agent#125235@98278833e29b167fe930e276eed7cb16bee68673",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:b1038e6640f979a5",
+      "to": "semantic-action:7d1633b29680d745",
+      "type": "enables",
+      "workflow_id": "workflow:1462bc0c924a29cc",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-2"
+    },
+    {
+      "from": "semantic-action:265d94ab13ba6de8",
+      "to": "evidence:QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:0c19423512bf00ef",
+      "to": "evidence:QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:88b4f2fa5276d3b7",
+      "to": "evidence:QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:8e3e370e9a79a993",
+      "to": "evidence:QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:93c1d7660d38de6f",
+      "to": "evidence:QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:265d94ab13ba6de8",
+      "to": "semantic-action:0c19423512bf00ef",
+      "type": "requires",
+      "workflow_id": "workflow:3329cbf7b02a8c48",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-2"
+    },
+    {
+      "from": "semantic-action:265d94ab13ba6de8",
+      "to": "semantic-action:88b4f2fa5276d3b7",
+      "type": "requires",
+      "workflow_id": "workflow:3329cbf7b02a8c48",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-3"
+    },
+    {
+      "from": "semantic-action:0c19423512bf00ef",
+      "to": "semantic-action:88b4f2fa5276d3b7",
+      "type": "repairs",
+      "workflow_id": "workflow:3329cbf7b02a8c48",
+      "workflow_step_from": "step-2",
+      "workflow_step_to": "step-3"
+    },
+    {
+      "from": "semantic-action:88b4f2fa5276d3b7",
+      "to": "semantic-action:8e3e370e9a79a993",
+      "type": "enables",
+      "workflow_id": "workflow:3329cbf7b02a8c48",
+      "workflow_step_from": "step-3",
+      "workflow_step_to": "step-4"
+    },
+    {
+      "from": "semantic-action:8e3e370e9a79a993",
+      "to": "semantic-action:93c1d7660d38de6f",
+      "type": "enables",
+      "workflow_id": "workflow:3329cbf7b02a8c48",
+      "workflow_step_from": "step-4",
+      "workflow_step_to": "step-5"
+    },
+    {
+      "from": "semantic-action:f6dd64c00f078f80",
+      "to": "evidence:issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:004c33e49d9cf153",
+      "to": "evidence:issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:26186cfe5470ed34",
+      "to": "evidence:issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:8a894318c6e2b3ab",
+      "to": "evidence:issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:6623a0eab1e4e2dc",
+      "to": "evidence:issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:341c32a111cda69a",
+      "to": "evidence:issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:704911df2cf56208",
+      "to": "evidence:issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:f6dd64c00f078f80",
+      "to": "semantic-action:004c33e49d9cf153",
+      "type": "requires",
+      "workflow_id": "workflow:0e97359a43ec4400",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-2"
+    },
+    {
+      "from": "semantic-action:8a894318c6e2b3ab",
+      "to": "semantic-action:6623a0eab1e4e2dc",
+      "type": "enables",
+      "workflow_id": "workflow:eefbc06dccc9737d",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-2"
+    },
+    {
+      "from": "semantic-action:341c32a111cda69a",
+      "to": "semantic-action:704911df2cf56208",
+      "type": "requires",
+      "workflow_id": "workflow:805ace572989954b",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-2"
+    },
+    {
+      "from": "semantic-action:f03329db7fe2f96c",
+      "to": "evidence:github:openai/codex#46960",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:4546979be694d603",
+      "to": "evidence:github:openai/codex#46960",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:f03329db7fe2f96c",
+      "to": "semantic-action:4546979be694d603",
+      "type": "enables",
+      "workflow_id": "workflow:8fd00ec6e7d74f75",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-2"
+    },
+    {
+      "from": "semantic-action:f6213c288ee4f3e7",
+      "to": "evidence:github:earendil-works/pi#9994",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:0bcbf481f0b33e67",
+      "to": "evidence:hermes-agent#125124@6e929a96946a5c69644d08bd59c9dcfdc757e91b",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:f540857c7dc54b95",
+      "to": "evidence:hermes-agent#125124@6e929a96946a5c69644d08bd59c9dcfdc757e91b",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:acf6e4f30f25936d",
+      "to": "evidence:hermes-agent#125124@6e929a96946a5c69644d08bd59c9dcfdc757e91b",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:2afbbccc99b60af5",
+      "to": "evidence:hermes-agent#125124@6e929a96946a5c69644d08bd59c9dcfdc757e91b",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:f834e1d4ff34a26b",
+      "to": "evidence:hermes-agent#125124@6e929a96946a5c69644d08bd59c9dcfdc757e91b",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:0bcbf481f0b33e67",
+      "to": "semantic-action:f540857c7dc54b95",
+      "type": "enables",
+      "workflow_id": "workflow:a34b6f8cb58b91c1",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-2"
+    },
+    {
+      "from": "semantic-action:0bcbf481f0b33e67",
+      "to": "semantic-action:acf6e4f30f25936d",
+      "type": "requires",
+      "workflow_id": "workflow:a34b6f8cb58b91c1",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-3"
+    },
+    {
+      "from": "semantic-action:f540857c7dc54b95",
+      "to": "semantic-action:acf6e4f30f25936d",
+      "type": "enables",
+      "workflow_id": "workflow:a34b6f8cb58b91c1",
+      "workflow_step_from": "step-2",
+      "workflow_step_to": "step-3"
+    },
+    {
+      "from": "semantic-action:acf6e4f30f25936d",
+      "to": "semantic-action:2afbbccc99b60af5",
+      "type": "requires",
+      "workflow_id": "workflow:a34b6f8cb58b91c1",
+      "workflow_step_from": "step-3",
+      "workflow_step_to": "step-4"
+    },
+    {
+      "from": "semantic-action:0bcbf481f0b33e67",
+      "to": "semantic-action:2afbbccc99b60af5",
+      "type": "enables",
+      "workflow_id": "workflow:a34b6f8cb58b91c1",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-4"
+    },
+    {
+      "from": "semantic-action:24e77d8afdb1dce6",
+      "to": "evidence:google-gemini/gemini-cli#28518@571851b1077a51cef757146ce13f9da887326bec",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:0b34e5064158be26",
+      "to": "evidence:google-gemini/gemini-cli#28518@571851b1077a51cef757146ce13f9da887326bec",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:24e77d8afdb1dce6",
+      "to": "semantic-action:0b34e5064158be26",
+      "type": "validates",
+      "workflow_id": "workflow:154418c5ae6b80fd",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-2"
+    },
+    {
+      "from": "semantic-action:f57c30b94d1d7d06",
+      "to": "evidence:github:openai/codex#45773",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:7b1f9e18054eb59e",
+      "to": "evidence:github:openai/codex#45773",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:f57c30b94d1d7d06",
+      "to": "semantic-action:7b1f9e18054eb59e",
+      "type": "validates",
+      "workflow_id": "workflow:3f021addaa867fed",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-2"
+    },
+    {
+      "from": "semantic-action:e6b880e79914329c",
+      "to": "evidence:NousResearch/hermes-agent#123989@b5f587dba8b1852127c6cc3d7e3d98dceedbf94d",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:3f27476e3dc706dd",
+      "to": "evidence:NousResearch/hermes-agent#123989@b5f587dba8b1852127c6cc3d7e3d98dceedbf94d",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:1753f7113f4e997a",
+      "to": "evidence:NousResearch/hermes-agent#123989@b5f587dba8b1852127c6cc3d7e3d98dceedbf94d",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:e6b880e79914329c",
+      "to": "semantic-action:3f27476e3dc706dd",
+      "type": "enables",
+      "workflow_id": "workflow:45121f5bcf3f4cdc",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-2"
+    },
+    {
+      "from": "semantic-action:e6b880e79914329c",
+      "to": "semantic-action:1753f7113f4e997a",
+      "type": "enables",
+      "workflow_id": "workflow:45121f5bcf3f4cdc",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-3"
+    },
+    {
+      "from": "semantic-action:bb074f18f942bada",
+      "to": "evidence:QwenLM/qwen-code#12216@d439660e32adc2a160db7e88ca6147698320db6f",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:2737db000d011d35",
+      "to": "evidence:google-gemini/gemini-cli#28339@d55e366f6ab393e024c613d940fead3696d56eac",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "pattern:dde0e64126085639",
+      "to": "workflow:edfd47b68de2afce",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:dde0e64126085639",
+      "to": "workflow:1462bc0c924a29cc",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:dde0e64126085639",
+      "to": "workflow:3329cbf7b02a8c48",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:dde0e64126085639",
+      "to": "workflow:0e97359a43ec4400",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:dde0e64126085639",
+      "to": "workflow:03677ac1471c8998",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:dde0e64126085639",
+      "to": "workflow:eefbc06dccc9737d",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:dde0e64126085639",
+      "to": "workflow:805ace572989954b",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:b21acc8b211cfac4",
+      "to": "workflow:4645ac2001ecf7d2",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:b21acc8b211cfac4",
+      "to": "workflow:a34b6f8cb58b91c1",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:b21acc8b211cfac4",
+      "to": "workflow:574b2e5fae215818",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:b21acc8b211cfac4",
+      "to": "workflow:154418c5ae6b80fd",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:7c5d2c4187cf147e",
+      "to": "workflow:b56320928ee6cf47",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:331e9fe7c100003e",
+      "to": "workflow:45121f5bcf3f4cdc",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:be946de4210443d0",
+      "to": "workflow:8fd00ec6e7d74f75",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:e07885e4c906ae03",
+      "to": "workflow:d91e03cb24379dee",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:3dce5267539b9697",
+      "to": "workflow:3f021addaa867fed",
+      "type": "supported_by"
+    }
+  ],
+  "rejected": [],
+  "summary": {
+    "episodes_input": 12,
+    "episodes_used": 12,
+    "actions": 32,
+    "grounded_actions": 32,
+    "workflows": 16,
+    "patterns": 7,
+    "patterns_with_cross_repository_support": 2,
+    "rejected": 0
+  }
+}

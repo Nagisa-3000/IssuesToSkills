@@ -1,0 +1,113 @@
+diff --git a/hermes_cli/models_catalog_static.py b/hermes_cli/models_catalog_static.py
+index 3cfcda1..f3f1b51 100644
+--- a/hermes_cli/models_catalog_static.py
++++ b/hermes_cli/models_catalog_static.py
+@@ -6,6 +6,7 @@ maps. Split out of ``hermes_cli.models``.
+ 
+ from __future__ import annotations
+ 
++import sys
+ from typing import NamedTuple
+ 
+ 
+@@ -369,6 +370,48 @@ def _plugin_provider_enters_picker(pp) -> bool:
+     return pp.name not in _canonical_slugs
+ 
+ 
++def sync_plugin_provider_catalog() -> int:
++    """Admit provider profiles registered after this catalog was imported.
++
++    ``CANONICAL_PROVIDERS`` is intentionally a process-local snapshot used by several picker
++    surfaces. Provider discovery is lazy, however, and a plugin can register after this module has
++    been imported (including while another plugin is importing ``hermes_cli.models``). Keep the
++    snapshot live without rebuilding it: append each previously unseen slug exactly once and update
++    the labels map in place so modules that imported the dict by reference see the same change.
++
++    The provider registry owns discovery and may call this function while it is finishing a scan;
++    failures are therefore allowed to propagate to that caller, which treats derived-registry
++    refreshes as best-effort. The return value is the number of newly admitted provider rows.
++    """
++    from providers import list_providers
++
++    added = 0
++    for profile in list_providers():
++        slug = str(getattr(profile, "name", "") or "").strip()
++        if not slug or slug in _canonical_slugs:
++            continue
++        label = str(getattr(profile, "display_name", "") or slug)
++        description = str(getattr(profile, "description", "") or f"{label} (direct API)")
++        CANONICAL_PROVIDERS.append(ProviderEntry(slug, label, description))
++        _canonical_slugs.add(slug)
++        # During this module's first import the initial discovery loop runs below the function
++        # definition but before the labels dict is constructed. The canonical row is still safe to
++        # admit there; the final dict construction picks it up.
++        provider_labels = globals().get("_PROVIDER_LABELS")
++        if isinstance(provider_labels, dict):
++            provider_labels[slug] = label
++        added += 1
++
++        # ``hermes_cli.models`` keeps a set for the provider:model parser. It is normally created
++        # after this catalog, but when a plugin imports the parser during discovery it may already
++        # exist; mutate it in place for that late-registration case too.
++        models_module = sys.modules.get("hermes_cli.models")
++        known_names = getattr(models_module, "_KNOWN_PROVIDER_NAMES", None)
++        if isinstance(known_names, set):
++            known_names.add(slug)
++    return added
++
++
+ try:
+     from providers import list_providers as _list_providers_for_canonical
+     for _pp in _list_providers_for_canonical():
+diff --git a/providers/__init__.py b/providers/__init__.py
+index 9f09982..bb204e6 100644
+--- a/providers/__init__.py
++++ b/providers/__init__.py
+@@ -95,23 +95,36 @@ _BUNDLED_PLUGINS_DIR = (
+ 
+ 
+ def _sync_auth_registry() -> None:
+-    """Mirror profiles into ``hermes_cli.auth.PROVIDER_REGISTRY`` if that module is loaded.
++    """Refresh the registries that snapshot provider profiles, when loaded.
+ 
+     ``hermes_cli.auth`` takes its own snapshot of ``list_providers()`` when it is imported. If a
+     plugin's imports pull that module in while :func:`_discover_providers` is still running, the
+     snapshot is partial and later plugins never reach the auth registry ("Unknown provider",
+-    #102123). Calling back into auth once discovery is complete closes that window. Looked up via
+-    ``sys.modules`` on purpose: this layer must never import ``hermes_cli`` (that would run auth's
+-    top-level code mid-scan and risk a circular import). Never raises: registration must not fail
+-    because of the auth mirror.
++    #102123). The model picker has the same import-time snapshot, so it must be refreshed as well
++    when a provider is registered after ``hermes_cli.models_catalog_static`` was imported.
++
++    Looked up via ``sys.modules`` on purpose: this layer must never import ``hermes_cli`` (that
++    would run auth or the model catalog's top-level code mid-scan and risk a circular import).
++    Each mirror is independent: a failure in one must not prevent the other from catching up, and
++    registration itself must never fail because of a derived registry.
+     """
+     sync = getattr(sys.modules.get("hermes_cli.auth"), "sync_plugin_provider_registry", None)
+-    if sync is None:
+-        return
+-    try:
+-        sync()
+-    except Exception as exc:  # pragma: no cover — never break discovery
+-        logger.debug("auth registry sync skipped: %s", exc)
++    if sync is not None:
++        try:
++            sync()
++        except Exception as exc:  # pragma: no cover — never break discovery
++            logger.debug("auth registry sync skipped: %s", exc)
++
++    sync = getattr(
++        sys.modules.get("hermes_cli.models_catalog_static"),
++        "sync_plugin_provider_catalog",
++        None,
++    )
++    if sync is not None:
++        try:
++            sync()
++        except Exception as exc:  # pragma: no cover — never break discovery
++            logger.debug("model picker catalog sync skipped: %s", exc)
+ 
+ 
+ def register_provider(profile: ProviderProfile) -> None:

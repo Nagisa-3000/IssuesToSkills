@@ -1,0 +1,734 @@
+[
+  {
+    "episode_id": "hermes-agent#125124@6e929a96946a5c69644d08bd59c9dcfdc757e91b",
+    "title": "[Bug]: concurrent API requests on a new session id interleave their turns (user, user, assistant, assistant; one answer lost)",
+    "before": "At parent commit a373a1b7491e9bfd0c21940cd0a968283e643085, turn coordination was process-local. The gateway's SessionTurnLeaseRegistry could serialize requests within one gateway event loop, but its own documentation explicitly identified CLI processes sharing a session as outside that lock and requiring a separate database-level lease. AIAgent.run_conversation only entered the in-process relay coordinator and forwarded the caller-supplied conversation_history to the conversation loop; it had no durable admission, post-wait state reload, lease refresh, or durable release. Consequently, independent processes could load the same persisted transcript, run model/tool work concurrently, and flush their exchanges in completion order against stale history. The issue bundle provides only the issue title, which reports the resulting user,user,assistant,assistant ordering and lost answer; the issue body and discussion are unavailable.",
+    "after": "At commit 6e929a96946a5c69644d08bd59c9dcfdc757e91b, the state schema contains a durable session_turn_leases table keyed by a conversation identity with holder, acquisition time, and expiry. SessionDB derives a stable root key for compression-continuation segments, atomically acquires a lease with expiry/dead-holder reclamation, waits without holding a SQLite lock, refreshes only while the holder still owns the lease, and releases with holder fencing. AIAgent.run_conversation now applies this protocol to existing persistent sessions: it checks durable existence, acquires before resolving/loading history, resolves a newer compression tip and reloads durable history after admission, refreshes during long turns, and stops/releases the refresher in the outer finally path. Fresh sessions whose durable row does not yet exist intentionally bypass the lease so caller-provided in-memory seed history is preserved. The same commit also contains a separately tested compression-specific persistence-error classification and explanation change.",
+    "diff": "The pinned commit changes six files relative to a373a1b7491e9bfd0c21940cd0a968283e643085: hermes_state_common.py adds the session_turn_leases table and expiry index; hermes_state.py adds the durable lease protocol and changes compression persistence failures to a distinct cause; run_agent.py integrates acquire/reload/refresh/release around persistent turns and adds compression-specific completion wording; tests/run_agent/test_cross_process_turn_lease.py and tests/state/test_session_turn_lease.py add integration and state tests; tests/run_agent/test_turn_completion_explainer.py updates classifier and explanation tests. Git reports 513 insertions and 12 deletions.",
+    "repository": "NousResearch/hermes-agent",
+    "revision": "github-issue-125124",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10",
+      "E11",
+      "E12",
+      "E13",
+      "E14",
+      "E15",
+      "E16"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 125124,
+      "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/hermes-agent",
+      "manifest_metadata": {
+        "category": "concurrent-work-coordination",
+        "role": "train_candidate",
+        "case_id": "NousResearch/hermes-agent#125124:concurrent-work-coordination:train_candidate"
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "NousResearch/hermes-agent",
+        "issue_number": 125124,
+        "issue": {
+          "number": 125124,
+          "title": "[Bug]: concurrent API requests on a new session id interleave their turns (user, user, assistant, assistant; one answer lost)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [],
+        "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/hermes-agent",
+        "pinned_ref": "6e929a96946a5c69644d08bd59c9dcfdc757e91b",
+        "resolved_commit": "6e929a96946a5c69644d08bd59c9dcfdc757e91b",
+        "parent_commit": "a373a1b7491e9bfd0c21940cd0a968283e643085",
+        "commit_show_stat": "commit 6e929a96946a5c69644d08bd59c9dcfdc757e91b\nAuthor:     fangliquan <fangliquan@qq.com>\nAuthorDate: Wed Aug 12 12:00:15 2026 +0800\nCommit:     kshitij <82637225+kshitijk4poor@users.noreply.github.com>\nCommitDate: Sat Aug 15 03:22:16 2026 +0530\n\n    fix(sessions): serialize turns across processes\n\n hermes_state.py                                   | 145 ++++++++++++++++++++--\n hermes_state_common.py                            |   8 ++\n run_agent.py                                      | 121 ++++++++++++++++++\n tests/run_agent/test_cross_process_turn_lease.py  | 102 +++++++++++++++\n tests/run_agent/test_turn_completion_explainer.py |  21 +++-\n tests/state/test_session_turn_lease.py            | 128 +++++++++++++++++++\n 6 files changed, 513 insertions(+), 12 deletions(-)\n",
+        "changed_files_name_status": "M\thermes_state.py\nM\thermes_state_common.py\nM\trun_agent.py\nA\ttests/run_agent/test_cross_process_turn_lease.py\nM\ttests/run_agent/test_turn_completion_explainer.py\nA\ttests/state/test_session_turn_lease.py\n",
+        "linked_issue_numbers": [
+          125124
+        ],
+        "manifest_metadata": {
+          "category": "concurrent-work-coordination"
+        },
+        "fetched_at": "2026-09-28T20:48:10.909487+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "hermes-agent#125124@6e929a96946a5c69644d08bd59c9dcfdc757e91b",
+          "title": "[Bug]: concurrent API requests on a new session id interleave their turns (user, user, assistant, assistant; one answer lost)",
+          "before": "At parent commit a373a1b7491e9bfd0c21940cd0a968283e643085, turn coordination was process-local. The gateway's SessionTurnLeaseRegistry could serialize requests within one gateway event loop, but its own documentation explicitly identified CLI processes sharing a session as outside that lock and requiring a separate database-level lease. AIAgent.run_conversation only entered the in-process relay coordinator and forwarded the caller-supplied conversation_history to the conversation loop; it had no durable admission, post-wait state reload, lease refresh, or durable release. Consequently, independent processes could load the same persisted transcript, run model/tool work concurrently, and flush their exchanges in completion order against stale history. The issue bundle provides only the issue title, which reports the resulting user,user,assistant,assistant ordering and lost answer; the issue body and discussion are unavailable.",
+          "after": "At commit 6e929a96946a5c69644d08bd59c9dcfdc757e91b, the state schema contains a durable session_turn_leases table keyed by a conversation identity with holder, acquisition time, and expiry. SessionDB derives a stable root key for compression-continuation segments, atomically acquires a lease with expiry/dead-holder reclamation, waits without holding a SQLite lock, refreshes only while the holder still owns the lease, and releases with holder fencing. AIAgent.run_conversation now applies this protocol to existing persistent sessions: it checks durable existence, acquires before resolving/loading history, resolves a newer compression tip and reloads durable history after admission, refreshes during long turns, and stops/releases the refresher in the outer finally path. Fresh sessions whose durable row does not yet exist intentionally bypass the lease so caller-provided in-memory seed history is preserved. The same commit also contains a separately tested compression-specific persistence-error classification and explanation change.",
+          "diff": "The pinned commit changes six files relative to a373a1b7491e9bfd0c21940cd0a968283e643085: hermes_state_common.py adds the session_turn_leases table and expiry index; hermes_state.py adds the durable lease protocol and changes compression persistence failures to a distinct cause; run_agent.py integrates acquire/reload/refresh/release around persistent turns and adds compression-specific completion wording; tests/run_agent/test_cross_process_turn_lease.py and tests/state/test_session_turn_lease.py add integration and state tests; tests/run_agent/test_turn_completion_explainer.py updates classifier and explanation tests. Git reports 513 insertions and 12 deletions."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "The issue bundle identifies issue 125124, pins implementation commit 6e929a96946a5c69644d08bd59c9dcfdc757e91b, identifies parent a373a1b7491e9bfd0c21940cd0a968283e643085, and gives the commit subject “fix(sessions): serialize turns across processes.”",
+            "source": "issue-bundle.json: issue, pinned_ref, parent_commit, commit_show_stat"
+          },
+          {
+            "id": "E2",
+            "kind": "diff",
+            "claim": "The pinned commit changes hermes_state.py, hermes_state_common.py, run_agent.py, two new lease-related test files, and the turn-completion explainer test file; the diff is 513 insertions and 12 deletions.",
+            "source": "git show --stat 6e929a96946a5c69644d08bd59c9dcfdc757e91b; git diff --numstat a373a1b7491e9bfd0c21940cd0a968283e643085 6e929a96946a5c69644d08bd59c9dcfdc757e91b"
+          },
+          {
+            "id": "E3",
+            "kind": "call_site",
+            "claim": "The pre-existing gateway turn lease is process-local and its documentation explicitly states that a CLI process sharing a session is outside the in-process lock and needs a database-level lease; the same documentation describes the stale-history interleaving failure, including completion-order persistence and a permanent user,user alternation wedge.",
+            "source": "gateway/turn_lease.py:3-49"
+          },
+          {
+            "id": "E4",
+            "kind": "call_site",
+            "claim": "The gateway and TUI pass independently held conversation-history snapshots into AIAgent.run_conversation, making the agent wrapper the common boundary where durable admission and post-admission reload can be applied across surfaces.",
+            "source": "gateway/run.py:6053-6077; tui_gateway/server.py:10189-10219"
+          },
+          {
+            "id": "E5",
+            "kind": "implementation",
+            "claim": "The commit adds a durable session_turn_leases table with conversation_id as the primary key, holder/acquired_at/expires_at fields, and an expiry index.",
+            "source": "hermes_state_common.py:386-390, 429"
+          },
+          {
+            "id": "E6",
+            "kind": "implementation",
+            "claim": "SessionDB derives a lease key by walking compression-continuation parents, then performs acquisition inside _execute_write: it removes expired or known-dead holders, inserts-or-ignores the candidate holder, and verifies the resulting owner.",
+            "source": "hermes_state.py:5743-5812; hermes_state.py:3543-3608"
+          },
+          {
+            "id": "E7",
+            "kind": "implementation",
+            "claim": "SessionDB provides a polling wait method that does not hold a SQLite lock, a holder-qualified expiry refresh, and a holder-qualified idempotent release; stale refresh/release calls cannot mutate a successor lease.",
+            "source": "hermes_state.py:5814-5869"
+          },
+          {
+            "id": "E8",
+            "kind": "implementation",
+            "claim": "The lease key treats only compression-continuation children as members of the parent conversation lease domain; explicit delegate or branch children are excluded by the compression-child predicate.",
+            "source": "hermes_state.py:5743-5761; hermes_state.py:10002-10022"
+          },
+          {
+            "id": "E9",
+            "kind": "implementation",
+            "claim": "AIAgent.run_conversation checks for an existing durable session and a concrete lease protocol before admission, acquires the lease before the relay/conversation region, resolves a possible compression tip after admission, updates self.session_id, and reloads durable history with alternation repair before invoking the conversation loop.",
+            "source": "run_agent.py:8080-8139"
+          },
+          {
+            "id": "E10",
+            "kind": "implementation",
+            "claim": "AIAgent starts a daemon refresh thread for the fixed-TTL lease, attempts refresh every 60 seconds while the turn is active, stops and joins the thread during finalization, and then releases the holder-qualified lease in the outer finally path.",
+            "source": "run_agent.py:8141-8171, 8258-8289"
+          },
+          {
+            "id": "E11",
+            "kind": "implementation",
+            "claim": "The AIAgent integration intentionally skips durable lease admission when persistence is disabled, the session row is absent, or the database does not concretely implement the lease protocol; this preserves fresh-session in-memory seeds and avoids arbitrary MagicMock attributes being treated as the protocol.",
+            "source": "run_agent.py:8084-8108"
+          },
+          {
+            "id": "E12",
+            "kind": "test",
+            "claim": "State-level tests verify that separate SessionDB handles wait for one another, compression descendants share a root lease, delegate children do not share a parent lease, stale owners cannot refresh or release, valid owners can refresh and release, and expired leases are reclaimed.",
+            "source": "tests/state/test_session_turn_lease.py:10-128"
+          },
+          {
+            "id": "E13",
+            "kind": "test",
+            "claim": "AIAgent integration tests verify acquire→resolve→reload→release ordering and verify that an absent-row fresh session keeps the exact caller-provided seed without invoking the durable lease protocol.",
+            "source": "tests/run_agent/test_cross_process_turn_lease.py:1-102"
+          },
+          {
+            "id": "E14",
+            "kind": "call_site",
+            "claim": "The TUI creates an agent before the first run and explicitly defers creation of the SessionDB row to the first run_conversation call, supporting the implementation's absent-row/fresh-seed branch.",
+            "source": "tui_gateway/server.py:2265-2273"
+          },
+          {
+            "id": "E15",
+            "kind": "implementation",
+            "claim": "The commit adds a compression persistence-error cause, maps typed CompressionSessionBusyError and compression-lease phrases to that cause, and gives it a distinct user-facing completion explanation instead of treating it as ordinary SQLite lock contention.",
+            "source": "hermes_state.py:1491-1534; run_agent.py:3723-3758"
+          },
+          {
+            "id": "E16",
+            "kind": "test",
+            "claim": "The turn-completion tests require compression errors to classify as compression for typed and RPC-wrapped forms, require compression-specific wording, and retain separate locked, disk, and unknown categories.",
+            "source": "tests/run_agent/test_turn_completion_explainer.py:112-248"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "establish_durable_turn_lease_protocol",
+            "description": "Add a durable per-conversation admission protocol in the shared state database so independent runtimes can coordinate ownership of a turn.",
+            "evidence_ids": [
+              "E5",
+              "E6",
+              "E7",
+              "E12"
+            ],
+            "semantic_action": {
+              "intent": "Serialize turns that target the same persisted conversation across process boundaries.",
+              "module_role": "Cross-process persistence coordination",
+              "operation": "establish",
+              "pre_state": "Turn ownership exists only in process-local registries, so independent runtimes can enter the same persisted conversation without a shared admission record.",
+              "post_state": "A unique conversation-scoped lease record stores an explicit holder and bounded lifetime; acquisition is atomic, expired or dead holders can be reclaimed, waiters poll without retaining a database write lock, and holder-qualified refresh/release operations fence stale owners.",
+              "validation": "The state tests show contention across separate database handles, blocking until release or expiry, successful stale-holder reclamation, and rejection of non-owner refresh/release operations.",
+              "parameters": [
+                "shared state database",
+                "conversation identity",
+                "holder token",
+                "lease TTL",
+                "wait budget",
+                "poll interval"
+              ],
+              "evidence_ids": [
+                "E5",
+                "E6",
+                "E7",
+                "E12"
+              ]
+            }
+          },
+          {
+            "name": "scope_compression_continuations_to_root_lease",
+            "description": "Use the compression-lineage root as the lease domain while keeping delegate and explicit branch sessions independent.",
+            "evidence_ids": [
+              "E8",
+              "E12"
+            ],
+            "semantic_action": {
+              "intent": "Prevent a compression-created child session from bypassing the lease held for the logical conversation while avoiding serialization of unrelated delegated work.",
+              "module_role": "Conversation lineage identity resolution",
+              "operation": "map",
+              "pre_state": "Compression rotates a session into a child linked by parent_session_id, while delegate and branch sessions can also have a parent_session_id but must remain independent.",
+              "post_state": "A compression continuation maps to the stable lineage root for lease acquisition, refresh, and release; explicit delegate or branch children retain their own coordination domain.",
+              "validation": "The lineage tests reject a child acquisition while the root is held and allow a delegate child to acquire while its parent is held.",
+              "parameters": [
+                "session id",
+                "parent session id",
+                "compression end reason",
+                "delegate marker",
+                "branch marker"
+              ],
+              "evidence_ids": [
+                "E8",
+                "E12"
+              ]
+            }
+          },
+          {
+            "name": "admit_turn_and_reload_durable_tip",
+            "description": "Guard an existing persistent turn with the durable lease and replace its caller snapshot with the latest committed conversation after admission.",
+            "evidence_ids": [
+              "E4",
+              "E9",
+              "E11",
+              "E13"
+            ],
+            "semantic_action": {
+              "intent": "Prevent concurrent requests from running against the same stale transcript snapshot and losing or interleaving their user/assistant exchanges.",
+              "module_role": "Persistent turn admission and state reconciliation",
+              "operation": "guard",
+              "pre_state": "An existing durable session can be invoked with caller-provided history that was loaded before another process's turn completed, and the supplied history may no longer represent the current compression tip.",
+              "post_state": "The turn does not enter the model/run/flush region until it owns the durable lease; after admission it resolves the current compression tip and reloads durable history, while absent-row fresh sessions preserve their caller-provided seed.",
+              "validation": "The integration test observes acquisition before tip resolution and reload, passes the reloaded history and updated session id into the conversation loop, releases after completion, and confirms that the fresh absent-row path performs no durable admission and preserves seed object identity.",
+              "parameters": [
+                "agent session id",
+                "persistent database",
+                "caller history snapshot",
+                "resolved compression tip",
+                "alternation-repair mode",
+                "persistence-disabled flag"
+              ],
+              "evidence_ids": [
+                "E4",
+                "E9",
+                "E11",
+                "E13"
+              ]
+            }
+          },
+          {
+            "name": "maintain_and_release_turn_ownership",
+            "description": "Keep the lease alive through long model/tool/compression work and release it safely on every exit path.",
+            "evidence_ids": [
+              "E7",
+              "E10",
+              "E12",
+              "E13"
+            ],
+            "semantic_action": {
+              "intent": "Prevent a long-running turn from expiring into a concurrent successor and prevent late cleanup from releasing a successor's lease.",
+              "module_role": "Turn lease lifecycle ownership",
+              "operation": "refresh",
+              "pre_state": "A fixed-TTL lease can expire before a long turn finishes, and a late refresher or unwind may run after another holder has acquired the conversation lease.",
+              "post_state": "A background refresher extends only the current holder's lease while the turn is active; finalization stops and joins the refresher and deletes only the matching holder row, leaving a successor lease intact.",
+              "validation": "State tests reject stale refresh/release and allow the next holder only after valid release or expiry; the integration test verifies release after the delegated turn and the implementation places cleanup in the outer finally path.",
+              "parameters": [
+                "holder token",
+                "conversation/session id",
+                "lease TTL",
+                "refresh cadence",
+                "turn exit path"
+              ],
+              "evidence_ids": [
+                "E7",
+                "E10",
+                "E12",
+                "E13"
+              ]
+            }
+          },
+          {
+            "name": "classify_compression_persistence_failures",
+            "description": "Keep active compression-lease refusal distinct from ordinary SQLite write-lock contention so recovery guidance names the actual transient cause. This is an implementation-bearing ancillary change co-committed with the turn-serialization fix.",
+            "evidence_ids": [
+              "E15",
+              "E16"
+            ],
+            "semantic_action": {
+              "intent": "Provide cause-accurate user guidance when persistence is refused because another process is compressing the session.",
+              "module_role": "Persistence failure classification and turn-completion explanation",
+              "operation": "classify",
+              "pre_state": "Typed compression lease exceptions and their serialized error phrases are classified as generic locked contention, causing ordinary storage-busy guidance.",
+              "post_state": "Compression lease failures map to a dedicated compression cause, the cause enumeration includes it, and turn completion explains that compression is active while preserving locked, disk, and unknown behavior.",
+              "validation": "Classifier tests cover typed and RPC-wrapped compression failures; explanation tests require compression wording and reject generic database/disk wording.",
+              "parameters": [
+                "persistence exception or serialized error text",
+                "cause bucket",
+                "turn exit reason",
+                "user-facing recovery explanation"
+              ],
+              "evidence_ids": [
+                "E15",
+                "E16"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "serialize_persistent_conversation_turn_across_processes",
+            "description": "Coordinate a persisted conversation across independent runtimes by establishing a durable lease domain, optionally collapsing compression descendants onto the lineage root, admitting only after lease acquisition and durable reload, and maintaining ownership until turn completion and flush.",
+            "atomic_names": [
+              "establish_durable_turn_lease_protocol",
+              "scope_compression_continuations_to_root_lease",
+              "admit_turn_and_reload_durable_tip",
+              "maintain_and_release_turn_ownership"
+            ],
+            "evidence_ids": [
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E10",
+              "E11",
+              "E12",
+              "E13",
+              "E14"
+            ],
+            "workflow_graph": {
+              "goal": "Ensure each persistent conversation turn observes and commits a coherent serial order across independent processes.",
+              "entry_state": "Two or more requests can target an existing persisted session from different processes, each with a potentially stale history snapshot and no shared process-local lock.",
+              "exit_state": "One admitted turn owns the durable conversation lease through history load, model/tool/compression work, and flush; a later turn acquires after release or valid expiry, reloads the current tip, and stale cleanup cannot release a successor lease.",
+              "steps": [
+                {
+                  "action_name": "establish_durable_turn_lease_protocol",
+                  "role": "establish-contract",
+                  "optional": false
+                },
+                {
+                  "action_name": "scope_compression_continuations_to_root_lease",
+                  "role": "implement",
+                  "optional": true
+                },
+                {
+                  "action_name": "admit_turn_and_reload_durable_tip",
+                  "role": "reconcile",
+                  "optional": false
+                },
+                {
+                  "action_name": "maintain_and_release_turn_ownership",
+                  "role": "reconcile",
+                  "optional": false
+                }
+              ],
+              "edges": [
+                {
+                  "from": "establish_durable_turn_lease_protocol",
+                  "to": "scope_compression_continuations_to_root_lease",
+                  "type": "enables"
+                },
+                {
+                  "from": "establish_durable_turn_lease_protocol",
+                  "to": "admit_turn_and_reload_durable_tip",
+                  "type": "requires"
+                },
+                {
+                  "from": "scope_compression_continuations_to_root_lease",
+                  "to": "admit_turn_and_reload_durable_tip",
+                  "type": "enables"
+                },
+                {
+                  "from": "admit_turn_and_reload_durable_tip",
+                  "to": "maintain_and_release_turn_ownership",
+                  "type": "requires"
+                },
+                {
+                  "from": "establish_durable_turn_lease_protocol",
+                  "to": "maintain_and_release_turn_ownership",
+                  "type": "enables"
+                }
+              ],
+              "unresolved_or_deferred": [
+                "The changed state tests use separate SessionDB handles in one process/thread to model shared-database contention; no changed test launches two actual operating-system processes.",
+                "The refresher logs and stops if a holder-qualified refresh returns false, but the current turn is not explicitly aborted; behavior after a live lease is lost is not covered by the changed tests.",
+                "Absent-row fresh sessions intentionally bypass the durable lease to preserve in-memory seed history; the safety assumption is that such session ids are process-unique and are not already shared by another durable turn."
+              ]
+            }
+          },
+          {
+            "name": "co_committed_compression_persistence_explanation",
+            "description": "When a persistence failure is specifically caused by compression, classify it separately and expose compression-specific recovery guidance. The implementation and tests support this workflow, but the available issue evidence does not establish that this hunk was required for issue 125124.",
+            "atomic_names": [
+              "classify_compression_persistence_failures"
+            ],
+            "evidence_ids": [
+              "E15",
+              "E16"
+            ],
+            "workflow_graph": {
+              "goal": "Distinguish compression-lease refusal from database lock or disk failure in turn-completion guidance.",
+              "entry_state": "A persistence failure occurs while a compression lease is active, but the error is classified as generic lock contention.",
+              "exit_state": "The failure is classified as compression and the user receives compression-specific retry guidance without disk/database misdiagnosis.",
+              "steps": [
+                {
+                  "action_name": "classify_compression_persistence_failures",
+                  "role": "validate",
+                  "optional": false
+                }
+              ],
+              "edges": [],
+              "unresolved_or_deferred": [
+                "The issue bundle has no body, comments, timeline, or linked pull request, so the direct attribution of this ancillary change to issue 125124 cannot be established."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "The issue bundle contains no issue body, comments, timeline, author discussion, or linked pull request; the title is the only supplied problem statement.",
+          "No changed-file test demonstrates two separate operating-system processes. The durable behavior is tested with separate SessionDB handles and the agent integration seam.",
+          "Targeted pytest execution could not be completed because the checkout environment did not expose a runnable repository Python/pytest interpreter; git diff --check passed.",
+          "The refresher logs lease loss and exits its refresh loop rather than aborting the active turn, so the exact invariant after an unexpected live-holder refresh failure remains unresolved.",
+          "Fresh absent-row sessions intentionally bypass the lease; the implementation assumes those new session identifiers are not concurrently shared before durable row creation.",
+          "The compression-specific classifier/explainer hunk is implementation-bearing and directly tested, but its linkage to issue 125124 cannot be proven from the available GitHub bundle.",
+          "No cross-repository Pattern is proposed because the extraction contract forbids inducing a Pattern from a single episode."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "establish_durable_turn_lease_protocol",
+          "description": "Add a durable per-conversation admission protocol in the shared state database so independent runtimes can coordinate ownership of a turn.",
+          "evidence_ids": [
+            "E5",
+            "E6",
+            "E7",
+            "E12"
+          ],
+          "semantic_action": {
+            "intent": "Serialize turns that target the same persisted conversation across process boundaries.",
+            "module_role": "Cross-process persistence coordination",
+            "operation": "establish",
+            "pre_state": "Turn ownership exists only in process-local registries, so independent runtimes can enter the same persisted conversation without a shared admission record.",
+            "post_state": "A unique conversation-scoped lease record stores an explicit holder and bounded lifetime; acquisition is atomic, expired or dead holders can be reclaimed, waiters poll without retaining a database write lock, and holder-qualified refresh/release operations fence stale owners.",
+            "validation": "The state tests show contention across separate database handles, blocking until release or expiry, successful stale-holder reclamation, and rejection of non-owner refresh/release operations.",
+            "parameters": [
+              "shared state database",
+              "conversation identity",
+              "holder token",
+              "lease TTL",
+              "wait budget",
+              "poll interval"
+            ],
+            "evidence_ids": [
+              "E5",
+              "E6",
+              "E7",
+              "E12"
+            ]
+          }
+        },
+        {
+          "name": "scope_compression_continuations_to_root_lease",
+          "description": "Use the compression-lineage root as the lease domain while keeping delegate and explicit branch sessions independent.",
+          "evidence_ids": [
+            "E8",
+            "E12"
+          ],
+          "semantic_action": {
+            "intent": "Prevent a compression-created child session from bypassing the lease held for the logical conversation while avoiding serialization of unrelated delegated work.",
+            "module_role": "Conversation lineage identity resolution",
+            "operation": "map",
+            "pre_state": "Compression rotates a session into a child linked by parent_session_id, while delegate and branch sessions can also have a parent_session_id but must remain independent.",
+            "post_state": "A compression continuation maps to the stable lineage root for lease acquisition, refresh, and release; explicit delegate or branch children retain their own coordination domain.",
+            "validation": "The lineage tests reject a child acquisition while the root is held and allow a delegate child to acquire while its parent is held.",
+            "parameters": [
+              "session id",
+              "parent session id",
+              "compression end reason",
+              "delegate marker",
+              "branch marker"
+            ],
+            "evidence_ids": [
+              "E8",
+              "E12"
+            ]
+          }
+        },
+        {
+          "name": "admit_turn_and_reload_durable_tip",
+          "description": "Guard an existing persistent turn with the durable lease and replace its caller snapshot with the latest committed conversation after admission.",
+          "evidence_ids": [
+            "E4",
+            "E9",
+            "E11",
+            "E13"
+          ],
+          "semantic_action": {
+            "intent": "Prevent concurrent requests from running against the same stale transcript snapshot and losing or interleaving their user/assistant exchanges.",
+            "module_role": "Persistent turn admission and state reconciliation",
+            "operation": "guard",
+            "pre_state": "An existing durable session can be invoked with caller-provided history that was loaded before another process's turn completed, and the supplied history may no longer represent the current compression tip.",
+            "post_state": "The turn does not enter the model/run/flush region until it owns the durable lease; after admission it resolves the current compression tip and reloads durable history, while absent-row fresh sessions preserve their caller-provided seed.",
+            "validation": "The integration test observes acquisition before tip resolution and reload, passes the reloaded history and updated session id into the conversation loop, releases after completion, and confirms that the fresh absent-row path performs no durable admission and preserves seed object identity.",
+            "parameters": [
+              "agent session id",
+              "persistent database",
+              "caller history snapshot",
+              "resolved compression tip",
+              "alternation-repair mode",
+              "persistence-disabled flag"
+            ],
+            "evidence_ids": [
+              "E4",
+              "E9",
+              "E11",
+              "E13"
+            ]
+          }
+        },
+        {
+          "name": "maintain_and_release_turn_ownership",
+          "description": "Keep the lease alive through long model/tool/compression work and release it safely on every exit path.",
+          "evidence_ids": [
+            "E7",
+            "E10",
+            "E12",
+            "E13"
+          ],
+          "semantic_action": {
+            "intent": "Prevent a long-running turn from expiring into a concurrent successor and prevent late cleanup from releasing a successor's lease.",
+            "module_role": "Turn lease lifecycle ownership",
+            "operation": "refresh",
+            "pre_state": "A fixed-TTL lease can expire before a long turn finishes, and a late refresher or unwind may run after another holder has acquired the conversation lease.",
+            "post_state": "A background refresher extends only the current holder's lease while the turn is active; finalization stops and joins the refresher and deletes only the matching holder row, leaving a successor lease intact.",
+            "validation": "State tests reject stale refresh/release and allow the next holder only after valid release or expiry; the integration test verifies release after the delegated turn and the implementation places cleanup in the outer finally path.",
+            "parameters": [
+              "holder token",
+              "conversation/session id",
+              "lease TTL",
+              "refresh cadence",
+              "turn exit path"
+            ],
+            "evidence_ids": [
+              "E7",
+              "E10",
+              "E12",
+              "E13"
+            ]
+          }
+        },
+        {
+          "name": "classify_compression_persistence_failures",
+          "description": "Keep active compression-lease refusal distinct from ordinary SQLite write-lock contention so recovery guidance names the actual transient cause. This is an implementation-bearing ancillary change co-committed with the turn-serialization fix.",
+          "evidence_ids": [
+            "E15",
+            "E16"
+          ],
+          "semantic_action": {
+            "intent": "Provide cause-accurate user guidance when persistence is refused because another process is compressing the session.",
+            "module_role": "Persistence failure classification and turn-completion explanation",
+            "operation": "classify",
+            "pre_state": "Typed compression lease exceptions and their serialized error phrases are classified as generic locked contention, causing ordinary storage-busy guidance.",
+            "post_state": "Compression lease failures map to a dedicated compression cause, the cause enumeration includes it, and turn completion explains that compression is active while preserving locked, disk, and unknown behavior.",
+            "validation": "Classifier tests cover typed and RPC-wrapped compression failures; explanation tests require compression wording and reject generic database/disk wording.",
+            "parameters": [
+              "persistence exception or serialized error text",
+              "cause bucket",
+              "turn exit reason",
+              "user-facing recovery explanation"
+            ],
+            "evidence_ids": [
+              "E15",
+              "E16"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "serialize_persistent_conversation_turn_across_processes",
+          "description": "Coordinate a persisted conversation across independent runtimes by establishing a durable lease domain, optionally collapsing compression descendants onto the lineage root, admitting only after lease acquisition and durable reload, and maintaining ownership until turn completion and flush.",
+          "atomic_names": [
+            "establish_durable_turn_lease_protocol",
+            "scope_compression_continuations_to_root_lease",
+            "admit_turn_and_reload_durable_tip",
+            "maintain_and_release_turn_ownership"
+          ],
+          "evidence_ids": [
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10",
+            "E11",
+            "E12",
+            "E13",
+            "E14"
+          ],
+          "workflow_graph": {
+            "goal": "Ensure each persistent conversation turn observes and commits a coherent serial order across independent processes.",
+            "entry_state": "Two or more requests can target an existing persisted session from different processes, each with a potentially stale history snapshot and no shared process-local lock.",
+            "exit_state": "One admitted turn owns the durable conversation lease through history load, model/tool/compression work, and flush; a later turn acquires after release or valid expiry, reloads the current tip, and stale cleanup cannot release a successor lease.",
+            "steps": [
+              {
+                "action_name": "establish_durable_turn_lease_protocol",
+                "role": "establish-contract",
+                "optional": false
+              },
+              {
+                "action_name": "scope_compression_continuations_to_root_lease",
+                "role": "implement",
+                "optional": true
+              },
+              {
+                "action_name": "admit_turn_and_reload_durable_tip",
+                "role": "reconcile",
+                "optional": false
+              },
+              {
+                "action_name": "maintain_and_release_turn_ownership",
+                "role": "reconcile",
+                "optional": false
+              }
+            ],
+            "edges": [
+              {
+                "from": "establish_durable_turn_lease_protocol",
+                "to": "scope_compression_continuations_to_root_lease",
+                "type": "enables"
+              },
+              {
+                "from": "establish_durable_turn_lease_protocol",
+                "to": "admit_turn_and_reload_durable_tip",
+                "type": "requires"
+              },
+              {
+                "from": "scope_compression_continuations_to_root_lease",
+                "to": "admit_turn_and_reload_durable_tip",
+                "type": "enables"
+              },
+              {
+                "from": "admit_turn_and_reload_durable_tip",
+                "to": "maintain_and_release_turn_ownership",
+                "type": "requires"
+              },
+              {
+                "from": "establish_durable_turn_lease_protocol",
+                "to": "maintain_and_release_turn_ownership",
+                "type": "enables"
+              }
+            ],
+            "unresolved_or_deferred": [
+              "The changed state tests use separate SessionDB handles in one process/thread to model shared-database contention; no changed test launches two actual operating-system processes.",
+              "The refresher logs and stops if a holder-qualified refresh returns false, but the current turn is not explicitly aborted; behavior after a live lease is lost is not covered by the changed tests.",
+              "Absent-row fresh sessions intentionally bypass the durable lease to preserve in-memory seed history; the safety assumption is that such session ids are process-unique and are not already shared by another durable turn."
+            ]
+          }
+        },
+        {
+          "name": "co_committed_compression_persistence_explanation",
+          "description": "When a persistence failure is specifically caused by compression, classify it separately and expose compression-specific recovery guidance. The implementation and tests support this workflow, but the available issue evidence does not establish that this hunk was required for issue 125124.",
+          "atomic_names": [
+            "classify_compression_persistence_failures"
+          ],
+          "evidence_ids": [
+            "E15",
+            "E16"
+          ],
+          "workflow_graph": {
+            "goal": "Distinguish compression-lease refusal from database lock or disk failure in turn-completion guidance.",
+            "entry_state": "A persistence failure occurs while a compression lease is active, but the error is classified as generic lock contention.",
+            "exit_state": "The failure is classified as compression and the user receives compression-specific retry guidance without disk/database misdiagnosis.",
+            "steps": [
+              {
+                "action_name": "classify_compression_persistence_failures",
+                "role": "validate",
+                "optional": false
+              }
+            ],
+            "edges": [],
+            "unresolved_or_deferred": [
+              "The issue bundle has no body, comments, timeline, or linked pull request, so the direct attribution of this ancillary change to issue 125124 cannot be established."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The issue bundle contains no issue body, comments, timeline, author discussion, or linked pull request; the title is the only supplied problem statement.",
+        "No changed-file test demonstrates two separate operating-system processes. The durable behavior is tested with separate SessionDB handles and the agent integration seam.",
+        "Targeted pytest execution could not be completed because the checkout environment did not expose a runnable repository Python/pytest interpreter; git diff --check passed.",
+        "The refresher logs lease loss and exits its refresh loop rather than aborting the active turn, so the exact invariant after an unexpected live-holder refresh failure remains unresolved.",
+        "Fresh absent-row sessions intentionally bypass the lease; the implementation assumes those new session identifiers are not concurrently shared before durable row creation.",
+        "The compression-specific classifier/explainer hunk is implementation-bearing and directly tested, but its linkage to issue 125124 cannot be proven from the available GitHub bundle.",
+        "No cross-repository Pattern is proposed because the extraction contract forbids inducing a Pattern from a single episode."
+      ]
+    },
+    "call_sites": [
+      "The pre-existing gateway turn lease is process-local and its documentation explicitly states that a CLI process sharing a session is outside the in-process lock and needs a database-level lease; the same documentation describes the stale-history interleaving failure, including completion-order persistence and a permanent user,user alternation wedge.",
+      "The gateway and TUI pass independently held conversation-history snapshots into AIAgent.run_conversation, making the agent wrapper the common boundary where durable admission and post-admission reload can be applied across surfaces.",
+      "The TUI creates an agent before the first run and explicitly defers creation of the SessionDB row to the first run_conversation call, supporting the implementation's absent-row/fresh-seed branch."
+    ],
+    "tests": [
+      "State-level tests verify that separate SessionDB handles wait for one another, compression descendants share a root lease, delegate children do not share a parent lease, stale owners cannot refresh or release, valid owners can refresh and release, and expired leases are reclaimed.",
+      "AIAgent integration tests verify acquire→resolve→reload→release ordering and verify that an absent-row fresh session keeps the exact caller-provided seed without invoking the durable lease protocol.",
+      "The turn-completion tests require compression errors to classify as compression for typed and RPC-wrapped forms, require compression-specific wording, and retain separate locked, disk, and unknown categories."
+    ]
+  }
+]

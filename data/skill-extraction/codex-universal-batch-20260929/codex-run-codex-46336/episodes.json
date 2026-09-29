@@ -1,0 +1,195 @@
+[
+  {
+    "episode_id": "openai/codex#46336@9ec33e19260907aad207185a624bd8b936d5afa8",
+    "title": "Amazon Bedrock GPT rejects reasoning.summary after v0.155.0 — pinned ref does not establish the issue fix",
+    "before": "At parent commit 78932f4493995cb1236bcad411c926a9f5c179b2, embedded TUI thread-start parameters used the generic configuration-overrides mapping for both embedded and remote modes. An explicitly configured reasoning-summary value could be forwarded, but there was no embedded-thread-specific default that forced a summary value. Durable context snapshots and local/remote compaction paths serialized the summary through TurnContext::to_turn_context_item, whose summary field was fixed to an automatic configuration rather than the request-scoped setting captured for the active step. The TUI also did not have the pinned commit's separate active-reasoning replay and status-row state.",
+    "after": "At pinned commit 9ec33e19260907aad207185a624bd8b936d5afa8, embedded TUI thread starts use a new override builder that defaults model_reasoning_summary to detailed, derives concurrent_reasoning_summaries from the explicit feature flag, and disables concurrent delivery when summary mode is none. StepContext now copies the request-scoped reasoning summary into durable TurnContextItem values, and context recording plus local, remote, and remote-v2 compaction use that request-scoped snapshot. The commit also adds active reasoning replay/restoration, status-row summary extraction, transcript-only completed reasoning, and grapheme-aware shimmer rendering. This after-state is a generic embedded TUI/request-context change; the checkout does not show a Bedrock-specific compatibility repair.",
+    "diff": "The pinned commit changes 45 files, concentrated in codex-rs/core and codex-rs/tui. Its request-facing implementation adds new_thread_reasoning_overrides and routes only embedded thread starts through it, causing the generic Responses request path to receive an explicit reasoning summary, defaulting to detailed. Its state-persistence implementation adds StepContext::to_turn_context_item and replaces direct TurnContext serialization at context-update and compaction boundaries so a live settings update cannot rewrite the summary captured for an already-running request. Its TUI implementation introduces active-reasoning replay state, status tracking, transcript/display separation, and animated summary rendering, with focused tests and snapshots. No codex-rs/model-provider or Amazon Bedrock adapter file is changed, and the new outbound-request test uses a generic mock Responses provider rather than Bedrock. Therefore the ref is implementation-bearing, but it does not establish a usable resolution episode for issue 46336, whose title describes a Bedrock rejection of reasoning.summary.",
+    "repository": "openai/codex",
+    "revision": "github-issue-46336",
+    "evidence_ids": [
+      "e1",
+      "e2",
+      "e3",
+      "e4",
+      "e5",
+      "e6",
+      "e7",
+      "e8",
+      "e9",
+      "e10",
+      "e11",
+      "e12",
+      "e13",
+      "e14"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "openai/codex",
+      "issue": 46336,
+      "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/codex-agent",
+      "manifest_metadata": {
+        "category": "provider-interface-adaptation",
+        "role": "train_candidate",
+        "case_id": "openai/codex#46336:provider-interface-adaptation:train_candidate"
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "openai/codex",
+        "issue_number": 46336,
+        "issue": {
+          "number": 46336,
+          "title": "Amazon Bedrock GPT rejects reasoning.summary after v0.155.0",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [],
+        "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/codex-agent",
+        "pinned_ref": "9ec33e19260907aad207185a624bd8b936d5afa8",
+        "resolved_commit": "9ec33e19260907aad207185a624bd8b936d5afa8",
+        "parent_commit": "78932f4493995cb1236bcad411c926a9f5c179b2",
+        "commit_show_stat": "commit 9ec33e19260907aad207185a624bd8b936d5afa8\nAuthor:     Felipe Coury <felipe.coury@openai.com>\nAuthorDate: Tue Sep 8 21:19:22 2026 +0000\nCommit:     copyberry <copyberry@app.openai.com>\nCommitDate: Tue Sep 8 21:41:02 2026 +0000\n\n    Show streaming reasoning summaries in the TUI status row (#43921)\n    \n    ## What changed\n    \n    - Update the status heading from the latest usable reasoning line and retain it through tool activity and empty reasoning items. Keep completed reasoning in the expanded transcript only.\n    - Restore active reasoning after resume, thread switches, and session refreshes, including when earlier events have left the replay buffer.\n    - Default new embedded TUI threads to `model_reasoning_summary = \"detailed\"`, honoring explicit summary settings. Keep `concurrent_reasoning_summaries` opt-in and disable it when summaries are `none`.\n    - Persist the request's captured reasoning summary setting in context updates and local and remote compaction checkpoints.\n    - Animate status text with a smooth, grapheme-aware shimmer that respects terminal colors and reduced motion.\n    \n    ## Testing\n    \n    Add regression coverage for reasoning status updates, transcript visibility, resume and buffered replay, outbound summary configuration, and summary settings across all three compaction modes. Add shimmer snapshots and checks for smooth brightness changes and Unicode grapheme preservation.\n    \n    GitOrigin-RevId: 725c7de20f23166d7a3da6daeca617add5cbc600\n\n codex-rs/core/src/compact.rs                       |   4 +-\n codex-rs/core/src/compact_remote.rs                |   4 +-\n codex-rs/core/src/compact_remote_v2.rs             |   4 +-\n codex-rs/core/src/session/mod.rs                   |   4 +-\n codex-rs/core/src/session/step_activation_tests.rs |  21 ++\n codex-rs/core/src/session/step_context.rs          |  12 +\n codex-rs/core/src/session/turn_context.rs          |   2 +-\n codex-rs/core/tests/suite/step_settings.rs         |   3 +\n .../core/tests/suite/step_settings_compaction.rs   | 129 +++++++++\n codex-rs/tui/src/app.rs                            |   1 +\n codex-rs/tui/src/app/reasoning_replay.rs           |  67 +++++\n codex-rs/tui/src/app/tests.rs                      |  19 ++\n .../tui/src/app/tests/advanced_reasoning_tests.rs  |   2 +\n codex-rs/tui/src/app/tests/buffered_replay.rs      | 150 ++++++++++\n codex-rs/tui/src/app/tests/mcp_startup.rs          |   1 +\n codex-rs/tui/src/app/tests/patch_approval_tests.rs |   1 +\n codex-rs/tui/src/app/tests/realtime_requests.rs    |   5 +\n .../tui/src/app/tests/reasoning_resume_tests.rs    | 180 ++++++++++++\n codex-rs/tui/src/app/tests/startup.rs              |   1 +\n codex-rs/tui/src/app/thread_events.rs              |  65 ++++-\n codex-rs/tui/src/app/thread_routing.rs             |   4 +\n codex-rs/tui/src/app_server_session.rs             |  46 ++-\n .../app_server_session/reasoning_defaults_tests.rs | 174 +++++++++++\n codex-rs/tui/src/chatwidget/protocol.rs            |  58 +++-\n .../chatwidget/realtime_tests/speech_recovery.rs   |  17 +-\n codex-rs/tui/src/chatwidget/replay.rs              | 137 ++++++++-\n ...atwidget__tests__reasoning_activity_row_40.snap |   5 +\n ...atwidget__tests__reasoning_activity_row_80.snap |   5 +\n ..._delta_restores_recreated_status_indicator.snap |   3 +-\n codex-rs/tui/src/chatwidget/status_state.rs        |   9 +\n codex-rs/tui/src/chatwidget/streaming.rs           |  72 ++++-\n codex-rs/tui/src/chatwidget/tests.rs               |   2 +\n codex-rs/tui/src/chatwidget/tests/helpers.rs       |  26 ++\n .../tui/src/chatwidget/tests/history_replay.rs     |   4 +\n .../src/chatwidget/tests/reasoning_status_tests.rs | 317 +++++++++++++++++++++\n ...cks_items_and_restores_after_tool_activity.snap |  14 +\n .../tui/src/chatwidget/tests/status_and_layout.rs  |  22 +-\n codex-rs/tui/src/chatwidget/tool_requests.rs       |   4 +-\n codex-rs/tui/src/chatwidget/turn_runtime.rs        |  14 +\n codex-rs/tui/src/history_cell/messages.rs          |  14 +-\n codex-rs/tui/src/history_cell/tests.rs             |  23 +-\n ..._long_labels_sweep_smoothly_in_both_themes.snap |  35 +++\n codex-rs/tui/src/status_indicator_widget.rs        |  34 ++-\n codex-rs/tui/src/summary_shimmer.rs                |  56 ++++\n codex-rs/tui/src/summary_shimmer_tests.rs          | 114 ++++++++\n 45 files changed, 1796 insertions(+), 88 deletions(-)\n",
+        "changed_files_name_status": "M\tcodex-rs/core/src/compact.rs\nM\tcodex-rs/core/src/compact_remote.rs\nM\tcodex-rs/core/src/compact_remote_v2.rs\nM\tcodex-rs/core/src/session/mod.rs\nM\tcodex-rs/core/src/session/step_activation_tests.rs\nM\tcodex-rs/core/src/session/step_context.rs\nM\tcodex-rs/core/src/session/turn_context.rs\nM\tcodex-rs/core/tests/suite/step_settings.rs\nA\tcodex-rs/core/tests/suite/step_settings_compaction.rs\nM\tcodex-rs/tui/src/app.rs\nA\tcodex-rs/tui/src/app/reasoning_replay.rs\nM\tcodex-rs/tui/src/app/tests.rs\nM\tcodex-rs/tui/src/app/tests/advanced_reasoning_tests.rs\nM\tcodex-rs/tui/src/app/tests/buffered_replay.rs\nM\tcodex-rs/tui/src/app/tests/mcp_startup.rs\nM\tcodex-rs/tui/src/app/tests/patch_approval_tests.rs\nM\tcodex-rs/tui/src/app/tests/realtime_requests.rs\nA\tcodex-rs/tui/src/app/tests/reasoning_resume_tests.rs\nM\tcodex-rs/tui/src/app/tests/startup.rs\nM\tcodex-rs/tui/src/app/thread_events.rs\nM\tcodex-rs/tui/src/app/thread_routing.rs\nM\tcodex-rs/tui/src/app_server_session.rs\nA\tcodex-rs/tui/src/app_server_session/reasoning_defaults_tests.rs\nM\tcodex-rs/tui/src/chatwidget/protocol.rs\nM\tcodex-rs/tui/src/chatwidget/realtime_tests/speech_recovery.rs\nM\tcodex-rs/tui/src/chatwidget/replay.rs\nA\tcodex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__reasoning_activity_row_40.snap\nA\tcodex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__reasoning_activity_row_80.snap\nM\tcodex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__reasoning_delta_restores_recreated_status_indicator.snap\nM\tcodex-rs/tui/src/chatwidget/status_state.rs\nM\tcodex-rs/tui/src/chatwidget/streaming.rs\nM\tcodex-rs/tui/src/chatwidget/tests.rs\nM\tcodex-rs/tui/src/chatwidget/tests/helpers.rs\nM\tcodex-rs/tui/src/chatwidget/tests/history_replay.rs\nA\tcodex-rs/tui/src/chatwidget/tests/reasoning_status_tests.rs\nA\tcodex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__reasoning_status_tests__reasoning_status_tracks_items_and_restores_after_tool_activity.snap\nM\tcodex-rs/tui/src/chatwidget/tests/status_and_layout.rs\nM\tcodex-rs/tui/src/chatwidget/tool_requests.rs\nM\tcodex-rs/tui/src/chatwidget/turn_runtime.rs\nM\tcodex-rs/tui/src/history_cell/messages.rs\nM\tcodex-rs/tui/src/history_cell/tests.rs\nA\tcodex-rs/tui/src/snapshots/codex_tui__status_indicator_widget__summary_shimmer__tests__short_and_long_labels_sweep_smoothly_in_both_themes.snap\nM\tcodex-rs/tui/src/status_indicator_widget.rs\nA\tcodex-rs/tui/src/summary_shimmer.rs\nA\tcodex-rs/tui/src/summary_shimmer_tests.rs\n",
+        "linked_issue_numbers": [
+          46336
+        ],
+        "manifest_metadata": {
+          "category": "provider-interface-adaptation"
+        },
+        "fetched_at": "2026-09-28T21:23:10.330404+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "openai/codex#46336@9ec33e19260907aad207185a624bd8b936d5afa8",
+          "title": "Amazon Bedrock GPT rejects reasoning.summary after v0.155.0 — pinned ref does not establish the issue fix",
+          "before": "At parent commit 78932f4493995cb1236bcad411c926a9f5c179b2, embedded TUI thread-start parameters used the generic configuration-overrides mapping for both embedded and remote modes. An explicitly configured reasoning-summary value could be forwarded, but there was no embedded-thread-specific default that forced a summary value. Durable context snapshots and local/remote compaction paths serialized the summary through TurnContext::to_turn_context_item, whose summary field was fixed to an automatic configuration rather than the request-scoped setting captured for the active step. The TUI also did not have the pinned commit's separate active-reasoning replay and status-row state.",
+          "after": "At pinned commit 9ec33e19260907aad207185a624bd8b936d5afa8, embedded TUI thread starts use a new override builder that defaults model_reasoning_summary to detailed, derives concurrent_reasoning_summaries from the explicit feature flag, and disables concurrent delivery when summary mode is none. StepContext now copies the request-scoped reasoning summary into durable TurnContextItem values, and context recording plus local, remote, and remote-v2 compaction use that request-scoped snapshot. The commit also adds active reasoning replay/restoration, status-row summary extraction, transcript-only completed reasoning, and grapheme-aware shimmer rendering. This after-state is a generic embedded TUI/request-context change; the checkout does not show a Bedrock-specific compatibility repair.",
+          "diff": "The pinned commit changes 45 files, concentrated in codex-rs/core and codex-rs/tui. Its request-facing implementation adds new_thread_reasoning_overrides and routes only embedded thread starts through it, causing the generic Responses request path to receive an explicit reasoning summary, defaulting to detailed. Its state-persistence implementation adds StepContext::to_turn_context_item and replaces direct TurnContext serialization at context-update and compaction boundaries so a live settings update cannot rewrite the summary captured for an already-running request. Its TUI implementation introduces active-reasoning replay state, status tracking, transcript/display separation, and animated summary rendering, with focused tests and snapshots. No codex-rs/model-provider or Amazon Bedrock adapter file is changed, and the new outbound-request test uses a generic mock Responses provider rather than Bedrock. Therefore the ref is implementation-bearing, but it does not establish a usable resolution episode for issue 46336, whose title describes a Bedrock rejection of reasoning.summary."
+        },
+        "evidence_units": [
+          {
+            "id": "e1",
+            "kind": "commit",
+            "claim": "The pinned ref is commit 9ec33e19260907aad207185a624bd8b936d5afa8, its parent is 78932f4493995cb1236bcad411c926a9f5c179b2, and its subject is 'Show streaming reasoning summaries in the TUI status row (#43921)'.",
+            "source": "Repository checkout: git show --no-ext-diff --stat --oneline 9ec33e19260907aad207185a624bd8b936d5afa8; git rev-parse 9ec33e19260907aad207185a624bd8b936d5afa8^"
+          },
+          {
+            "id": "e2",
+            "kind": "commit",
+            "claim": "The issue bundle identifies issue 46336 as 'Amazon Bedrock GPT rejects reasoning.summary after v0.155.0' and reports no issue body, comments, timeline, or linked pull requests.",
+            "source": "C:\\Users\\W\\AppData\\Local\\Temp\\arex-skill-graph-codex\\universal-batch-20260929\\codex-run-codex-46336\\openai__codex__46336\\issue-bundle.json"
+          },
+          {
+            "id": "e3",
+            "kind": "diff",
+            "claim": "The pinned commit changes 45 files with 1796 insertions and 88 deletions, concentrated in codex-rs/core and codex-rs/tui; the changed-file list contains no codex-rs/model-provider or Amazon Bedrock adapter file.",
+            "source": "Repository checkout: git show --stat and git diff --name-status 78932f4493995cb1236bcad411c926a9f5c179b2 9ec33e19260907aad207185a624bd8b936d5afa8"
+          },
+          {
+            "id": "e4",
+            "kind": "implementation",
+            "claim": "The commit adds new_thread_reasoning_overrides, which starts from generic request overrides, defaults an unset embedded-thread summary to ReasoningSummary::Detailed, forwards model_reasoning_summary, and sets concurrent_reasoning_summaries only when explicitly enabled and summary mode is not none.",
+            "source": "Repository checkout: codex-rs/tui/src/app_server_session.rs, diff between parent 78932f4493995cb1236bcad411c926a9f5c179b2 and pinned ref"
+          },
+          {
+            "id": "e5",
+            "kind": "call_site",
+            "claim": "thread_start_params_from_config selects new_thread_reasoning_overrides for ThreadParamsMode::Embedded and retains config_request_overrides_from_config for ThreadParamsMode::Remote, making the new behavior apply at embedded TUI thread-start request construction.",
+            "source": "Repository checkout: codex-rs/tui/src/app_server_session.rs, diff between parent and pinned ref"
+          },
+          {
+            "id": "e6",
+            "kind": "implementation",
+            "claim": "StepContext::to_turn_context_item clones the normal TurnContextItem and overwrites its summary with the immutable request-scoped settings.reasoning_summary.",
+            "source": "Repository checkout: codex-rs/core/src/session/step_context.rs, added implementation in pinned ref"
+          },
+          {
+            "id": "e7",
+            "kind": "call_site",
+            "claim": "Session context recording and local, remote, and remote-v2 compaction change their reference-context construction from turn_context.to_turn_context_item() to step_context.to_turn_context_item(), preserving the summary captured for the active request at those state boundaries.",
+            "source": "Repository checkout: codex-rs/core/src/session/mod.rs, codex-rs/core/src/compact.rs, codex-rs/core/src/compact_remote.rs, and codex-rs/core/src/compact_remote_v2.rs, diffs between parent and pinned ref"
+          },
+          {
+            "id": "e8",
+            "kind": "test",
+            "claim": "The new embedded_reasoning_defaults_reach_responses test configures a generic mock Responses provider, starts an embedded thread, captures the outbound request, and asserts the reasoning.summary and stream_options values for default, explicit concurrent, and none-summary settings.",
+            "source": "Repository checkout: codex-rs/tui/src/app_server_session/reasoning_defaults_tests.rs in pinned ref"
+          },
+          {
+            "id": "e9",
+            "kind": "test",
+            "claim": "The new_tui_threads_request_summaries_unless_explicitly_disabled test asserts default detailed summaries, explicit none and concise summaries, and suppression of concurrent summaries when summary mode is none.",
+            "source": "Repository checkout: codex-rs/tui/src/app_server_session/reasoning_defaults_tests.rs in pinned ref"
+          },
+          {
+            "id": "e10",
+            "kind": "test",
+            "claim": "The compaction regression test exercises local, remote, and remote-v2 modes, changes the summary setting during a paused turn, and asserts that the request sequence and persisted compaction checkpoint retain the captured summary.",
+            "source": "Repository checkout: codex-rs/core/tests/suite/step_settings_compaction.rs and codex-rs/core/src/session/step_activation_tests.rs in pinned ref"
+          },
+          {
+            "id": "e11",
+            "kind": "implementation",
+            "claim": "The pinned ref adds active reasoning item identity and recovery state, restores unfinished reasoning at buffered replay and resume boundaries, keeps completed reasoning out of live display scrollback, and adds a grapheme-aware summary shimmer renderer.",
+            "source": "Repository checkout: codex-rs/tui/src/app/reasoning_replay.rs, codex-rs/tui/src/app/thread_events.rs, codex-rs/tui/src/chatwidget/replay.rs, codex-rs/tui/src/chatwidget/streaming.rs, codex-rs/tui/src/chatwidget/status_state.rs, codex-rs/tui/src/history_cell/messages.rs, and codex-rs/tui/src/summary_shimmer.rs"
+          },
+          {
+            "id": "e12",
+            "kind": "test",
+            "claim": "The pinned ref adds regression coverage for refreshed and resumed active reasoning, buffered replay, reasoning status continuity, transcript-only rendering, shimmer behavior, and related snapshots.",
+            "source": "Repository checkout: changed test and snapshot files under codex-rs/tui/src/app/tests, codex-rs/tui/src/chatwidget/tests, codex-rs/tui/src/history_cell/tests.rs, and codex-rs/tui/src/snapshots"
+          },
+          {
+            "id": "e13",
+            "kind": "diff",
+            "claim": "The pinned implementation adds a generic reasoning-summary field to embedded Responses requests but contains no provider capability check, Bedrock-specific omission, translation, or fallback for a provider that rejects reasoning.summary.",
+            "source": "Repository checkout: complete parent-to-pinned diff and changed-file list; no files under codex-rs/model-provider are changed"
+          },
+          {
+            "id": "e14",
+            "kind": "test",
+            "claim": "The direct outbound-request oracle in the pinned test verifies that the summary field is present for the default embedded configuration, rather than verifying recovery from an Amazon Bedrock rejection.",
+            "source": "Repository checkout: codex-rs/tui/src/app_server_session/reasoning_defaults_tests.rs, embedded_reasoning_defaults_reach_responses"
+          }
+        ],
+        "candidate_atomics": [],
+        "candidate_workflows": [],
+        "unresolved_questions": [
+          "The issue bundle supplies only the issue title and a pinned ref; it has no body, discussion, timeline, or linked pull request explaining why issue 46336 is associated with commit 9ec33e19260907aad207185a624bd8b936d5afa8.",
+          "The pinned commit is implementation-bearing, but its subject, changed files, implementation, and tests describe adding and persisting generic reasoning summaries for the TUI. They do not show an implementation that handles Amazon Bedrock's rejection of reasoning.summary.",
+          "The pinned outbound-request test uses a generic mock Responses provider and asserts that reasoning.summary is sent; there is no Bedrock request, provider capability probe, omission rule, fallback, or rejection-handling test.",
+          "Because the issue-to-resolution relationship is contradictory and no issue-grounded repair can be established from the checkout, no Change Action or Issue Workflow is promoted. The provider-interface-adaptation problem class remains an unsupported routing hypothesis for this pinned episode."
+        ]
+      },
+      "candidate_atomics": [],
+      "candidate_workflows": [],
+      "unresolved_questions": [
+        "The issue bundle supplies only the issue title and a pinned ref; it has no body, discussion, timeline, or linked pull request explaining why issue 46336 is associated with commit 9ec33e19260907aad207185a624bd8b936d5afa8.",
+        "The pinned commit is implementation-bearing, but its subject, changed files, implementation, and tests describe adding and persisting generic reasoning summaries for the TUI. They do not show an implementation that handles Amazon Bedrock's rejection of reasoning.summary.",
+        "The pinned outbound-request test uses a generic mock Responses provider and asserts that reasoning.summary is sent; there is no Bedrock request, provider capability probe, omission rule, fallback, or rejection-handling test.",
+        "Because the issue-to-resolution relationship is contradictory and no issue-grounded repair can be established from the checkout, no Change Action or Issue Workflow is promoted. The provider-interface-adaptation problem class remains an unsupported routing hypothesis for this pinned episode."
+      ]
+    },
+    "call_sites": [
+      "thread_start_params_from_config selects new_thread_reasoning_overrides for ThreadParamsMode::Embedded and retains config_request_overrides_from_config for ThreadParamsMode::Remote, making the new behavior apply at embedded TUI thread-start request construction.",
+      "Session context recording and local, remote, and remote-v2 compaction change their reference-context construction from turn_context.to_turn_context_item() to step_context.to_turn_context_item(), preserving the summary captured for the active request at those state boundaries."
+    ],
+    "tests": [
+      "The new embedded_reasoning_defaults_reach_responses test configures a generic mock Responses provider, starts an embedded thread, captures the outbound request, and asserts the reasoning.summary and stream_options values for default, explicit concurrent, and none-summary settings.",
+      "The new_tui_threads_request_summaries_unless_explicitly_disabled test asserts default detailed summaries, explicit none and concise summaries, and suppression of concurrent summaries when summary mode is none.",
+      "The compaction regression test exercises local, remote, and remote-v2 modes, changes the summary setting during a paused turn, and asserts that the request sequence and persisted compaction checkpoint retain the captured summary.",
+      "The pinned ref adds regression coverage for refreshed and resumed active reasoning, buffered replay, reasoning status continuity, transcript-only rendering, shimmer behavior, and related snapshots.",
+      "The direct outbound-request oracle in the pinned test verifies that the summary field is present for the default embedded configuration, rather than verifying recovery from an Amazon Bedrock rejection."
+    ]
+  }
+]

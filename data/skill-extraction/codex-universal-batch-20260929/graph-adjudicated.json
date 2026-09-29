@@ -1,0 +1,1495 @@
+{
+  "schema_version": "universal-resolution-graph-v1",
+  "extraction_policy": {
+    "training_only": true,
+    "holdout_refused": true,
+    "unknown_semantics_are_not_deduplicated": true,
+    "pattern_promotion_requires_llm_judge_and_holdout": true
+  },
+  "actions": [
+    {
+      "id": "semantic-action:0c19423512bf00ef",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Prevent out-of-range percentage input from turning a bounded preload budget into an oversized or effectively unconditional preload.",
+      "module_role": "configuration and runtime invariant guard",
+      "operation": "clamp",
+      "pre_state": "The new percentage policy can be bypassed by hand-editing or otherwise supplying a value above 100 after static schema validation; the derived budget would otherwise exceed the whole context window.",
+      "post_state": "Declarative validation accepts only 0-100, and runtime input above 100 is clamped to 100 before token-budget calculation; non-finite and non-positive values still select the no-preload branch.",
+      "validation": "The generated and source schemas declare minimum 0 and maximum 100, and the client test supplies 200 and asserts a full-context budget rather than a budget above the context window.",
+      "parameters": [
+        "threshold percentage",
+        "maximum allowed percentage",
+        "context-window size",
+        "runtime settings source"
+      ],
+      "evidence_ids": [
+        "ev-schema-bound",
+        "ev-client-budget",
+        "ev-client-tests"
+      ],
+      "source_name": "harden-threshold-domain",
+      "description": "Defend the percentage invariant at both the declarative settings boundary and runtime so a hand-edited value above 100 cannot allocate a budget larger than the full context window.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77"
+      ],
+      "supporting_repositories": [
+        "QwenLM/qwen-code"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:1941f701663bd284",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Bound each cache-warming provider request to one output token without permanently reducing the normal completion budget or triggering repeated one-token prefill continuations.",
+      "module_role": "Request-parameter isolation at the boundary between background cache maintenance and foreground model completion.",
+      "operation": "isolate",
+      "pre_state": "The warming worker aliases the model's extra-parameter mapping, overwrites its max_tokens entry with 1, and the normal send path later consumes that same mapping.",
+      "post_state": "The warming worker uses a distinct kwargs mapping with max_tokens=1, while the model's extra_params retains its configured entries, such as the normal max_tokens budget, for later requests.",
+      "validation": "The parent and pinned diff plus the call sites provide a static invariant oracle: the warming completion consumes the copied kwargs while the foreground path still consumes model.extra_params. Existing cache-option tests cover activation only; a mocked-provider regression test for both the one-token warm ping and preserved normal budget is absent.",
+      "parameters": [
+        "model extra-parameter mapping",
+        "temporary cache-warming output-token cap",
+        "normal foreground completion output-token budget",
+        "cacheable message set",
+        "provider completion request"
+      ],
+      "evidence_ids": [
+        "diff-1842-one-line",
+        "impl-1842-parent-alias",
+        "impl-1842-pinned-copy",
+        "callsite-1842-normal-send",
+        "callsite-1842-prefill-loop",
+        "config-1842-budget"
+      ],
+      "source_name": "localize_cache_warming_budget_override",
+      "description": "Create request-local cache-warming kwargs before applying the one-token maintenance cap, preserving the model's configured parameters for subsequent foreground and prefill completions.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "github:Aider-AI/aider#1842"
+      ],
+      "supporting_repositories": [
+        "Aider-AI/aider"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:26186cfe5470ed34",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Prevent a tool-execution path from terminating without a user-facing explanation when the first post-tool response is empty.",
+      "module_role": "agent execution loop",
+      "operation": "nudge",
+      "pre_state": "At least one tool call has completed, the next stream has no tool calls, and it emits no non-whitespace content.",
+      "post_state": "The loop sends the recovery nudge as the next request, clears the armed-after-tool state, and continues; a visible response can then complete the session.",
+      "validation": "The legacy-session test asserts three stream calls, the exact nudge payload on the third call, tool request/response events, and the final agent message; the non-interactive regression test confirms the additional recovery call.",
+      "parameters": [
+        "after-tool state",
+        "completed tool responses",
+        "visible-content flag",
+        "recovery nudge text",
+        "abort signal"
+      ],
+      "evidence_ids": [
+        "E8",
+        "E9",
+        "E10",
+        "E18"
+      ],
+      "source_name": "bounded-session-post-tool-nudge",
+      "description": "In the session execution loop, recover from an empty response immediately following completed tool calls by sending a dedicated nudge before allowing normal completion.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "aliases": [
+        "bounded-interactive-post-tool-nudge"
+      ],
+      "status": "candidate",
+      "adjudicated_equivalents": [
+        "semantic-action:004c33e49d9cf153"
+      ],
+      "adjudication_rationales": [
+        "Both actions implement the same reusable bounded recovery: after completed tool work, the next model continuation has no tool calls and no visible text, so an exact recovery nudge is sent before normal completion. The interactive/session bookkeeping differs (attempt counter versus armed-after-tool state), and each test has path-specific call-count assertions, but both use the same semantic validation oracle: observe the recovery nudge after the empty post-tool continuation. The session-loop action is the broader existing canonical."
+      ]
+    },
+    {
+      "id": "semantic-action:265d94ab13ba6de8",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Make deferred-resource preloading an explicit, mode-aware session budget policy.",
+      "module_role": "user configuration and session-budget contract",
+      "operation": "propagate",
+      "pre_state": "No configuration value reaches core session startup to size deferred-tool preloading, so startup has no user-selectable percentage policy.",
+      "post_state": "A threshold percentage is available to startup with default 10; ordinary CLI sessions receive the configured value, while bare and safe sessions receive 0.",
+      "validation": "CLI tests assert configured forwarding at 25, default 10, and forced 0 in safe and bare modes; the settings schema supplies the declared numeric contract.",
+      "parameters": [
+        "threshold percentage",
+        "default percentage",
+        "execution safety mode"
+      ],
+      "evidence_ids": [
+        "ev-config-contract",
+        "ev-cli-propagation",
+        "ev-cli-tests"
+      ],
+      "source_name": "configure-deferred-preload-threshold",
+      "description": "Expose a session-start deferred-tool preload percentage, carry it from user settings into core configuration, default it to 10, and disable the policy in CLI bare/safe modes.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77"
+      ],
+      "supporting_repositories": [
+        "QwenLM/qwen-code"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:341c32a111cda69a",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Avoid spending correction-model work on an invalid edit request and make the repair precondition explicit.",
+      "module_role": "edit invocation parameter validator",
+      "operation": "guard",
+      "pre_state": "An edit invocation reaches self-correction with old_string missing or containing only whitespace.",
+      "post_state": "Execution returns an INVALID_TOOL_PARAMS error without invoking the LLM edit fixer and tells the agent to inspect the target with ReadFile before supplying an exact search string.",
+      "validation": "The edit test uses whitespace-only old_string and asserts that the fixer is not called, the error type is INVALID_TOOL_PARAMS, and the returned message includes ReadFile guidance.",
+      "parameters": [
+        "old search string",
+        "target file content",
+        "correction-helper enabled state",
+        "read-before-retry guidance"
+      ],
+      "evidence_ids": [
+        "E15",
+        "E16"
+      ],
+      "source_name": "reject-blank-edit-search",
+      "description": "Reject a blank or whitespace-only edit search string before the expensive LLM correction path is invoked and return a localized instruction to reread the target before retrying.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:4546979be694d603",
+      "node_type": "change_action",
+      "category": "extension-resource-lifecycle",
+      "intent": "Make the local Unix stdio descriptor invariant and its non-regression requirements directly testable.",
+      "module_role": "Unix local stdio launch integration oracle",
+      "operation": "validate",
+      "pre_state": "The launch policy needs coverage proving both descriptor exclusion and preservation of protocol, argument, environment, cwd, parent-ownership, fallback, and exec-failure behavior.",
+      "post_state": "The checked-in Unix tests distinguish an unfiltered launch from the policy-enabled launch and provide assertions for server/descendant exclusion and preserved behavior across all three launch forms.",
+      "validation": "The integration tests assert control presence, policy-enabled absence, MCP initialize/list/call results, preserved stderr/cwd/environment/arguments, unchanged parent F_GETFD state, and an error for a missing interpreter.",
+      "parameters": [
+        "inheritable descriptor sentinels",
+        "absolute, relative, and shell-fallback launch forms",
+        "descendant process spawn",
+        "MCP initialize/list/call exchange",
+        "missing interpreter exec failure"
+      ],
+      "evidence_ids": [
+        "ev-09",
+        "ev-10",
+        "ev-11",
+        "ev-12",
+        "ev-13"
+      ],
+      "source_name": "validate_local_unix_stdio_boundary",
+      "description": "Add an executable regression oracle for descriptor isolation and for the compatibility behaviors that must survive the new process boundary.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "github:openai/codex#46960"
+      ],
+      "supporting_repositories": [
+        "openai/codex"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:6623a0eab1e4e2dc",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Keep active tool, code, file, or similar payloads usable while removing empty text artifacts that can trigger request validation failures.",
+      "module_role": "outgoing content contract boundary",
+      "operation": "normalize",
+      "pre_state": "An outgoing part has text equal to the empty string, either alongside another active payload or as its only meaningful field.",
+      "post_state": "The empty text key is removed from payload-bearing parts; text-only empty parts are filtered; other payload-bearing parts remain.",
+      "validation": "The implementation contains separate payload-preservation and empty-part filtering branches, but no dedicated regression assertion for this newly added sanitizer behavior is present in the pinned commit tests.",
+      "parameters": [
+        "outgoing content parts",
+        "empty text field",
+        "active payload keys",
+        "request validation contract"
+      ],
+      "evidence_ids": [
+        "E14"
+      ],
+      "source_name": "sanitize-empty-payload-parts",
+      "description": "Normalize outgoing content parts so an empty text field cannot invalidate a payload-bearing part or remain as a truly empty text-only part.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:704911df2cf56208",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Make a failed localized edit actionable by distinguishing an exact-match miss and directing the agent to inspect current content.",
+      "module_role": "edit failure feedback mapper",
+      "operation": "map",
+      "pre_state": "A nonblank edit search string produces zero matches in the current file.",
+      "post_state": "The tool reports an exact-match failure and advises rereading the target/current lines before retrying; the correction path remains available for valid nonblank input according to its existing policy.",
+      "validation": "The edit regression test checks that both LLM-facing content and display output contain the new exact-match wording.",
+      "parameters": [
+        "search string",
+        "target file",
+        "current file text",
+        "agent-facing failure message"
+      ],
+      "evidence_ids": [
+        "E15",
+        "E16"
+      ],
+      "source_name": "clarify-edit-no-match-guidance",
+      "description": "Replace vague no-occurrence edit feedback with exact-match guidance that points the agent to current file content before retrying.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:7d1633b29680d745",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Remove a stale materialized default from existing configuration files so the new policy takes effect after upgrade without clobbering user-selected resource budgets.",
+      "module_role": "Versioned configuration migration and user-choice preservation",
+      "operation": "reconcile",
+      "pre_state": "A versioned configuration below schema v47 may contain compression.threshold_tokens: 256000 copied from the old template or doctor seeding; the same field may instead contain another explicit positive integer or null.",
+      "post_state": "The v47 migration deletes the field only when its raw value equals exactly 256000, allowing the new DEFAULT_CONFIG None to apply; other explicit caps, explicit null, and unrelated configuration values remain intact.",
+      "validation": "The new registry entry and the existing equality-gated deletion helper directly encode the exact-value guard. The generic upgrade property test dynamically includes registered migration versions and checks latest-version convergence, user-value preservation, idempotence, and reapplication stability, but does not directly generate threshold_tokens: 256000.",
+      "parameters": [
+        "on-disk config schema version",
+        "raw compression.threshold_tokens value",
+        "stale old default 256000",
+        "new default None",
+        "explicit user cap or null"
+      ],
+      "evidence_ids": [
+        "ev-08-migration-diff",
+        "ev-09-migration-helper",
+        "ev-16-migration-property-test"
+      ],
+      "source_name": "reconcile_stale_persisted_compression_cap",
+      "description": "Migrate configurations that persisted the temporary 256000 default so they inherit the new ratio-only default, without rewriting an intentional cap or explicit null.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "NousResearch/hermes-agent#125235@98278833e29b167fe930e276eed7cb16bee68673"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:88b4f2fa5276d3b7",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Translate a percentage resource policy into a concrete token budget before deferred-resource reconciliation.",
+      "module_role": "session-start resource-budget adapter",
+      "operation": "normalize",
+      "pre_state": "A threshold policy exists, but startup has not derived the number of schema tokens that may be declared up front; explicit context capacity may be absent.",
+      "post_state": "When deferred discovery is available and the threshold and context are usable, the registry receives floor(contextWindow*boundedThreshold/100); otherwise the budgeted preload call is omitted.",
+      "validation": "Client tests cover the model-limit fallback at 10%, an explicit 50,000-token context at 10%, threshold 0, non-finite threshold, over-100 input, and missing discovery surface.",
+      "parameters": [
+        "deferred-discovery availability",
+        "threshold percentage",
+        "configured context-window size",
+        "model input-token-limit fallback",
+        "token-budget rounding rule"
+      ],
+      "evidence_ids": [
+        "ev-client-budget",
+        "ev-context-fallback",
+        "ev-client-tests"
+      ],
+      "source_name": "derive-session-context-budget",
+      "description": "Convert an accepted positive threshold and available model capacity into a floored token budget at session start, using the configured context window or model-limit fallback and skipping unsupported branches.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77"
+      ],
+      "supporting_repositories": [
+        "QwenLM/qwen-code"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:8a894318c6e2b3ab",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Make retry guidance visible at the current context boundary without invalidating or expanding the stable system-instruction prefix.",
+      "module_role": "model request retry adapter",
+      "operation": "adapt",
+      "pre_state": "A retry follows a thought-only or no-response-text invalid stream; request contents may end in a model turn, an ordinary user turn, or a function-response user turn, and hooks may replace contents.",
+      "post_state": "System instruction is unchanged; the retry nudge is present at the end of valid contents, role alternation is preserved with a synthetic model bridge when required, and an existing final-turn nudge is not duplicated.",
+      "validation": "GeminiChat tests assert unchanged systemInstruction, nudge placement in contents, reapplication after hook-modified contents, handling of empty/model/function-response histories, and deduplication.",
+      "parameters": [
+        "invalid-stream error type",
+        "request content sequence",
+        "nudge message",
+        "hook-modified contents",
+        "role-alternation constraint"
+      ],
+      "evidence_ids": [
+        "E11",
+        "E12",
+        "E13"
+      ],
+      "source_name": "end-of-context-retry-nudge",
+      "description": "Place invalid-stream retry guidance at the end of request contents while preserving API role ordering and hook modifications, instead of mutating the stable system instruction.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:8e3e370e9a79a993",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Avoid incremental declaration-list and prompt-prefix churn for a small deferred set while retaining on-demand discovery for a set that exceeds the budget.",
+      "module_role": "deferred-resource registry gate",
+      "operation": "guard",
+      "pre_state": "Deferred tool schemas are hidden behind discovery, and the registry has no combined footprint decision; bundled and MCP candidates may coexist with already-revealed, visible, or always-loaded tools.",
+      "post_state": "The registry estimates the union of eligible deferred schemas as ceil(serialized-schema-characters/CHARS_PER_TOKEN) and reveals all eligible unrevealed candidates iff that estimate is within budget; otherwise no candidate is newly revealed. Visible and always-loaded tools are excluded, while already-revealed candidates still count.",
+      "validation": "Registry tests cover fit, overflow, bundled-plus-MCP all-or-nothing behavior, already-revealed accounting, visible-tool exclusion, and always-loaded exclusion; declaration-path code shows that revealed schemas enter the function-declaration list.",
+      "parameters": [
+        "token budget",
+        "current deferred-resource set",
+        "serialized schemas",
+        "characters-per-token estimate",
+        "visible-resource set",
+        "always-loaded classification",
+        "already-revealed state"
+      ],
+      "evidence_ids": [
+        "ev-registry-budget",
+        "ev-declaration-consumer",
+        "ev-registry-tests"
+      ],
+      "source_name": "atomically-preload-fitting-deferred-set",
+      "description": "Estimate the complete eligible deferred-tool schema union and reveal every candidate only when the combined estimate fits the supplied budget; preserve full deferral on overflow.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77"
+      ],
+      "supporting_repositories": [
+        "QwenLM/qwen-code"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:93c1d7660d38de6f",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Apply the resource decision at the stable startup boundary so preloaded schemas are declared initially and are not later reintroduced as deferred reminders.",
+      "module_role": "startup declaration synchronizer",
+      "operation": "sequence",
+      "pre_state": "Startup would resolve deferred reminders without a budget stage, so any preload decision would either be absent from initial declarations or require a later declaration-list change.",
+      "post_state": "Preload runs after warm/resume reconciliation and before reminder setup; revealed tools are included in the initial declarations and filtered from the deferred reminder, while the existing no-discovery eager-reveal branch and late-registration deferral remain intact.",
+      "validation": "The client startup call site establishes the stage ordering; reminder and declaration consumers show how revealed state is applied; client tests cover the preload stage and the no-discovery skip branch. No direct prompt-cache measurement is present.",
+      "parameters": [
+        "startup phase",
+        "registry reveal state",
+        "initial function-declaration list",
+        "deferred reminder",
+        "late resource registration",
+        "discovery-surface availability"
+      ],
+      "evidence_ids": [
+        "ev-startup-order",
+        "ev-reminder-consumer",
+        "ev-client-tests"
+      ],
+      "source_name": "synchronize-startup-declarations",
+      "description": "Run the budgeted reveal after registry warm/resume handling and before deferred-reminder construction so the initial declaration list and reminder reflect the same revealed state without introducing a mid-session preload mutation.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77"
+      ],
+      "supporting_repositories": [
+        "QwenLM/qwen-code"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:b1038e6640f979a5",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Remove an unintended fixed token ceiling that makes compression fire at a non-proportional point across heterogeneous context windows, while preserving an explicit user-controlled absolute cost ceiling.",
+      "module_role": "Compression budget policy and configuration defaulting",
+      "operation": "normalize",
+      "pre_state": "When compression.threshold_tokens is absent, the defaulted configuration supplies 256000; agent construction passes that value as an absolute cap and the compressor lowers the ratio/model trigger to min(ratio_trigger, 256000).",
+      "post_state": "When compression.threshold_tokens is absent, the canonical value is None and the effective trigger is the ratio/model-derived threshold with no absolute cap; a positive explicit cap still lowers the trigger and remains durable across model switches.",
+      "validation": "The changed compressor test covers 128000 and 1000000 context windows and asserts no default cap plus equality with the ratio-only trigger; the explicit-cap test asserts a 200000 cap survives a switch. Gateway-cache and TUI tests verify that consumers use the canonical default and distinguish explicit positive caps.",
+      "parameters": [
+        "model context window",
+        "compression.threshold ratio",
+        "compression.model_thresholds overrides",
+        "optional compression.threshold_tokens cap",
+        "active model and provider"
+      ],
+      "evidence_ids": [
+        "ev-03-default-policy-diff",
+        "ev-05-agent-init-call-site",
+        "ev-06-compressor-call_site",
+        "ev-12-compressor-tests",
+        "ev-13-cache-tests",
+        "ev-14-tui-tests"
+      ],
+      "source_name": "restore_ratio_driven_compression_default",
+      "description": "Make the absolute compression-trigger cap opt-in by changing the canonical default and its seeded template from 256000 to null/None, while retaining explicit positive caps as lower-of ratio-versus-absolute controls.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "NousResearch/hermes-agent#125235@98278833e29b167fe930e276eed7cb16bee68673"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:f03329db7fe2f96c",
+      "node_type": "change_action",
+      "category": "extension-resource-lifecycle",
+      "intent": "Prevent unrelated parent file descriptors from leaking into a local stdio extension process tree while preserving the explicit transport stdio.",
+      "module_role": "local stdio extension-process launcher",
+      "operation": "guard",
+      "pre_state": "The local launch command has piped standard streams and a new process group but leaves descriptor policy at Inherit, so inheritable parent descriptors can be inherited by the server and by commands it launches.",
+      "post_state": "On Unix, local stdio launches enforce a stdio-only inheritance boundary: the server and descendants inherit the explicit transport stdio but not unrelated inheritable parent descriptors, with existing arguments, environment, cwd, process-group, and exec-error behavior preserved.",
+      "validation": "The added Unix integration oracle first proves that an unfiltered control launch sees the pipe, socket, and file sentinels, then verifies [false, false, false] in both the local server and a close_fds=False descendant across absolute, relative, and shell-fallback launches; it also checks MCP round-trip behavior, parent descriptor ownership, and failed-exec reporting.",
+      "parameters": [
+        "local stdio extension command",
+        "explicit stdin/stdout/stderr transport",
+        "unrelated inheritable pipe, socket, and file descriptors",
+        "Unix server and descendant process tree"
+      ],
+      "evidence_ids": [
+        "ev-04",
+        "ev-05",
+        "ev-06",
+        "ev-07",
+        "ev-08",
+        "ev-09",
+        "ev-10",
+        "ev-11",
+        "ev-12"
+      ],
+      "source_name": "guard_local_unix_stdio_descriptor_boundary",
+      "description": "Configure the local Unix stdio extension-process launch so unrelated descriptors inherited by the orchestrator do not cross into the extension server or its descendants, while the explicit stdio transport and existing launch settings remain usable.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "github:openai/codex#46960"
+      ],
+      "supporting_repositories": [
+        "openai/codex"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:f6213c288ee4f3e7",
+      "node_type": "change_action",
+      "category": "concurrent-work-coordination",
+      "intent": "Prevent side effects and post-execution hooks for prepared tool calls after a later preflight abort while preserving one explicit aborted outcome for each recorded call.",
+      "module_role": "Abort-aware deferred executor for a parallel tool-call batch",
+      "operation": "guard",
+      "pre_state": "A tool call has passed validation and preflight and is stored for deferred execution; before its deferred entry runs, another preflight aborts the shared run signal.",
+      "post_state": "The deferred entry does not invoke the tool or after-execution hook; it emits a tool_execution_end error outcome with \"Operation aborted\", and the common ordered path persists the corresponding error tool-result message.",
+      "validation": "The committed regression test aborts in the second preflight, then observes zero external executions and zero extension tool_result hooks, two matching start/end call identities, error end events for both calls, and two source-ordered \"Operation aborted\" toolResult messages.",
+      "parameters": [
+        "shared run abort signal",
+        "prepared tool-call entry",
+        "tool-execution event sink",
+        "source-ordered tool-result message sink",
+        "post-execution hook"
+      ],
+      "evidence_ids": [
+        "ev-preflight-abort",
+        "ev-after-guard",
+        "ev-ordered-result-path",
+        "ev-hook-binding",
+        "ev-regression-setup",
+        "ev-regression-oracle"
+      ],
+      "source_name": "abort-deferred-parallel-tool-execution",
+      "description": "Recheck cancellation when a prepared parallel-call entry is finally invoked. If the batch was aborted after preflight, convert that recorded entry into an error outcome and execution-end event so the existing ordered path can persist a corresponding tool result without starting the side effect or post-execution hook.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "github:earendil-works/pi#9994"
+      ],
+      "supporting_repositories": [
+        "earendil-works/pi"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:f6dd64c00f078f80",
+      "node_type": "change_action",
+      "category": "bounded-resource-budget-control",
+      "intent": "Prevent cancelled in-flight tool turns from persisting as transcript state and avoid unnecessary follow-up work.",
+      "module_role": "interactive conversation history coordinator",
+      "operation": "rollback",
+      "pre_state": "A prepared query has been sent, the model has appended a tool-call turn, all applicable model-initiated tools are terminally cancelled, and current history is longer than the saved query checkpoint.",
+      "post_state": "History is truncated to the saved checkpoint; cancellation response parts are not appended and no continuation request is emitted.",
+      "validation": "Interactive stream regression tests verify that addHistory is not called, history returns to the pre-model length, and the model stream is not called again for one or multiple cancelled tools.",
+      "parameters": [
+        "query history checkpoint length",
+        "current conversation history",
+        "model-initiated tool set",
+        "terminal cancellation status"
+      ],
+      "evidence_ids": [
+        "E3",
+        "E4",
+        "E5"
+      ],
+      "source_name": "rollback-cancelled-tool-turn",
+      "description": "When every model-initiated tool in an interactive turn is cancelled, restore the conversation to the checkpoint taken before the current query instead of recording cancellation responses as a new user turn or sending another request.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    }
+  ],
+  "workflows": [
+    {
+      "id": "workflow:03677ac1471c8998",
+      "node_type": "issue_workflow",
+      "category": "bounded-resource-budget-control",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 29080,
+      "episode_id": "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+      "name": "session-tool-continuation-recovery",
+      "description": "The session loop arms recovery after completed tools, checks the next response for visible content, and nudges once before allowing normal completion.",
+      "goal": "Ensure a tool execution is followed by an explanatory model response even when the first continuation is empty.",
+      "entry_state": "The session has completed one or more model-initiated tool calls and is about to process the next model stream.",
+      "exit_state": "The model emits visible text after the recovery request or the session follows its normal completion/failure path.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:26186cfe5470ed34",
+          "role": "repair",
+          "optional": false
+        }
+      ],
+      "edges": [],
+      "unresolved_or_deferred": [
+        "The implementation arms one recovery nudge per completed-tool cycle but does not expose a numeric retry budget; repeated empty output after the nudge follows the normal completion path."
+      ],
+      "evidence_ids": [
+        "E8",
+        "E9",
+        "E10",
+        "E18"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "source_case": "google-gemini/gemini-cli#29080"
+    },
+    {
+      "id": "workflow:0e97359a43ec4400",
+      "node_type": "issue_workflow",
+      "category": "bounded-resource-budget-control",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 29080,
+      "episode_id": "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+      "name": "interactive-tool-turn-bounding",
+      "description": "The interactive path has two event-dependent recovery branches: remove a cancelled tool turn from durable history, or recover a silent successful tool continuation with a bounded nudge.",
+      "goal": "Keep interactive tool turns bounded and recoverable without growing invalid or silent conversation state.",
+      "entry_state": "A user query is being processed; the model may request tools, produce an empty continuation, or have all requested tools cancelled.",
+      "exit_state": "Cancelled turns are absent from durable history, or a post-tool continuation produces visible completion or stops after the automatic-nudge budget.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:f6dd64c00f078f80",
+          "role": "repair",
+          "optional": true
+        },
+        {
+          "step_id": "step-2",
+          "action_id": "semantic-action:26186cfe5470ed34",
+          "role": "repair",
+          "optional": true
+        }
+      ],
+      "edges": [
+        {
+          "from": "step-1",
+          "to": "step-2",
+          "type": "requires"
+        }
+      ],
+      "unresolved_or_deferred": [
+        "The two actions are predicate-selected branches of the same coordinator rather than a mandatory sequence: rollback applies to all-cancelled tool turns, while nudging applies to a successful tool continuation with no visible response. The tests do not establish a cross-branch ordering."
+      ],
+      "evidence_ids": [
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E19"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "source_case": "google-gemini/gemini-cli#29080"
+    },
+    {
+      "id": "workflow:1462bc0c924a29cc",
+      "node_type": "issue_workflow",
+      "category": "bounded-resource-budget-control",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 125235,
+      "episode_id": "NousResearch/hermes-agent#125235@98278833e29b167fe930e276eed7cb16bee68673",
+      "name": "restore_proportional_compression_budget_and_upgrade_stale_configs",
+      "description": "Establish the ratio-driven default for compression triggers, then reconcile versioned configurations that persisted the temporary 256000 default; leave explicit absolute caps available as an opt-in branch and verify the existing cache/live-session consumers follow the canonical value.",
+      "goal": "Compression follows the configured ratio and model/window semantics by default, while an explicit absolute threshold remains available and old seeded configurations stop imposing the stale fixed cap.",
+      "entry_state": "The parent v46 policy supplies a 256000 cap when threshold_tokens is absent, templates can persist that value, and a large-window session can compact at the fixed cap instead of its proportional trigger.",
+      "exit_state": "The v47 default and template represent no absolute cap, fresh and live configurations treat absence as ratio-only, versioned old literals are removed, and explicit positive caps still clamp triggers and survive model switches.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:b1038e6640f979a5",
+          "role": "implement",
+          "optional": false
+        },
+        {
+          "step_id": "step-2",
+          "action_id": "semantic-action:7d1633b29680d745",
+          "role": "reconcile",
+          "optional": true
+        }
+      ],
+      "edges": [
+        {
+          "from": "step-1",
+          "to": "step-2",
+          "type": "enables"
+        }
+      ],
+      "unresolved_or_deferred": [
+        "The migration branch is conditional: it runs for versioned configurations below v47 whose raw value is exactly 256000; unversioned files and current-version explicit values remain outside this stale-default rewrite.",
+        "No changed test directly constructs a v46 file with threshold_tokens: 256000 and asserts both deletion and preservation of alternate values; exact behavior is supported by the implementation guard and indirectly by the generic migration properties.",
+        "The targeted runtime test suite was not executed because the repository environment could not activate with the locked dependency file."
+      ],
+      "evidence_ids": [
+        "ev-02-commit-rationale",
+        "ev-03-default-policy-diff",
+        "ev-04-template-diff",
+        "ev-05-agent-init-call-site",
+        "ev-06-compressor-call_site",
+        "ev-07-seeding-call-sites",
+        "ev-08-migration-diff",
+        "ev-09-migration-helper",
+        "ev-10-cache-call-site",
+        "ev-11-live-reload-call_site",
+        "ev-12-compressor-tests",
+        "ev-13-cache-tests",
+        "ev-14-tui-tests",
+        "ev-16-migration-property-test",
+        "ev-17-documentation-diff"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent"
+      ],
+      "source_case": "NousResearch/hermes-agent#125235"
+    },
+    {
+      "id": "workflow:3329cbf7b02a8c48",
+      "node_type": "issue_workflow",
+      "category": "bounded-resource-budget-control",
+      "repository": "QwenLM/qwen-code",
+      "issue": 12029,
+      "episode_id": "QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77",
+      "name": "bounded-startup-deferred-resource-preload",
+      "description": "Establish a bounded percentage policy, harden its domain, derive a token budget from actual context capacity, atomically reveal the complete eligible deferred set only when it fits, and construct the initial declarations/reminder from the resulting state.",
+      "goal": "Bound the amount of deferred-resource schema declared up front by a percentage of available context while avoiding partial preload and preserving on-demand discovery when the union is too large.",
+      "entry_state": "The parent startup path hides ordinary deferred tools behind discovery without a context-scaled preload policy or combined schema-footprint gate.",
+      "exit_state": "For a valid positive policy and fitting current deferred set, all eligible deferred schemas are in the initial declaration list and absent from the deferred reminder; for over-budget, disabled, invalid, or unavailable branches, no invalid budgeted preload occurs and the existing deferral/eager-reveal behavior remains.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:265d94ab13ba6de8",
+          "role": "establish-contract",
+          "optional": false
+        },
+        {
+          "step_id": "step-2",
+          "action_id": "semantic-action:0c19423512bf00ef",
+          "role": "repair",
+          "optional": false
+        },
+        {
+          "step_id": "step-3",
+          "action_id": "semantic-action:88b4f2fa5276d3b7",
+          "role": "implement",
+          "optional": false
+        },
+        {
+          "step_id": "step-4",
+          "action_id": "semantic-action:8e3e370e9a79a993",
+          "role": "reconcile",
+          "optional": false
+        },
+        {
+          "step_id": "step-5",
+          "action_id": "semantic-action:93c1d7660d38de6f",
+          "role": "validate",
+          "optional": false
+        }
+      ],
+      "edges": [
+        {
+          "from": "step-1",
+          "to": "step-2",
+          "type": "requires"
+        },
+        {
+          "from": "step-1",
+          "to": "step-3",
+          "type": "requires"
+        },
+        {
+          "from": "step-2",
+          "to": "step-3",
+          "type": "repairs"
+        },
+        {
+          "from": "step-3",
+          "to": "step-4",
+          "type": "enables"
+        },
+        {
+          "from": "step-4",
+          "to": "step-5",
+          "type": "enables"
+        }
+      ],
+      "unresolved_or_deferred": [
+        "The no-preload branches are runtime predicates, not separate implementation stages: discovery unavailable, threshold non-finite or <=0, invalid context, and an over-budget union preserve the existing non-preload behavior.",
+        "Tools registered after startup remain deferred until a later session start; the design explicitly avoids calling this policy from mid-session setTools synchronization.",
+        "The prompt KV-cache stability benefit is reasoned from declaration-list ordering and design comments but has no direct end-to-end cache-hit measurement in the pinned episode.",
+        "The always-on-context warning named in the issue title is outside this workflow because its parent/current implementation is unchanged."
+      ],
+      "evidence_ids": [
+        "ev-parent-behavior",
+        "ev-config-contract",
+        "ev-cli-propagation",
+        "ev-schema-bound",
+        "ev-client-budget",
+        "ev-startup-order",
+        "ev-registry-budget",
+        "ev-reminder-consumer",
+        "ev-client-tests",
+        "ev-registry-tests",
+        "ev-cli-tests"
+      ],
+      "supporting_repositories": [
+        "QwenLM/qwen-code"
+      ],
+      "source_case": "QwenLM/qwen-code#12029"
+    },
+    {
+      "id": "workflow:4645ac2001ecf7d2",
+      "node_type": "issue_workflow",
+      "category": "concurrent-work-coordination",
+      "repository": "earendil-works/pi",
+      "issue": 9994,
+      "episode_id": "github:earendil-works/pi#9994",
+      "name": "parallel-preflight-abort-reconciliation",
+      "description": "When sequential preflight of a concurrent tool batch aborts the run after a call has been prepared, reconcile the already-recorded deferred entry into a standardized aborted result before returning the batch.",
+      "goal": "Return a cancellation-consistent tool batch after a later preflight abort, with no deferred side effect and a result artifact for every recorded call.",
+      "entry_state": "An assistant message contains multiple tool calls; preflight is sequential, at least one call is prepared for deferred parallel execution, and a later preflight aborts the shared run.",
+      "exit_state": "All recorded calls have tool_execution_end error outcomes and source-ordered toolResult messages, with no prepared tool execution or post-execution result hook after the abort.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:f6213c288ee4f3e7",
+          "role": "repair",
+          "optional": false
+        }
+      ],
+      "edges": [],
+      "unresolved_or_deferred": [
+        "The patch preserves the existing break after an immediate aborted preparation; no evidence shows placeholder results for tool calls that were never started or recorded before that break.",
+        "The committed test is the direct validation oracle; no separate workflow stage is needed for a second independent validator."
+      ],
+      "evidence_ids": [
+        "ev-parallel-call-site",
+        "ev-preflight-abort",
+        "ev-after-guard",
+        "ev-regression-oracle"
+      ],
+      "supporting_repositories": [
+        "earendil-works/pi"
+      ],
+      "source_case": "earendil-works/pi#9994"
+    },
+    {
+      "id": "workflow:805ace572989954b",
+      "node_type": "issue_workflow",
+      "category": "bounded-resource-budget-control",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 29080,
+      "episode_id": "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+      "name": "edit-request-budget-guard",
+      "description": "The edit path handles two predicate-dependent failures: reject blank selectors before correction-model work, or return exact-match guidance for nonblank selectors that do not match current content.",
+      "goal": "Prevent invalid localized edits from consuming correction work and provide actionable repair guidance for stale or mismatched input.",
+      "entry_state": "An edit invocation supplies either a blank search string or a nonblank string with zero matches.",
+      "exit_state": "Blank input fails before LLM correction, or a no-match error tells the agent to reread current target lines and retry with an exact match.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:341c32a111cda69a",
+          "role": "validate",
+          "optional": true
+        },
+        {
+          "step_id": "step-2",
+          "action_id": "semantic-action:704911df2cf56208",
+          "role": "validate",
+          "optional": true
+        }
+      ],
+      "edges": [
+        {
+          "from": "step-1",
+          "to": "step-2",
+          "type": "requires"
+        }
+      ],
+      "unresolved_or_deferred": [
+        "The two edit actions are mutually exclusive predicate branches for a given invocation. The wording-only confirmation-attribution change is recorded as evidence but is not promoted to a separate semantic action."
+      ],
+      "evidence_ids": [
+        "E15",
+        "E16"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "source_case": "google-gemini/gemini-cli#29080"
+    },
+    {
+      "id": "workflow:8fd00ec6e7d74f75",
+      "node_type": "issue_workflow",
+      "category": "extension-resource-lifecycle",
+      "repository": "openai/codex",
+      "issue": 46960,
+      "episode_id": "github:openai/codex#46960",
+      "name": "local_unix_stdio_descriptor_lifecycle",
+      "description": "At the local stdio extension-process boundary, apply the Unix-only descriptor guard and then validate that the server tree receives only transport stdio without regressing communication, launch compatibility, parent ownership, or failure reporting.",
+      "goal": "Ensure local Unix stdio extension servers and their descendants cannot inherit unrelated orchestrator descriptors while the stdio transport and established launch contract remain functional.",
+      "entry_state": "A local stdio server is launched with the shared command's default inherited-descriptor policy, so unrelated inheritable descriptors may enter the server process tree and the regression boundary is not covered by an end-to-end oracle.",
+      "exit_state": "The local Unix launch path enforces stdio-only descriptor inheritance, server and descendant probes report no unrelated sentinels, and the integration oracle confirms MCP communication, launch variants, arguments, environment, cwd, parent descriptor ownership, and exec-failure reporting.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:f03329db7fe2f96c",
+          "role": "implement",
+          "optional": false
+        },
+        {
+          "step_id": "step-2",
+          "action_id": "semantic-action:4546979be694d603",
+          "role": "validate",
+          "optional": false
+        }
+      ],
+      "edges": [
+        {
+          "from": "step-1",
+          "to": "step-2",
+          "type": "enables"
+        }
+      ],
+      "unresolved_or_deferred": [
+        "The implementation is gated by cfg(unix); the commit explicitly leaves Windows unrelated-handle inheritance to a future shared-spawn handle allowlist, and the added integration test is Unix-only.",
+        "The issue bundle contains no issue body, comments, timeline, or linked pull-request metadata, so acceptance criteria beyond the local implementation and commit testing note are unavailable."
+      ],
+      "evidence_ids": [
+        "ev-01",
+        "ev-02",
+        "ev-03",
+        "ev-04",
+        "ev-05",
+        "ev-06",
+        "ev-07",
+        "ev-08",
+        "ev-09",
+        "ev-10",
+        "ev-11",
+        "ev-12",
+        "ev-13"
+      ],
+      "supporting_repositories": [
+        "openai/codex"
+      ],
+      "source_case": "openai/codex#46960"
+    },
+    {
+      "id": "workflow:edfd47b68de2afce",
+      "node_type": "issue_workflow",
+      "category": "bounded-resource-budget-control",
+      "repository": "Aider-AI/aider",
+      "issue": 1842,
+      "episode_id": "github:Aider-AI/aider#1842",
+      "name": "preserve_foreground_budget_during_cache_keepalive",
+      "description": "For an enabled prompt-cache keepalive flow, isolate the one-token maintenance override from the shared model configuration so delayed cache pings remain bounded and later prefill-capable completions retain their normal output budget.",
+      "goal": "Keep the prompt cache alive with bounded maintenance calls while preserving the foreground completion budget and avoiding a one-token prefill loop.",
+      "entry_state": "Prompt-cache keepalive is enabled for a cache-capable model; send_message schedules or runs cache warming before the foreground send, and the parent implementation shares the model extra-parameter mapping with the warming request.",
+      "exit_state": "Each warming request receives max_tokens=1 through a local kwargs copy, the model extra_params mapping remains unchanged for foreground and prefill-capable calls, and the length-continuation path is no longer forced into one-token responses by cache warming.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:1941f701663bd284",
+          "role": "implement",
+          "optional": false
+        }
+      ],
+      "edges": [],
+      "unresolved_or_deferred": [
+        "The checkout has no targeted regression test that mocks the warming provider and asserts both the one-token warm request and preservation of the next normal request's configured max_tokens.",
+        "ModelSettings declares extra_params as Optional[dict], while the pinned expression calls dict(...) without an explicit None guard; built-in cache-capable settings inspected here provide mappings, but the custom or None case remains unresolved.",
+        "The cache-disabled and zero-ping early-return branches are unchanged by the commit and are not represented as separate change actions."
+      ],
+      "evidence_ids": [
+        "callsite-1842-lifecycle",
+        "impl-1842-parent-alias",
+        "impl-1842-pinned-copy",
+        "callsite-1842-normal-send",
+        "callsite-1842-prefill-loop",
+        "validation-1842-diff-check"
+      ],
+      "supporting_repositories": [
+        "Aider-AI/aider"
+      ],
+      "source_case": "Aider-AI/aider#1842"
+    },
+    {
+      "id": "workflow:eefbc06dccc9737d",
+      "node_type": "issue_workflow",
+      "category": "bounded-resource-budget-control",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 29080,
+      "episode_id": "issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+      "name": "model-retry-request-integrity",
+      "description": "The model request path adapts invalid-stream retry guidance to the current contents and then normalizes outgoing parts before the API call.",
+      "goal": "Bound retry guidance and preserve valid request-content contracts at the model boundary.",
+      "entry_state": "A retry request contains an invalid-stream condition or outgoing parts with empty text artifacts.",
+      "exit_state": "Retry guidance is appended to valid request contents, the stable system instruction is preserved, and payload-bearing parts are not rejected solely because of an empty text key.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:8a894318c6e2b3ab",
+          "role": "implement",
+          "optional": true
+        },
+        {
+          "step_id": "step-2",
+          "action_id": "semantic-action:6623a0eab1e4e2dc",
+          "role": "validate",
+          "optional": true
+        }
+      ],
+      "edges": [
+        {
+          "from": "step-1",
+          "to": "step-2",
+          "type": "enables"
+        }
+      ],
+      "unresolved_or_deferred": [
+        "The sanitizer is in the final request-construction path, but the pinned commit adds no direct regression assertion for its new empty-part branches. The edge captures request construction order, not a requirement that every retry contain an empty part."
+      ],
+      "evidence_ids": [
+        "E11",
+        "E12",
+        "E13",
+        "E14"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "source_case": "google-gemini/gemini-cli#29080"
+    }
+  ],
+  "patterns": [
+    {
+      "id": "pattern:b21acc8b211cfac4",
+      "node_type": "resolution_pattern",
+      "category": "concurrent-work-coordination",
+      "intent": "Resolve concurrent work coordination through a contract-first, evidence-validated change chain.",
+      "mandatory_actions": [],
+      "optional_actions": [],
+      "workflow_template": [],
+      "ordering_constraints": [],
+      "decision_points": [],
+      "invariants": [],
+      "validation_ladder": [],
+      "known_failure_modes": [],
+      "supporting_workflows": [
+        "workflow:4645ac2001ecf7d2"
+      ],
+      "supporting_repositories": [
+        "earendil-works/pi"
+      ],
+      "counterexamples": [],
+      "confidence": 0.0,
+      "promotion_status": "deferred_by_semantic_judge",
+      "held_out_results": [],
+      "extraction_method": "structural-action-fingerprint-v1; semantic judge required before promotion",
+      "judge_decision": "defer",
+      "judge_confidence": 0.99,
+      "judge_rationale": "The candidate has only one supporting workflow, from earendil-works/pi. Its mandatory action reconciles a later preflight abort for prepared parallel calls, but no independent repository supplies the same mandatory operation or an equivalent-action cluster.",
+      "missing_probes": [
+        "An independent repository workflow must exercise a later preflight abort after a call is prepared and require no deferred side effect or post-execution hook plus one ordered error result for each recorded call.",
+        "Probe calls that were never prepared or recorded before the abort to determine whether placeholder results are required for them.",
+        "An untouched holdout end-task repair must apply the candidate workflow and verify the cancellation-consistent result contract."
+      ]
+    },
+    {
+      "id": "pattern:be946de4210443d0",
+      "node_type": "resolution_pattern",
+      "category": "extension-resource-lifecycle",
+      "intent": "Resolve extension resource lifecycle through a contract-first, evidence-validated change chain.",
+      "mandatory_actions": [],
+      "optional_actions": [],
+      "workflow_template": [],
+      "ordering_constraints": [],
+      "decision_points": [],
+      "invariants": [],
+      "validation_ladder": [],
+      "known_failure_modes": [],
+      "supporting_workflows": [
+        "workflow:8fd00ec6e7d74f75"
+      ],
+      "supporting_repositories": [
+        "openai/codex"
+      ],
+      "counterexamples": [],
+      "confidence": 0.0,
+      "promotion_status": "deferred_by_semantic_judge",
+      "held_out_results": [],
+      "extraction_method": "structural-action-fingerprint-v1; semantic judge required before promotion",
+      "judge_decision": "defer",
+      "judge_confidence": 0.99,
+      "judge_rationale": "The candidate has only one supporting workflow, from openai/codex. The implementation and validation actions coherently cover a Unix local-stdio descriptor boundary, but they are not independent repository support, and the recorded workflow explicitly leaves Windows handle inheritance unresolved.",
+      "missing_probes": [
+        "An independent repository workflow must implement the same explicit-stdio-only local extension launch boundary and validate non-inheritance in both the server and a descendant while preserving transport behavior.",
+        "Probe the shared or Windows spawn path if the reusable pattern is intended to cover platforms beyond the Unix-only implementation.",
+        "An untouched holdout end-task repair must validate launch variants, transport communication, preserved launch settings, and failed-exec reporting."
+      ]
+    },
+    {
+      "id": "pattern:dde0e64126085639",
+      "node_type": "resolution_pattern",
+      "category": "bounded-resource-budget-control",
+      "intent": "Resolve bounded resource budget control through a contract-first, evidence-validated change chain.",
+      "mandatory_actions": [],
+      "optional_actions": [],
+      "workflow_template": [],
+      "ordering_constraints": [],
+      "decision_points": [],
+      "invariants": [],
+      "validation_ladder": [],
+      "known_failure_modes": [],
+      "supporting_workflows": [
+        "workflow:03677ac1471c8998",
+        "workflow:0e97359a43ec4400",
+        "workflow:1462bc0c924a29cc",
+        "workflow:3329cbf7b02a8c48",
+        "workflow:805ace572989954b",
+        "workflow:edfd47b68de2afce",
+        "workflow:eefbc06dccc9737d"
+      ],
+      "supporting_repositories": [
+        "Aider-AI/aider",
+        "NousResearch/hermes-agent",
+        "QwenLM/qwen-code",
+        "google-gemini/gemini-cli"
+      ],
+      "counterexamples": [],
+      "confidence": 0.0,
+      "promotion_status": "deferred_by_semantic_judge",
+      "held_out_results": [],
+      "extraction_method": "structural-action-fingerprint-v1; semantic judge required before promotion",
+      "judge_decision": "defer",
+      "judge_confidence": 0.97,
+      "judge_rationale": "Seven workflows span four repositories, but their mandatory actions do not align at the reusable semantic level: post-tool nudging and cancellation rollback, compression-default migration, deferred-resource preload budgeting, cache-warming parameter isolation, edit guards, and retry-content normalization have different mechanisms, postconditions, and validation oracles. The equivalent nudge cluster is confined to one repository, so it cannot satisfy the independent-repository requirement.",
+      "missing_probes": [
+        "At least one second repository must independently implement the same mandatory budget-control action, or an explicit equivalent-action cluster, with a matching postcondition and validation oracle.",
+        "Probe whether a generic bounded-resource invariant can be stated independently of the repository-specific nudge, edit, compression, cache-warming, and deferred-preload mechanisms.",
+        "An untouched holdout end-task repair must exercise the proposed cross-repository action or cluster, including its invalid, over-budget, cancellation, or explicit-user-value preservation boundary cases."
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "semantic-action:1941f701663bd284",
+      "to": "evidence:github:Aider-AI/aider#1842",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:b1038e6640f979a5",
+      "to": "evidence:NousResearch/hermes-agent#125235@98278833e29b167fe930e276eed7cb16bee68673",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:7d1633b29680d745",
+      "to": "evidence:NousResearch/hermes-agent#125235@98278833e29b167fe930e276eed7cb16bee68673",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:b1038e6640f979a5",
+      "to": "semantic-action:7d1633b29680d745",
+      "type": "enables",
+      "workflow_id": "workflow:1462bc0c924a29cc",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-2"
+    },
+    {
+      "from": "semantic-action:265d94ab13ba6de8",
+      "to": "evidence:QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:0c19423512bf00ef",
+      "to": "evidence:QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:88b4f2fa5276d3b7",
+      "to": "evidence:QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:8e3e370e9a79a993",
+      "to": "evidence:QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:93c1d7660d38de6f",
+      "to": "evidence:QwenLM/qwen-code#12029@18cb393e4b59555d5e90f7003267fb69a43f6c77",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:265d94ab13ba6de8",
+      "to": "semantic-action:0c19423512bf00ef",
+      "type": "requires",
+      "workflow_id": "workflow:3329cbf7b02a8c48",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-2"
+    },
+    {
+      "from": "semantic-action:265d94ab13ba6de8",
+      "to": "semantic-action:88b4f2fa5276d3b7",
+      "type": "requires",
+      "workflow_id": "workflow:3329cbf7b02a8c48",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-3"
+    },
+    {
+      "from": "semantic-action:0c19423512bf00ef",
+      "to": "semantic-action:88b4f2fa5276d3b7",
+      "type": "repairs",
+      "workflow_id": "workflow:3329cbf7b02a8c48",
+      "workflow_step_from": "step-2",
+      "workflow_step_to": "step-3"
+    },
+    {
+      "from": "semantic-action:88b4f2fa5276d3b7",
+      "to": "semantic-action:8e3e370e9a79a993",
+      "type": "enables",
+      "workflow_id": "workflow:3329cbf7b02a8c48",
+      "workflow_step_from": "step-3",
+      "workflow_step_to": "step-4"
+    },
+    {
+      "from": "semantic-action:8e3e370e9a79a993",
+      "to": "semantic-action:93c1d7660d38de6f",
+      "type": "enables",
+      "workflow_id": "workflow:3329cbf7b02a8c48",
+      "workflow_step_from": "step-4",
+      "workflow_step_to": "step-5"
+    },
+    {
+      "from": "semantic-action:f6dd64c00f078f80",
+      "to": "evidence:issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:26186cfe5470ed34",
+      "to": "evidence:issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:8a894318c6e2b3ab",
+      "to": "evidence:issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:6623a0eab1e4e2dc",
+      "to": "evidence:issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:341c32a111cda69a",
+      "to": "evidence:issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:704911df2cf56208",
+      "to": "evidence:issue-29080@812f7a2bcf20b6e80e2e50c3c8fa8e26567bc1e8",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:f6dd64c00f078f80",
+      "to": "semantic-action:26186cfe5470ed34",
+      "type": "requires",
+      "workflow_id": "workflow:0e97359a43ec4400",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-2"
+    },
+    {
+      "from": "semantic-action:8a894318c6e2b3ab",
+      "to": "semantic-action:6623a0eab1e4e2dc",
+      "type": "enables",
+      "workflow_id": "workflow:eefbc06dccc9737d",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-2"
+    },
+    {
+      "from": "semantic-action:341c32a111cda69a",
+      "to": "semantic-action:704911df2cf56208",
+      "type": "requires",
+      "workflow_id": "workflow:805ace572989954b",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-2"
+    },
+    {
+      "from": "semantic-action:f03329db7fe2f96c",
+      "to": "evidence:github:openai/codex#46960",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:4546979be694d603",
+      "to": "evidence:github:openai/codex#46960",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:f03329db7fe2f96c",
+      "to": "semantic-action:4546979be694d603",
+      "type": "enables",
+      "workflow_id": "workflow:8fd00ec6e7d74f75",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-2"
+    },
+    {
+      "from": "semantic-action:f6213c288ee4f3e7",
+      "to": "evidence:github:earendil-works/pi#9994",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "pattern:dde0e64126085639",
+      "to": "workflow:edfd47b68de2afce",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:dde0e64126085639",
+      "to": "workflow:1462bc0c924a29cc",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:dde0e64126085639",
+      "to": "workflow:3329cbf7b02a8c48",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:dde0e64126085639",
+      "to": "workflow:0e97359a43ec4400",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:dde0e64126085639",
+      "to": "workflow:03677ac1471c8998",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:dde0e64126085639",
+      "to": "workflow:eefbc06dccc9737d",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:dde0e64126085639",
+      "to": "workflow:805ace572989954b",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:b21acc8b211cfac4",
+      "to": "workflow:4645ac2001ecf7d2",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:be946de4210443d0",
+      "to": "workflow:8fd00ec6e7d74f75",
+      "type": "supported_by"
+    }
+  ],
+  "rejected": [],
+  "summary": {
+    "episodes_input": 6,
+    "episodes_used": 6,
+    "actions": 17,
+    "grounded_actions": 17,
+    "workflows": 9,
+    "patterns": 3,
+    "patterns_with_cross_repository_support": 1,
+    "rejected": 0,
+    "action_merges_applied": 1,
+    "patterns_promotable": 0
+  },
+  "semantic_adjudication": {
+    "source": "codex-graph-adjudication",
+    "accepted_action_merges": [
+      {
+        "canonical_action_id": "semantic-action:26186cfe5470ed34",
+        "member_action_ids": [
+          "semantic-action:26186cfe5470ed34",
+          "semantic-action:004c33e49d9cf153"
+        ],
+        "decision": "equivalent",
+        "confidence": 0.88,
+        "rationale": "Both actions implement the same reusable bounded recovery: after completed tool work, the next model continuation has no tool calls and no visible text, so an exact recovery nudge is sent before normal completion. The interactive/session bookkeeping differs (attempt counter versus armed-after-tool state), and each test has path-specific call-count assertions, but both use the same semantic validation oracle: observe the recovery nudge after the empty post-tool continuation. The session-loop action is the broader existing canonical.",
+        "evidence_ids": [
+          "E6",
+          "E7",
+          "E19",
+          "E8",
+          "E9",
+          "E10",
+          "E18"
+        ]
+      }
+    ],
+    "action_aliases": {
+      "semantic-action:004c33e49d9cf153": "semantic-action:26186cfe5470ed34"
+    },
+    "pattern_judgments": [
+      {
+        "pattern_id": "pattern:b21acc8b211cfac4",
+        "decision": "defer",
+        "confidence": 0.99,
+        "rationale": "The candidate has only one supporting workflow, from earendil-works/pi. Its mandatory action reconciles a later preflight abort for prepared parallel calls, but no independent repository supplies the same mandatory operation or an equivalent-action cluster.",
+        "evidence_ids": [
+          "ev-parallel-call-site",
+          "ev-preflight-abort",
+          "ev-after-guard",
+          "ev-regression-oracle"
+        ],
+        "missing_probes": [
+          "An independent repository workflow must exercise a later preflight abort after a call is prepared and require no deferred side effect or post-execution hook plus one ordered error result for each recorded call.",
+          "Probe calls that were never prepared or recorded before the abort to determine whether placeholder results are required for them.",
+          "An untouched holdout end-task repair must apply the candidate workflow and verify the cancellation-consistent result contract."
+        ]
+      },
+      {
+        "pattern_id": "pattern:be946de4210443d0",
+        "decision": "defer",
+        "confidence": 0.99,
+        "rationale": "The candidate has only one supporting workflow, from openai/codex. The implementation and validation actions coherently cover a Unix local-stdio descriptor boundary, but they are not independent repository support, and the recorded workflow explicitly leaves Windows handle inheritance unresolved.",
+        "evidence_ids": [
+          "ev-04",
+          "ev-05",
+          "ev-09",
+          "ev-10",
+          "ev-11",
+          "ev-12",
+          "ev-13"
+        ],
+        "missing_probes": [
+          "An independent repository workflow must implement the same explicit-stdio-only local extension launch boundary and validate non-inheritance in both the server and a descendant while preserving transport behavior.",
+          "Probe the shared or Windows spawn path if the reusable pattern is intended to cover platforms beyond the Unix-only implementation.",
+          "An untouched holdout end-task repair must validate launch variants, transport communication, preserved launch settings, and failed-exec reporting."
+        ]
+      },
+      {
+        "pattern_id": "pattern:dde0e64126085639",
+        "decision": "defer",
+        "confidence": 0.97,
+        "rationale": "Seven workflows span four repositories, but their mandatory actions do not align at the reusable semantic level: post-tool nudging and cancellation rollback, compression-default migration, deferred-resource preload budgeting, cache-warming parameter isolation, edit guards, and retry-content normalization have different mechanisms, postconditions, and validation oracles. The equivalent nudge cluster is confined to one repository, so it cannot satisfy the independent-repository requirement.",
+        "evidence_ids": [
+          "E8",
+          "E15",
+          "ev-03-default-policy-diff",
+          "ev-config-contract",
+          "ev-registry-budget",
+          "callsite-1842-pinned-copy",
+          "E11",
+          "E14"
+        ],
+        "missing_probes": [
+          "At least one second repository must independently implement the same mandatory budget-control action, or an explicit equivalent-action cluster, with a matching postcondition and validation oracle.",
+          "Probe whether a generic bounded-resource invariant can be stated independently of the repository-specific nudge, edit, compression, cache-warming, and deferred-preload mechanisms.",
+          "An untouched holdout end-task repair must exercise the proposed cross-repository action or cluster, including its invalid, over-budget, cancellation, or explicit-user-value preservation boundary cases."
+        ]
+      }
+    ],
+    "holdout_used": false,
+    "promotion_gate": "no pattern is final before untouched holdout end-task validation"
+  }
+}

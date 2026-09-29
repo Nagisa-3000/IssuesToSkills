@@ -1,0 +1,33 @@
+....F                                                                    [100%]
+=================================== FAILURES ===================================
+_____________ test_late_registered_provider_reaches_picker_catalog _____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fad431df9d0>
+
+    def test_late_registered_provider_reaches_picker_catalog(monkeypatch):
+        import hermes_cli.models_catalog_static as catalog
+        from hermes_cli.models import list_available_providers
+    
+        # this module is imported (the snapshot exists) before the registration below
+        monkeypatch.setattr(catalog, "CANONICAL_PROVIDERS", list(catalog.CANONICAL_PROVIDERS))
+        monkeypatch.setattr(catalog, "_canonical_slugs", set(catalog._canonical_slugs))
+        monkeypatch.setattr(catalog, "_PROVIDER_LABELS", dict(catalog._PROVIDER_LABELS))
+        monkeypatch.setattr("hermes_cli.models.CANONICAL_PROVIDERS", catalog.CANONICAL_PROVIDERS)
+        monkeypatch.setattr("hermes_cli.models._PROVIDER_LABELS", catalog._PROVIDER_LABELS)
+        slug = "zz-late-plugin-provider"
+        assert slug not in {r["id"] for r in list_available_providers()}
+    
+        import providers as registry
+        registry.list_providers()  # discovery done: a registration now is a post-discovery one
+        monkeypatch.setitem(registry._REGISTRY, slug, _profile(slug))  # keeps the registry scoped
+        register_provider(_profile(slug))
+    
+>       assert slug in {r["id"] for r in list_available_providers()}
+E       AssertionError: assert 'zz-late-plugin-provider' in {'actual', 'ai-gateway', 'alibaba', 'alibaba-cn', 'alibaba-coding-plan', 'alibaba-coding-plan-cn', ...}
+
+tests/hermes_cli/test_models_catalog_late_plugin_provider.py:35: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  agent.bedrock_adapter:bedrock_adapter.py:35 boto3 lazy install did not complete: Feature 'provider.bedrock' unavailable: lazy installs disabled (security.allow_lazy_installs=false). To enable manually: uv pip install 'boto3==1.42.89'  (or: pip install 'boto3==1.42.89').
+=========================== short test summary info ============================
+FAILED tests/hermes_cli/test_models_catalog_late_plugin_provider.py::test_late_registered_provider_reaches_picker_catalog
+1 failed, 4 passed in 3.05s

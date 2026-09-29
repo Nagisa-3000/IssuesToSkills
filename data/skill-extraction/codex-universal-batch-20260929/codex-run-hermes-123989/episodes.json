@@ -1,0 +1,460 @@
+[
+  {
+    "episode_id": "NousResearch/hermes-agent#123989@b5f587dba8b1852127c6cc3d7e3d98dceedbf94d",
+    "title": "[Bug]: Multiplex: API-server turns for different profiles share one Docker sandbox when their opening messages match",
+    "before": "Before b5f587dba8b1852127c6cc3d7e3d98dceedbf94d, the parent implementation used the alias-resolved raw task/session id directly for a session-isolated backend. A multiplexed process serving multiple profiles could therefore put identical header-less API-server fingerprints into the same _active_environments slot: the second profile could attach to the first profile's sandbox, including its image, mounts, and exported environment. The separate session-cwd map also indexed record, read, and clear operations by the raw id, so one profile could overwrite, read, or clear another profile's working-directory state. There was no shared profile/home qualifier for these raw-id paths, although ordinary no-override behavior was intentionally raw-keyed.",
+    "after": "After the change, a context-local routed home/profile scope is converted into a stable qualifier: named profiles use a profile-qualified prefix, the canonical default uses profile:default, and otherwise the active home realpath is used, with an error-safe textual fallback. Session-isolated task ids are alias-resolved and then qualified before they index the active environment cache; with no routed override they remain raw. The session-cwd record, get, and clear operations apply the same qualification symmetrically, so identical raw ids in different routed profiles use independent cwd slots. Existing persistent-Docker profile-key branches and ordinary single-profile/no-override raw-key behavior remain unchanged.",
+    "diff": "The parent-to-commit diff changes exactly two files. In tools/terminal_tool.py it adds the routed home qualifier and generic task-key qualification helper, applies qualification to the session-isolated container-key branch, and changes the session-cwd record/get/clear trio to use the same helper; the terminal call-site comment documents that the centralized functions keep worker-thread callers symmetric. In tests/tools/test_docker_session_isolation.py it adds the TestRoutedScopeQualification regression class with six tests covering legacy no-override behavior, named-profile qualification, identical fingerprint collisions across named and default profiles, subagent alias qualification, symmetric cwd isolation/clear behavior, and raw cwd storage without an override. The implementation portion is 61 insertions and 7 deletions; the test addition is 98 lines.",
+    "repository": "NousResearch/hermes-agent",
+    "revision": "github-issue-123989",
+    "evidence_ids": [
+      "ev-issue-anchor",
+      "ev-commit-narrative",
+      "ev-diff",
+      "ev-parent-before",
+      "ev-scope-predicate",
+      "ev-qualifier-implementation",
+      "ev-container-implementation",
+      "ev-cwd-implementation",
+      "ev-call-sites",
+      "ev-regression-tests",
+      "ev-commit-validation",
+      "ev-local-test-attempt"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 123989,
+      "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/hermes-agent",
+      "manifest_metadata": {
+        "category": "effect-control-and-isolation",
+        "role": "train_candidate",
+        "case_id": "NousResearch/hermes-agent#123989:effect-control-and-isolation:train_candidate"
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "NousResearch/hermes-agent",
+        "issue_number": 123989,
+        "issue": {
+          "number": 123989,
+          "title": "[Bug]: Multiplex: API-server turns for different profiles share one Docker sandbox when their opening messages match",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [],
+        "checkout": "/mnt/c/Users/W/AppData/Local/Temp/arex-skill-graph-codex/hermes-agent",
+        "pinned_ref": "b5f587dba8b1852127c6cc3d7e3d98dceedbf94d",
+        "resolved_commit": "b5f587dba8b1852127c6cc3d7e3d98dceedbf94d",
+        "parent_commit": "2e3c9ceeb1cfca90f8d5a6eea3210dd78c86846f",
+        "commit_show_stat": "commit b5f587dba8b1852127c6cc3d7e3d98dceedbf94d\nAuthor:     Nabil Ahmed Ameena <nabil@techilaservices.com>\nAuthorDate: Sat Sep 26 21:07:46 2026 +0530\nCommit:     teknium1 <127238744+teknium1@users.noreply.github.com>\nCommitDate: Mon Sep 28 01:27:37 2026 -0700\n\n    fix(terminal): qualify session-isolated container keys and cwd records under a routed profile scope (#123989)\n    \n    A multiplexed host serves every profile in one process, and header-less API-server\n    clients derive their session id from a fingerprint of the system prompt + first\n    user message. Under per-session isolation (docker + container_persistent: false,\n    plus plugin backends declaring session_isolated_when_nonpersistent) branch 2 of\n    _resolve_container_task_id keyed the raw id, so two profiles whose conversations\n    open with the same text shared one _active_environments slot: the second profile's\n    turn attached to the first profile's sandbox, with the first profile's image,\n    mounts and exported environment. Verified live against real docker (both\n    directions on unmodified main; isolated after the fix).\n    \n    Routed scopes (HERMES_HOME override: multiplex turns named AND default,\n    per-profile TUI/desktop RPC, cron ticks) now qualify the key with the profile\n    name or home realpath; CLI and single-profile gateways keep the historical raw\n    key. The session-cwd record/get/clear trio gets the same qualification so the\n    fingerprint collision cannot carry one profile's cd state into another's.\n    \n    Regression tests in TestRoutedScopeQualification fail on pre-fix code (4/6) and\n    pass with the fix; persistent-Docker behavior is byte-identical (labels stay\n    profile:<name> / default).\n\n tests/tools/test_docker_session_isolation.py | 98 ++++++++++++++++++++++++++++\n tools/terminal_tool.py                       | 68 +++++++++++++++++--\n 2 files changed, 159 insertions(+), 7 deletions(-)\n",
+        "changed_files_name_status": "M\ttests/tools/test_docker_session_isolation.py\nM\ttools/terminal_tool.py\n",
+        "linked_issue_numbers": [
+          123989
+        ],
+        "manifest_metadata": {
+          "category": "effect-control-and-isolation"
+        },
+        "fetched_at": "2026-09-28T21:23:07.766552+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "NousResearch/hermes-agent#123989@b5f587dba8b1852127c6cc3d7e3d98dceedbf94d",
+          "title": "[Bug]: Multiplex: API-server turns for different profiles share one Docker sandbox when their opening messages match",
+          "before": "Before b5f587dba8b1852127c6cc3d7e3d98dceedbf94d, the parent implementation used the alias-resolved raw task/session id directly for a session-isolated backend. A multiplexed process serving multiple profiles could therefore put identical header-less API-server fingerprints into the same _active_environments slot: the second profile could attach to the first profile's sandbox, including its image, mounts, and exported environment. The separate session-cwd map also indexed record, read, and clear operations by the raw id, so one profile could overwrite, read, or clear another profile's working-directory state. There was no shared profile/home qualifier for these raw-id paths, although ordinary no-override behavior was intentionally raw-keyed.",
+          "after": "After the change, a context-local routed home/profile scope is converted into a stable qualifier: named profiles use a profile-qualified prefix, the canonical default uses profile:default, and otherwise the active home realpath is used, with an error-safe textual fallback. Session-isolated task ids are alias-resolved and then qualified before they index the active environment cache; with no routed override they remain raw. The session-cwd record, get, and clear operations apply the same qualification symmetrically, so identical raw ids in different routed profiles use independent cwd slots. Existing persistent-Docker profile-key branches and ordinary single-profile/no-override raw-key behavior remain unchanged.",
+          "diff": "The parent-to-commit diff changes exactly two files. In tools/terminal_tool.py it adds the routed home qualifier and generic task-key qualification helper, applies qualification to the session-isolated container-key branch, and changes the session-cwd record/get/clear trio to use the same helper; the terminal call-site comment documents that the centralized functions keep worker-thread callers symmetric. In tests/tools/test_docker_session_isolation.py it adds the TestRoutedScopeQualification regression class with six tests covering legacy no-override behavior, named-profile qualification, identical fingerprint collisions across named and default profiles, subagent alias qualification, symmetric cwd isolation/clear behavior, and raw cwd storage without an override. The implementation portion is 61 insertions and 7 deletions; the test addition is 98 lines."
+        },
+        "evidence_units": [
+          {
+            "id": "ev-issue-anchor",
+            "kind": "commit",
+            "claim": "The GitHub bundle anchors issue 123989 to resolved commit b5f587dba8b1852127c6cc3d7e3d98dceedbf94d, parent 2e3c9ceeb1cfca90f8d5a6eea3210dd78c86846f, and the effect-control-and-isolation category. The bundle contains no linked pull request and marks the issue body, comments, timeline, and author/review discussion unavailable.",
+            "source": "issue-bundle.json: issue, pinned_ref, resolved_commit, parent_commit, linked_pull_requests, manifest_metadata, metadata_unavailable"
+          },
+          {
+            "id": "ev-commit-narrative",
+            "kind": "commit",
+            "claim": "The pinned commit subject explicitly says it qualifies session-isolated container keys and cwd records under a routed profile scope. Its commit narrative identifies the collision mechanism: identical opening messages can produce the same fingerprint-derived API session id, causing two profiles to share one session-isolated environment cache slot; it also states the intended preservation of raw CLI/single-profile behavior and persistent-Docker profile labels.",
+            "source": "git show --format=fuller b5f587dba8b1852127c6cc3d7e3d98dceedbf94d"
+          },
+          {
+            "id": "ev-diff",
+            "kind": "diff",
+            "claim": "The pinned ref changes exactly tests/tools/test_docker_session_isolation.py and tools/terminal_tool.py. The diff statistics are 98 added test lines and 61 added/7 deleted implementation lines, for 159 insertions and 7 deletions overall.",
+            "source": "git diff --stat and git diff --numstat 2e3c9ceeb1cfca90f8d5a6eea3210dd78c86846f b5f587dba8b1852127c6cc3d7e3d98dceedbf94d"
+          },
+          {
+            "id": "ev-parent-before",
+            "kind": "implementation",
+            "claim": "In the parent, record_session_cwd stored str(session_key or default) directly, get_session_cwd read that raw key, and clear_session_cwd popped the raw key. In the parent session-isolated branch, _resolve_container_task_id returned _resolve_container_alias(task_id) directly, so a routed profile was absent from both the environment-cache key and cwd-record key.",
+            "source": "tools/terminal_tool.py at parent 2e3c9ceeb1cfca90f8d5a6eea3210dd78c86846f:253-275 and 465-510"
+          },
+          {
+            "id": "ev-scope-predicate",
+            "kind": "implementation",
+            "claim": "The shared session-scope predicate treats Docker with a nonpersistent setting and plugin backends declaring session_isolated_when_nonpersistent as session-isolated when persistence is false. The changed container-key branch therefore covers the backend class described by the commit, while Docker-specific mount/lifecycle predicates remain separate.",
+            "source": "tools/terminal_tool.py at b5f587dba8b1852127c6cc3d7e3d98dceedbf94d:395-426"
+          },
+          {
+            "id": "ev-qualifier-implementation",
+            "kind": "implementation",
+            "claim": "The implementation adds _home_scope_qualifier and _qualify_task_key. With no active home override the qualifier is empty; with an override, profile_name_for_home maps the canonical default to profile:default, a named profile to profile:<name>, and an otherwise unclassified home to home:<realpath>, falling back to the override string if realpath raises OSError. _qualify_task_key prefixes only when a qualifier exists.",
+            "source": "tools/terminal_tool.py at b5f587dba8b1852127c6cc3d7e3d98dceedbf94d:475-504"
+          },
+          {
+            "id": "ev-container-implementation",
+            "kind": "implementation",
+            "claim": "The session-isolated container branch now returns _qualify_task_key(_resolve_container_alias(task_id)). The alias is resolved before qualification, preserving the parent-container relationship for subagents while placing the resulting key in the active routed profile/home namespace. The image/env-type override branch remains earlier and authoritative, and the persistent-Docker branches are not changed by this patch.",
+            "source": "tools/terminal_tool.py at b5f587dba8b1852127c6cc3d7e3d98dceedbf94d:507-542"
+          },
+          {
+            "id": "ev-cwd-implementation",
+            "kind": "implementation",
+            "claim": "record_session_cwd, get_session_cwd, and clear_session_cwd all use _qualify_task_key at their storage boundary. This makes write, read, and teardown use the same scoped slot instead of allowing a profile's read or clear operation to address another profile's raw-id record.",
+            "source": "tools/terminal_tool.py at b5f587dba8b1852127c6cc3d7e3d98dceedbf94d:253-285"
+          },
+          {
+            "id": "ev-call-sites",
+            "kind": "call_site",
+            "claim": "Existing callers continue to use the centralized cwd and environment-key APIs: task override registration records cwd and cleanup clears it; command cwd resolution and environment planning read the session cwd; environment acquisition resolves the effective container key; and terminal result processing records observed cwd. The patch therefore fixes the shared state boundary without editing each consumer.",
+            "source": "tools/terminal_tool.py:323-355, 949-976, 1136-1149, 1431-1443; repository-wide rg call-site search for record_session_cwd, get_session_cwd, clear_session_cwd, and _resolve_container_task_id"
+          },
+          {
+            "id": "ev-regression-tests",
+            "kind": "test",
+            "claim": "The added TestRoutedScopeQualification tests assert that no override preserves a raw API key and raw cwd map key; a named routed profile yields profile:research:api-abc123; the same raw fingerprint in research and default profiles yields distinct keys; a routed subagent alias resolves to a qualified parent; profile B starts with no profile A cwd record, can clear only its own record, and profile A's record remains; and cwd storage is raw without an override.",
+            "source": "tests/tools/test_docker_session_isolation.py at b5f587dba8b1852127c6cc3d7e3d98dceedbf94d:133-228"
+          },
+          {
+            "id": "ev-commit-validation",
+            "kind": "validation",
+            "claim": "The commit message reports that the routed-scope regression tests fail on the pre-fix implementation for 4 of 6 tests and pass after the fix, that live Docker verification exercised both profile directions, and that persistent-Docker behavior remained byte-identical with profile/default labels.",
+            "source": "git show --format=fuller b5f587dba8b1852127c6cc3d7e3d98dceedbf94d: commit message body"
+          },
+          {
+            "id": "ev-local-test-attempt",
+            "kind": "validation",
+            "claim": "An independent local attempt to run the targeted suite through the repository runner did not reach pytest: activation failed because uv reported that uv.lock needed updating while --locked was supplied. The checkout remained clean afterward, so this extraction does not treat the local attempt as a pass/fail reproduction.",
+            "source": "bash scripts/run_tests.sh tests/tools/test_docker_session_isolation.py -k RoutedScopeQualification; command output from the pinned checkout on 2026-09-29"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "derive_routed_scope_qualifier",
+            "description": "Derive a stable namespace component from the active routed profile/home context, with an empty result when no routed override is active so legacy identity remains intact.",
+            "evidence_ids": [
+              "ev-qualifier-implementation",
+              "ev-regression-tests"
+            ],
+            "semantic_action": {
+              "intent": "Provide a profile/home discriminator for mutable terminal state when one process serves multiple routed scopes.",
+              "module_role": "routed terminal state identity",
+              "operation": "derive",
+              "pre_state": "Raw terminal state keys have no common scope component, even when a call is executing under a context-local routed home override; calls without an override must retain the historical unqualified identity.",
+              "post_state": "The active scope yields profile:default for the canonical default, profile:<name> for a named profile, or home:<realpath> with a safe textual fallback for an otherwise unclassified home; no override yields an empty qualifier.",
+              "validation": "The routed-profile key test observes the profile-qualified result and the no-override tests observe the unchanged raw result. The helper is validated indirectly through its container-key and cwd-state consumers rather than by a direct helper-only test.",
+              "parameters": [
+                "active context-local routed home override",
+                "canonical profile identity",
+                "resolved home realpath"
+              ],
+              "evidence_ids": [
+                "ev-qualifier-implementation",
+                "ev-regression-tests"
+              ]
+            }
+          },
+          {
+            "name": "qualify_session_isolated_container_key",
+            "description": "Namespace the alias-resolved task identity used for a session-isolated sandbox by the active routed profile/home, preventing same-fingerprint profiles from sharing an environment cache slot while preserving subagent aliasing and legacy raw behavior.",
+            "evidence_ids": [
+              "ev-parent-before",
+              "ev-scope-predicate",
+              "ev-container-implementation",
+              "ev-regression-tests"
+            ],
+            "semantic_action": {
+              "intent": "Prevent cross-profile reuse of a session-isolated sandbox when different profiles generate the same raw API-session fingerprint.",
+              "module_role": "session-isolated sandbox identity resolution",
+              "operation": "qualify",
+              "pre_state": "For a session-isolated backend, the alias-resolved raw task id is used directly as the environment-cache identity, so identical raw ids from different routed profiles can attach to one sandbox.",
+              "post_state": "The alias-resolved task identity is prefixed by the active routed scope, making equal raw ids from different profiles distinct; subagent aliases still resolve to the parent's qualified identity, while no routed override keeps the raw key and earlier explicit isolation overrides remain authoritative.",
+              "validation": "The regression tests prove named-profile qualification, distinct keys for a research/default fingerprint collision, qualified subagent-parent resolution, and raw behavior without an override. The commit also reports live Docker isolation in both profile directions.",
+              "parameters": [
+                "raw task or session id",
+                "alias-resolved parent id",
+                "session-isolated backend predicate",
+                "active routed profile/home scope"
+              ],
+              "evidence_ids": [
+                "ev-scope-predicate",
+                "ev-container-implementation",
+                "ev-regression-tests",
+                "ev-commit-validation"
+              ]
+            }
+          },
+          {
+            "name": "qualify_session_cwd_state",
+            "description": "Apply the same routed scope qualification to session working-directory record, lookup, and teardown operations so cwd state cannot cross profile boundaries or be cleared asymmetrically.",
+            "evidence_ids": [
+              "ev-parent-before",
+              "ev-cwd-implementation",
+              "ev-call-sites",
+              "ev-regression-tests"
+            ],
+            "semantic_action": {
+              "intent": "Prevent cross-profile working-directory state bleed for equal raw session ids and preserve symmetric cleanup.",
+              "module_role": "session working-directory state store",
+              "operation": "qualify",
+              "pre_state": "The cwd map records, reads, and clears by raw session id, so a profile sharing the id can observe or overwrite another profile's directory and can clear its record.",
+              "post_state": "Record, get, and clear all address the same scope-qualified slot; a different routed profile sees no prior record, owns its own cwd, and can clear only that slot, while no override continues to use the raw slot.",
+              "validation": "The cwd regression test records profile A's directory, verifies profile B starts empty, records and clears B, and then verifies A remains unchanged; a separate no-override assertion verifies raw map storage.",
+              "parameters": [
+                "raw session key",
+                "recorded working directory",
+                "active routed profile/home scope"
+              ],
+              "evidence_ids": [
+                "ev-cwd-implementation",
+                "ev-call-sites",
+                "ev-regression-tests"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "routed_profile_terminal_isolation",
+            "description": "Establish one reusable routed-scope namespace and apply it to the two mutable terminal state boundaries implicated by the collision: session-isolated environment identities and session cwd records.",
+            "atomic_names": [
+              "derive_routed_scope_qualifier",
+              "qualify_session_isolated_container_key",
+              "qualify_session_cwd_state"
+            ],
+            "evidence_ids": [
+              "ev-issue-anchor",
+              "ev-parent-before",
+              "ev-qualifier-implementation",
+              "ev-container-implementation",
+              "ev-cwd-implementation",
+              "ev-regression-tests",
+              "ev-commit-validation"
+            ],
+            "workflow_graph": {
+              "goal": "Ensure profiles served by one process cannot share a session-isolated sandbox or cwd record merely because their raw API-session fingerprints match, while preserving unqualified single-profile behavior.",
+              "entry_state": "One process serves routed profiles A and B; identical opening messages can produce the same raw session id, and raw per-session environment and cwd state are profile-blind.",
+              "exit_state": "The same raw id resolves to distinct environment identities and independent cwd slots under different routed profiles; no-override behavior remains raw and persistent-Docker profile scoping remains stable.",
+              "steps": [
+                {
+                  "action_name": "derive_routed_scope_qualifier",
+                  "role": "establish-contract",
+                  "optional": false
+                },
+                {
+                  "action_name": "qualify_session_isolated_container_key",
+                  "role": "implement",
+                  "optional": false
+                },
+                {
+                  "action_name": "qualify_session_cwd_state",
+                  "role": "implement",
+                  "optional": false
+                }
+              ],
+              "edges": [
+                {
+                  "from": "derive_routed_scope_qualifier",
+                  "to": "qualify_session_isolated_container_key",
+                  "type": "enables"
+                },
+                {
+                  "from": "derive_routed_scope_qualifier",
+                  "to": "qualify_session_cwd_state",
+                  "type": "enables"
+                }
+              ],
+              "unresolved_or_deferred": [
+                "The issue body, comments, timeline, author discussion, and linked pull request are unavailable in the supplied bundle; the detailed reproduction narrative is therefore commit-reported.",
+                "The added tests exercise Docker directly. Plugin backends are covered by the shared session-isolated predicate in implementation, but no plugin-specific integration test is present in this commit.",
+                "The targeted repository test runner could not reach pytest locally because activation stopped on a uv.lock freshness error under --locked; the reported post-fix pass was not independently rerun in this environment."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "The supplied GitHub bundle has no issue body, comments, timeline, author/review discussion, or linked pull request, so there is no independent user-reproduction record beyond the issue title and the pinned commit narrative.",
+          "Whether the live Docker verification reported by the commit was run against exactly this checkout state cannot be independently established from the local checkout or bundle; no Docker execution log is included.",
+          "The targeted regression suite could not be independently executed here because scripts/run_tests.sh activation failed before pytest when uv reported that uv.lock needed updating while --locked was supplied.",
+          "The commit generalizes qualification to plugin backends whose session scope is declared through the shared predicate, but the added regression tests explicitly exercise Docker rather than a concrete plugin backend."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "derive_routed_scope_qualifier",
+          "description": "Derive a stable namespace component from the active routed profile/home context, with an empty result when no routed override is active so legacy identity remains intact.",
+          "evidence_ids": [
+            "ev-qualifier-implementation",
+            "ev-regression-tests"
+          ],
+          "semantic_action": {
+            "intent": "Provide a profile/home discriminator for mutable terminal state when one process serves multiple routed scopes.",
+            "module_role": "routed terminal state identity",
+            "operation": "derive",
+            "pre_state": "Raw terminal state keys have no common scope component, even when a call is executing under a context-local routed home override; calls without an override must retain the historical unqualified identity.",
+            "post_state": "The active scope yields profile:default for the canonical default, profile:<name> for a named profile, or home:<realpath> with a safe textual fallback for an otherwise unclassified home; no override yields an empty qualifier.",
+            "validation": "The routed-profile key test observes the profile-qualified result and the no-override tests observe the unchanged raw result. The helper is validated indirectly through its container-key and cwd-state consumers rather than by a direct helper-only test.",
+            "parameters": [
+              "active context-local routed home override",
+              "canonical profile identity",
+              "resolved home realpath"
+            ],
+            "evidence_ids": [
+              "ev-qualifier-implementation",
+              "ev-regression-tests"
+            ]
+          }
+        },
+        {
+          "name": "qualify_session_isolated_container_key",
+          "description": "Namespace the alias-resolved task identity used for a session-isolated sandbox by the active routed profile/home, preventing same-fingerprint profiles from sharing an environment cache slot while preserving subagent aliasing and legacy raw behavior.",
+          "evidence_ids": [
+            "ev-parent-before",
+            "ev-scope-predicate",
+            "ev-container-implementation",
+            "ev-regression-tests"
+          ],
+          "semantic_action": {
+            "intent": "Prevent cross-profile reuse of a session-isolated sandbox when different profiles generate the same raw API-session fingerprint.",
+            "module_role": "session-isolated sandbox identity resolution",
+            "operation": "qualify",
+            "pre_state": "For a session-isolated backend, the alias-resolved raw task id is used directly as the environment-cache identity, so identical raw ids from different routed profiles can attach to one sandbox.",
+            "post_state": "The alias-resolved task identity is prefixed by the active routed scope, making equal raw ids from different profiles distinct; subagent aliases still resolve to the parent's qualified identity, while no routed override keeps the raw key and earlier explicit isolation overrides remain authoritative.",
+            "validation": "The regression tests prove named-profile qualification, distinct keys for a research/default fingerprint collision, qualified subagent-parent resolution, and raw behavior without an override. The commit also reports live Docker isolation in both profile directions.",
+            "parameters": [
+              "raw task or session id",
+              "alias-resolved parent id",
+              "session-isolated backend predicate",
+              "active routed profile/home scope"
+            ],
+            "evidence_ids": [
+              "ev-scope-predicate",
+              "ev-container-implementation",
+              "ev-regression-tests",
+              "ev-commit-validation"
+            ]
+          }
+        },
+        {
+          "name": "qualify_session_cwd_state",
+          "description": "Apply the same routed scope qualification to session working-directory record, lookup, and teardown operations so cwd state cannot cross profile boundaries or be cleared asymmetrically.",
+          "evidence_ids": [
+            "ev-parent-before",
+            "ev-cwd-implementation",
+            "ev-call-sites",
+            "ev-regression-tests"
+          ],
+          "semantic_action": {
+            "intent": "Prevent cross-profile working-directory state bleed for equal raw session ids and preserve symmetric cleanup.",
+            "module_role": "session working-directory state store",
+            "operation": "qualify",
+            "pre_state": "The cwd map records, reads, and clears by raw session id, so a profile sharing the id can observe or overwrite another profile's directory and can clear its record.",
+            "post_state": "Record, get, and clear all address the same scope-qualified slot; a different routed profile sees no prior record, owns its own cwd, and can clear only that slot, while no override continues to use the raw slot.",
+            "validation": "The cwd regression test records profile A's directory, verifies profile B starts empty, records and clears B, and then verifies A remains unchanged; a separate no-override assertion verifies raw map storage.",
+            "parameters": [
+              "raw session key",
+              "recorded working directory",
+              "active routed profile/home scope"
+            ],
+            "evidence_ids": [
+              "ev-cwd-implementation",
+              "ev-call-sites",
+              "ev-regression-tests"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "routed_profile_terminal_isolation",
+          "description": "Establish one reusable routed-scope namespace and apply it to the two mutable terminal state boundaries implicated by the collision: session-isolated environment identities and session cwd records.",
+          "atomic_names": [
+            "derive_routed_scope_qualifier",
+            "qualify_session_isolated_container_key",
+            "qualify_session_cwd_state"
+          ],
+          "evidence_ids": [
+            "ev-issue-anchor",
+            "ev-parent-before",
+            "ev-qualifier-implementation",
+            "ev-container-implementation",
+            "ev-cwd-implementation",
+            "ev-regression-tests",
+            "ev-commit-validation"
+          ],
+          "workflow_graph": {
+            "goal": "Ensure profiles served by one process cannot share a session-isolated sandbox or cwd record merely because their raw API-session fingerprints match, while preserving unqualified single-profile behavior.",
+            "entry_state": "One process serves routed profiles A and B; identical opening messages can produce the same raw session id, and raw per-session environment and cwd state are profile-blind.",
+            "exit_state": "The same raw id resolves to distinct environment identities and independent cwd slots under different routed profiles; no-override behavior remains raw and persistent-Docker profile scoping remains stable.",
+            "steps": [
+              {
+                "action_name": "derive_routed_scope_qualifier",
+                "role": "establish-contract",
+                "optional": false
+              },
+              {
+                "action_name": "qualify_session_isolated_container_key",
+                "role": "implement",
+                "optional": false
+              },
+              {
+                "action_name": "qualify_session_cwd_state",
+                "role": "implement",
+                "optional": false
+              }
+            ],
+            "edges": [
+              {
+                "from": "derive_routed_scope_qualifier",
+                "to": "qualify_session_isolated_container_key",
+                "type": "enables"
+              },
+              {
+                "from": "derive_routed_scope_qualifier",
+                "to": "qualify_session_cwd_state",
+                "type": "enables"
+              }
+            ],
+            "unresolved_or_deferred": [
+              "The issue body, comments, timeline, author discussion, and linked pull request are unavailable in the supplied bundle; the detailed reproduction narrative is therefore commit-reported.",
+              "The added tests exercise Docker directly. Plugin backends are covered by the shared session-isolated predicate in implementation, but no plugin-specific integration test is present in this commit.",
+              "The targeted repository test runner could not reach pytest locally because activation stopped on a uv.lock freshness error under --locked; the reported post-fix pass was not independently rerun in this environment."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The supplied GitHub bundle has no issue body, comments, timeline, author/review discussion, or linked pull request, so there is no independent user-reproduction record beyond the issue title and the pinned commit narrative.",
+        "Whether the live Docker verification reported by the commit was run against exactly this checkout state cannot be independently established from the local checkout or bundle; no Docker execution log is included.",
+        "The targeted regression suite could not be independently executed here because scripts/run_tests.sh activation failed before pytest when uv reported that uv.lock needed updating while --locked was supplied.",
+        "The commit generalizes qualification to plugin backends whose session scope is declared through the shared predicate, but the added regression tests explicitly exercise Docker rather than a concrete plugin backend."
+      ]
+    },
+    "call_sites": [
+      "Existing callers continue to use the centralized cwd and environment-key APIs: task override registration records cwd and cleanup clears it; command cwd resolution and environment planning read the session cwd; environment acquisition resolves the effective container key; and terminal result processing records observed cwd. The patch therefore fixes the shared state boundary without editing each consumer."
+    ],
+    "tests": [
+      "The added TestRoutedScopeQualification tests assert that no override preserves a raw API key and raw cwd map key; a named routed profile yields profile:research:api-abc123; the same raw fingerprint in research and default profiles yields distinct keys; a routed subagent alias resolves to a qualified parent; profile B starts with no profile A cwd record, can clear only its own record, and profile A's record remains; and cwd storage is raw without an override."
+    ]
+  }
+]

@@ -1,0 +1,1359 @@
+diff --git a/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/EmbeddedRuntimeBrokerTest.java b/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/EmbeddedRuntimeBrokerTest.java
+index 0193532d9a5f6141b79ba2c73382ae4a6c1d766b..5112932bb5650d023c19680974b61226c3856e95 100644
+--- a/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/EmbeddedRuntimeBrokerTest.java
++++ b/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/EmbeddedRuntimeBrokerTest.java
+@@ -65,7 +65,7 @@ class EmbeddedRuntimeBrokerTest {
+                 "storage-a", ".", "config-a", 1);
+         when(store.findSessionById(SESSION_ID)).thenReturn(Optional.of(
+                 new SessionRecord("tenant-a", SESSION_ID, "qwen-code",
+-                        null, null, "ACTIVE", null, null, 0, 0, 1, 1, null,
++                        null, null, "ACTIVE", null, null, 0, 0, 0, 1, 1, null,
+                         0, binding)));
+         try (EmbeddedRuntimeBroker broker = broker(store, properties())) {
+             assertThatThrownBy(() -> broker.warm(SESSION_ID)
+diff --git a/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/LegacyEvents.java b/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/LegacyEvents.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..452d7c4839160a39918b4b5a0317715e67240b43
+--- /dev/null
++++ b/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/LegacyEvents.java
+@@ -0,0 +1,85 @@
++package com.alibaba.qwen.code.managedagent;
++
++import static org.assertj.core.api.Assertions.assertThat;
++
++import java.nio.charset.StandardCharsets;
++import java.util.Arrays;
++import java.util.List;
++import java.util.UUID;
++import org.springframework.jdbc.core.JdbcTemplate;
++
++/** Events written before V14, and the identity that V15 must give them. */
++final class LegacyEvents {
++    static final String TURN = "turn_legacy";
++    private static final String ASSISTANT = "item_turn_legacy_assistant";
++
++    private LegacyEvents() {
++    }
++
++    static void insert(JdbcTemplate jdbc, String tenant, String session) {
++        insert(jdbc, tenant, session, 1, null, "session.created", "{}");
++        insert(jdbc, tenant, session, 2, TURN, "turn.accepted", """
++                {"itemId":"item_turn_legacy_input",
++                 "input":[{"type":"text","text":"hi"}]}""");
++        insert(jdbc, tenant, session, 3, TURN, "item.output_text.delta",
++                "{\"text\":\"a\"}");
++        insert(jdbc, tenant, session, 4, TURN, "item.output_text.delta",
++                "{\"itemId\":\"" + ASSISTANT + "\",\"text\":\"b\"}");
++        insert(jdbc, tenant, session, 5, TURN, "item.reasoning.delta",
++                "{\"text\":\"c\"}");
++        // A retracted delta keeps its row with empty text.
++        insert(jdbc, tenant, session, 6, TURN, "item.output_text.delta",
++                "{\"text\":\"\"}");
++        insert(jdbc, tenant, session, 7, TURN, "item.output_text.delta",
++                "{\"text\":\"d\"}");
++        insert(jdbc, tenant, session, 8, TURN, "item.tool_call.updated",
++                "{\"toolCallId\":\"tool-1\"}");
++        insert(jdbc, tenant, session, 9, TURN, "turn.completed", "{}");
++        // The same tool Item again, separated by an event without identity.
++        insert(jdbc, tenant, session, 10, TURN, "item.tool_call.updated",
++                "{\"toolCallId\":\"tool-1\",\"status\":\"completed\"}");
++    }
++
++    static void assertBackfilled(JdbcTemplate jdbc, String tenant,
++            String session) {
++        List<List<Object>> rows = jdbc.query("SELECT sequence_id,"
++                        + " schema_version, projection_version, item_id,"
++                        + " content_part_id FROM managed_agent_event WHERE"
++                        + " tenant_id = ? AND session_id = ? ORDER BY"
++                        + " sequence_id",
++                (result, row) -> Arrays.asList(result.getLong(1),
++                        result.getInt(2), result.getInt(3),
++                        result.getString(4), result.getString(5)),
++                tenant, session);
++        String tool = "item_tool_" + UUID.nameUUIDFromBytes(
++                "turn_legacy:tool-1".getBytes(StandardCharsets.UTF_8));
++        assertThat(rows).containsExactly(
++                row(1, null, null),
++                row(2, "item_turn_legacy_input", null),
++                row(3, ASSISTANT, "part_turn_legacy_output_text_3"),
++                row(4, ASSISTANT, "part_turn_legacy_output_text_3"),
++                row(5, ASSISTANT, "part_turn_legacy_reasoning_5"),
++                row(6, null, null),
++                row(7, ASSISTANT, "part_turn_legacy_output_text_7"),
++                row(8, tool, null),
++                row(9, null, null),
++                row(10, tool, null));
++    }
++
++    private static List<Object> row(long sequence, String itemId,
++            String partId) {
++        return Arrays.asList(sequence, 1, 1, itemId, partId);
++    }
++
++    private static void insert(JdbcTemplate jdbc, String tenant,
++            String session, long sequence, String turnId, String type,
++            String data) {
++        jdbc.update("INSERT INTO managed_agent_event (tenant_id, session_id,"
++                        + " sequence_id, event_id, turn_id, event_type,"
++                        + " data_json, terminal, source_key, created_at)"
++                        + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, 1)",
++                tenant, session, sequence, "evt_legacy_" + session + "_"
++                        + sequence, turnId, type, data,
++                "turn.completed".equals(type));
++    }
++}
+diff --git a/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/ManagedAgentApiContractTest.java b/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/ManagedAgentApiContractTest.java
+index f104e7cdfae8ba2b06b23fc8c2366999f0f5833b..270710d81858c9c52fc78c44349bf2df1e5a4140 100644
+--- a/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/ManagedAgentApiContractTest.java
++++ b/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/ManagedAgentApiContractTest.java
+@@ -25,6 +25,7 @@ import com.alibaba.qwen.code.managedagent.api.ApiModels.PublicTurn;
+ import com.alibaba.qwen.code.managedagent.api.ApiModels.PublicWorkspace;
+ import com.alibaba.qwen.code.managedagent.api.ApiModels.SessionCapabilities;
+ import com.alibaba.qwen.code.managedagent.api.ApiModels.SessionEventRequest;
++import com.alibaba.qwen.code.managedagent.api.ApiModels.SessionResyncRequired;
+ import com.alibaba.qwen.code.managedagent.api.ApiModels.UpdateSessionRequest;
+ import com.alibaba.qwen.code.managedagent.api.ApiModels.WebShellAdmission;
+ import com.alibaba.qwen.code.managedagent.api.ApiModels.WebShellCancelRequest;
+@@ -33,6 +34,7 @@ import com.alibaba.qwen.code.managedagent.api.ApiModels.WebShellCreateRequest;
+ import com.alibaba.qwen.code.managedagent.api.ApiModels.WebShellEvent;
+ import com.alibaba.qwen.code.managedagent.api.ApiModels.WebShellItem;
+ import com.alibaba.qwen.code.managedagent.api.ApiModels.WebShellListRequest;
++import com.alibaba.qwen.code.managedagent.api.ApiModels.WebShellResyncRequired;
+ import com.alibaba.qwen.code.managedagent.api.ApiModels.WebShellPage;
+ import com.alibaba.qwen.code.managedagent.api.ApiModels.WebShellSession;
+ import com.alibaba.qwen.code.managedagent.api.ApiModels.WebShellSessionRequest;
+@@ -45,6 +47,7 @@ import com.alibaba.qwen.code.managedagent.api.ApiModels.WebShellWorkspace;
+ import com.alibaba.qwen.code.managedagent.api.AuthenticatedTenantActor;
+ import com.alibaba.qwen.code.managedagent.api.RequestIdFilter;
+ import com.alibaba.qwen.code.managedagent.api.TenantContextFilter;
++import com.alibaba.qwen.code.managedagent.store.ManagedAgentStore;
+ import com.fasterxml.jackson.databind.JsonNode;
+ import com.fasterxml.jackson.databind.ObjectMapper;
+ import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
+@@ -55,6 +58,7 @@ import java.io.UncheckedIOException;
+ import java.nio.charset.StandardCharsets;
+ import java.time.Duration;
+ import java.util.Arrays;
++import java.util.ArrayList;
+ import java.util.List;
+ import java.util.Map;
+ import java.util.Set;
+@@ -98,6 +102,7 @@ class ManagedAgentApiContractTest {
+     private static final String WEB_SHELL = "/api/agent/web-shell/v1";
+     private static final String TENANT = TenantContextFilter.HEADER;
+     private static final String IDEMPOTENCY_KEY = "Idempotency-Key";
++    private static final String RESYNC = "agent.session.resync_required";
+     private static final OpenApiContract CONTRACT = OpenApiContract.load();
+     private static final Map<Class<?>, List<String>> RECORD_SCHEMAS =
+             Map.ofEntries(
+@@ -119,6 +124,8 @@ class ManagedAgentApiContractTest {
+                     entry(PublicList.class,
+                             List.of("PublicSessionList", "PublicEventList")),
+                     entry(PublicEvent.class, List.of("PublicEvent")),
++                    entry(SessionResyncRequired.class,
++                            List.of("SessionResyncRequired")),
+                     entry(PublicContentPart.class,
+                             List.of("PublicContentPart")),
+                     entry(PublicItem.class, List.of("PublicItem")),
+@@ -144,6 +151,8 @@ class ManagedAgentApiContractTest {
+                     entry(WebShellPage.class,
+                             List.of("WebShellSessionPage")),
+                     entry(WebShellEvent.class, List.of("WebShellEvent")),
++                    entry(WebShellResyncRequired.class,
++                            List.of("WebShellResyncRequired")),
+                     entry(WebShellContentPart.class,
+                             List.of("WebShellContentPart")),
+                     entry(WebShellItem.class, List.of("WebShellItem")),
+@@ -164,6 +173,9 @@ class ManagedAgentApiContractTest {
+     @Autowired
+     private JdbcTemplate jdbc;
+ 
++    @Autowired
++    private ManagedAgentStore store;
++
+     @Autowired
+     @Qualifier("requestMappingHandlerMapping")
+     private RequestMappingHandlerMapping handlerMapping;
+@@ -336,6 +348,7 @@ class ManagedAgentApiContractTest {
+         exchange(drift, "listItems", 400,
+                 get("/v1/agents/sessions/{id}/items", sessionId)
+                         .param("limit", "0").header(TENANT, tenant), null);
++        checkReplayFloor(drift, tenant);
+         exchange(drift, "updateSession", 200,
+                 patch("/v1/agents/sessions/{id}", sessionId)
+                         .header(TENANT, tenant)
+@@ -654,18 +667,44 @@ class ManagedAgentApiContractTest {
+                 "{\"sessionId\":\"%s\"}".formatted(sessionId)));
+         JsonNode webShellListed = json(webShell(tenant, "/sessions/query",
+                 "{}")).get("data").get(0);
+-        long snapshotThrough = json(mvc.perform(
++        JsonNode items = json(mvc.perform(
+                         get("/v1/agents/sessions/{id}/items", sessionId)
+-                                .header(TENANT, tenant))
++                                .param("limit", "100").header(TENANT, tenant))
+                 .andReturn().getResponse()
+-                .getContentAsString(StandardCharsets.UTF_8))
+-                .get("snapshot_through_sequence").asLong();
++                .getContentAsString(StandardCharsets.UTF_8));
++        long snapshotThrough = items.get("snapshot_through_sequence").asLong();
++        // Events name the Items and Parts that the Snapshot holds.
++        Map<String, Set<String>> parts = new TreeMap<>();
++        items.get("data").forEach(item -> {
++            Set<String> ids = parts.computeIfAbsent(item.get("id").asText(),
++                    ignored -> new TreeSet<>());
++            item.get("content").forEach(part ->
++                    ids.add(part.get("part_id").asText()));
++        });
++        JsonNode events = json(mvc.perform(
++                        get("/v1/agents/sessions/{id}/events", sessionId)
++                                .param("limit", "1000").header(TENANT, tenant)
++                                .accept(MediaType.APPLICATION_JSON))
++                .andReturn().getResponse()
++                .getContentAsString(StandardCharsets.UTF_8)).get("data");
++        List<String> named = new ArrayList<>();
++        events.forEach(event -> {
++            if (event.hasNonNull("content_part_id")) {
++                named.add(event.get("content_part_id").asText());
++                assertThat(parts.get(event.get("item_id").asText()))
++                        .as("parts of %s", event.get("item_id"))
++                        .contains(event.get("content_part_id").asText());
++            } else if (event.hasNonNull("item_id")) {
++                assertThat(parts).containsKey(event.get("item_id").asText());
++            }
++        });
++        assertThat(named).isNotEmpty();
+         for (JsonNode session : List.of(publicSession, publicListed)) {
+             assertThat(session.get("id").asText()).isEqualTo(sessionId);
+             assertThat(session.get("agent_revision").asText()).isEqualTo("1");
+             assertThat(session.get("capabilities")).isEqualTo(json("""
+-                    {"items":true,"snapshots":false,"artifacts":false,
+-                     "resync":false}
++                    {"items":true,"snapshots":true,"artifacts":false,
++                     "resync":true}
+                     """));
+             assertThat(session.get("replay_floor_sequence").asLong()).isZero();
+             assertThat(session.get("snapshot_through_sequence").asLong())
+@@ -863,6 +902,24 @@ class ManagedAgentApiContractTest {
+         await().atMost(Duration.ofSeconds(5)).until(() -> response
+                 .getContentAsString(StandardCharsets.UTF_8)
+                 .contains("event:session.deleted"));
++        assertThat(checkFrames(drift, operationId, eventSchema, response))
++                .as("%s frames", operationId).isGreaterThan(3);
++    }
++
++    // An expired cursor gets one resync frame, after which the stream ends.
++    private void checkResync(Map<String, String> drift, String operationId,
++            String eventSchema, MockHttpServletResponse response)
++            throws Exception {
++        await().atMost(Duration.ofSeconds(5)).until(() -> response
++                .getContentAsString(StandardCharsets.UTF_8)
++                .contains("event:" + RESYNC));
++        assertThat(checkFrames(drift, operationId, eventSchema, response))
++                .as("%s frames", operationId).isEqualTo(1);
++    }
++
++    private int checkFrames(Map<String, String> drift, String operationId,
++            String eventSchema, MockHttpServletResponse response)
++            throws Exception {
+         assertThat(response.getContentType())
+                 .startsWith(MediaType.TEXT_EVENT_STREAM_VALUE);
+         exercised.add(operationId);
+@@ -870,6 +927,8 @@ class ManagedAgentApiContractTest {
+         if (response.getHeader(RequestIdFilter.HEADER) == null) {
+             drift.put(label + ": no " + RequestIdFilter.HEADER, "");
+         }
++        String media = CONTRACT.responsePointer(CONTRACT.operation(
++                operationId), 200) + "/content/text~1event-stream";
+         String[] frames = response.getContentAsString(StandardCharsets.UTF_8)
+                 .split("\n\n");
+         int events = 0;
+@@ -887,6 +946,14 @@ class ManagedAgentApiContractTest {
+             }
+             events++;
+             JsonNode event = objectMapper.readTree(fields.get("data"));
++            if (RESYNC.equals(fields.get("event"))) {
++                if (fields.containsKey("id")) {
++                    drift.put(label + ": resync frame has an id", frame);
++                }
++                collect(drift, label, CONTRACT.validate(
++                        media + "/x-qwen-resync-frame", event));
++                continue;
++            }
+             if (!event.path("sequence").asText().equals(fields.get("id"))) {
+                 drift.put(label + ": id is not the event sequence", frame);
+             }
+@@ -896,7 +963,50 @@ class ManagedAgentApiContractTest {
+             collect(drift, label, CONTRACT.validate(
+                     "/components/schemas/" + eventSchema, event));
+         }
+-        assertThat(events).as("%s frames", operationId).isGreaterThan(3);
++        return events;
++    }
++
++    // Raises the floor of a fresh Session to its Snapshot and reads below it.
++    private void checkReplayFloor(Map<String, String> drift, String tenant)
++            throws Exception {
++        String sessionId = json(exchange(drift, "createSession", 202,
++                post("/v1/agents/sessions").header(TENANT, tenant)
++                        .header(IDEMPOTENCY_KEY, "contract-floor"),
++                """
++                {"agent_id":"qwen-code",
++                 "input":[{"type":"input_text","text":"hello"}]}
++                """)).get("id").asText();
++        awaitMaterialized(tenant, sessionId);
++        long floor = store.advanceReplayFloor(tenant, sessionId,
++                Long.MAX_VALUE).floorSequence();
++        assertThat(floor).isPositive();
++        JsonNode expired = json(exchange(drift, "getSessionEvents", 409,
++                get("/v1/agents/sessions/{id}/events", sessionId)
++                        .param("after", Long.toString(floor - 1))
++                        .header(TENANT, tenant)
++                        .accept(MediaType.APPLICATION_JSON), null));
++        assertThat(expired.at("/error/code").asText())
++                .isEqualTo("cursor_expired");
++        assertThat(expired.at("/error/replay_floor_sequence").asLong())
++                .isEqualTo(floor);
++        assertThat(expired.at("/error/snapshot_through_sequence").asLong())
++                .isEqualTo(floor);
++        exchange(drift, "getSessionEvents", 200,
++                get("/v1/agents/sessions/{id}/events", sessionId)
++                        .param("after", Long.toString(floor))
++                        .header(TENANT, tenant)
++                        .accept(MediaType.APPLICATION_JSON), null);
++        checkResync(drift, "getSessionEvents", "PublicEvent", stream(drift,
++                "getSessionEvents",
++                get("/v1/agents/sessions/{id}/events", sessionId)
++                        .param("stream", "true").header(TENANT, tenant),
++                null));
++        checkResync(drift, "webShellStreamEvents", "WebShellEvent",
++                stream(drift, "webShellStreamEvents",
++                        post(WEB_SHELL + "/events/stream")
++                                .header(TENANT, tenant),
++                        "{\"sessionId\":\"%s\",\"afterSequence\":0}"
++                                .formatted(sessionId)));
+     }
+ 
+     private int awaitHeldTurn() {
+diff --git a/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/ManagedAgentMySqlIT.java b/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/ManagedAgentMySqlIT.java
+index 2e003a32f7969a883bdd099af1760e4a480928a5..9a443701f7a95dee1593dece6d33e90c32e42d22 100644
+--- a/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/ManagedAgentMySqlIT.java
++++ b/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/ManagedAgentMySqlIT.java
+@@ -17,6 +17,7 @@ import com.alibaba.qwen.code.managedagent.store.ManagedSessionStoreModels.RenewW
+ import com.alibaba.qwen.code.managedagent.store.ManagedSessionStoreModels.SealWriterRequest;
+ import com.alibaba.qwen.code.managedagent.store.ManagedSessionStoreModels.WriterGrant;
+ import com.alibaba.qwen.code.managedagent.store.StoreModels.Admission;
++import com.alibaba.qwen.code.managedagent.store.StoreModels.ReplayWindow;
+ import com.alibaba.qwen.code.runtimebroker.JdbcRepositoryContract;
+ import com.fasterxml.jackson.databind.ObjectMapper;
+ import java.io.IOException;
+@@ -66,8 +67,11 @@ class ManagedAgentMySqlIT {
+                 + " idempotency_key, request_digest, session_id, created_at)"
+                 + " VALUES ('mysql-upgrade', 'CREATE_SESSION', 'legacy-key',"
+                 + " 'legacy-digest', 'session_upgrade', 1)");
++        LegacyEvents.insert(jdbc, "mysql-upgrade", "session_upgrade");
+         Flyway.configure().dataSource(dataSource)
+                 .locations("classpath:db/migration").load().migrate();
++        LegacyEvents.assertBackfilled(jdbc, "mysql-upgrade",
++                "session_upgrade");
+         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM"
+                         + " managed_agent_consumer_progress WHERE tenant_id = ?"
+                         + " AND session_id = ? AND consumer_name = ?",
+@@ -113,6 +117,10 @@ class ManagedAgentMySqlIT {
+ 
+         assertThat(store.materializeNextBatch(tenant, admission.sessionId(),
+                 200).advanced()).isTrue();
++        assertThat(store.advanceReplayFloor(tenant, admission.sessionId(),
++                Long.MAX_VALUE)).isEqualTo(new ReplayWindow(6, 6));
++        assertThat(store.findReplayWindow(tenant, admission.sessionId()))
++                .isEqualTo(new ReplayWindow(6, 6));
+         assertThat(store.findSnapshot(tenant, admission.sessionId()))
+                 .get().satisfies(snapshot -> {
+                     assertThat(snapshot.coveredSequence()).isEqualTo(6);
+diff --git a/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/ManagedAgentServerIntegrationTest.java b/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/ManagedAgentServerIntegrationTest.java
+index 2277d23384cbcb362d7e13847e83f6a2858741ff..060a5dd1fba89fa35b5a0041428dd9bfe61950f0 100644
+--- a/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/ManagedAgentServerIntegrationTest.java
++++ b/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/ManagedAgentServerIntegrationTest.java
+@@ -1,6 +1,7 @@
+ package com.alibaba.qwen.code.managedagent;
+ 
+ import static org.assertj.core.api.Assertions.assertThat;
++import static org.assertj.core.api.Assertions.tuple;
+ import static org.assertj.core.api.Assertions.assertThatThrownBy;
+ import static org.awaitility.Awaitility.await;
+ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+@@ -29,7 +30,9 @@ import com.alibaba.qwen.code.managedagent.store.ManagedAgentStore;
+ import com.alibaba.qwen.code.managedagent.store.ManagedWorkspaceRegistry;
+ import com.alibaba.qwen.code.managedagent.store.StoreModels.Admission;
+ import com.alibaba.qwen.code.managedagent.store.StoreModels.DispatchTarget;
++import com.alibaba.qwen.code.managedagent.store.StoreModels.EventRecord;
+ import com.alibaba.qwen.code.managedagent.store.StoreModels.HarnessEvent;
++import com.alibaba.qwen.code.managedagent.store.StoreModels.ItemRecord;
+ import com.alibaba.qwen.code.managedagent.store.StoreModels.ProjectedEvent;
+ import com.alibaba.qwen.code.managedagent.store.StoreModels.SessionMutationKind;
+ import com.fasterxml.jackson.databind.JsonNode;
+@@ -925,6 +928,179 @@ class ManagedAgentServerIntegrationTest {
+                                                 "thought", "final")));
+     }
+ 
++    @Test
++    void eventsNameTheSnapshotItemsAndPartsTheyChange() {
++        String tenant = "tenant-identity-" + UUID.randomUUID();
++        Admission session = store.insertSessionCommand(tenant,
++                "CREATE_SESSION", "identity-create",
++                "sha256:" + "d".repeat(64), "qwen-code", null, null,
++                List.of(), null);
++        String sessionId = session.sessionId();
++        String owner = "identity-owner";
++        Admission turn = new TransactionTemplate(transactionManager).execute(status -> {
++            Admission admitted = store.insertTurnCommand(tenant, "SUBMIT_TURN",
++                    "identity-turn", "sha256:" + "e".repeat(64), sessionId,
++                    List.of(Map.of("type", "text", "text", "hi")),
++                    "sha256:" + "f".repeat(64));
++            assertThat(store.claimTurn(tenant, sessionId, admitted.turnId(),
++                    owner, Duration.ofMinutes(1))).isPresent();
++            return admitted;
++        });
++        store.recordAdmission(tenant, sessionId, turn.turnId(), owner,
++                "identity-epoch", 0);
++        // The reasoning stream continues across the two batches.
++        store.recordHarnessEvents(tenant, sessionId, turn.turnId(), owner,
++                "identity-epoch", List.of(
++                        harnessText(1, "item.output_text.delta", "a"),
++                        harnessText(2, "item.output_text.delta", "b"),
++                        harnessText(3, "item.reasoning.delta", "c")));
++        store.recordHarnessEvents(tenant, sessionId, turn.turnId(), owner,
++                "identity-epoch", List.of(
++                        harnessText(4, "item.reasoning.delta", "d"),
++                        new HarnessEvent(5, "boot:identity-epoch:5",
++                                new ProjectedEvent("item.tool_call.updated",
++                                        Map.of("toolCallId", "tool-1"), false,
++                                        null, null, null)),
++                        harnessText(6, "item.output_text.delta", "e"),
++                        new HarnessEvent(7, "boot:identity-epoch:7",
++                                new ProjectedEvent("turn.completed", Map.of(),
++                                        true, "COMPLETED", null, null))));
++        store.materializeNextBatch(tenant, sessionId, 200);
++
++        List<EventRecord> events = assertEventsNameTheSnapshot(tenant,
++                sessionId);
++        List<EventRecord> deltas = events.stream()
++                .filter(event -> event.type().endsWith(".delta")).toList();
++        String output = "part_" + turn.turnId() + "_output_text_";
++        String reasoning = "part_" + turn.turnId() + "_reasoning_";
++        assertThat(deltas).extracting(EventRecord::contentPartId)
++                .containsExactly(output + deltas.get(0).sequence(),
++                        output + deltas.get(0).sequence(),
++                        reasoning + deltas.get(2).sequence(),
++                        reasoning + deltas.get(2).sequence(),
++                        output + deltas.get(4).sequence());
++        assertThat(events).filteredOn(event -> event.itemId() != null)
++                .extracting(EventRecord::type).containsExactly(
++                        "turn.accepted", "item.output_text.delta",
++                        "item.output_text.delta", "item.reasoning.delta",
++                        "item.reasoning.delta", "item.tool_call.updated",
++                        "item.output_text.delta");
++    }
++
++    @Test
++    void singleAppendsContinueTheTextPartBeforeThem() {
++        String tenant = "tenant-single-identity-" + UUID.randomUUID();
++        String sessionId = store.insertSessionCommand(tenant,
++                "CREATE_SESSION", "single-identity-create", "digest-create",
++                "qwen-code", null, null, List.of(), null).sessionId();
++        for (String text : List.of("a", "b")) {
++            store.appendPublicEventIfAbsent(tenant, sessionId, "turn-single",
++                    "item.output_text.delta", Map.of("text", text), false,
++                    "single:" + text);
++        }
++        store.appendPublicEventIfAbsent(tenant, sessionId, "turn-single",
++                "item.reasoning.delta", Map.of("text", "c"), false,
++                "single:c");
++        store.materializeNextBatch(tenant, sessionId, 100);
++
++        List<EventRecord> deltas = assertEventsNameTheSnapshot(tenant,
++                sessionId).stream()
++                .filter(event -> event.type().endsWith(".delta")).toList();
++        assertThat(deltas).extracting(EventRecord::contentPartId)
++                .containsExactly(
++                        "part_turn-single_output_text_"
++                                + deltas.get(0).sequence(),
++                        "part_turn-single_output_text_"
++                                + deltas.get(0).sequence(),
++                        "part_turn-single_reasoning_"
++                                + deltas.get(2).sequence());
++    }
++
++    @Test
++    void retractionRenamesTheDeltaThatContinuedTheRetractedOne() {
++        String tenant = "tenant-retract-identity-" + UUID.randomUUID();
++        Admission session = store.insertSessionCommand(tenant,
++                "CREATE_SESSION", "retract-identity-create",
++                "sha256:" + "7".repeat(64), "qwen-code", null, null,
++                List.of(), null);
++        String sessionId = session.sessionId();
++        Admission turn = store.insertTurnCommand(tenant, "SUBMIT_TURN",
++                "retract-identity-turn", "sha256:" + "8".repeat(64),
++                sessionId, List.of(), "sha256:" + "9".repeat(64));
++        String owner = "retract-identity-owner";
++        assertThat(store.claimTurn(tenant, sessionId, turn.turnId(), owner,
++                Duration.ofMinutes(1))).isPresent();
++        assertThat(store.bindHarness(tenant, sessionId, turn.turnId(), owner,
++                "boot_old")).isTrue();
++        store.markSubmissionAttempted(tenant, sessionId, turn.turnId(),
++                owner);
++        store.recordAdmission(tenant, sessionId, turn.turnId(), owner,
++                "epoch_old", 1);
++        // The kept delta continues the Part of the one that is retracted.
++        store.recordHarnessEvents(tenant, sessionId, turn.turnId(), owner,
++                "epoch_old", List.of(
++                        new HarnessEvent(2, "boot_old:epoch_old:2",
++                                new ProjectedEvent("item.output_text.delta",
++                                        Map.of("text", "partial"), false,
++                                        null, null, null)),
++                        new HarnessEvent(3, "boot_kept:epoch_old:3",
++                                new ProjectedEvent("item.output_text.delta",
++                                        Map.of("text", "kept"), false, null,
++                                        null, null))));
++        List<EventRecord> before = store.findEvents(tenant, sessionId, 0, 20)
++                .stream().filter(event -> event.type().endsWith(".delta"))
++                .toList();
++        assertThat(before).extracting(EventRecord::contentPartId)
++                .containsOnly(before.get(0).contentPartId());
++
++        store.retractContinuationOutput(tenant, sessionId, turn.turnId(),
++                owner, "boot_old", "epoch_old");
++        store.materializeNextBatch(tenant, sessionId, 100);
++
++        assertThat(assertEventsNameTheSnapshot(tenant, sessionId))
++                .filteredOn(event -> event.type().endsWith(".delta"))
++                .extracting(EventRecord::itemId, EventRecord::contentPartId)
++                .containsExactly(tuple(null, null), tuple(
++                        "item_" + turn.turnId() + "_assistant",
++                        "part_" + turn.turnId() + "_output_text_"
++                                + before.get(1).sequence()));
++    }
++
++    // Every event that names an Item or a Part names one of the Snapshot.
++    private List<EventRecord> assertEventsNameTheSnapshot(String tenant,
++            String sessionId) {
++        List<ItemRecord> items = store.findSnapshot(tenant, sessionId)
++                .orElseThrow().items();
++        List<EventRecord> events = store.findEvents(tenant, sessionId, 0,
++                100);
++        for (EventRecord event : events) {
++            assertThat(event.schemaVersion()).isEqualTo(1);
++            assertThat(event.projectionVersion()).isEqualTo(1);
++            if (event.itemId() == null) {
++                continue;
++            }
++            ItemRecord item = items.stream().filter(candidate ->
++                    candidate.itemId().equals(event.itemId()))
++                    .findFirst().orElseThrow();
++            if (event.contentPartId() != null) {
++                assertThat(item.content()).filteredOn(part ->
++                                part.partId().equals(event.contentPartId()))
++                        .singleElement().satisfies(part -> assertThat(
++                                event.sequence()).isBetween(
++                                        part.firstSequence(),
++                                        part.lastSequence()));
++            }
++        }
++        return events;
++    }
++
++    private static HarnessEvent harnessText(long sourceId, String type,
++            String text) {
++        return new HarnessEvent(sourceId, "boot:identity-epoch:" + sourceId,
++                new ProjectedEvent(type, Map.of("text", text), false, null,
++                        null, null));
++    }
++
+     @Test
+     void ignoresLateEnvironmentResultFromAnOlderTurn() {
+         String tenant = "tenant-environment-order-" + UUID.randomUUID();
+@@ -1170,6 +1346,7 @@ class ManagedAgentServerIntegrationTest {
+                                 assertThat(item.content()).singleElement()
+                                         .satisfies(part -> assertThat(
+                                                 part.text()).isEqualTo("kept"))));
++        assertEventsNameTheSnapshot(tenant, session.sessionId());
+     }
+ 
+     @Test
+diff --git a/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/ManagedEventIdentityMigrationTest.java b/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/ManagedEventIdentityMigrationTest.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..a6609412ece139553c1d29f670aee1914ce4594d
+--- /dev/null
++++ b/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/ManagedEventIdentityMigrationTest.java
+@@ -0,0 +1,93 @@
++package com.alibaba.qwen.code.managedagent;
++
++import static org.assertj.core.api.Assertions.assertThat;
++
++import com.alibaba.qwen.code.managedagent.config.ManagedAgentProperties;
++import com.alibaba.qwen.code.managedagent.store.ManagedAgentStore;
++import com.alibaba.qwen.code.managedagent.store.ManagedWorkspaceRegistry;
++import com.alibaba.qwen.code.managedagent.store.StoreModels.ItemRecord;
++import com.fasterxml.jackson.databind.ObjectMapper;
++import java.time.Clock;
++import java.util.List;
++import java.util.Map;
++import java.util.UUID;
++import java.util.stream.LongStream;
++import org.flywaydb.core.Flyway;
++import org.flywaydb.core.api.MigrationVersion;
++import org.h2.jdbcx.JdbcDataSource;
++import org.junit.jupiter.api.Test;
++import org.springframework.jdbc.core.JdbcTemplate;
++
++/**
++ * Upgrades events written before V14 on H2 in MySQL mode; ManagedAgentMySqlIT
++ * runs the same upgrade on MySQL.
++ */
++class ManagedEventIdentityMigrationTest {
++    @Test
++    void backfillsTheIdentityThatTheSnapshotUses() {
++        JdbcDataSource dataSource = new JdbcDataSource();
++        dataSource.setURL("jdbc:h2:mem:event-identity-" + UUID.randomUUID()
++                + ";MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE");
++        Flyway.configure().dataSource(dataSource)
++                .locations("classpath:db/migration")
++                .target(MigrationVersion.fromVersion("1")).load().migrate();
++        JdbcTemplate jdbc = new JdbcTemplate(dataSource);
++        String tenant = "legacy-tenant";
++        String session = "legacy-session";
++        jdbc.update("INSERT INTO managed_agent_session (tenant_id,"
++                        + " session_id, agent_id, status, created_at,"
++                        + " updated_at, last_sequence) VALUES (?, ?, ?, ?, ?,"
++                        + " ?, ?)",
++                tenant, session, "qwen-code", "IDLE", 1L, 1L, 10L);
++        LegacyEvents.insert(jdbc, tenant, session);
++        // One text Part longer than a page of the backfill.
++        jdbc.update("INSERT INTO managed_agent_session (tenant_id,"
++                        + " session_id, agent_id, status, created_at,"
++                        + " updated_at, last_sequence) VALUES (?, ?, ?, ?, ?,"
++                        + " ?, ?)",
++                tenant, "long-session", "qwen-code", "IDLE", 1L, 1L, 6000L);
++        jdbc.batchUpdate("INSERT INTO managed_agent_event (tenant_id,"
++                        + " session_id, sequence_id, event_id, turn_id,"
++                        + " event_type, data_json, terminal, created_at)"
++                        + " VALUES (?, ?, ?, ?, ?, ?, ?, FALSE, 1)",
++                LongStream.rangeClosed(1, 6000).mapToObj(sequence ->
++                        new Object[] {tenant, "long-session", sequence,
++                                "evt_long_" + sequence, "turn_long",
++                                "item.output_text.delta",
++                                "{\"text\":\"x\"}"}).toList());
++
++        Flyway.configure().dataSource(dataSource)
++                .locations("classpath:db/migration").load().migrate();
++
++        LegacyEvents.assertBackfilled(jdbc, tenant, session);
++        assertThat(jdbc.queryForList("SELECT DISTINCT item_id,"
++                        + " content_part_id FROM managed_agent_event WHERE"
++                        + " session_id = 'long-session'"))
++                .containsExactly(Map.of("item_id", "item_turn_long_assistant",
++                        "content_part_id", "part_turn_long_output_text_1"));
++        assertThat(jdbc.queryForObject("SELECT replay_floor_sequence FROM"
++                        + " managed_agent_session WHERE session_id = ?",
++                Long.class, session)).isZero();
++        ManagedAgentStore store = new ManagedAgentStore(jdbc,
++                new ObjectMapper(), Clock.systemUTC(), ignored -> {
++                }, new ManagedWorkspaceRegistry(jdbc),
++                new ManagedAgentProperties());
++        store.materializeNextBatch(tenant, session, 100);
++        List<ItemRecord> items = store.findSnapshot(tenant, session)
++                .orElseThrow().items();
++        store.findEvents(tenant, session, 0, 100).stream()
++                .filter(event -> event.itemId() != null)
++                .forEach(event -> {
++                    ItemRecord item = items.stream().filter(candidate ->
++                            candidate.itemId().equals(event.itemId()))
++                            .findFirst().orElseThrow();
++                    if (event.contentPartId() != null) {
++                        assertThat(item.content()).extracting(
++                                part -> part.partId())
++                                .contains(event.contentPartId());
++                    }
++                });
++        assertThat(items).extracting(ItemRecord::itemId).contains(
++                "item_turn_legacy_input", "item_turn_legacy_assistant");
++    }
++}
+diff --git a/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/service/HarnessCoordinatorTest.java b/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/service/HarnessCoordinatorTest.java
+index 96cef95e4b1d49cf17a10152d4391aab8a93a950..4cf982fe39a786abe2c8126c8afc2f7a9d6939af 100644
+--- a/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/service/HarnessCoordinatorTest.java
++++ b/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/service/HarnessCoordinatorTest.java
+@@ -47,7 +47,7 @@ class HarnessCoordinatorTest {
+                 "storage-a", ".", "config-a", 1);
+         SessionRecord session = new SessionRecord(tenantId, sessionId,
+                 "qwen-code", null, null, "ACTIVE", null, null, 0,
+-                0, 1, 1, null, 1, binding);
++                0, 0, 1, 1, null, 1, binding);
+         for (String status : List.of("ACCEPTED", "CANCELLING")) {
+             AgentStateStore store = mock(AgentStateStore.class);
+             HarnessConnector harness = mock(HarnessConnector.class);
+@@ -85,7 +85,7 @@ class HarnessCoordinatorTest {
+                         "CANCELLING")));
+         when(store.requireSession("tenant", "session")).thenReturn(
+                 new SessionRecord("tenant", "session", "qwen-code", null,
+-                        null, "ACTIVE", "boot", "epoch", 1, 1, 1, 1, null, 1,
++                        null, "ACTIVE", "boot", "epoch", 1, 1, 0, 1, 1, null, 1,
+                         new ContextBinding("tenant", "ws-a", 1,
+                                 "storage-a", ".", "config-a", 1)));
+         HarnessCoordinator coordinator = new HarnessCoordinator(store, harness,
+diff --git a/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/service/ManagedEventReplayTest.java b/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/service/ManagedEventReplayTest.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..8488d9124bfec0904b9a866019e46ba53af0e013
+--- /dev/null
++++ b/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/service/ManagedEventReplayTest.java
+@@ -0,0 +1,440 @@
++package com.alibaba.qwen.code.managedagent.service;
++
++import static org.assertj.core.api.Assertions.assertThat;
++import static org.awaitility.Awaitility.await;
++import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
++import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
++
++import com.alibaba.qwen.code.managedagent.api.ApiModels.SessionResyncRequired;
++import com.alibaba.qwen.code.managedagent.api.TenantContextFilter;
++import com.alibaba.qwen.code.managedagent.config.ManagedAgentProperties;
++import com.alibaba.qwen.code.managedagent.store.ManagedAgentStore;
++import com.alibaba.qwen.code.managedagent.store.StoreModels.ReplayWindow;
++import com.fasterxml.jackson.databind.JsonNode;
++import com.fasterxml.jackson.databind.ObjectMapper;
++import java.nio.charset.StandardCharsets;
++import java.time.Duration;
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Map;
++import java.util.UUID;
++import java.util.concurrent.CompletableFuture;
++import java.util.concurrent.CopyOnWriteArrayList;
++import java.util.concurrent.CountDownLatch;
++import java.util.concurrent.ExecutorService;
++import java.util.concurrent.Executors;
++import java.util.concurrent.TimeUnit;
++import java.util.regex.Matcher;
++import java.util.regex.Pattern;
++import java.util.stream.LongStream;
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.http.MediaType;
++import org.springframework.mock.web.MockHttpServletResponse;
++import org.springframework.test.web.servlet.MockMvc;
++import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
++import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter.DataWithMediaType;
++import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
++
++/**
++ * Replays committed events through JSON pages and both streams: resuming from
++ * Last-Event-ID, switching from catch-up to live, falling back to the store
++ * after the hub overflows, and expiring cursors below a floor that the test
++ * advances. Every stream must deliver each sequence exactly once and in order.
++ */
++@SpringBootTest(properties = {
++        "spring.datasource.url=jdbc:h2:mem:managed-event-replay;MODE=MySQL;"
++                + "DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE",
++        "spring.datasource.driver-class-name=org.h2.Driver",
++        "spring.datasource.username=sa",
++        "spring.datasource.password=",
++        "qwen.managed-agent.harness.enabled=false",
++        // A stream reads the store only to catch up or after an overflow, so
++        // live events must come through the hub. An idle stream also reads
++        // the store after a heartbeat.
++        "qwen.managed-agent.events.poll-interval=60s",
++        "qwen.managed-agent.events.heartbeat-interval=60s",
++        "qwen.managed-agent.events.materialize-interval=10ms"
++})
++@AutoConfigureMockMvc
++class ManagedEventReplayTest {
++    private static final String TENANT = TenantContextFilter.HEADER;
++    private static final Pattern ID = Pattern.compile("(?m)^id:(\\d+)$");
++    // More events than SessionEventHub buffers for one Session.
++    private static final int OVERFLOW = 600;
++
++    @Autowired
++    private MockMvc mvc;
++
++    @Autowired
++    private ManagedAgentStore store;
++
++    @Autowired
++    private ManagedAgentService agentService;
++
++    @Autowired
++    private SessionEventHub hub;
++
++    @Autowired
++    private ObjectMapper objectMapper;
++
++    @Test
++    void jsonPagesFollowNextCursorWithoutGaps() throws Exception {
++        String tenant = tenant();
++        String sessionId = session(tenant);
++        // 245 events fill exactly 35 pages of 7, so the last page is full.
++        long last = append(tenant, sessionId, 244);
++        assertThat(last).isEqualTo(245);
++
++        List<Long> sequences = new ArrayList<>();
++        String cursor = "0";
++        JsonNode page;
++        int pages = 0;
++        do {
++            page = json(mvc.perform(events(tenant, sessionId)
++                            .param("after", cursor).param("limit", "7"))
++                    .andReturn().getResponse());
++            pages++;
++            assertThat(page.get("data")).isNotEmpty();
++            page.get("data").forEach(event ->
++                    sequences.add(event.get("sequence").asLong()));
++            cursor = page.get("next_cursor").asText();
++        } while (page.get("has_more").asBoolean());
++
++        assertThat(pages).isEqualTo(35);
++        assertThat(sequences).containsExactlyElementsOf(range(1, last));
++        assertThat(page.get("next_cursor").isNull()).isTrue();
++        assertThat(mvc.perform(events(tenant, sessionId)
++                        .param("limit", "1000"))
++                .andReturn().getResponse().getStatus()).isEqualTo(200);
++        MockHttpServletResponse tooMany = mvc.perform(events(tenant,
++                sessionId).param("limit", "1001")).andReturn().getResponse();
++        assertThat(tooMany.getStatus()).isEqualTo(400);
++        assertThat(json(tooMany).at("/error/code").asText())
++                .isEqualTo("invalid_limit");
++    }
++
++    @Test
++    void lastEventIdResumesAcrossPagesAndThenGoesLive() throws Exception {
++        String tenant = tenant();
++        String sessionId = session(tenant);
++        long caughtUp = append(tenant, sessionId, 250);
++        MockHttpServletResponse stream = mvc.perform(events(tenant, sessionId)
++                        .param("stream", "true").param("after", "5")
++                        .header("Last-Event-ID", "120")
++                        .accept(MediaType.TEXT_EVENT_STREAM))
++                .andReturn().getResponse();
++        // Append only after catch-up, so these events arrive live.
++        await().atMost(Duration.ofSeconds(10))
++                .until(() -> ids(stream).contains(caughtUp));
++        append(tenant, sessionId, 3);
++        long last = close(tenant, sessionId);
++
++        await().atMost(Duration.ofSeconds(10))
++                .until(() -> ids(stream).contains(last));
++        assertThat(ids(stream)).containsExactlyElementsOf(range(121, last));
++    }
++
++    @Test
++    void catchUpHandsOverToLiveEventsWithoutGapsOrDuplicates()
++            throws Exception {
++        String tenant = tenant();
++        String sessionId = session(tenant);
++        append(tenant, sessionId, 150);
++        CompletableFuture<Long> writer = CompletableFuture.supplyAsync(
++                () -> append(tenant, sessionId, 300));
++        MockHttpServletResponse stream = mvc.perform(events(tenant, sessionId)
++                        .param("stream", "true")
++                        .accept(MediaType.TEXT_EVENT_STREAM))
++                .andReturn().getResponse();
++        writer.get(30, TimeUnit.SECONDS);
++        long last = close(tenant, sessionId);
++
++        await().atMost(Duration.ofSeconds(10))
++                .until(() -> ids(stream).contains(last));
++        assertThat(ids(stream)).containsExactlyElementsOf(range(1, last));
++    }
++
++    @Test
++    void overflowFallsBackToTheStoreWithoutGapsOrDuplicates()
++            throws Exception {
++        String tenant = tenant();
++        String sessionId = session(tenant);
++        long caughtUp = append(tenant, sessionId, 20);
++        RecordingEmitter emitter = new RecordingEmitter(caughtUp + 1);
++        ExecutorService executor = Executors.newSingleThreadExecutor();
++        try {
++            streams(executor, emitter).publicStream(tenant, null, sessionId,
++                    0);
++            await().atMost(Duration.ofSeconds(5))
++                    .until(() -> emitter.ids().contains(caughtUp));
++            append(tenant, sessionId, 1);
++            assertThat(emitter.blocked.await(5, TimeUnit.SECONDS)).isTrue();
++            // The hub drops the oldest events while the client is stuck.
++            append(tenant, sessionId, OVERFLOW);
++            emitter.release.countDown();
++            long last = close(tenant, sessionId);
++
++            assertThat(emitter.completed.await(10, TimeUnit.SECONDS))
++                    .isTrue();
++            assertThat(emitter.ids())
++                    .containsExactlyElementsOf(range(1, last));
++            assertThat(emitter.failed).isEmpty();
++        } finally {
++            executor.shutdownNow();
++        }
++    }
++
++    @Test
++    void aFloorAdvancedPastALaggingStreamSendsOneResyncFrame()
++            throws Exception {
++        String tenant = tenant();
++        String sessionId = session(tenant);
++        long caughtUp = append(tenant, sessionId, 20);
++        RecordingEmitter emitter = new RecordingEmitter(caughtUp + 1);
++        ExecutorService executor = Executors.newSingleThreadExecutor();
++        try {
++            streams(executor, emitter).publicStream(tenant, null, sessionId,
++                    0);
++            await().atMost(Duration.ofSeconds(5))
++                    .until(() -> emitter.ids().contains(caughtUp));
++            long stuck = append(tenant, sessionId, 1);
++            assertThat(emitter.blocked.await(5, TimeUnit.SECONDS)).isTrue();
++            long last = append(tenant, sessionId, OVERFLOW);
++            ReplayWindow window = advanceFloor(tenant, sessionId, last);
++            emitter.release.countDown();
++
++            assertThat(emitter.completed.await(10, TimeUnit.SECONDS))
++                    .isTrue();
++            assertThat(emitter.ids())
++                    .containsExactlyElementsOf(range(1, stuck));
++            assertThat(emitter.resync).containsExactly(
++                    new SessionResyncRequired(
++                            ManagedEventStreamService.RESYNC, sessionId,
++                            window.floorSequence(),
++                            window.snapshotThroughSequence(),
++                            ManagedEventStreamService.RESYNC_ACTION));
++            assertThat(emitter.failed).isEmpty();
++        } finally {
++            executor.shutdownNow();
++        }
++    }
++
++    @Test
++    void expiredCursorsGetConflictOrOneResyncFrame() throws Exception {
++        String tenant = tenant();
++        String sessionId = session(tenant);
++        long last = append(tenant, sessionId, 30);
++        ReplayWindow window = advanceFloor(tenant, sessionId, last + 100);
++        long floor = window.floorSequence();
++        assertThat(floor).isEqualTo(last)
++                .isEqualTo(window.snapshotThroughSequence());
++        assertThat(store.advanceReplayFloor(tenant, sessionId, 1))
++                .isEqualTo(window);
++
++        MockHttpServletResponse expired = mvc.perform(events(tenant,
++                sessionId).param("after", Long.toString(floor - 1)))
++                .andReturn().getResponse();
++        assertThat(expired.getStatus()).isEqualTo(409);
++        JsonNode error = json(expired).get("error");
++        assertThat(error.get("code").asText()).isEqualTo("cursor_expired");
++        assertThat(error.get("replay_floor_sequence").asLong())
++                .isEqualTo(floor);
++        assertThat(error.get("snapshot_through_sequence").asLong())
++                .isEqualTo(floor);
++        assertThat(error.get("request_id").asText())
++                .isEqualTo(expired.getHeader("X-Request-Id"));
++        assertThat(mvc.perform(events(tenant, sessionId)
++                        .param("after", Long.toString(floor)))
++                .andReturn().getResponse().getStatus()).isEqualTo(200);
++        assertThat(json(mvc.perform(get("/v1/agents/sessions/{id}",
++                        sessionId).header(TENANT, tenant))
++                .andReturn().getResponse())
++                .get("replay_floor_sequence").asLong()).isEqualTo(floor);
++
++        MockHttpServletResponse publicStream = mvc.perform(events(tenant,
++                        sessionId).param("stream", "true")
++                        .accept(MediaType.TEXT_EVENT_STREAM))
++                .andReturn().getResponse();
++        MockHttpServletResponse webShellStream = mvc.perform(
++                        post("/api/agent/web-shell/v1/events/stream")
++                                .header(TENANT, tenant)
++                                .contentType(MediaType.APPLICATION_JSON)
++                                .content("{\"sessionId\":\"%s\",\"afterSequence\":0}"
++                                        .formatted(sessionId))
++                                .accept(MediaType.TEXT_EVENT_STREAM))
++                .andReturn().getResponse();
++        await().atMost(Duration.ofSeconds(5)).until(() ->
++                content(publicStream).contains("data:")
++                        && content(webShellStream).contains("data:"));
++        assertThat(resyncFrame(publicStream)).isEqualTo(
++                objectMapper.readTree("""
++                        {"type":"agent.session.resync_required",
++                         "session_id":"%s","replay_floor_sequence":%d,
++                         "snapshot_through_sequence":%d,
++                         "action":"reload_snapshot"}
++                        """.formatted(sessionId, floor, floor)));
++        assertThat(resyncFrame(webShellStream)).isEqualTo(
++                objectMapper.readTree("""
++                        {"type":"agent.session.resync_required",
++                         "sessionId":"%s","replayFloorSequence":%d,
++                         "snapshotThroughSequence":%d,
++                         "action":"reload_snapshot"}
++                        """.formatted(sessionId, floor, floor)));
++    }
++
++    // The only frame of the stream, without an id.
++    private JsonNode resyncFrame(MockHttpServletResponse stream)
++            throws Exception {
++        String prefix = "event:" + ManagedEventStreamService.RESYNC
++                + "\ndata:";
++        String frame = content(stream);
++        assertThat(frame).startsWith(prefix).endsWith("\n\n");
++        assertThat(frame.indexOf("\n\n")).as("frames in %s", frame)
++                .isEqualTo(frame.length() - 2);
++        return objectMapper.readTree(frame.substring(prefix.length()));
++    }
++
++    private ManagedEventStreamService streams(ExecutorService executor,
++            SseEmitter emitter) {
++        ManagedAgentProperties properties = new ManagedAgentProperties();
++        // Only an overflow or the end of catch-up makes the stream read
++        // the store again.
++        properties.getEvents().setPollInterval(Duration.ofSeconds(60));
++        properties.getEvents().setHeartbeatInterval(Duration.ofSeconds(60));
++        return new ManagedEventStreamService(agentService, hub, executor,
++                properties) {
++            @Override
++            SseEmitter emitter() {
++                return emitter;
++            }
++        };
++    }
++
++    private ReplayWindow advanceFloor(String tenant, String sessionId,
++            long floor) {
++        long last = store.requireSession(tenant, sessionId).lastSequence();
++        await().atMost(Duration.ofSeconds(10)).until(() ->
++                store.findReplayWindow(tenant, sessionId)
++                        .snapshotThroughSequence() == last);
++        return store.advanceReplayFloor(tenant, sessionId, floor);
++    }
++
++    private String session(String tenant) {
++        return store.insertSessionCommand(tenant, "CREATE_SESSION",
++                "replay-" + UUID.randomUUID(), "digest", "qwen-code", null,
++                null, List.of(), "payload").sessionId();
++    }
++
++    private long append(String tenant, String sessionId, int count) {
++        for (int index = 0; index < count; index++) {
++            store.appendPublicEventIfAbsent(tenant, sessionId, "turn_replay",
++                    "test.progress", Map.of("index", index), false,
++                    "replay:" + UUID.randomUUID());
++        }
++        return store.requireSession(tenant, sessionId).lastSequence();
++    }
++
++    // A stream ends after the deletion event.
++    private long close(String tenant, String sessionId) {
++        store.appendPublicEventIfAbsent(tenant, sessionId, null,
++                "session.deleted", Map.of(), true, "replay:end");
++        return store.requireSession(tenant, sessionId).lastSequence();
++    }
++
++    private MockHttpServletRequestBuilder events(String tenant,
++            String sessionId) {
++        return get("/v1/agents/sessions/{id}/events", sessionId)
++                .header(TENANT, tenant).accept(MediaType.APPLICATION_JSON);
++    }
++
++    private JsonNode json(MockHttpServletResponse response) throws Exception {
++        return objectMapper.readTree(content(response));
++    }
++
++    private static String content(MockHttpServletResponse response)
++            throws Exception {
++        return response.getContentAsString(StandardCharsets.UTF_8);
++    }
++
++    private static List<Long> ids(MockHttpServletResponse response)
++            throws Exception {
++        List<Long> ids = new ArrayList<>();
++        Matcher matcher = ID.matcher(content(response));
++        while (matcher.find()) {
++            ids.add(Long.parseLong(matcher.group(1)));
++        }
++        return ids;
++    }
++
++    private static List<Long> range(long first, long last) {
++        return LongStream.rangeClosed(first, last).boxed().toList();
++    }
++
++    private static String tenant() {
++        return "tenant-replay-" + UUID.randomUUID();
++    }
++
++    /** Records frames and blocks the stream thread on one sequence. */
++    private static final class RecordingEmitter extends SseEmitter {
++        private final long blockOn;
++        private final List<Long> sent = new CopyOnWriteArrayList<>();
++        private final List<Object> resync = new CopyOnWriteArrayList<>();
++        private final List<Throwable> failed = new CopyOnWriteArrayList<>();
++        private final CountDownLatch blocked = new CountDownLatch(1);
++        private final CountDownLatch release = new CountDownLatch(1);
++        private final CountDownLatch completed = new CountDownLatch(1);
++
++        RecordingEmitter(long blockOn) {
++            this.blockOn = blockOn;
++        }
++
++        @Override
++        public void send(SseEventBuilder builder) {
++            StringBuilder text = new StringBuilder();
++            Object data = null;
++            for (DataWithMediaType part : builder.build()) {
++                if (part.getData() instanceof String value) {
++                    text.append(value);
++                } else {
++                    data = part.getData();
++                }
++            }
++            Matcher matcher = ID.matcher(text);
++            if (!matcher.find()) {
++                if (text.toString().contains(
++                        "event:" + ManagedEventStreamService.RESYNC)) {
++                    resync.add(data);
++                }
++                return;
++            }
++            long id = Long.parseLong(matcher.group(1));
++            sent.add(id);
++            if (id == blockOn) {
++                blocked.countDown();
++                try {
++                    release.await(10, TimeUnit.SECONDS);
++                } catch (InterruptedException error) {
++                    Thread.currentThread().interrupt();
++                }
++            }
++        }
++
++        @Override
++        public void complete() {
++            completed.countDown();
++        }
++
++        @Override
++        public void completeWithError(Throwable error) {
++            failed.add(error);
++            completed.countDown();
++        }
++
++        List<Long> ids() {
++            return List.copyOf(sent);
++        }
++    }
++}
+diff --git a/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/store/EventIdentityTest.java b/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/store/EventIdentityTest.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..60f814eeffdc978608f4de66f9cd61946ae42a3b
+--- /dev/null
++++ b/packages/sdk-java/managed-agent-server/src/test/java/com/alibaba/qwen/code/managedagent/store/EventIdentityTest.java
+@@ -0,0 +1,80 @@
++package com.alibaba.qwen.code.managedagent.store;
++
++import static org.assertj.core.api.Assertions.assertThat;
++
++import com.alibaba.qwen.code.managedagent.store.EventIdentity.Identity;
++import java.nio.charset.StandardCharsets;
++import java.util.Map;
++import java.util.UUID;
++import org.junit.jupiter.api.Test;
++
++class EventIdentityTest {
++    private static final String TURN = "turn_a";
++    private static final String ASSISTANT = "item_turn_a_assistant";
++
++    @Test
++    void textDeltasContinueThePartOfTheDeltaBeforeThem() {
++        Identity first = of("item.output_text.delta", 3, text("a"), null);
++        Identity second = of("item.output_text.delta", 4, text("b"), first);
++        Identity thought = of("item.reasoning.delta", 5, text("c"), second);
++        Identity more = of("item.reasoning.delta", 6, text("d"), thought);
++        Identity after = of("item.output_text.delta", 7, text("e"), more);
++
++        assertThat(first).isEqualTo(new Identity("item.output_text.delta",
++                ASSISTANT, "part_turn_a_output_text_3"));
++        assertThat(second.contentPartId())
++                .isEqualTo("part_turn_a_output_text_3");
++        assertThat(thought.contentPartId())
++                .isEqualTo("part_turn_a_reasoning_5");
++        assertThat(more.contentPartId()).isEqualTo("part_turn_a_reasoning_5");
++        assertThat(after.contentPartId())
++                .isEqualTo("part_turn_a_output_text_7");
++    }
++
++    @Test
++    void anythingButTheSameTextStreamStartsANewPart() {
++        Identity text = of("item.output_text.delta", 3, text("a"), null);
++        Identity tool = of("item.tool_call.updated", 4,
++                Map.of("itemId", "item_tool_x"), text);
++        Identity empty = of("item.output_text.delta", 5, text(""), text);
++        Identity otherItem = of("item.output_text.delta", 6,
++                Map.of("itemId", "item_other", "text", "b"), text);
++
++        assertThat(tool).isEqualTo(new Identity("item.tool_call.updated",
++                "item_tool_x", null));
++        assertThat(of("item.output_text.delta", 5, text("b"), tool)
++                .contentPartId()).isEqualTo("part_turn_a_output_text_5");
++        // The projection skips empty text, so it names nothing.
++        assertThat(empty).isEqualTo(new Identity("item.output_text.delta",
++                null, null));
++        assertThat(of("item.output_text.delta", 6, text("c"), empty)
++                .contentPartId()).isEqualTo("part_turn_a_output_text_6");
++        assertThat(otherItem).isEqualTo(new Identity(
++                "item.output_text.delta", "item_other",
++                "part_turn_a_output_text_6"));
++    }
++
++    @Test
++    void inputAndToolEventsNameTheirItemWithoutAPart() {
++        assertThat(of("turn.accepted", 2, Map.of(), null)).isEqualTo(
++                new Identity("turn.accepted", "item_turn_a_input", null));
++        assertThat(of("item.tool_call.updated", 8,
++                Map.of("toolCallId", "tool-1"), null).itemId())
++                .isEqualTo("item_tool_" + UUID.nameUUIDFromBytes(
++                        "turn_a:tool-1".getBytes(StandardCharsets.UTF_8)));
++        assertThat(of("item.tool_call.updated", 8, Map.of(), null).itemId())
++                .isEqualTo("item_tool_" + UUID.nameUUIDFromBytes(
++                        "turn_a:sequence:8".getBytes(StandardCharsets.UTF_8)));
++        assertThat(of("turn.completed", 9, Map.of(), null))
++                .isEqualTo(new Identity("turn.completed", null, null));
++    }
++
++    private static Identity of(String type, long sequence,
++            Map<String, Object> data, Identity previous) {
++        return EventIdentity.of(type, TURN, sequence, data, previous);
++    }
++
++    private static Map<String, Object> text(String value) {
++        return Map.of("text", value);
++    }
++}
+diff --git a/packages/sdk-java/managed-agent-server/src/test/resources/openapi/contract-known-gaps.txt b/packages/sdk-java/managed-agent-server/src/test/resources/openapi/contract-known-gaps.txt
+index 4ce023b37c83eef92cc1a0575a1d241f572e9153..fca60d001e1a8bdd3e2ec2370de8c94008543662 100644
+--- a/packages/sdk-java/managed-agent-server/src/test/resources/openapi/contract-known-gaps.txt
++++ b/packages/sdk-java/managed-agent-server/src/test/resources/openapi/contract-known-gaps.txt
+@@ -6,24 +6,6 @@
+ # delete its line. Never delete a schema field to make a gap disappear.
+ # Stage D slices are tracked in https://github.com/QwenLM/qwen-code/issues/12793.
+ 
+-# D3: event versions and top-level Item and Part identity.
+-record PublicEvent -> PublicEvent: missing content_part_id
+-record PublicEvent -> PublicEvent: missing item_id
+-record PublicEvent -> PublicEvent: missing projection_version
+-record PublicEvent -> PublicEvent: missing schema_version
+-record WebShellEvent -> WebShellEvent: missing contentPartId
+-record WebShellEvent -> WebShellEvent: missing itemId
+-record WebShellEvent -> WebShellEvent: missing projectionVersion
+-record WebShellEvent -> WebShellEvent: missing schemaVersion
+-response getSessionEvents 200: /data/* required projection_version
+-response getSessionEvents 200: /data/* required schema_version
+-response getSessionEvents 200 text/event-stream: / required projection_version
+-response getSessionEvents 200 text/event-stream: / required schema_version
+-
+-# D3: event and transcript pages cap limit at 100; the contract allows 1000.
+-response getSessionEvents: expected 200, got 400 invalid_limit
+-response webShellTranscript: expected 200, got 400 invalid_limit
+-
+ # Lifecycle work (outside Stage D): archive and delete answer synchronously
+ # instead of returning a durable 202 command operation.
+ record DeletedSession has no schema
+diff --git a/packages/web-shell/client/components/managed/java-managed-agent-client.test.ts b/packages/web-shell/client/components/managed/java-managed-agent-client.test.ts
+index 398bd4e62faef968499a682319958d617a137eed..b8c4059eacb9ee9e20f642c53e006a76663bf977 100644
+--- a/packages/web-shell/client/components/managed/java-managed-agent-client.test.ts
++++ b/packages/web-shell/client/components/managed/java-managed-agent-client.test.ts
+@@ -1,5 +1,8 @@
+ import { afterEach, describe, expect, it, vi } from 'vitest';
+-import { JavaManagedAgentClient } from './java-managed-agent-client';
++import {
++  isJavaAgentResyncRequired,
++  JavaManagedAgentClient,
++} from './java-managed-agent-client';
+ import type { JavaManagedAgentHttpError } from './java-managed-agent-client';
+ 
+ function jsonResponse(value: unknown, status = 200): Response {
+@@ -90,6 +93,39 @@ describe('JavaManagedAgentClient', () => {
+     });
+   });
+ 
++  it('decodes the resync frame that ends an expired stream', async () => {
++    const client = new JavaManagedAgentClient({
++      baseUrl: 'https://product.example',
++      fetch: vi
++        .fn<typeof fetch>()
++        .mockResolvedValue(
++          new Response(
++            'event:agent.session.resync_required\ndata:{"type":"agent.session.resync_required","sessionId":"session-1","replayFloorSequence":40,"snapshotThroughSequence":42,"action":"reload_snapshot"}\n\n',
++            { status: 200 },
++          ),
++        ),
++    });
++
++    const frames = [];
++    for await (const frame of client.streamEvents({
++      sessionId: 'session-1',
++      afterSequence: 3,
++    })) {
++      frames.push(frame);
++    }
++
++    expect(frames).toEqual([
++      {
++        type: 'agent.session.resync_required',
++        sessionId: 'session-1',
++        replayFloorSequence: 40,
++        snapshotThroughSequence: 42,
++        action: 'reload_snapshot',
++      },
++    ]);
++    expect(isJavaAgentResyncRequired(frames[0]!)).toBe(true);
++  });
++
+   it('maps the stable Java error envelope', async () => {
+     const client = new JavaManagedAgentClient({
+       baseUrl: 'https://product.example',
+diff --git a/packages/web-shell/client/components/managed/java-managed-agent-provider.test.ts b/packages/web-shell/client/components/managed/java-managed-agent-provider.test.ts
+index 5090090113f36d6a3522be4e8ba74dc224fcf12d..30fe4a17ecbcb7cb7f6c3dfad9f107f9675bcbe8 100644
+--- a/packages/web-shell/client/components/managed/java-managed-agent-provider.test.ts
++++ b/packages/web-shell/client/components/managed/java-managed-agent-provider.test.ts
+@@ -279,6 +279,37 @@ describe('createJavaManagedAgentProvider', () => {
+     });
+   });
+ 
++  it('turns a resync frame into a stream gap and stops', async () => {
++    const provider = createJavaManagedAgentProvider({
++      baseUrl: 'https://product.example',
++      fetch: vi
++        .fn<typeof fetch>()
++        .mockResolvedValue(
++          new Response(
++            'event:agent.session.resync_required\ndata:{"type":"agent.session.resync_required","sessionId":"session-1","replayFloorSequence":40,"snapshotThroughSequence":42,"action":"reload_snapshot"}\n\nid: 43\nevent: turn.completed\ndata: {"sequence":43,"eventId":"evt_43","sessionId":"session-1","turnId":"turn-1","type":"turn.completed","createdAt":43,"data":{},"terminal":true}\n\n',
++            { status: 200 },
++          ),
++        ),
++    });
++
++    const events = [];
++    for await (const event of provider.subscribeEvents('session-1', {
++      clientId: 'client-1',
++      lastEventId: 3,
++    })) {
++      events.push(event);
++    }
++
++    expect(events).toEqual([
++      expect.objectContaining({
++        id: 3,
++        type: 'stream_gap',
++        sessionId: 'session-1',
++        data: expect.objectContaining({ replayFloorSequence: 40 }),
++      }),
++    ]);
++  });
++
+   it('projects a bounded transcript snapshot from canonical Java events', async () => {
+     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+       jsonResponse({

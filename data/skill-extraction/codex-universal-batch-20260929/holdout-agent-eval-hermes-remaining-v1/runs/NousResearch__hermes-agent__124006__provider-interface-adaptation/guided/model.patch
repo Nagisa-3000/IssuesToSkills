@@ -1,0 +1,112 @@
+diff --git a/agent/transports/chat_completions.py b/agent/transports/chat_completions.py
+index c2b11e7..180a4c3 100644
+--- a/agent/transports/chat_completions.py
++++ b/agent/transports/chat_completions.py
+@@ -105,6 +105,61 @@ def _reasoning_config_for_model(model: str, reasoning_config: dict | None) -> di
+     return reasoning_config
+ 
+ 
++def _is_kimi_k3_model(model: str | None) -> bool:
++    """Return whether *model* uses Kimi K3's reasoning vocabulary.
++
++    Kimi's older models expose ``low|medium|high`` while K3 accepts only
++    ``low|high|max``.  Model names can be bare or prefixed by an aggregator,
++    so inspect the final path component and cover both the public
++    ``kimi-k3`` aliases and Kimi Coding's bare ``k3`` slug.
++    """
++    model_tail = (model or "").strip().lower().rsplit("/", 1)[-1]
++    return (
++        model_tail.startswith(("kimi-k3", "kimi_k3"))
++        or model_tail == "k3"
++        or model_tail.startswith(("k3.", "k3-"))
++    )
++
++
++def _kimi_reasoning_effort(model: str | None, reasoning_config: dict | None) -> str:
++    """Translate Hermes' effort ladder to the selected Kimi model's wire set.
++
++    K3 accepts ``low|high|max`` and defaults to ``high``.  K2-era models
++    accept ``low|medium|high``; retain their historical default of ``medium``
++    while mapping Hermes' lower and stronger aliases to the nearest supported
++    levels.  Returning a supported value for every input avoids Kimi's strict
++    request validation turning a ladder alias into an HTTP 400.
++    """
++    is_k3 = _is_kimi_k3_model(model)
++    if is_k3:
++        default = "high"
++        effort_map = {
++            "minimal": "low",
++            "low": "low",
++            "medium": "high",
++            "high": "high",
++            "xhigh": "max",
++            "max": "max",
++            "ultra": "max",
++        }
++    else:
++        default = "medium"
++        effort_map = {
++            "minimal": "low",
++            "low": "low",
++            "medium": "medium",
++            "high": "high",
++            "xhigh": "high",
++            "max": "high",
++            "ultra": "high",
++        }
++
++    if isinstance(reasoning_config, dict):
++        effort = str(reasoning_config.get("effort") or "").strip().lower()
++        return effort_map.get(effort, default)
++    return default
++
++
+ def _build_gemini_thinking_config(model: str, reasoning_config: dict | None) -> dict | None:
+     """Translate Hermes/OpenRouter-style reasoning config to Gemini thinkingConfig."""
+     if reasoning_config is None or not isinstance(reasoning_config, dict):
+@@ -567,11 +622,7 @@ class ChatCompletionsTransport(ProviderTransport):
+                 and reasoning_config.get("enabled") is False
+             )
+             if not _kimi_thinking_off:
+-                _kimi_effort = "medium"
+-                if reasoning_config and isinstance(reasoning_config, dict):
+-                    _e = (reasoning_config.get("effort") or "").strip().lower()
+-                    if _e in {"low", "medium", "high"}:
+-                        _kimi_effort = _e
++                _kimi_effort = _kimi_reasoning_effort(model, reasoning_config)
+                 api_kwargs["reasoning_effort"] = _kimi_effort
+ 
+         # Tencent TokenHub: top-level reasoning_effort (unless thinking disabled)
+@@ -584,8 +635,10 @@ class ChatCompletionsTransport(ProviderTransport):
+             if not _tokenhub_thinking_off:
+                 _tokenhub_effort = "high"
+                 if reasoning_config and isinstance(reasoning_config, dict):
+-                    _e = (reasoning_config.get("effort") or "").strip().lower()
+-                    if _e in {"low", "medium", "high"}:
++                    _e = str(reasoning_config.get("effort") or "").strip().lower()
++                    if _e == "minimal":
++                        _tokenhub_effort = "low"
++                    elif _e in {"low", "medium", "high"}:
+                         _tokenhub_effort = _e
+                 api_kwargs["reasoning_effort"] = _tokenhub_effort
+ 
+diff --git a/agent/transports/codex.py b/agent/transports/codex.py
+index 9a86622..e14d01c 100644
+--- a/agent/transports/codex.py
++++ b/agent/transports/codex.py
+@@ -432,10 +432,11 @@ class ResponsesApiTransport(ProviderTransport):
+             elif reasoning_config.get("effort"):
+                 reasoning_effort = reasoning_config["effort"]
+ 
+-        _effort_clamp = {"minimal": "low"}
+-        if "gpt-5.6" in (model or "").lower():
+-            # Ultra is the Codex product tier; the Responses API wire value is max.
+-            _effort_clamp["ultra"] = "max"
++        # Hermes' ultra tier is an internal alias.  Responses uses ``max``
++        # for that ceiling across its model families; provider-specific
++        # branches below may still clamp it further when their endpoint has a
++        # narrower vocabulary (for example xAI's Grok models).
++        _effort_clamp = {"minimal": "low", "ultra": "max"}
+         if params.get("is_xai_responses", False):
+             from agent.model_metadata import is_grok_46_family
+ 

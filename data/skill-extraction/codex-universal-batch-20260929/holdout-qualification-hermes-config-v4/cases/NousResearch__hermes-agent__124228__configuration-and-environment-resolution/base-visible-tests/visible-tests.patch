@@ -1,0 +1,1031 @@
+diff --git a/tests/e2e/core/upgrade/pm/test_configured_features.py b/tests/e2e/core/upgrade/pm/test_configured_features.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..82d9721ac168810bb94c732a3dee150d607fce4c
+--- /dev/null
++++ b/tests/e2e/core/upgrade/pm/test_configured_features.py
+@@ -0,0 +1,181 @@
++"""Configured features survive every dependency rebuild (PM lifecycle, failure class 1).
++
++A PM install's dependency environment is rebuilt as a NEW generation whenever its inputs change:
++a release that moves ``uv.lock`` (``hermes update``), ``hermes pm repair``, and the first
++``hermes update`` of a main-era install (the legacy ``venv/`` is replaced by a PM generation). The
++user-visible contract is that whatever feature the user had working before the rebuild still
++imports in the generation selected after it:
++
++* an extra the user installed with the documented command (``hermes pm install --extra telegram``);
++* the MCP client (an HTTP MCP server in config.yaml must still connect: ``hermes mcp test``
++  against a real local streamable-HTTP server);
++* a gateway platform enabled in config.yaml (Discord) — gated on #124228: PM never reads
++  ``platforms:`` from config, so the rebuilt environment has no SDK and the updater only warns;
++* extras a main-era venv carried (``[all]`` plus ``[messaging]``) across the
++  legacy-venv migration to the first PM generation.
++
++Every check imports in the SELECTED generation's own interpreter (facts.json), booted as the
++launcher boots it, or drives the real CLI.
++"""
++
++from __future__ import annotations
++
++import os
++import shutil
++import subprocess
++import tomllib
++from pathlib import Path
++
++import pytest
++
++from tests.e2e.core._pending_fixes import known_failure
++from tests.e2e.core.mcp_plugins._helpers import HttpMcpServer
++from tests.e2e.core.upgrade import _helpers as H
++from tests.e2e.core.upgrade import _install_helpers as I
++from tests.e2e.core.upgrade.pm import _pm as P
++from tests.e2e.core.upgrade.test_upgrade_path import _RETRY_PREFIX, _refs, make_leg
++from tests.fakes.fake_llm_provider import FakeLLMServer
++
++pytestmark = [
++    pytest.mark.platforms("linux"),
++    pytest.mark.live_system_guard_bypass,
++    pytest.mark.skipif(H.sandbox_required_reason() is not None, reason=str(H.sandbox_required_reason())),
++    pytest.mark.skipif(shutil.which("git") is None, reason="git required"),
++    pytest.mark.skipif(I.real_uv() is None, reason="uv required"),
++]
++
++MCP_NAME = "e2e-http"
++MANAGED = ("telegram", "discord", "mcp.client.streamable_http")
++
++
++def _mcp_test(sb: I.Sandbox, server: HttpMcpServer) -> str:
++    """``hermes mcp test`` against the live server; returns a failure description or ''."""
++    before = server.log.read_text(encoding="utf-8").count('"initialize"') if server.log.exists() else 0
++    cp = sb.cli("mcp", "test", MCP_NAME, timeout=180)
++    after = server.log.read_text(encoding="utf-8").count('"initialize"') if server.log.exists() else 0
++    if cp.returncode != 0 or "Connected" not in cp.stdout or after <= before:
++        return f"`hermes mcp test {MCP_NAME}` did not connect (server saw {after - before} initialize)\n{I.describe(cp)}"
++    return ""
++
++
++@pytest.fixture(scope="module")
++def provider():
++    with FakeLLMServer(default_text="fake reply for the pm features suite") as srv:
++        yield srv
++
++
++@pytest.fixture(scope="module")
++def rebuilt(tmp_path_factory, provider):
++    """One install taken through a dependency-changing ``hermes update`` and a ``pm repair``."""
++    root = tmp_path_factory.mktemp("pm-features")
++    server = HttpMcpServer(root, "pm-features", MCPE2E_CANARY="CANARY-pm-features").start()
++    try:
++        sb, origin = P.install_head(root)
++        P.configure(
++            sb, provider.base_url,
++            extra=("platforms:\n  discord:\n    enabled: true\n"
++                   f"mcp_servers:\n  {MCP_NAME}:\n    url: {server.url}\n    connect_timeout: 30\n    timeout: 30\n"),
++            env_extra="DISCORD_BOT_TOKEN=fake-e2e-discord-token\n")
++        P.ok(sb.cli("pm", "install", "--extra", "telegram"), "the documented extra install failed")
++        before = {"generation": P.selected_generation(sb), "imports": P.managed_imports(sb, *MANAGED),
++                  "mcp": _mcp_test(sb, server)}
++        assert before["imports"]["telegram"] == "ok" and before["mcp"] == "", (
++            f"harness: `hermes pm install --extra telegram` exited 0 but left no SDK / MCP broken: {before}")
++        P.publish_dependency_release(origin, root, 1)
++        up = P.update(sb)
++        after_update = {"generation": P.selected_generation(sb), "imports": P.managed_imports(sb, *MANAGED),
++                        "mcp": _mcp_test(sb, server)}
++        repair = sb.cli("pm", "repair")
++        after_repair = {"generation": P.selected_generation(sb), "imports": P.managed_imports(sb, *MANAGED),
++                        "mcp": _mcp_test(sb, server)}
++        yield {"sb": sb, "before": before, "update": up, "after_update": after_update,
++               "repair": repair, "after_repair": after_repair}
++    finally:
++        server.stop()
++
++
++def test_update_rebuild_keeps_installed_extra_and_mcp(rebuilt):
++    sb, up, after = rebuilt["sb"], rebuilt["update"], rebuilt["after_update"]
++    assert up.returncode == 0, "hermes update failed:\n" + P.diagnostics(sb, up)
++    assert after["generation"] != rebuilt["before"]["generation"], (
++        "harness: the dependency release did not make the update build a new generation\n" + P.diagnostics(sb, up))
++    assert after["imports"]["telegram"] == "ok", (
++        f"the extra installed with `hermes pm install --extra telegram` is gone after `hermes update`: "
++        f"{after['imports']}\n" + P.diagnostics(sb, up))
++    assert after["imports"]["mcp.client.streamable_http"] == "ok", after["imports"]
++    assert after["mcp"] == "", "HTTP MCP server no longer connects after `hermes update`:\n" + after["mcp"]
++
++
++def test_repair_keeps_installed_extra_and_mcp(rebuilt):
++    sb, rp, after = rebuilt["sb"], rebuilt["repair"], rebuilt["after_repair"]
++    assert rp.returncode == 0, "hermes pm repair failed on a healthy install:\n" + P.diagnostics(sb, rp)
++    assert after["generation"] != rebuilt["after_update"]["generation"], (
++        "`hermes pm repair` reported success but did not rebuild the environment\n" + P.diagnostics(sb, rp))
++    assert after["imports"]["telegram"] == "ok", (
++        f"the extra installed with `hermes pm install --extra telegram` is gone after `hermes pm repair`: "
++        f"{after['imports']}\n" + P.diagnostics(sb, rp))
++    assert after["mcp"] == "", "HTTP MCP server no longer connects after `hermes pm repair`:\n" + after["mcp"]
++
++
++def test_configured_gateway_platform_has_its_sdk_after_update(rebuilt):
++    sb, up, after = rebuilt["sb"], rebuilt["update"], rebuilt["after_update"]
++    assert up.returncode == 0, P.diagnostics(sb, up)
++    with known_failure(r"configured discord platform has no SDK after `hermes update`: ModuleNotFoundError",
++                       "gated on #124228: PM builds ignore configured gateway platforms"):
++        assert after["imports"]["discord"] == "ok", (
++            f"configured discord platform has no SDK after `hermes update`: {after['imports']['discord']}\n"
++            + P.diagnostics(sb, up))
++
++
++# ---------------------------------------------------------------------------
++# Legacy venv -> first PM generation
++# ---------------------------------------------------------------------------
++
++
++@pytest.fixture(scope="module")
++def migrated(tmp_path_factory, provider):
++    """Release N-1 installed main-era style (``venv/`` from N-1's own uv.lock with ``[all]``) plus
++    the ``[messaging]`` extra (Telegram, Discord, Slack SDKs) the main-era docs installed, then
++    updated to HEAD."""
++    if not _refs().base_tag:
++        pytest.skip("no release tag reachable before HEAD (fetch tags)")
++    leg = make_leg(tmp_path_factory.mktemp("pm-legacy") / "leg", None)
++    no_cfg = leg.root / "uv-config"
++    uv_env = {k: v for k, v in os.environ.items() if k not in ("VIRTUAL_ENV", "UV_NO_CONFIG", "UV_CONFIG_FILE")}
++    uv_env.update(UV_PROJECT_ENVIRONMENT=str(leg.install / "venv"), XDG_CONFIG_HOME=str(no_cfg),
++                  XDG_CONFIG_DIRS=str(no_cfg))
++    uv = I.real_uv()
++    assert uv is not None
++    cp = subprocess.run([uv, "sync", "-q", "--locked", "--extra", "all", "--extra", "messaging",
++                         "--python", str(leg.install / "venv" / "bin" / "python")],
++                        cwd=str(leg.install), env=uv_env, capture_output=True, text=True, timeout=1800)
++    assert cp.returncode == 0, f"harness: messaging install into the N-1 venv failed:\n{cp.stderr[-4000:]}"
++    with (leg.install / "pyproject.toml").open("rb") as fh:
++        assert "messaging" in tomllib.load(fh)["project"]["optional-dependencies"], "harness: N-1 has no messaging extra"
++    (leg.hermes_home / "config.yaml").write_text(I.provider_config(provider.base_url, None), encoding="utf-8")
++    (leg.hermes_home / ".env").write_text(f"OPENAI_API_KEY={I.FAKE_KEY}\n", encoding="utf-8")
++    probe = "import telegram, discord, mcp.client.streamable_http; print('ok')"
++    pre = leg.run("-c", probe, argv0=leg.python)
++    I.git("update-ref", "refs/heads/main", _refs().head, cwd=leg.origin)
++    up = leg.run(*_RETRY_PREFIX[1:], leg.hermes, "update", "--yes", "--branch", "main",
++                 argv0=_RETRY_PREFIX[0], timeout=P.UPDATE_TIMEOUT)
++    return {"leg": leg, "pre": pre, "update": up}
++
++
++def test_legacy_venv_features_carry_into_the_first_pm_generation(migrated):
++    leg, up = migrated["leg"], migrated["update"]
++    assert migrated["pre"].returncode == 0, "harness: N-1 venv cannot import its features:\n" + H.describe(migrated["pre"])
++    assert up.returncode == 0, "hermes update from a main-era venv failed:\n" + H.describe(up)
++    assert I.git("rev-parse", "HEAD", cwd=leg.install) == _refs().head, H.describe(up)
++    selected = Path(leg.python)
++    assert "installs" in selected.parts, f"update left the install on the legacy venv: {selected}\n{H.describe(up)}"
++    code = ("import importlib, json\nout = {}\nfor m in ('telegram', 'discord', 'mcp.client.streamable_http'):\n"
++            "    try:\n        importlib.import_module(m); out[m] = 'ok'\n"
++            "    except BaseException as e:\n        out[m] = f'{type(e).__name__}: {e}'\nprint(json.dumps(out))\n")
++    cp = leg.run("-c", code, argv0=str(selected))
++    assert cp.returncode == 0, H.describe(cp)
++    lost = [m for m in ("telegram", "discord") if f'"{m}": "ok"' not in cp.stdout]
++    assert not lost, (
++        f"messaging SDKs the main-era venv carried are gone from the first PM generation: {lost} {cp.stdout}\n"
++        + H.describe(up))
++    assert '"mcp.client.streamable_http": "ok"' in cp.stdout, cp.stdout
+diff --git a/tests/e2e/core/upgrade/pm/test_gateway_install_force.py b/tests/e2e/core/upgrade/pm/test_gateway_install_force.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..0ec1131f624a65c771e0785a100e152aaa4cd534
+--- /dev/null
++++ b/tests/e2e/core/upgrade/pm/test_gateway_install_force.py
+@@ -0,0 +1,88 @@
++"""The PM runtime lock is where PM commands look for it (PM lifecycle, class 6; #124075).
++
++The field report: after ``hermes gateway install --force`` the gateway crash-looped with "no
++dependency environment is committed" and ``hermes pm repair`` / ``pm doctor`` / ``pm status`` all
++died on ``FileNotFoundError: <install>/environments/<env>/workspace/pm/uv.lock``.
++
++Verified premise on origin/main: ``--force`` is incidental. Every generation's ``workspace/``
++copy is materialised without ``pm/uv.lock`` (the copy drops every file named ``uv.lock``), so
++ANY ``hermes pm`` command run by the selected generation's own ``hermes`` (the one on PATH for
++every child a Hermes process spawns, and the one a unit pointing at the managed environment runs)
++dies before it starts. After a dependency-changing ``hermes update``:
++
++* ``hermes gateway install --force`` (service manager is a failing shim: the unit write is what
++  is exercised) leaves the install bootable: ``hermes pm status`` / ``pm doctor`` run and
++  ``hermes gateway run`` reaches running;
++* ``hermes pm status`` / ``pm doctor`` also run from the managed environment's ``hermes``
++  (gated on #124075).
++"""
++
++from __future__ import annotations
++
++import shutil
++
++import pytest
++
++from tests.e2e.core._pending_fixes import known_failure
++from tests.e2e.core.upgrade import _helpers as H
++from tests.e2e.core.upgrade import _install_helpers as I
++from tests.e2e.core.upgrade.pm import _pm as P
++from tests.fakes.fake_llm_provider import FakeLLMServer
++
++pytestmark = [
++    pytest.mark.platforms("linux"),
++    pytest.mark.live_system_guard_bypass,
++    pytest.mark.skipif(H.sandbox_required_reason() is not None, reason=str(H.sandbox_required_reason())),
++    pytest.mark.skipif(shutil.which("git") is None, reason="git required"),
++    pytest.mark.skipif(I.real_uv() is None, reason="uv required"),
++]
++
++
++def _pm_failures(sb: I.Sandbox, hermes: str) -> list[str]:
++    bad = []
++    for args in (("pm", "status"), ("pm", "doctor")):
++        cp = sb.run([hermes, *args], timeout=300)
++        if cp.returncode != 0 or I.TRACEBACK in cp.stdout + cp.stderr:
++            tail = (cp.stdout + cp.stderr).strip().splitlines()[-1:] or [""]
++            bad.append(f"`hermes {' '.join(args)}` rc={cp.returncode}: {tail[0][:300]}\n{I.describe(cp)}")
++    return bad
++
++
++@pytest.fixture(scope="module")
++def provider():
++    with FakeLLMServer(default_text="fake reply for the pm gateway-install suite") as srv:
++        yield srv
++
++
++@pytest.fixture(scope="module")
++def updated(tmp_path_factory, provider):
++    root = tmp_path_factory.mktemp("pm-gwinstall")
++    sb, origin = P.install_head(root)
++    P.configure(sb, provider.base_url)
++    installed = P.selected_generation(sb)
++    P.publish_dependency_release(origin, root, 1)
++    P.ok(P.update(sb, env=P.lazy_env(sb)), "hermes update failed")
++    assert P.selected_generation(sb) != installed, "harness: the update did not select a new generation"
++    return sb
++
++
++def test_gateway_install_force_leaves_the_install_bootable(updated):
++    sb = updated
++    cp = P.run_env(sb, [sb.hermes, "gateway", "install", "--force"], P.lazy_env(sb), timeout=600)
++    assert I.TRACEBACK not in cp.stdout + cp.stderr, I.describe(cp)
++    bad = _pm_failures(sb, sb.hermes)
++    assert not bad, "hermes pm commands fail after `gateway install --force`:\n" + "\n".join(bad)
++    gw = P.Gateway(sb, P.lazy_env(sb), sb.root / "after-install-force.log")
++    try:
++        gw.wait_running()
++    finally:
++        gw.stop()
++
++
++def test_pm_commands_run_from_the_managed_environment(updated):
++    sb = updated
++    exe = str(P.selected_generation(sb) / "venv" / "bin" / "hermes")
++    bad = _pm_failures(sb, exe)
++    with known_failure(r"`hermes pm \w+` rc=\d+: FileNotFoundError: .*/workspace/pm/uv\.lock",
++                       "gated on #124075: generation workspaces are materialised without pm/uv.lock"):
++        assert not bad, "hermes pm commands die from the managed environment's hermes:\n" + "\n".join(bad)
+diff --git a/tests/e2e/core/upgrade/pm/test_generation_gc.py b/tests/e2e/core/upgrade/pm/test_generation_gc.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..4ed8c2ceb3e6c8fab3e49a78ee5c9dd99baf6133
+--- /dev/null
++++ b/tests/e2e/core/upgrade/pm/test_generation_gc.py
+@@ -0,0 +1,118 @@
++"""Repeated updates and repairs don't grow the install without bound (PM lifecycle,
++failure class 5; #123340).
++
++Every dependency rebuild publishes a NEW generation under ``installs/<key>/environments/`` (about
++half a gigabyte with ``[all]``). The previous generation must stay while a running process may
++still read it (leases) and for a day after it was built, and must be collected after that, by the
++command that superseded it, not only by a manual ``hermes pm gc``.
++
++The seeded state is the one a daily-updating user has: before each rebuild the existing
++generations' ``.lease-managed`` stamps are aged two days (as if they were built on earlier days),
++then the user runs ``hermes update`` / ``hermes pm repair``. After each rebuild the aged,
++unselected generations must be gone, the selected one kept and working (a real ``hermes -z`` turn
++through the loopback provider). Two updates: the first one's leftover is the generation the updater
++itself ran from (leased, legitimately kept); the second shows whether anything reclaims it.
++Restarts are covered in ``test_restart_generations.py``. Neither ``hermes update`` nor ``hermes pm repair`` runs the collector today (gated on #124668);
++the generation the rebuilding process itself ran from is leased by it and legitimately survives.
++"""
++
++from __future__ import annotations
++
++import os
++import shutil
++import subprocess
++import time
++
++import pytest
++
++from tests.e2e.core._pending_fixes import known_failure
++from tests.e2e.core.upgrade import _helpers as H
++from tests.e2e.core.upgrade import _install_helpers as I
++from tests.e2e.core.upgrade.pm import _pm as P
++from tests.fakes.fake_llm_provider import FakeLLMServer
++
++pytestmark = [
++    pytest.mark.platforms("linux"),
++    pytest.mark.live_system_guard_bypass,
++    pytest.mark.skipif(H.sandbox_required_reason() is not None, reason=str(H.sandbox_required_reason())),
++    pytest.mark.skipif(shutil.which("git") is None, reason="git required"),
++    pytest.mark.skipif(I.real_uv() is None, reason="uv required"),
++]
++
++TWO_DAYS = 2 * 86400
++
++
++def _age_all_generations(sb: I.Sandbox) -> list[str]:
++    """Pretend every existing generation was built two days ago; returns their names."""
++    envs = P.state_dir(sb) / "environments"
++    old = time.time() - TWO_DAYS
++    aged = []
++    for gen in envs.iterdir():
++        marker = gen / ".lease-managed"
++        if marker.is_file():
++            os.utime(marker, (old, old))
++            aged.append(gen.name)
++    return sorted(aged)
++
++
++@pytest.fixture(scope="module")
++def provider():
++    with FakeLLMServer(default_text="fake reply for the pm gc suite") as srv:
++        yield srv
++
++
++@pytest.fixture(scope="module")
++def home(tmp_path_factory, provider):
++    root = tmp_path_factory.mktemp("pm-gc")
++    sb, origin = P.install_head(root)
++    P.configure(sb, provider.base_url)
++    return {"sb": sb, "origin": origin, "root": root}
++
++
++def _rebuild_collects(sb: I.Sandbox, provider: FakeLLMServer, what: str, rebuild) -> tuple:
++    before_sel = P.selected_generation(sb).name
++    aged = _age_all_generations(sb)
++    assert before_sel in aged, f"harness: selected generation {before_sel} carries no lease stamp: {aged}"
++    cp = rebuild()
++    assert cp.returncode == 0, f"{what} failed:\n" + P.diagnostics(sb, cp)
++    selected = P.selected_generation(sb).name
++    assert selected != before_sel, f"harness: {what} did not build a new generation\n" + P.diagnostics(sb, cp)
++    left = P.generations(sb)
++    # The generation the rebuilding process itself ran from is leased by it until it exits; every
++    # OTHER superseded generation older than a day must be gone.
++    kept_old = sorted((set(aged) & set(left)) - {before_sel})
++    assert selected in left, f"{what} collected the generation it selected: {selected} not in {left}"
++    P.turn(sb, provider, f"turn after {what}")
++    return kept_old, left, selected, before_sel, cp
++
++
++def _assert_collected(sb: I.Sandbox, what: str, result) -> None:
++    kept_old, left, selected, before_sel, cp = result
++    with known_failure(r"kept superseded generations built two days ago",
++                       "gated on #124668: hermes update / pm repair never run the generation collector"):
++        assert not kept_old, (
++            f"{what} kept superseded generations built two days ago: {kept_old} (all: {left}, selected "
++            f"{selected}, previous {before_sel}); every rebuild adds one and nothing reclaims them\n"
++            + P.diagnostics(sb, cp))
++
++
++def test_repeated_updates_collect_superseded_generations(home, provider):
++    sb = home["sb"]
++    results = []
++    for n in (1, 2):
++        target = P.publish_dependency_release(home["origin"], home["root"], n)
++        results.append(_rebuild_collects(sb, provider, f"`hermes update` #{n}",
++                                         lambda: P.update(sb, env=P.lazy_env(sb))))
++        assert I.git("rev-parse", "HEAD", cwd=sb.checkout) == target
++    for n, result in enumerate(results, 1):
++        _assert_collected(sb, f"`hermes update` #{n}", result)
++
++
++def test_repeated_repairs_collect_superseded_generations(home, provider):
++    sb = home["sb"]
++    results = [_rebuild_collects(sb, provider, f"`hermes pm repair` #{n}",
++                                 lambda: P.run_env(sb, [sb.hermes, "pm", "repair"], P.lazy_env(sb),
++                                                   timeout=P.UPDATE_TIMEOUT))
++               for n in (1, 2)]
++    for n, result in enumerate(results, 1):
++        _assert_collected(sb, f"`hermes pm repair` #{n}", result)
+diff --git a/tests/e2e/core/upgrade/pm/test_interpreter_hygiene.py b/tests/e2e/core/upgrade/pm/test_interpreter_hygiene.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..a2c8f65148b9b162f85cff5eaa0bb63e89f5c1a5
+--- /dev/null
++++ b/tests/e2e/core/upgrade/pm/test_interpreter_hygiene.py
+@@ -0,0 +1,207 @@
++"""Interpreter hygiene after an update (PM lifecycle, failure class 4).
++
++A PM install runs every Hermes process on PM's bundled interpreter with the selected
++generation's site-packages. Two kinds of stray environment sit next to that on real machines:
++
++* the pre-PM in-tree ``venv/`` a main-era install leaves behind after migrating (#123965), and
++* a repo-local ``.venv`` a user or a dev tool created with another Python (3.11 here; #123972,
++  whose Windows crash is ``pydantic_core`` built for the wrong ABI; this is the Linux analogue).
++
++Both are seeded as real ``uv venv`` environments whose site-packages carry a ``sitecustomize``
++and a ``.pth`` hook that record every interpreter that ever puts them on ``sys.path``. After a
++dependency-changing ``hermes update``:
++
++* the gateway (``hermes gateway run``) boots, and no process in its tree ever loaded, mapped or
++  put either stray venv on its path;
++* the workers a Hermes process spawns after the update use the PM interpreter and import their
++  deps: ``execute_code`` (#124049) and a Kanban worker spawned by ``hermes kanban dispatch``
++  (#124542, #122500), each proven by what reaches the loopback provider.
++"""
++
++from __future__ import annotations
++
++import json
++import re
++import shutil
++import subprocess
++import sys
++import time
++from pathlib import Path
++
++import pytest
++
++from tests.e2e.core._pending_fixes import known_failure
++from tests.e2e.core.upgrade import _helpers as H
++from tests.e2e.core.upgrade import _install_helpers as I
++from tests.e2e.core.upgrade.pm import _pm as P
++from tests.fakes.fake_llm_provider import FakeLLMServer, Text, ToolCall
++
++pytestmark = [
++    pytest.mark.platforms("linux"),
++    pytest.mark.live_system_guard_bypass,
++    pytest.mark.skipif(H.sandbox_required_reason() is not None, reason=str(H.sandbox_required_reason())),
++    pytest.mark.skipif(shutil.which("git") is None, reason="git required"),
++    pytest.mark.skipif(I.real_uv() is None, reason="uv required"),
++]
++
++STRAY = ("venv", ".venv")
++HOOK = """import os, sys
++try:
++    with open({log!r}, "a", encoding="utf-8") as fh:
++        fh.write(repr((sys.executable, sys.argv[:3])) + "\\n")
++except OSError:
++    pass
++"""
++
++
++def _stray_python() -> str:
++    """Another Python than PM's: 3.11 when uv can find one (the #123972 shape), else the test's."""
++    uv = I.real_uv()
++    assert uv is not None
++    cp = subprocess.run([uv, "python", "find", "3.11"], capture_output=True, text=True, timeout=120)
++    return cp.stdout.strip() if cp.returncode == 0 and cp.stdout.strip() else sys.executable
++
++
++def _seed_stray_venvs(sb: I.Sandbox) -> dict[str, Path]:
++    uv = I.real_uv()
++    assert uv is not None
++    python, logs = _stray_python(), {}
++    for name in STRAY:
++        venv = sb.checkout / name
++        shutil.rmtree(venv, ignore_errors=True)
++        cp = subprocess.run([uv, "venv", "-q", "--python", python, str(venv)], capture_output=True, text=True,
++                            timeout=300, env={k: v for k, v in __import__("os").environ.items() if k != "VIRTUAL_ENV"})
++        assert cp.returncode == 0, f"harness: uv venv {venv} failed:\n{cp.stderr}"
++        site = next(venv.glob("lib/python3*/site-packages"))
++        log = sb.root / f"stray-{name.strip('.')}-loaded.log"
++        (site / "sitecustomize.py").write_text(HOOK.format(log=str(log)), encoding="utf-8")
++        (site / "e2e_stray_hook.py").write_text(HOOK.format(log=str(log)), encoding="utf-8")
++        (site / "e2e_stray.pth").write_text("import e2e_stray_hook\n", encoding="utf-8")
++        logs[name] = log
++    return logs
++
++
++@pytest.fixture(scope="module")
++def provider():
++    with FakeLLMServer(default_text="fake reply for the pm hygiene suite") as srv:
++        yield srv
++
++
++@pytest.fixture(scope="module")
++def updated(tmp_path_factory, provider):
++    root = tmp_path_factory.mktemp("pm-hygiene")
++    sb, origin = P.install_head(root)
++    P.configure(sb, provider.base_url)
++    logs = _seed_stray_venvs(sb)
++    target = P.publish_dependency_release(origin, root, 1)
++    up = P.update(sb, env=P.lazy_env(sb))
++    P.ok(up, "hermes update failed")
++    assert I.git("rev-parse", "HEAD", cwd=sb.checkout) == target
++    return {"sb": sb, "logs": logs}
++
++
++def _marks(logs: dict[str, Path]) -> dict[str, int]:
++    return {name: log.stat().st_size if log.exists() else 0 for name, log in logs.items()}
++
++
++def _stray_hits(logs: dict[str, Path], since: dict[str, int] | None = None) -> dict[str, str]:
++    """Hook records written after ``since`` (per cell, so one cell's red never bleeds into the next)."""
++    since = since or {}
++    hits = {name: log.read_bytes()[since.get(name, 0):].decode("utf-8", "replace")
++            for name, log in logs.items() if log.exists()}
++    return {name: text for name, text in hits.items() if text}
++
++
++def test_gateway_after_update_never_touches_a_stray_venv(updated):
++    sb, logs = updated["sb"], updated["logs"]
++    mark = _marks(logs)
++    gw = P.Gateway(sb, P.lazy_env(sb), sb.root / "hygiene-gateway.log")
++    seen: dict[int, tuple[str, list[str], dict[str, str]]] = {}
++    try:
++        gw.wait_running()
++        deadline = time.monotonic() + 8  # supervised workers start right after "running"
++        while time.monotonic() < deadline:
++            for pid in gw.pids():
++                info = P.process_files(pid)
++                if info[0]:
++                    seen[pid] = info
++            time.sleep(0.5)
++    finally:
++        gw.stop()
++    strays = [str(sb.checkout / n) + "/" for n in STRAY]
++    pythons = {pid: exe for pid, (exe, _, _) in seen.items() if "python" in Path(exe).name}
++    assert pythons, f"harness: saw no Python process in the gateway tree: {seen.keys()}\n{gw.output()[-3000:]}"
++    mapped = {pid: [m for m in maps if any(m.startswith(s) for s in strays)] for pid, (_, maps, _) in seen.items()}
++    mapped = {pid: m for pid, m in mapped.items() if m}
++    env_refs = {pid: {k: v for k, v in env.items() if k in ("PYTHONPATH", "VIRTUAL_ENV", "PYTHONHOME")
++                      and any(s.rstrip("/") in v for s in strays)} for pid, (_, _, env) in seen.items()}
++    env_refs = {pid: e for pid, e in env_refs.items() if e}
++    stray_exes = {pid: exe for pid, exe in pythons.items() if any(exe.startswith(s) for s in strays)}
++    hits = _stray_hits(logs, mark)
++    assert not (hits or mapped or env_refs or stray_exes), (
++        "the gateway put a stray in-tree venv on an interpreter's path after `hermes update`:\n"
++        f"hooks fired: {hits}\nmapped files: {mapped}\nenvironment: {env_refs}\nexecutables: {stray_exes}\n"
++        f"--- gateway output ---\n{gw.output()[-4000:]}\n" + P.diagnostics(sb))
++
++
++def _turn_with_tool(sb: I.Sandbox, provider: FakeLLMServer, prompt: str, call: ToolCall) -> tuple[str, str]:
++    """One ``hermes -z`` turn where the model calls ``call``; returns (tool result, transcript)."""
++    n = len(provider.main_requests())
++    provider.push(call, Text("done"))
++    cp = P.run_env(sb, [sb.hermes, "-z", prompt], P.lazy_env(sb), timeout=600)
++    reqs = provider.main_requests()[n:]
++    tool_msgs = [m for r in reqs for m in r["messages"] if m.get("role") == "tool"]
++    content = tool_msgs[-1]["content"] if tool_msgs else ""
++    if not isinstance(content, str):
++        content = json.dumps(content)
++    return content, I.describe(cp) + f"\nprovider requests: {len(reqs)}"
++
++
++def test_execute_code_after_update_imports_third_party_deps(updated, provider):
++    sb, mark = updated["sb"], _marks(updated["logs"])
++    code = "import ruamel.yaml, httpx, openai, pydantic\nprint('EXEC-DEPS-OK', pydantic.VERSION)"
++    result, transcript = _turn_with_tool(sb, provider, "run the dependency probe",
++                                         ToolCall("execute_code", {"code": code}))
++    assert result, "harness: the execute_code tool never returned a result to the model\n" + transcript
++    with known_failure(r"execute_code on a PM install cannot import third-party deps: "
++                       r".*No module named '(ruamel|httpx|openai|pydantic)",
++                       "gated on #124049: the kernel loses the runtime site-packages"):
++        assert "EXEC-DEPS-OK" in result, (
++            f"execute_code on a PM install cannot import third-party deps: {result[-1500:]}\n" + transcript)
++    hits = _stray_hits(updated["logs"], mark)
++    assert not hits, f"execute_code loaded a stray venv: {hits}"
++
++
++def test_kanban_worker_spawned_after_update_boots(updated, provider):
++    sb, mark = updated["sb"], _marks(updated["logs"])
++    n = len(provider.main_requests())
++    log = sb.root / "kanban-dispatch.log"
++    # One sandbox for dispatcher + worker (the worker outlives `kanban dispatch`, as on a real host);
++    # the sandbox stays up until the worker's first model call is observed, then is torn down.
++    script = (f'H="{sb.hermes}"\n"$H" kanban init >/dev/null\n'
++              '"$H" kanban create "pm hygiene kanban probe" --assignee default --json\n'
++              '"$H" kanban dispatch --json\nsleep 600\n')
++    with log.open("w") as out:
++        proc = subprocess.Popen(H.sandbox_argv(["/bin/sh", "-c", script], writable=[sb.root]), env=P.lazy_env(sb),
++                                cwd=str(sb.root), stdin=subprocess.DEVNULL, stdout=out, stderr=subprocess.STDOUT,
++                                text=True, start_new_session=True)
++        try:
++            deadline, task_id, reached = time.monotonic() + 300, None, []
++            while time.monotonic() < deadline and not reached:
++                text = log.read_text(errors="replace")
++                ids = re.findall(r'"id": "(t_[0-9a-f]+)"', text)
++                task_id = ids[0] if ids else task_id
++                if task_id:
++                    reached = [r for r in provider.main_requests()[n:] if task_id in json.dumps(r["messages"])]
++                time.sleep(0.5)
++        finally:
++            H.kill_tree(proc)
++    worker_log = sb.hermes_home / "kanban" / "logs" / f"{task_id}.log"
++    detail = (f"--- dispatcher ---\n{log.read_text(errors='replace')[-3000:]}\n--- worker log ---\n"
++              + (worker_log.read_text(errors="replace")[-3000:] if task_id and worker_log.exists() else "(none)"))
++    assert task_id, "harness: `hermes kanban create` printed no task id\n" + detail
++    assert reached, (
++        f"the Kanban worker for {task_id} spawned after `hermes update` never reached the provider "
++        "(it died at spawn)\n" + detail)
++    hits = _stray_hits(updated["logs"], mark)
++    assert not hits, f"the worker loaded a stray venv: {hits}"
+diff --git a/tests/e2e/core/upgrade/pm/test_interrupted_update.py b/tests/e2e/core/upgrade/pm/test_interrupted_update.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..3c4cf44523fb7b8468e77f22ccbd6b5e8b0fbc54
+--- /dev/null
++++ b/tests/e2e/core/upgrade/pm/test_interrupted_update.py
+@@ -0,0 +1,147 @@
++"""Interrupted dependency updates recover (PM lifecycle, failure class 2).
++
++``hermes update`` on a release that changes the dependency set runs a PM transaction: it arms the
++``source-completion-pending`` marker, stages a NEW generation under
++``installs/<key>/environments/`` (download + ``uv sync``), publishes it by rewriting facts.json,
++then runs the source-update tail (launchers, TUI/web builds) and clears the marker.
++
++Each cell SIGKILLs the whole sandboxed updater (power cut, closed laptop lid) at one phase
++boundary, observed from outside through the files PM itself writes:
++
++* ``stage``: a new generation directory exists, facts.json still selects the old one;
++* ``publish``: facts.json has just been flipped to the new generation, the tail is still owed.
++
++(The gateway relaunch hand-off after an update is lane ``handoff``'s suite.)
++
++The user-visible contract after the kill, as a user retries later (no lazy-install override, so
++the real launch path runs): the very next ``hermes`` works and reaches the provider; ``hermes
++update`` exits 0 at the target commit and leaves no pending marker; the launch after that does
++not re-run the completion again (a marker that loops forever is #123933's failure), and a
++half-built generation is never the one selected.
++"""
++
++from __future__ import annotations
++
++import json
++import shutil
++import subprocess
++import time
++
++import pytest
++
++from tests.e2e.core.upgrade import _helpers as H
++from tests.e2e.core.upgrade import _install_helpers as I
++from tests.e2e.core.upgrade.pm import _pm as P
++from tests.e2e.core.upgrade.test_upgrade_path import _KILLED_RUN_PREFIX, _RETRY_PREFIX
++from tests.fakes.fake_llm_provider import FakeLLMServer
++
++pytestmark = [
++    pytest.mark.platforms("linux"),
++    pytest.mark.live_system_guard_bypass,
++    pytest.mark.skipif(H.sandbox_required_reason() is not None, reason=str(H.sandbox_required_reason())),
++    pytest.mark.skipif(shutil.which("git") is None, reason="git required"),
++    pytest.mark.skipif(I.real_uv() is None, reason="uv required"),
++]
++
++COMPLETION_NOTICES = ("finishing an interrupted source update", "completing source-update dependencies")
++
++
++@pytest.fixture(scope="module")
++def provider():
++    with FakeLLMServer(default_text="fake reply for the pm interrupt suite") as srv:
++        yield srv
++
++
++@pytest.fixture(scope="module")
++def home(tmp_path_factory, provider):
++    root = tmp_path_factory.mktemp("pm-interrupt")
++    sb, origin = P.install_head(root)
++    P.configure(sb, provider.base_url)
++    return {"sb": sb, "origin": origin, "root": root, "releases": 0}
++
++
++def _retry(sb: I.Sandbox, *args: str, timeout: float = P.UPDATE_TIMEOUT) -> subprocess.CompletedProcess:
++    """A later retry by the user: a fresh process whose pid is never the dead updater's."""
++    return P.run_env(sb, [*_RETRY_PREFIX, sb.hermes, *args], P.lazy_env(sb), timeout=timeout)
++
++
++def _turn(sb: I.Sandbox, provider: FakeLLMServer, marker: str) -> subprocess.CompletedProcess:
++    n = len(provider.main_requests())
++    cp = _retry(sb, "-z", marker)
++    new = provider.main_requests()[n:]
++    assert cp.returncode == 0 and I.TRACEBACK not in cp.stdout + cp.stderr, P.diagnostics(sb, cp)
++    assert len(new) == 1 and marker in json.dumps(new[0]["messages"]), (
++        f"`hermes -z` did not reach the provider exactly once ({len(new)} requests)\n" + P.diagnostics(sb, cp))
++    return cp
++
++
++def _kill_update_at(sb: I.Sandbox, phase: str) -> dict:
++    gen0, known = P.selected_generation(sb), set(P.generations(sb))
++    log = sb.root / f"killed-update-{phase}.log"
++
++    def staged():
++        try:
++            return bool(set(P.generations(sb)) - known) and P.selected_generation(sb) == gen0
++        except (OSError, ValueError):
++            return False  # facts.json mid-replace
++
++    def published():
++        try:
++            return P.selected_generation(sb) != gen0 and P.pending_marker(sb).exists()
++        except (OSError, ValueError):
++            return False  # facts.json mid-replace
++
++    with log.open("w") as out:
++        proc = subprocess.Popen(
++            H.sandbox_argv([*_KILLED_RUN_PREFIX, sb.hermes, "update", "--yes", "--branch", "main"], writable=[sb.root]),
++            env=P.lazy_env(sb), cwd=str(sb.root), stdin=subprocess.DEVNULL, stdout=out, stderr=subprocess.STDOUT,
++            text=True, start_new_session=True)
++        try:
++            P.kill_when(proc, staged if phase == "stage" else published, timeout=P.UPDATE_TIMEOUT,
++                        what=f"the {phase} phase of the dependency update")
++        except AssertionError as exc:
++            raise AssertionError(f"{exc}\n--- update log ---\n{log.read_text(errors='replace')[-5000:]}") from None
++    return {"gen0": gen0, "known": known, "at_kill": P.selected_generation(sb), "gens_at_kill": P.generations(sb),
++            "pending_at_kill": P.pending_marker(sb).exists(), "log": log.read_text(errors="replace")}
++
++
++@pytest.mark.parametrize("phase", ["stage", "publish"])
++def test_sigkill_mid_dependency_update_recovers(home, provider, phase):
++    sb = home["sb"]
++    assert not P.pending_marker(sb).exists(), "harness: install is not healthy before the cell\n" + P.diagnostics(sb)
++    home["releases"] += 1
++    target = P.publish_dependency_release(home["origin"], home["root"], home["releases"])
++    killed = _kill_update_at(sb, phase)
++    assert killed["pending_at_kill"], f"the update was killed at {phase} but owed no tail marker:\n{killed}"
++    if phase == "stage":
++        assert killed["at_kill"] == killed["gen0"], f"harness: killed after publish, not mid-stage: {killed}"
++    else:
++        assert killed["at_kill"] != killed["gen0"], f"harness: killed before publish: {killed}"
++
++    # The very next launch works and reaches the provider.
++    first = _turn(sb, provider, f"first turn after a kill at {phase}")
++    # The user re-runs the update: it converges at the target and owes nothing.
++    again = _retry(sb, "update", "--yes", "--branch", "main")
++    assert again.returncode == 0 and I.TRACEBACK not in again.stdout + again.stderr, (
++        f"`hermes update` after a kill at {phase} failed\n" + P.diagnostics(sb, first, again))
++    assert I.git("rev-parse", "HEAD", cwd=sb.checkout) == target, P.diagnostics(sb, again)
++    assert not P.pending_marker(sb).exists(), (
++        f"`hermes update` exited 0 after a kill at {phase} but left source-completion-pending behind\n"
++        + P.diagnostics(sb, first, again))
++    selected = P.selected_generation(sb)
++    if phase == "stage":
++        half_built = set(killed["gens_at_kill"]) - killed["known"]
++        assert selected.name not in half_built, (
++            f"the generation half-built by the killed update was selected: {selected.name}\n" + P.diagnostics(sb, again))
++    imports = P.managed_imports(sb, "ruamel.yaml", "pydantic", "openai", "httpx")
++    assert set(imports.values()) == {"ok"}, f"selected generation cannot import core deps: {imports}"
++
++    # The launch after that owes nothing: no completion loop, no new generation per launch.
++    gens = P.generations(sb)
++    t0 = time.monotonic()
++    later = _turn(sb, provider, f"second turn after a kill at {phase}")
++    noisy = [n for n in COMPLETION_NOTICES if n in later.stderr]
++    assert not noisy, (
++        f"a finished update still re-runs the source-update completion on every launch ({noisy}, "
++        f"{time.monotonic() - t0:.0f}s)\n" + P.diagnostics(sb, later))
++    assert P.generations(sb) == gens, f"a plain launch built a new generation: {gens} -> {P.generations(sb)}"
+diff --git a/tests/e2e/core/upgrade/pm/test_restart_generations.py b/tests/e2e/core/upgrade/pm/test_restart_generations.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..c7805cd5bd346004ba5f1de9bb181a646cbbafbf
+--- /dev/null
++++ b/tests/e2e/core/upgrade/pm/test_restart_generations.py
+@@ -0,0 +1,75 @@
++"""Restarts never build or accumulate dependency generations (PM lifecycle, failure class 5; #123340).
++
++A current install relaunched over and over (the CLI, and the gateway a service manager restarts)
++must reuse the selected generation: no dependency sync, no source-update tail, no new generation.
++A gateway started while a source-update tail is still owed (``source-completion-pending``) may
++finish that tail once, on its first start, and must neither build a generation nor re-run the tail
++on later starts (#123340: it re-ran it, building a new generation, on every restart).
++"""
++
++from __future__ import annotations
++
++import shutil
++
++import pytest
++
++from tests.e2e.core.upgrade import _helpers as H
++from tests.e2e.core.upgrade import _install_helpers as I
++from tests.e2e.core.upgrade.pm import _pm as P
++from tests.fakes.fake_llm_provider import FakeLLMServer
++
++pytestmark = [
++    pytest.mark.platforms("linux"),
++    pytest.mark.live_system_guard_bypass,
++    pytest.mark.skipif(H.sandbox_required_reason() is not None, reason=str(H.sandbox_required_reason())),
++    pytest.mark.skipif(shutil.which("git") is None, reason="git required"),
++    pytest.mark.skipif(I.real_uv() is None, reason="uv required"),
++]
++
++
++@pytest.fixture(scope="module")
++def provider():
++    with FakeLLMServer(default_text="fake reply for the pm restart suite") as srv:
++        yield srv
++
++
++@pytest.fixture(scope="module")
++def home(tmp_path_factory, provider):
++    root = tmp_path_factory.mktemp("pm-restarts")
++    sb, _origin = P.install_head(root)
++    P.configure(sb, provider.base_url)
++    return {"sb": sb}
++
++
++def test_restarts_never_build_or_accumulate_generations(home, provider):
++    sb = home["sb"]
++    before = P.generations(sb)
++    rebuilt = []
++    for n in range(3):
++        cp = P.turn(sb, provider, f"plain relaunch {n}")
++        rebuilt += [f"relaunch {n}: {line}" for line in cp.stderr.splitlines()
++                    if "source-update dependencies" in line or "interrupted source update" in line]
++    assert not rebuilt, "a plain relaunch of a current install re-ran the dependency sync / update tail:\n" + "\n".join(rebuilt)
++    assert P.generations(sb) == before, f"plain relaunches changed the generation set: {before} -> {P.generations(sb)}"
++
++
++def test_gateway_restarts_with_an_owed_tail_do_not_rebuild(home):
++    """#123340: a gateway started with ``source-completion-pending`` present re-ran the tail (and
++    built a generation) on every start. The first start may finish the tail; none may add a
++    generation, and later starts must owe nothing."""
++    sb = home["sb"]
++    P.arm_pending_tail(sb)
++    before = P.generations(sb)
++    boots = []
++    for n in range(3):
++        gw = P.Gateway(sb, P.lazy_env(sb), sb.root / f"gc-gateway-{n}.log")
++        try:
++            gw.wait_running()
++        finally:
++            gw.stop()
++        boots.append({"gens": P.generations(sb), "pending": P.pending_marker(sb).exists(),
++                      "tail": "finishing an interrupted source update" in gw.output()})
++    grown = [b["gens"] for b in boots if b["gens"] != before]
++    assert not grown, f"gateway restarts built dependency generations: {before} -> {grown}\n" + P.diagnostics(sb)
++    assert not boots[0]["pending"], f"the first gateway start left the owed tail pending: {boots}"
++    assert not any(b["tail"] for b in boots[1:]), f"every gateway start re-runs the source-update tail: {boots}"
+diff --git a/tests/e2e/core/upgrade/pm/test_stamps_and_doctor.py b/tests/e2e/core/upgrade/pm/test_stamps_and_doctor.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..bd50679d93b850d92dd5c1a2941f5c707113cb4b
+--- /dev/null
++++ b/tests/e2e/core/upgrade/pm/test_stamps_and_doctor.py
+@@ -0,0 +1,173 @@
++"""Stamps, receipts and doctor tell the truth about a PM install (PM lifecycle, failure class 3).
++
++One real install, taken through a dependency-changing ``hermes update`` so the selected generation
++is not the installer's. Then:
++
++* every ``hermes`` the install ships agrees on what the install is. The selected generation's own
++  console script (``<gen>/venv/bin/hermes``) is on PATH for every child a Hermes process spawns
++  (``activate_dependencies`` prepends that ``bin``), so the agent's terminal, workers and scripts
++  resolve ``hermes`` to it. It must report the checkout as the install and be able to check for
++  updates; it reports the workspace copy instead (gated on #122425 and #122627);
++* ``hermes doctor`` on that healthy install reports nothing wrong with the command installation
++  (#124050 is the false positive class) and ``hermes pm status`` reports the update as a success;
++* real drift is caught and healed: a user uninstalls fastapi (the ``web`` extra the dashboard
++  imports) from the selected environment. ``hermes doctor`` must say so (gated on #124214: it
++  reports nothing), and ``hermes pm repair`` must bring the dashboard's import back;
++* a dependency update that cannot resolve fails loudly, ``hermes pm status`` reports it as failed,
++  and the previous generation stays selected and working.
++"""
++
++from __future__ import annotations
++
++import json
++import re
++import shutil
++from pathlib import Path
++
++import pytest
++
++from tests.e2e.core._pending_fixes import known_failure
++from tests.e2e.core.upgrade import _helpers as H
++from tests.e2e.core.upgrade import _install_helpers as I
++from tests.e2e.core.upgrade.pm import _pm as P
++from tests.fakes.fake_llm_provider import FakeLLMServer
++
++pytestmark = [
++    pytest.mark.platforms("linux"),
++    pytest.mark.live_system_guard_bypass,
++    pytest.mark.skipif(H.sandbox_required_reason() is not None, reason=str(H.sandbox_required_reason())),
++    pytest.mark.skipif(shutil.which("git") is None, reason="git required"),
++    pytest.mark.skipif(I.real_uv() is None, reason="uv required"),
++]
++
++
++def _section(doctor_out: str, title: str) -> list[str]:
++    """The lines of one ``◆ <title>`` section of ``hermes doctor`` output."""
++    lines, inside = [], False
++    for line in doctor_out.splitlines():
++        if line.startswith("◆ "):
++            inside = line[2:].strip() == title
++            continue
++        if inside and line.strip():
++            lines.append(line)
++    return lines
++
++
++@pytest.fixture(scope="module")
++def provider():
++    with FakeLLMServer(default_text="fake reply for the pm stamps suite") as srv:
++        yield srv
++
++
++@pytest.fixture(scope="module")
++def updated(tmp_path_factory, provider):
++    root = tmp_path_factory.mktemp("pm-stamps")
++    sb, origin = P.install_head(root)
++    P.configure(sb, provider.base_url)
++    installed_gen = P.selected_generation(sb)
++    target = P.publish_dependency_release(origin, root, 1)
++    up = P.update(sb)
++    P.ok(up, "hermes update failed")
++    assert P.selected_generation(sb) != installed_gen, "harness: update did not select a new generation"
++    assert I.git("rev-parse", "HEAD", cwd=sb.checkout) == target
++    return {"sb": sb, "target": target, "update": up, "origin": origin, "root": root}
++
++
++def _venv_hermes(sb: I.Sandbox) -> str:
++    return str(P.selected_generation(sb) / "venv" / "bin" / "hermes")
++
++
++def test_managed_env_hermes_can_check_for_updates(updated):
++    sb = updated["sb"]
++    exe = _venv_hermes(sb)
++    assert Path(exe).is_file(), f"harness: selected generation ships no hermes console script: {exe}"
++    cp = sb.run([exe, "update", "--check"], timeout=300)
++    with known_failure(r"`hermes update --check` from the managed environment: .*Not a git repository",
++                       "gated on #122627: PROJECT_ROOT resolves to the PM workspace copy"):
++        assert cp.returncode == 0 and "Not a git repository" not in cp.stdout + cp.stderr, (
++            "`hermes update --check` from the managed environment: " + (cp.stdout + cp.stderr).strip()[-400:]
++            + "\n" + I.describe(cp))
++
++
++def test_managed_env_hermes_reports_the_checkout_as_the_install(updated):
++    sb = updated["sb"]
++    cp = P.ok(sb.run([_venv_hermes(sb), "--version"], timeout=300))
++    shown = re.search(r"Install directory: (.+)", cp.stdout)
++    method = re.search(r"Install method: (.+)", cp.stdout)
++    with known_failure(r"managed-environment hermes reports install .*/environments/[0-9a-f]+/workspace",
++                       "gated on #122425: the workspace copy carries no install metadata"):
++        assert shown and shown.group(1).strip() == str(sb.checkout) and method and method.group(1).strip() == "git", (
++            f"managed-environment hermes reports install {shown and shown.group(1)} "
++            f"(method {method and method.group(1)}), not the checkout {sb.checkout}:\n{cp.stdout}")
++
++
++def test_doctor_on_a_healthy_pm_install_reports_no_command_installation_problem(updated):
++    sb = updated["sb"]
++    cp = sb.cli("doctor", timeout=300)
++    assert I.TRACEBACK not in cp.stdout + cp.stderr, I.describe(cp)
++    section = _section(cp.stdout, "Command Installation")
++    assert section, "doctor printed no Command Installation section:\n" + I.describe(cp)
++    bad = [line for line in section if line.lstrip().startswith(("⚠", "✗"))]
++    assert not bad, f"hermes doctor reports a launcher problem on a healthy PM install: {bad}\n" + I.describe(cp)
++    assert f"Hermes entry point exists ({sb.checkout / 'hermes'})" in cp.stdout, "\n".join(section)
++
++
++def test_pm_status_receipt_reports_the_successful_update(updated):
++    sb = updated["sb"]
++    receipt = json.loads(P.ok(sb.cli("pm", "status")).stdout)
++    code = receipt.get("exit_code", receipt.get("pm_exit_code"))
++    assert code == 0 and receipt.get("outcome") in ("ok", "success"), (
++        f"`hermes pm status` does not report the last (successful) update as a success: {receipt}")
++
++
++@pytest.fixture(scope="module")
++def drifted(updated):
++    """The user removes fastapi (the ``web`` extra) from the selected environment by hand."""
++    sb = updated["sb"]
++    assert P.managed_imports(sb, "fastapi")["fastapi"] == "ok", "harness: fastapi not installed to begin with"
++    uv = next((sb.hermes_home / "tools").glob("uv-*/uv"), None) or I.real_uv()
++    P.ok(sb.run([str(uv), "pip", "uninstall", "--python", sb.python, "fastapi"]), "harness: uninstall failed")
++    assert P.managed_imports(sb, "fastapi")["fastapi"] != "ok", "harness: fastapi still importable"
++    doctor = sb.cli("doctor", timeout=300)
++    repair = sb.cli("pm", "repair")
++    return {"sb": sb, "doctor": doctor, "repair": repair}
++
++
++def test_doctor_reports_web_extra_drift(drifted):
++    cp = drifted["doctor"]
++    assert I.TRACEBACK not in cp.stdout + cp.stderr, I.describe(cp)
++    flagged = [line for line in cp.stdout.splitlines()
++               if re.search(r"(?i)fastapi|dashboard|web extra|\bweb\b.*(missing|not installed)", line)
++               and line.lstrip().startswith(("⚠", "✗"))]
++    with known_failure(r"hermes doctor is silent about fastapi missing from the selected environment",
++                       "gated on #124214: web-extra dependency drift is invisible to doctor"):
++        assert flagged, ("hermes doctor is silent about fastapi missing from the selected environment "
++                         f"(rc={cp.returncode})\n" + I.describe(cp))
++
++
++def test_pm_repair_heals_the_drift(drifted):
++    sb, rp = drifted["sb"], drifted["repair"]
++    assert rp.returncode == 0, "hermes pm repair failed on a drifted environment:\n" + P.diagnostics(sb, rp)
++    imports = P.managed_imports(sb, "fastapi", "hermes_cli.web_server")
++    assert set(imports.values()) == {"ok"}, (
++        f"`hermes pm repair` exited 0 but the dashboard still cannot import: {imports}\n" + P.diagnostics(sb, rp))
++
++
++def test_failed_dependency_update_is_reported_as_failed(updated):
++    """A release whose uv.lock uv rejects: the update must fail loudly, the receipt must say so, and
++    the install must keep running on the generation it had."""
++    sb = updated["sb"]
++    before = P.selected_generation(sb)
++    origin, scratch = updated["origin"], updated["root"]
++    lock = I.git("show", "main:uv.lock", cwd=origin) + '\n[[package]]\nname = "e2e-broken"\n'
++    I.publish_commit(origin, scratch, "release: e2e broken lockfile", {"uv.lock": lock})
++    up = P.update(sb)
++    receipt = json.loads(P.ok(sb.cli("pm", "status")).stdout)
++    assert up.returncode != 0, "`hermes update` exited 0 on a release whose uv.lock uv rejects\n" + P.diagnostics(sb, up)
++    assert receipt.get("outcome") not in ("ok", "success"), (
++        f"`hermes pm status` reports the failed update as a success: {receipt}\n" + P.diagnostics(sb, up))
++    assert P.selected_generation(sb) == before, "a failed update switched the selected generation"
++    imports = P.managed_imports(sb, "pydantic", "openai")
++    assert set(imports.values()) == {"ok"}, f"the install no longer works after a failed update: {imports}"
++    cp = sb.cli("--version")
++    assert cp.returncode == 0 and I.TRACEBACK not in cp.stdout + cp.stderr, I.describe(cp)

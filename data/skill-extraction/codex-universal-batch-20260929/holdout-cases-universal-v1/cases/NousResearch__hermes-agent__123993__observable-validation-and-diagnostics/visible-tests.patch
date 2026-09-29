@@ -1,0 +1,128 @@
+diff --git a/apps/desktop/src/app/session/hooks/use-message-stream/interim-sealing.test.tsx b/apps/desktop/src/app/session/hooks/use-message-stream/interim-sealing.test.tsx
+index 80805d3119a03a53c4519e1ca5fbe6531456b9f1..822e90a8b2f1a5750761635d4e4b9a287889f327 100644
+--- a/apps/desktop/src/app/session/hooks/use-message-stream/interim-sealing.test.tsx
++++ b/apps/desktop/src/app/session/hooks/use-message-stream/interim-sealing.test.tsx
+@@ -35,6 +35,33 @@ const completePreviewed = (text: string) =>
+     stream.handleEvent({ payload: { text, response_previewed: true }, session_id: SID, type: 'message.complete' })
+   )
+ 
++/** A terminal frame that names the stored rows it settled, as a complete
++ *  `persisted_turn` receipt does in production. */
++const receipt = (finalRowId: number) => ({
++  row_ids: [finalRowId - 1, finalRowId],
++  user_row_id: finalRowId - 1,
++  final_assistant_row_id: finalRowId,
++  complete: true
++})
++
++const completePreviewedWithReceipt = (text: string, finalRowId: number) =>
++  act(() =>
++    stream.handleEvent({
++      payload: { persisted_turn: receipt(finalRowId), response_previewed: true, text },
++      session_id: SID,
++      type: 'message.complete'
++    })
++  )
++
++const completeTransformedWithReceipt = (text: string, finalRowId: number) =>
++  act(() =>
++    stream.handleEvent({
++      payload: { persisted_turn: receipt(finalRowId), response_transformed: true, text },
++      session_id: SID,
++      type: 'message.complete'
++    })
++  )
++
+ function getState(): ClientSessionState {
+   return stream.state()
+ }
+@@ -248,6 +275,42 @@ describe('useMessageStream interim text sealing', () => {
+     expect(texts).toHaveLength(2)
+   })
+ 
++  // The pinned case above has no receipt, so no durable identity to settle on.
++  // With one, a rewritten final after a chained message.start is the SAME
++  // turn's reply: the interim never carried a rowId of its own, and the frame
++  // names the row it settled — settle onto the interim instead of appending a
++  // second bubble for one stored row (#124128).
++  it('settles a rewritten previewed final onto the display-only interim after a chained message.start', async () => {
++    mountStream()
++    await start()
++    await delta('Checking the lease file now.')
++    await interim('Checking the lease file now.')
++    await start()
++    await completePreviewedWithReceipt('The lease file shows a stale lock.', 8)
++
++    const texts = assistantMessages()
++    expect(texts).toHaveLength(1)
++    expect(texts[0]).toBe('The lease file shows a stale lock.')
++    expect(
++      getState()
++        .messages.filter(m => m.role === 'assistant')
++        .at(-1)?.interim
++    ).toBeFalsy()
++  })
++
++  it('settles a rewritten transformed final onto the display-only interim after a chained message.start', async () => {
++    mountStream()
++    await start()
++    await delta('TOKEN_1 holds the stale lock.')
++    await interim('TOKEN_1 holds the stale lock.')
++    await start()
++    await completeTransformedWithReceipt('example-service.internal holds the stale lock.', 8)
++
++    const texts = assistantMessages()
++    expect(texts).toHaveLength(1)
++    expect(texts[0]).toBe('example-service.internal holds the stale lock.')
++  })
++
+   it('appends a genuinely different final as its own bubble (two real assistant segments)', async () => {
+     mountStream()
+     await start()
+diff --git a/apps/desktop/src/app/session/hooks/use-session-actions/utils.test.ts b/apps/desktop/src/app/session/hooks/use-session-actions/utils.test.ts
+index cfe711723d97801dac5139a9cf760a2a99a66316..fb0fe16330f0b53017ea125236413500b6841759 100644
+--- a/apps/desktop/src/app/session/hooks/use-session-actions/utils.test.ts
++++ b/apps/desktop/src/app/session/hooks/use-session-actions/utils.test.ts
+@@ -2117,6 +2117,42 @@ describe('overlayConcurrentMessageChanges', () => {
+ 
+     expect(overlayConcurrentMessageChanges(page, [page[0]], [page[0], errored]).at(-1)).toBe(errored)
+   })
++
++  // The committed row and the settled live row capture the same reply at two
++  // moments while it kept streaming, so one is routinely a prefix of the
++  // other (#123993): accept either as a forward extension, as the sibling
++  // removeRepresentedLocalLiveProjection already does (2494b95929).
++  it('folds a settled live row that lags behind the committed row into one reply', () => {
++    const page = [
++      msg('3-user', 'user', 'prompt b', { rowId: 3 }),
++      msg('4-assistant', 'assistant', 'A2 finished while away', { rowId: 4 })
++    ]
++
++    const current = [page[0], msg('assistant-stream-1-2', 'assistant', 'A2 finished', { pending: false })]
++
++    const overlaid = overlayConcurrentMessageChanges(page, [], current)
++
++    expect(overlaid.map(message => [message.id, chatMessageText(message)])).toEqual([
++      ['3-user', 'prompt b'],
++      ['4-assistant', 'A2 finished while away']
++    ])
++  })
++
++  it('folds a settled live row that ran past the committed row into one reply', () => {
++    const page = [
++      msg('3-user', 'user', 'prompt b', { rowId: 3 }),
++      msg('4-assistant', 'assistant', 'A2 finished', { rowId: 4 })
++    ]
++
++    const current = [page[0], msg('assistant-stream-1-2', 'assistant', 'A2 finished while away', { pending: false })]
++
++    const overlaid = overlayConcurrentMessageChanges(page, [], current)
++
++    expect(overlaid.map(message => [message.id, chatMessageText(message)])).toEqual([
++      ['3-user', 'prompt b'],
++      ['4-assistant', 'A2 finished']
++    ])
++  })
+ })
+ 
+ describe('preserveEquivalentTranscript', () => {

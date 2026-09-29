@@ -1,0 +1,67 @@
+diff --git a/tests/hermes_cli/test_models_catalog_late_plugin_provider.py b/tests/hermes_cli/test_models_catalog_late_plugin_provider.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..4492a77083a59023fb11df19202a7d6ac18f3093
+--- /dev/null
++++ b/tests/hermes_cli/test_models_catalog_late_plugin_provider.py
+@@ -0,0 +1,39 @@
++"""A provider registered after ``hermes_cli.models`` was imported still reaches the picker catalog.
++
++``CANONICAL_PROVIDERS`` admitted plugin providers once, at import. A plugin whose imports pull
++``hermes_cli.models`` in mid-discovery, or a profile registered at runtime, never reached
++``list_available_providers`` / ``_PROVIDER_LABELS`` until restart: the picker twin of the auth
++registry window (#102123). ``providers._sync_auth_registry`` now re-admits into both snapshots.
++"""
++
++from providers import register_provider
++from providers.base import ProviderProfile
++
++
++def _profile(name: str) -> ProviderProfile:
++    return ProviderProfile(name=name, display_name=name, description="late plugin (direct API)")
++
++
++def test_late_registered_provider_reaches_picker_catalog(monkeypatch):
++    import hermes_cli.models_catalog_static as catalog
++    from hermes_cli.models import list_available_providers
++
++    # this module is imported (the snapshot exists) before the registration below
++    monkeypatch.setattr(catalog, "CANONICAL_PROVIDERS", list(catalog.CANONICAL_PROVIDERS))
++    monkeypatch.setattr(catalog, "_canonical_slugs", set(catalog._canonical_slugs))
++    monkeypatch.setattr(catalog, "_PROVIDER_LABELS", dict(catalog._PROVIDER_LABELS))
++    monkeypatch.setattr("hermes_cli.models.CANONICAL_PROVIDERS", catalog.CANONICAL_PROVIDERS)
++    monkeypatch.setattr("hermes_cli.models._PROVIDER_LABELS", catalog._PROVIDER_LABELS)
++    slug = "zz-late-plugin-provider"
++    assert slug not in {r["id"] for r in list_available_providers()}
++
++    import providers as registry
++    registry.list_providers()  # discovery done: a registration now is a post-discovery one
++    monkeypatch.setitem(registry._REGISTRY, slug, _profile(slug))  # keeps the registry scoped
++    register_provider(_profile(slug))
++
++    assert slug in {r["id"] for r in list_available_providers()}
++    assert catalog._PROVIDER_LABELS[slug] == slug
++    # idempotent: a second sync adds nothing
++    assert catalog.sync_plugin_provider_catalog() == 0
++    assert sum(1 for p in catalog.CANONICAL_PROVIDERS if p.slug == slug) == 1
+diff --git a/tests/tui_gateway/test_multi_profile_hosting_transitions.py b/tests/tui_gateway/test_multi_profile_hosting_transitions.py
+index 7e706447bb985e77d2d05be29ab8e5878bdce098..16bf07497980f2945845c133161b3cd091180950 100644
+--- a/tests/tui_gateway/test_multi_profile_hosting_transitions.py
++++ b/tests/tui_gateway/test_multi_profile_hosting_transitions.py
+@@ -125,11 +125,17 @@ def test_release_resets_every_scope_when_one_reset_fails(two_homes, monkeypatch)
+     scopes = server._profile_runtime_scope_tokens(str(b))
+     assert current_secret_scope() is not None and get_hermes_home_override() == str(b)
+ 
++    real_reset = terminal_scope.reset_terminal_scope
++
+     def exploding(_token):
+         raise RuntimeError("terminal reset blew up")
+ 
+     monkeypatch.setattr(terminal_scope, "reset_terminal_scope", exploding)
+     server._release_build_profile_scopes(scopes)  # suppresses the re-raised failure
++    # The exploding reset left the terminal ContextVar bound to B's scope on this thread. The
++    # scenario is proven here; unbind it, or every later test in the process inherits B's scope.
++    real_reset(scopes.terminal)
++    assert terminal_scope.get_terminal_scope() is None
+     assert current_secret_scope() is None
+     assert get_hermes_home_override() is None
+     assert Path(server._hermes_home) == root
