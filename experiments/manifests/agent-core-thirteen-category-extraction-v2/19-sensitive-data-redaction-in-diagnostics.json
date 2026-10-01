@@ -1,0 +1,244 @@
+{
+  "schema_version": "agent-core-thirteen-category-extraction-v2",
+  "generated_at": "2026-10-01",
+  "category": "sensitive-data-redaction-in-diagnostics",
+  "theme": "redact secrets and sensitive payloads at logging and diagnostics boundaries",
+  "policy": {
+    "train_cases": 4,
+    "leave_one_repository_out_holdout": true,
+    "holdout_in_separate_manifest": true,
+    "holdout_excluded_from_extraction": true,
+    "local_git_offline_fallback": true,
+    "target_model": "openai/gpt-5.6-sol"
+  },
+  "counts": {
+    "total": 4,
+    "implementation_plus_test": 3,
+    "implementation_only": 1
+  },
+  "cases": [
+    {
+      "case_id": "NousResearch__hermes-agent__77484__sensitive-data-redaction-in-diagnostics",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 77484,
+      "issue_url": "https://github.com/NousResearch/hermes-agent/pull/77484",
+      "artifact_type": "pull_request",
+      "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+      "category": "sensitive-data-redaction-in-diagnostics",
+      "theme": "redact secrets and sensitive payloads at logging and diagnostics boundaries",
+      "role": "train_candidate",
+      "split": "train_candidate",
+      "sample_kind": "verified_implementation_pull_request",
+      "source": "agent_core_thirteen_category_extraction_v2",
+      "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/77484",
+      "ref": "72eda946be949a5932923df3325037a0d6c5da49",
+      "extraction_ref": "72eda946be949a5932923df3325037a0d6c5da49",
+      "title": "fix(security): redact terminal exception results and ACP stderr logs (#77484)",
+      "ref_exists_in_checkout": true,
+      "commit_subjects": [
+        "fix(security): redact terminal exception results and ACP stderr logs (#77484)"
+      ],
+      "linked_issue_numbers": [
+        80964,
+        80965
+      ],
+      "file_sample": [
+        "acp_adapter/entry.py",
+        "tests/acp_adapter/test_acp_logging_redaction.py",
+        "tests/tools/test_terminal_tool_exception_redaction.py",
+        "tools/terminal_tool.py"
+      ],
+      "quality": "implementation_plus_test",
+      "evidence_status": "ready_for_codex_extraction",
+      "provenance": {
+        "classification": "direct_implementation_artifact",
+        "resolution_artifact": {
+          "type": "pull_request",
+          "number": 77484,
+          "url": "https://github.com/NousResearch/hermes-agent/pull/77484"
+        },
+        "commit": {
+          "sha": "72eda946be949a5932923df3325037a0d6c5da49",
+          "subject": "fix(security): redact terminal exception results and ACP stderr logs (#77484)",
+          "parents": [
+            "2a743e5f4377419c54054ce7c65c79cff98a092c"
+          ],
+          "body_excerpt": "Closes the last two emission gaps from #77484:\n\n- tools/terminal_tool.py: both exception paths (generic except and\n  TERMINAL_DEGRADED_MODE=fail) returned raw str(e) + traceback.format_exc()\n  to the model — only the logger copy was redacted. Exception text can\n  embed the failing command line and any secrets inline in it; both fields\n  now pass through redact_sensitive_text.\n- acp_adapter/entry.py: _setup_logging cleared root handlers and installed\n  a plain logging.Formatter, bypassing redaction entirely on ACP stderr.\n  Now uses RedactingFormatter like every other logging surface.\n\nThe other three gaps from #77484 (process(list), *_KEY regex variants,\ncontrol-char splits) were fixed in #80964/#80965."
+        },
+        "verification": [
+          "local_git_commit_resolved",
+          "first_parent_and_changed_files_recorded",
+          "implementation_change_present",
+          "test_or_spec_change_present"
+        ]
+      },
+      "pull_request": 77484
+    },
+    {
+      "case_id": "openai__codex__48686__sensitive-data-redaction-in-diagnostics",
+      "repository": "openai/codex",
+      "issue": 48686,
+      "issue_url": "https://github.com/openai/codex/pull/48686",
+      "artifact_type": "pull_request",
+      "checkout": "/home/chenyujia/tritonToLlvm/codex-agent",
+      "category": "sensitive-data-redaction-in-diagnostics",
+      "theme": "redact secrets and sensitive payloads at logging and diagnostics boundaries",
+      "role": "train_candidate",
+      "split": "train_candidate",
+      "sample_kind": "verified_implementation_pull_request",
+      "source": "agent_core_thirteen_category_extraction_v2",
+      "resolution_url": "https://github.com/openai/codex/pull/48686",
+      "ref": "4a36f4549dfce7f7d95bd037a52147c81b79916d",
+      "extraction_ref": "4a36f4549dfce7f7d95bd037a52147c81b79916d",
+      "title": "Remove WebSocket headers and tool payloads from info logs (#48686)",
+      "ref_exists_in_checkout": true,
+      "commit_subjects": [
+        "Remove WebSocket headers and tool payloads from info logs (#48686)"
+      ],
+      "linked_issue_numbers": [
+        48686
+      ],
+      "file_sample": [
+        "codex-rs/codex-api/src/endpoint/responses_websocket.rs",
+        "codex-rs/core/src/stream_events_utils.rs"
+      ],
+      "quality": "implementation_only",
+      "evidence_status": "ready_for_codex_extraction",
+      "provenance": {
+        "classification": "direct_implementation_artifact",
+        "resolution_artifact": {
+          "type": "pull_request",
+          "number": 48686,
+          "url": "https://github.com/openai/codex/pull/48686"
+        },
+        "commit": {
+          "sha": "4a36f4549dfce7f7d95bd037a52147c81b79916d",
+          "subject": "Remove WebSocket headers and tool payloads from info logs (#48686)",
+          "parents": [
+            "88d743c3abbef69778dc64a3a776a16510fa77fe"
+          ],
+          "body_excerpt": "Stop logging response headers on successful WebSocket connections and payload\npreviews for tool calls. Keep the connection URL, tool name, and thread ID in\ntheir respective log entries.\n\nGitOrigin-RevId: 1d410b6aef8f12153da9bfc60c515b8e797a9de0\n(cherry picked from commit 41f9084b30812db321a0b592def4f500d1e79cf4)"
+        },
+        "verification": [
+          "local_git_commit_resolved",
+          "first_parent_and_changed_files_recorded",
+          "implementation_change_present",
+          "no_test_file_change_observed"
+        ]
+      },
+      "pull_request": 48686
+    },
+    {
+      "case_id": "google-gemini__gemini-cli__26153__sensitive-data-redaction-in-diagnostics",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 26153,
+      "issue_url": "https://github.com/google-gemini/gemini-cli/pull/26153",
+      "artifact_type": "pull_request",
+      "checkout": "/home/chenyujia/tritonToLlvm/gemini-cli",
+      "category": "sensitive-data-redaction-in-diagnostics",
+      "theme": "redact secrets and sensitive payloads at logging and diagnostics boundaries",
+      "role": "train_candidate",
+      "split": "train_candidate",
+      "sample_kind": "verified_implementation_pull_request",
+      "source": "agent_core_thirteen_category_extraction_v2",
+      "resolution_url": "https://github.com/google-gemini/gemini-cli/pull/26153",
+      "ref": "2194da2b0213fa39062302ea3a2ee75ef768648e",
+      "extraction_ref": "2194da2b0213fa39062302ea3a2ee75ef768648e",
+      "title": "Respect logPrompts flag for logging sensitive fields (#26153)",
+      "ref_exists_in_checkout": true,
+      "commit_subjects": [
+        "Respect logPrompts flag for logging sensitive fields (#26153)"
+      ],
+      "linked_issue_numbers": [
+        26153
+      ],
+      "file_sample": [
+        "packages/core/src/telemetry/conseca-logger.test.ts",
+        "packages/core/src/telemetry/conseca-logger.ts",
+        "packages/core/src/telemetry/loggers.test.ts",
+        "packages/core/src/telemetry/types.ts"
+      ],
+      "quality": "implementation_plus_test",
+      "evidence_status": "ready_for_codex_extraction",
+      "provenance": {
+        "classification": "direct_implementation_artifact",
+        "resolution_artifact": {
+          "type": "pull_request",
+          "number": 26153,
+          "url": "https://github.com/google-gemini/gemini-cli/pull/26153"
+        },
+        "commit": {
+          "sha": "2194da2b0213fa39062302ea3a2ee75ef768648e",
+          "subject": "Respect logPrompts flag for logging sensitive fields (#26153)",
+          "parents": [
+            "dce13019b9e43b253d03e7fb2c12550cdd94e0aa"
+          ],
+          "body_excerpt": "Co-authored-by: David Pierce <davidapierce@google.com>\nCo-authored-by: Gal Zahavi <38544478+galz10@users.noreply.github.com>"
+        },
+        "verification": [
+          "local_git_commit_resolved",
+          "first_parent_and_changed_files_recorded",
+          "implementation_change_present",
+          "test_or_spec_change_present"
+        ]
+      },
+      "pull_request": 26153
+    },
+    {
+      "case_id": "QwenLM__qwen-code__6200__sensitive-data-redaction-in-diagnostics",
+      "repository": "QwenLM/qwen-code",
+      "issue": 6200,
+      "issue_url": "https://github.com/QwenLM/qwen-code/pull/6200",
+      "artifact_type": "pull_request",
+      "checkout": "/home/chenyujia/tritonToLlvm/qwen-code",
+      "category": "sensitive-data-redaction-in-diagnostics",
+      "theme": "redact secrets and sensitive payloads at logging and diagnostics boundaries",
+      "role": "train_candidate",
+      "split": "train_candidate",
+      "sample_kind": "verified_implementation_pull_request",
+      "source": "agent_core_thirteen_category_extraction_v2",
+      "resolution_url": "https://github.com/QwenLM/qwen-code/pull/6200",
+      "ref": "c1235d8c69fcccadf96609af54ed1e08b72fa7ed",
+      "extraction_ref": "c1235d8c69fcccadf96609af54ed1e08b72fa7ed",
+      "title": "fix(qqbot): security hardening — gateway validation, atomic state, sanitized logging (#6200)",
+      "ref_exists_in_checkout": true,
+      "commit_subjects": [
+        "fix(qqbot): security hardening — gateway validation, atomic state, sanitized logging (#6200)"
+      ],
+      "linked_issue_numbers": [
+        6200
+      ],
+      "file_sample": [
+        "packages/channels/qqbot/src/QQChannel.ts",
+        "packages/channels/qqbot/src/api.test.ts",
+        "packages/channels/qqbot/src/api.ts",
+        "packages/channels/qqbot/src/send.test.ts"
+      ],
+      "quality": "implementation_plus_test",
+      "evidence_status": "ready_for_codex_extraction",
+      "provenance": {
+        "classification": "direct_implementation_artifact",
+        "resolution_artifact": {
+          "type": "pull_request",
+          "number": 6200,
+          "url": "https://github.com/QwenLM/qwen-code/pull/6200"
+        },
+        "commit": {
+          "sha": "c1235d8c69fcccadf96609af54ed1e08b72fa7ed",
+          "subject": "fix(qqbot): security hardening — gateway validation, atomic state, sanitized logging (#6200)",
+          "parents": [
+            "006ac59a33b60bcd87086b5ddd6afa5abe85e448"
+          ],
+          "body_excerpt": "* fix(qqbot): validate gateway URL protocol to prevent SSRF\n\n- Add validateGatewayUrl(): enforce wss:// protocol, warn on unexpected hostnames\n- Integrate into fetchGatewayUrl() return path\n- Truncate error body in fetchAccessToken() to 80 chars\n- Add 6 tests covering protocol rejection, wss acceptance, and edge cases\n\n* fix(qqbot): atomic state persistence and error log sanitization\n\nState persistence hardening:\n- Atomic saveQQState() via tmp+renameSync with disposed guard and unref()\n- Atomic flushQQState() with {mode: 0o600} permissions\n- Entry type validation in restoreQQState() for chatTypeMap and msgSeqMap\n\nError log sanitization:\n- Wrap all user-controlled data in process.stderr.write() with sanitizeLogText()\n- Covering: connect retry, sendMessage errors, state persistence failures,\n  token refresh, malformed gateway, WebSocket errors, reconnect, and\n  C2C/group handler error paths\n\n* fix(qqbot): add replyMsgId validation in restoreQQState()\n\nAdd type/length validation for replyMsgId entries when restoring from\npersisted state, consistent with the existing chatTypeMap and msgSeqMap\ninput validation filters. Entries must be strings ≤ 128 chars.\n\n* fix(qqbot): add test coverag"
+        },
+        "verification": [
+          "local_git_commit_resolved",
+          "first_parent_and_changed_files_recorded",
+          "implementation_change_present",
+          "test_or_spec_change_present"
+        ]
+      },
+      "pull_request": 6200
+    }
+  ]
+}

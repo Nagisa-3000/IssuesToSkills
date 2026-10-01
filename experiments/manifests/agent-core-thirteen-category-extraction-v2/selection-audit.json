@@ -1,0 +1,2492 @@
+{
+  "schema_version": "agent-core-thirteen-category-selection-audit-v1",
+  "generated_at": "2026-10-01",
+  "scope": "offline local-git selection evidence; never pass this file to extraction or holdout agents",
+  "counts": {
+    "records": 65,
+    "training": 52,
+    "holdouts": 13,
+    "training_with_test_change": 34
+  },
+  "records": [
+    {
+      "category": "08-model-catalog-and-capability-metadata",
+      "theme": "model catalog freshness and capability metadata",
+      "repo": "earendil-works/pi",
+      "number": 9093,
+      "role": "train",
+      "ref": "0dbf2b76fe7919d5fe4184523898507b4ae19ee0",
+      "parents": [
+        "6aedd1066e540642165aa30fa7b4a1b863778aa7"
+      ],
+      "subject": "fix(ai): remove Grok Build 0.1 from built-in xAI model catalog (#9093)",
+      "body_excerpt": "Add grok-build-0.1 to XAI_BUILTIN_EXCLUDED_MODEL_IDS so the generated xAI\ncatalog only lists grok-4.3, grok-4.5 and grok-4.6. Update the exclusion\ntest and drop the thinking-level assertion for the removed model.\n\nCo-authored-by: Jaaneek <Jaaneek@users.noreply.github.com>",
+      "changed_count": 2,
+      "implementation_count": 1,
+      "test_count": 1,
+      "implementation_sample": [
+        "packages/ai/scripts/generate-models.ts"
+      ],
+      "test_sample": [
+        "packages/ai/test/xai-responses.test.ts"
+      ],
+      "file_sample": [
+        "packages/ai/scripts/generate-models.ts",
+        "packages/ai/test/xai-responses.test.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "model-catalog-and-capability-metadata",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/earendil-works/pi/pull/9093",
+      "selected_for": "train"
+    },
+    {
+      "category": "08-model-catalog-and-capability-metadata",
+      "theme": "model catalog freshness and capability metadata",
+      "repo": "NousResearch/hermes-agent",
+      "number": 16033,
+      "role": "train",
+      "ref": "855366909f659e7f11635dc5bfbd279a1d4ef83e",
+      "parents": [
+        "d09ab8ff13329da1715d20e3fb17d47f499fbc18"
+      ],
+      "subject": "feat(models): remote model catalog manifest for OpenRouter + Nous Portal (#16033)",
+      "body_excerpt": "OpenRouter and Nous Portal curated picker lists now resolve via a JSON\nmanifest served by the docs site, falling back to the in-repo snapshot\nwhen unreachable. Lets us update model lists without shipping a release.\n\nLive URL: https://hermes-agent.nousresearch.com/docs/api/model-catalog.json\n(source at website/static/api/model-catalog.json; auto-deploys via the\nexisting deploy-site.yml GitHub Pages pipeline on every merge to main).\n\nSchema (v1) carries id + optional description + free-form metadata at\nmanifest, provider, and model levels. Pricing and context length stay\nlive-fetched via existing machinery (/v1/models endpoints, models.dev).\n\nConfig (new model_catalog section, default enabled):\n  model_catalog.url       master manifest URL\n  model_catalog.ttl_hours disk cache TTL (default 24h)\n  model_catalog.providers.<name>.url   optional per-provider override\n\nFetch pipeline: in-process cache -> disk cache (fresh < TTL) -> HTTP\nfetch -> disk-cache-on-failure fallback -> in-repo snapshot as last\nresort. Never raises to callers; at worst returns the bundled list.\n\nChanges:\n- website/static/api/model-catalog.json    initial manifest (35 OR + 31 Nous)\n- scripts/build_model_catalog.py ",
+      "changed_count": 10,
+      "implementation_count": 7,
+      "test_count": 1,
+      "implementation_sample": [
+        "hermes_cli/auth.py",
+        "hermes_cli/config.py",
+        "hermes_cli/main.py",
+        "hermes_cli/model_catalog.py",
+        "hermes_cli/models.py",
+        "scripts/build_model_catalog.py",
+        "website/sidebars.ts"
+      ],
+      "test_sample": [
+        "tests/hermes_cli/test_model_catalog.py"
+      ],
+      "file_sample": [
+        "hermes_cli/auth.py",
+        "hermes_cli/config.py",
+        "hermes_cli/main.py",
+        "hermes_cli/model_catalog.py",
+        "hermes_cli/models.py",
+        "scripts/build_model_catalog.py",
+        "tests/hermes_cli/test_model_catalog.py",
+        "website/docs/reference/model-catalog.md",
+        "website/sidebars.ts",
+        "website/static/api/model-catalog.json"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "model-catalog-and-capability-metadata",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/NousResearch/hermes-agent/pull/16033",
+      "selected_for": "train"
+    },
+    {
+      "category": "08-model-catalog-and-capability-metadata",
+      "theme": "model catalog freshness and capability metadata",
+      "repo": "openai/codex",
+      "number": 46508,
+      "role": "train",
+      "ref": "2b842962883f2e01526b9c64e383cb2375123a5d",
+      "parents": [
+        "8003609cc703dbf014159055e63a684901855edc"
+      ],
+      "subject": "Refresh the model catalog before turns after auth changes (#46508)",
+      "body_excerpt": "## Why\n\nCredential changes can leave the in-memory model catalog associated with a different identity, causing subsequent turns to use bundled model metadata instead of the active credentials' catalog.\n\n## What changed\n\n- Refresh mismatched catalogs before user turns and mailbox-triggered wakeups, resolving lazy command credentials before comparing identities.\n- Reuse a matching cache or fetch models with a five-second deadline covering auth resolution and cache access. Preserve fallback behavior on failure or timeout; static catalogs need no refresh.\n- Recheck the active turn after discovery so an interrupted wakeup does not continue starting a turn.\n\n## Testing\n\nAdd coverage for user and mailbox turns after credential rotation, including switching back after another identity replaces the shared catalog. Verify refreshed context windows and request behavior, fallback on discovery failure or auth timeout, and command-auth token rotation.\n\nGitOrigin-RevId: 7e4ad25f1c4476e2023225731924af28c1181767",
+      "changed_count": 5,
+      "implementation_count": 4,
+      "test_count": 1,
+      "implementation_sample": [
+        "codex-rs/core/src/session/turn_context.rs",
+        "codex-rs/core/src/tasks/mod.rs",
+        "codex-rs/model-provider/src/models_endpoint.rs",
+        "codex-rs/models-manager/src/manager.rs"
+      ],
+      "test_sample": [
+        "codex-rs/core/tests/suite/models_cache_auth.rs"
+      ],
+      "file_sample": [
+        "codex-rs/core/src/session/turn_context.rs",
+        "codex-rs/core/src/tasks/mod.rs",
+        "codex-rs/core/tests/suite/models_cache_auth.rs",
+        "codex-rs/model-provider/src/models_endpoint.rs",
+        "codex-rs/models-manager/src/manager.rs"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "model-catalog-and-capability-metadata",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/openai/codex/pull/46508",
+      "selected_for": "train"
+    },
+    {
+      "category": "08-model-catalog-and-capability-metadata",
+      "theme": "model catalog freshness and capability metadata",
+      "repo": "QwenLM/qwen-code",
+      "number": 7144,
+      "role": "train",
+      "ref": "945cf3c8296f895871b6c087ac2a89d339cb9727",
+      "parents": [
+        "3a014e2afe2bc996ac4d61ca7aef660d26226f29"
+      ],
+      "subject": "fix(core): add kimi-k3 token limits (1M context, 128K output) (#7144)",
+      "body_excerpt": "Kimi K3 exposes a 1M-token context window and defaults max output to\n128K. Without explicit rules it fell through to the generic Kimi\nfallback (256K context) and the default output limit, which would\ntrigger context compaction far too early and under-size the output\nbudget. Register explicit context-window and output rules so token\naccounting matches the model, and mirror them into the\nvscode-ide-companion token-limit table.\n\nDocs: https://platform.kimi.com/docs/api/models-overview",
+      "changed_count": 2,
+      "implementation_count": 2,
+      "test_count": 0,
+      "implementation_sample": [
+        "packages/core/src/core/tokenLimits.ts",
+        "packages/vscode-ide-companion/src/utils/tokenLimits.ts"
+      ],
+      "test_sample": [],
+      "file_sample": [
+        "packages/core/src/core/tokenLimits.ts",
+        "packages/vscode-ide-companion/src/utils/tokenLimits.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "model-catalog-and-capability-metadata",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/QwenLM/qwen-code/pull/7144",
+      "selected_for": "train"
+    },
+    {
+      "category": "08-model-catalog-and-capability-metadata",
+      "theme": "model catalog freshness and capability metadata",
+      "repo": "Aider-AI/aider",
+      "number": 4114,
+      "role": "holdout",
+      "ref": "119a44debe0465ea72d6e90001dcc74b93c5a0b1",
+      "parents": [
+        "8304029b92e5c20850467ed22c503921d4738796",
+        "87dee0a5f2efc4a92b4fb253d9aebd4b85b31407"
+      ],
+      "subject": "Merge pull request #4114 from therealmarv/increase-deepseek-v3-openrouter-context",
+      "body_excerpt": "increase context window of Deepseek V3 to new OpenRouter limits",
+      "changed_count": 1,
+      "implementation_count": 0,
+      "test_count": 0,
+      "implementation_sample": [],
+      "test_sample": [],
+      "file_sample": [
+        "aider/resources/model-metadata.json"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "model-catalog-and-capability-metadata",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/Aider-AI/aider/pull/4114",
+      "selected_for": "holdout"
+    },
+    {
+      "category": "09-provider-error-payload-normalization",
+      "theme": "preserve and normalize provider error payloads",
+      "repo": "Aider-AI/aider",
+      "number": 4748,
+      "role": "train",
+      "ref": "fb05748ace65bea780e0766b14b0904fbaac5f7f",
+      "parents": [
+        "1354e0bfa4847c1a71b9eea7374847a786d81c1b",
+        "08165c57a21636d0f995abf55de33fd9bbbcee94"
+      ],
+      "subject": "Merge pull request #4748 from claui/fix-litellm-exception-list-regression",
+      "body_excerpt": "Fix regression in the LiteLLM exception list",
+      "changed_count": 1,
+      "implementation_count": 1,
+      "test_count": 0,
+      "implementation_sample": [
+        "aider/exceptions.py"
+      ],
+      "test_sample": [],
+      "file_sample": [
+        "aider/exceptions.py"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "provider-error-payload-normalization",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/Aider-AI/aider/pull/4748",
+      "selected_for": "train"
+    },
+    {
+      "category": "09-provider-error-payload-normalization",
+      "theme": "preserve and normalize provider error payloads",
+      "repo": "earendil-works/pi",
+      "number": 7205,
+      "role": "train",
+      "ref": "4523528b21c66084fdece7ed3ffa10888bc5ac60",
+      "parents": [
+        "66cd061ab468aeae9fd2e38715d3931f7f77f569"
+      ],
+      "subject": "fix(ai): treat only plain objects as provider error bodies (#7205)",
+      "body_excerpt": "pickBodyText serialized any non-empty object into the error body. SDK error\nfields can hold class instances instead of parsed bodies - AWS SDK v3's\n$response.body is an HTTP stream/response wrapper - and stringifying one\nproduced garbage like {\"_events\":...} as the body, which then replaced\nerror.message in the composed display string. error.message is where the SDK\nputs the real deserialized exception text (\"Input is too long...\", schema\nvalidation details), so the one useful string was discarded for noise.\n\nThe existing pipe-based stream sniffing only covers node-style streams; web\nReadableStreams (pipeTo/pipeThrough, no pipe) and non-stream wrapper classes\nslipped through. Require Object.prototype/null prototype before serializing\na candidate body - parsed JSON bodies are plain objects by construction, so\nreal gateway bodies still surface.",
+      "changed_count": 2,
+      "implementation_count": 1,
+      "test_count": 1,
+      "implementation_sample": [
+        "packages/ai/src/utils/error-body.ts"
+      ],
+      "test_sample": [
+        "packages/ai/test/error-body.test.ts"
+      ],
+      "file_sample": [
+        "packages/ai/src/utils/error-body.ts",
+        "packages/ai/test/error-body.test.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "provider-error-payload-normalization",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/earendil-works/pi/pull/7205",
+      "selected_for": "train"
+    },
+    {
+      "category": "09-provider-error-payload-normalization",
+      "theme": "preserve and normalize provider error payloads",
+      "repo": "NousResearch/hermes-agent",
+      "number": 3096,
+      "role": "train",
+      "ref": "712cebc40f2e156036e55ca313f12fda82e35bff",
+      "parents": [
+        "45f57c2012b05879339d3a79433b1ca2ed94ff5a"
+      ],
+      "subject": "fix(logging): show HTTP status code and 400 body in API error output (#3096)",
+      "body_excerpt": "When an API call fails, the terminal output now includes the HTTP status\ncode in the header line and, for 400 errors, the response body from the\nprovider (truncated to 300 chars). Makes it much easier to diagnose\nissues like invalid model names or malformed requests that were\npreviously hidden behind generic error messages.\n\nSalvaged from PR #2646 by Mibayy. Fixes #2644.",
+      "changed_count": 1,
+      "implementation_count": 1,
+      "test_count": 0,
+      "implementation_sample": [
+        "run_agent.py"
+      ],
+      "test_sample": [],
+      "file_sample": [
+        "run_agent.py"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "provider-error-payload-normalization",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/NousResearch/hermes-agent/pull/3096",
+      "selected_for": "train"
+    },
+    {
+      "category": "09-provider-error-payload-normalization",
+      "theme": "preserve and normalize provider error payloads",
+      "repo": "google-gemini/gemini-cli",
+      "number": 23341,
+      "role": "train",
+      "ref": "69bf2d75efda831957172668d0b7e50c14fc0214",
+      "parents": [
+        "96cc8a0daddd1e66597ff862be20434a5d6a1b1b"
+      ],
+      "subject": "fix: decode Uint8Array and multi-byte UTF-8 in API error messages (#23341)",
+      "body_excerpt": "Co-authored-by: Coco Sheng <cocosheng@google.com>",
+      "changed_count": 2,
+      "implementation_count": 1,
+      "test_count": 1,
+      "implementation_sample": [
+        "packages/core/src/core/loggingContentGenerator.ts"
+      ],
+      "test_sample": [
+        "packages/core/src/core/loggingContentGenerator.test.ts"
+      ],
+      "file_sample": [
+        "packages/core/src/core/loggingContentGenerator.test.ts",
+        "packages/core/src/core/loggingContentGenerator.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "provider-error-payload-normalization",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/google-gemini/gemini-cli/pull/23341",
+      "selected_for": "train"
+    },
+    {
+      "category": "09-provider-error-payload-normalization",
+      "theme": "preserve and normalize provider error payloads",
+      "repo": "QwenLM/qwen-code",
+      "number": 7010,
+      "role": "holdout",
+      "ref": "4bc41782e48cd6c74cf9425c9dcd037a56567cde",
+      "parents": [
+        "7b17144897bb533bd5acbcf5f9bb8df0888dc9ee"
+      ],
+      "subject": "fix: surface underlying .cause of OpenAI-compatible connection errors in debug log and API error message (#7010)",
+      "body_excerpt": "* fix: surface underlying .cause of OpenAI-compatible connection errors in debug log and API error message\n\n* fix(core): surface the deep syscall code behind opaque fetch-failed wrappers\n\ndescribeErrorCause() previously unwrapped only one level of .cause, so the\nundici/openai chain (APIConnectionError -> TypeError \"fetch failed\" ->\nError \"connect ECONNREFUSED ...\") stopped at the code-less \"fetch failed\"\nwrapper and the real syscall code was never surfaced.\n\nWalk the full .cause chain (bounded to 8 levels, cycle-safe via a visited\nset, recursing into AggregateError.errors) to the deepest Node code, so\ngetErrorMessage() now yields e.g. \"Connection error. (cause: connect\nECONNREFUSED ...)\". Rewrite the tests to encode the real nested shape\ninstead of attaching the code directly to the depth-1 wrapper.\n\n* test(core): align errorHandler cause tests with structured diagnostics logging\n\nAfter rebasing onto main, errorHandler now logs a third structured\ndiagnostics argument (model/durationMs/errorType/...). Update the three\ncause/message assertions to match the current three-argument\ndebugLogger.error signature; the surfaced message strings are unchanged.\n\n---------\n\nCo-authored-by: Matt ",
+      "changed_count": 6,
+      "implementation_count": 3,
+      "test_count": 3,
+      "implementation_sample": [
+        "packages/core/src/core/openaiContentGenerator/errorHandler.ts",
+        "packages/core/src/utils/errorParsing.ts",
+        "packages/core/src/utils/errors.ts"
+      ],
+      "test_sample": [
+        "packages/core/src/core/openaiContentGenerator/errorHandler.test.ts",
+        "packages/core/src/utils/errorParsing.test.ts",
+        "packages/core/src/utils/errors.test.ts"
+      ],
+      "file_sample": [
+        "packages/core/src/core/openaiContentGenerator/errorHandler.test.ts",
+        "packages/core/src/core/openaiContentGenerator/errorHandler.ts",
+        "packages/core/src/utils/errorParsing.test.ts",
+        "packages/core/src/utils/errorParsing.ts",
+        "packages/core/src/utils/errors.test.ts",
+        "packages/core/src/utils/errors.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "provider-error-payload-normalization",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/QwenLM/qwen-code/pull/7010",
+      "selected_for": "holdout"
+    },
+    {
+      "category": "10-subprocess-and-pty-lifecycle",
+      "theme": "subprocess and pseudo-terminal lifecycle finalization",
+      "repo": "earendil-works/pi",
+      "number": 4426,
+      "role": "train",
+      "ref": "5998b579585d62491541ee44ef6451dc8695bb86",
+      "parents": [
+        "64882c6a516c6fe0e207ee3b114704f965e4eef6",
+        "9d84e28692f9483eea5a950ca017174cb641867a"
+      ],
+      "subject": "Merge pull request #4426 from ofa1/fix/restore-tty-on-uncaught-exception",
+      "body_excerpt": "fix(coding-agent): restore terminal on uncaught exception",
+      "changed_count": 1,
+      "implementation_count": 1,
+      "test_count": 0,
+      "implementation_sample": [
+        "packages/coding-agent/src/modes/interactive/interactive-mode.ts"
+      ],
+      "test_sample": [],
+      "file_sample": [
+        "packages/coding-agent/src/modes/interactive/interactive-mode.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "subprocess-and-pty-lifecycle",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/earendil-works/pi/pull/4426",
+      "selected_for": "train"
+    },
+    {
+      "category": "10-subprocess-and-pty-lifecycle",
+      "theme": "subprocess and pseudo-terminal lifecycle finalization",
+      "repo": "NousResearch/hermes-agent",
+      "number": 14901,
+      "role": "train",
+      "ref": "379b2273d95566e8a69eadabceabc6ee08521b49",
+      "parents": [
+        "7db2703b332bbe8afe2c89b1fed2dd8c03cbd9af"
+      ],
+      "subject": "fix(mcp): route stdio subprocess stderr to log file, not user TTY (#14901)",
+      "body_excerpt": "MCP stdio servers' stderr was being dumped directly onto the user's\nterminal during hermes launch. Servers like FastMCP-based ones print a\nlarge ASCII banner at startup; slack-mcp-server emits JSON logs; etc.\nWith prompt_toolkit / Rich rendering the TUI concurrently, these\nunsolicited writes corrupt the terminal state — hanging the session\n~80% of the time for one user with Google Ads Tools + slack-mcp\nconfigured, forcing Ctrl+C and restart loops.\n\nRoot cause: `stdio_client(server_params)` in tools/mcp_tool.py was\ncalled without `errlog=`, and the SDK's default is `sys.stderr` —\ni.e. the real parent-process stderr, which is the TTY.\n\nFix: open a shared, append-mode log at $HERMES_HOME/logs/mcp-stderr.log\n(created once per process, line-buffered, real fd required by asyncio's\nsubprocess machinery) and pass it as `errlog` to every stdio_client.\nEach server's spawn writes a timestamped header so the shared log stays\nreadable when multiple servers are running. Falls back to /dev/null if\nthe log file cannot be opened.\n\nVerified by E2E spawning a subprocess with the log fd as its stderr:\nbanner lines land in the log file, nothing reaches the calling TTY.",
+      "changed_count": 1,
+      "implementation_count": 1,
+      "test_count": 0,
+      "implementation_sample": [
+        "tools/mcp_tool.py"
+      ],
+      "test_sample": [],
+      "file_sample": [
+        "tools/mcp_tool.py"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "subprocess-and-pty-lifecycle",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/NousResearch/hermes-agent/pull/14901",
+      "selected_for": "train"
+    },
+    {
+      "category": "10-subprocess-and-pty-lifecycle",
+      "theme": "subprocess and pseudo-terminal lifecycle finalization",
+      "repo": "openai/codex",
+      "number": 26734,
+      "role": "train",
+      "ref": "f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519",
+      "parents": [
+        "f574946960a4d21e884453ac9963a869153b847d"
+      ],
+      "subject": "[codex] Handle Ctrl-C for non-TTY unified exec (#26734)",
+      "body_excerpt": "## Why\n\nA long-running unified exec process started with `tty: false` could not\nbe interrupted via `write_stdin`: ordinary non-TTY stdin writes are\nrejected once stdin is closed, but an exact U+0003 payload should still\nmap to a process interrupt. The interrupt should flow through the same\nprocess lifecycle path as a real signal so Codex preserves\nprocess-reported output and exit metadata instead of fabricating a\nCtrl-C exit code or tearing down the session early.\n\n## What Changed\n\n- Add `process/signal` to exec-server with `ProcessSignal::Interrupt`\nand an empty response.\n- Add a non-consuming `ProcessHandle::signal` path for spawned\nprocesses; on Unix it sends SIGINT to the process group and leaves\nterminate/hard-kill unchanged.\n- Route non-TTY U+0003 `write_stdin` through `process.signal(...)`\ninstead of `terminate`, then let the normal post-write collection path\ndrain output and observe exit.\n- Add exec-server coverage where a shell `trap INT` handler prints the\nsignal and exits with its own code.\n- Add unified exec coverage where a `tty: false` process traps SIGINT,\nemits output, and exits with its own code.\n\n## Validation\n\n- `just test -p codex-exec-server\nexec_process_signal",
+      "changed_count": 19,
+      "implementation_count": 17,
+      "test_count": 2,
+      "implementation_sample": [
+        "codex-rs/core/src/unified_exec/process.rs",
+        "codex-rs/core/src/unified_exec/process_manager.rs",
+        "codex-rs/core/src/unified_exec/process_tests.rs",
+        "codex-rs/exec-server/src/client.rs",
+        "codex-rs/exec-server/src/lib.rs",
+        "codex-rs/exec-server/src/local_process.rs",
+        "codex-rs/exec-server/src/process.rs",
+        "codex-rs/exec-server/src/protocol.rs"
+      ],
+      "test_sample": [
+        "codex-rs/core/tests/suite/unified_exec.rs",
+        "codex-rs/exec-server/tests/exec_process.rs"
+      ],
+      "file_sample": [
+        "codex-rs/core/src/unified_exec/process.rs",
+        "codex-rs/core/src/unified_exec/process_manager.rs",
+        "codex-rs/core/src/unified_exec/process_tests.rs",
+        "codex-rs/core/tests/suite/unified_exec.rs",
+        "codex-rs/exec-server/src/client.rs",
+        "codex-rs/exec-server/src/lib.rs",
+        "codex-rs/exec-server/src/local_process.rs",
+        "codex-rs/exec-server/src/process.rs",
+        "codex-rs/exec-server/src/protocol.rs",
+        "codex-rs/exec-server/src/remote_process.rs",
+        "codex-rs/exec-server/src/server/handler.rs",
+        "codex-rs/exec-server/src/server/process_handler.rs",
+        "codex-rs/exec-server/src/server/registry.rs",
+        "codex-rs/exec-server/tests/exec_process.rs",
+        "codex-rs/utils/pty/src/lib.rs",
+        "codex-rs/utils/pty/src/pipe.rs",
+        "codex-rs/utils/pty/src/process.rs",
+        "codex-rs/utils/pty/src/process_group.rs",
+        "codex-rs/utils/pty/src/pty.rs"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "subprocess-and-pty-lifecycle",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/openai/codex/pull/26734",
+      "selected_for": "train"
+    },
+    {
+      "category": "10-subprocess-and-pty-lifecycle",
+      "theme": "subprocess and pseudo-terminal lifecycle finalization",
+      "repo": "google-gemini/gemini-cli",
+      "number": 29379,
+      "role": "train",
+      "ref": "4577750da8e9fcee42297a2f54fbae18c0fa6324",
+      "parents": [
+        "09e048fd61bc56df18676211f65703e7f0075f3a"
+      ],
+      "subject": "fix(core): synchronize ConPTY process exit lifecycle and harden PTY output finalization (#29379)",
+      "body_excerpt": "Co-authored-by: David Pierce <davidapierce@google.com>",
+      "changed_count": 2,
+      "implementation_count": 1,
+      "test_count": 1,
+      "implementation_sample": [
+        "packages/core/src/services/shellExecutionService.ts"
+      ],
+      "test_sample": [
+        "packages/core/src/services/shellExecutionService.test.ts"
+      ],
+      "file_sample": [
+        "packages/core/src/services/shellExecutionService.test.ts",
+        "packages/core/src/services/shellExecutionService.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "subprocess-and-pty-lifecycle",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/google-gemini/gemini-cli/pull/29379",
+      "selected_for": "train"
+    },
+    {
+      "category": "10-subprocess-and-pty-lifecycle",
+      "theme": "subprocess and pseudo-terminal lifecycle finalization",
+      "repo": "QwenLM/qwen-code",
+      "number": 1780,
+      "role": "holdout",
+      "ref": "75b94b63eb4abee530826f8e66770f76a098008a",
+      "parents": [
+        "bbea11473736ba118f20af85d0a9985b4302f1d2"
+      ],
+      "subject": "fix: clean up ACP connection state when child process exits (#1780)",
+      "body_excerpt": "When the ACP child process exits unexpectedly (e.g., user cancels execution),\nthe connection state (sdkConnection, sessionId, child) was not being cleaned up.\nThis caused subsequent message sends to fail with cryptic errors instead of\na clear \"Not connected\" message.\n\nChanges:\n- Clear sdkConnection/sessionId/child in the exit handler\n- Check child.exitCode in isConnected to detect spontaneous exits\n- Add isConnected check to ensureConnection as defense-in-depth\n- Add unit tests for isConnected, ensureConnection, and disconnect cleanup\n\nMade-with: Cursor",
+      "changed_count": 2,
+      "implementation_count": 1,
+      "test_count": 1,
+      "implementation_sample": [
+        "packages/vscode-ide-companion/src/services/acpConnection.ts"
+      ],
+      "test_sample": [
+        "packages/vscode-ide-companion/src/services/acpConnection.test.ts"
+      ],
+      "file_sample": [
+        "packages/vscode-ide-companion/src/services/acpConnection.test.ts",
+        "packages/vscode-ide-companion/src/services/acpConnection.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "subprocess-and-pty-lifecycle",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/QwenLM/qwen-code/pull/1780",
+      "selected_for": "holdout"
+    },
+    {
+      "category": "11-permission-policy-enforcement",
+      "theme": "permission policy consistency and bypass prevention",
+      "repo": "Aider-AI/aider",
+      "number": 2126,
+      "role": "train",
+      "ref": "b911ceaa6125bbb8e11fe741dab10bbf9731bf12",
+      "parents": [
+        "9edf9b4186ea08e2fb98897697e4f9b62836bb6f",
+        "ba9fdaa755c82994d7aff7404d689d6c721ab283"
+      ],
+      "subject": "Merge pull request #2126 from webkonstantin/fix-read-only-from-working-dir",
+      "body_excerpt": "fix: Impossible to /read-only from another working directory",
+      "changed_count": 2,
+      "implementation_count": 1,
+      "test_count": 1,
+      "implementation_sample": [
+        "aider/commands.py"
+      ],
+      "test_sample": [
+        "tests/basic/test_commands.py"
+      ],
+      "file_sample": [
+        "aider/commands.py",
+        "tests/basic/test_commands.py"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "permission-policy-enforcement",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/Aider-AI/aider/pull/2126",
+      "selected_for": "train"
+    },
+    {
+      "category": "11-permission-policy-enforcement",
+      "theme": "permission policy consistency and bypass prevention",
+      "repo": "NousResearch/hermes-agent",
+      "number": 23835,
+      "role": "train",
+      "ref": "4cb3eb03c750c902919906733b79220588ca5f16",
+      "parents": [
+        "3ab7e2aa9190c32abd8f854f9f6a88ad9a2c3d0e"
+      ],
+      "subject": "fix(approval): harden YOLO bypass, LLM parsing, auto-approve audit, pipe pattern (#23835)",
+      "body_excerpt": "* fix(approval): harden YOLO bypass, LLM parsing, auto-approve audit, pipe pattern\n\n- BUG-009 (CRITICAL): freeze HERMES_YOLO_MODE at module import via\n  _YOLO_MODE_FROZEN; prevents skills/prompt-injection from calling\n  os.environ[\"HERMES_YOLO_MODE\"]=\"true\" at runtime to bypass all checks\n- BUG-002 (HIGH): replace substring \"APPROVE\" in answer with exact\n  answer == \"APPROVE\" in _smart_approve; prompt already requests exactly\n  one word, substring match was exploitable via verbose LLM responses\n- BUG-001 (MEDIUM): add logger.warning for every dangerous command that\n  auto-approves in non-interactive non-gateway context; makes silent\n  approvals visible in audit logs without breaking script behavior\n- BUG-008 (LOW): expand curl/wget pipe pattern to cover | /bin/bash and\n  | bash -c variants, not just | sh / | bash\n\nCo-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>\n\n* fix(approval): add missing is_truthy_value import + fix yolo test patches\n\n_YOLO_MODE_FROZEN uses is_truthy_value() from utils — import was missing.\nTests that set HERMES_YOLO_MODE via monkeypatch.setenv() no longer work\nbecause the value is frozen at import time; update them to patch the\nmodule-level flag direc",
+      "changed_count": 2,
+      "implementation_count": 1,
+      "test_count": 1,
+      "implementation_sample": [
+        "tools/approval.py"
+      ],
+      "test_sample": [
+        "tests/tools/test_yolo_mode.py"
+      ],
+      "file_sample": [
+        "tests/tools/test_yolo_mode.py",
+        "tools/approval.py"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "permission-policy-enforcement",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/NousResearch/hermes-agent/pull/23835",
+      "selected_for": "train"
+    },
+    {
+      "category": "11-permission-policy-enforcement",
+      "theme": "permission policy consistency and bypass prevention",
+      "repo": "openai/codex",
+      "number": 14171,
+      "role": "train",
+      "ref": "c2d5458d67714b9d92dfe18d8ebbb512001252d9",
+      "parents": [
+        "c1ea3f95d13a851889d78a3d7ca7946162662c99"
+      ],
+      "subject": "fix: align core approvals with split sandbox policies (#14171)",
+      "body_excerpt": "## Stack\n\n   fix: fail closed for unsupported split windows sandboxing #14172\n   fix: preserve split filesystem semantics in linux sandbox #14173\n-> fix: align core approvals with split sandbox policies #14171\n   refactor: centralize filesystem permissions precedence #14174\n\n## Why This PR Exists\n\nThis PR is intentionally narrower than the title may suggest.\n\nMost of the original split-permissions migration already landed in the\nearlier `#13434 -> #13453` stack. In particular:\n\n- `#13439` already did the broad runtime plumbing for split filesystem\nand network policies.\n- `#13445` already moved `apply_patch` safety onto filesystem-policy\nsemantics.\n- `#13448` already switched macOS Seatbelt generation to split policies.\n- `#13449` and `#13453` already handled Linux helper and bubblewrap\nenforcement.\n- `#13440` already introduced the first protocol-side helpers for\nderiving effective filesystem access.\n\nThe reason this PR still exists is that after the follow-on\n`[permissions]` work and the new shared precedence helper in `#14174`, a\nfew core approval paths were still deciding behavior from the legacy\n`SandboxPolicy` projection instead of the split filesystem policy that\nactually car",
+      "changed_count": 9,
+      "implementation_count": 9,
+      "test_count": 0,
+      "implementation_sample": [
+        "codex-rs/core/src/config/config_tests.rs",
+        "codex-rs/core/src/exec_policy.rs",
+        "codex-rs/core/src/safety.rs",
+        "codex-rs/core/src/tools/handlers/shell.rs",
+        "codex-rs/core/src/tools/orchestrator.rs",
+        "codex-rs/core/src/tools/runtimes/shell/unix_escalation.rs",
+        "codex-rs/core/src/tools/runtimes/shell/unix_escalation_tests.rs",
+        "codex-rs/core/src/tools/sandboxing.rs"
+      ],
+      "test_sample": [],
+      "file_sample": [
+        "codex-rs/core/src/config/config_tests.rs",
+        "codex-rs/core/src/exec_policy.rs",
+        "codex-rs/core/src/safety.rs",
+        "codex-rs/core/src/tools/handlers/shell.rs",
+        "codex-rs/core/src/tools/orchestrator.rs",
+        "codex-rs/core/src/tools/runtimes/shell/unix_escalation.rs",
+        "codex-rs/core/src/tools/runtimes/shell/unix_escalation_tests.rs",
+        "codex-rs/core/src/tools/sandboxing.rs",
+        "codex-rs/core/src/unified_exec/process_manager.rs"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "permission-policy-enforcement",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/openai/codex/pull/14171",
+      "selected_for": "train"
+    },
+    {
+      "category": "11-permission-policy-enforcement",
+      "theme": "permission policy consistency and bypass prevention",
+      "repo": "QwenLM/qwen-code",
+      "number": 4093,
+      "role": "train",
+      "ref": "a5ec1af301c432622e165ae18dac606e10662113",
+      "parents": [
+        "5ad5301805ef4aef2abc15596412c54e017c28eb"
+      ],
+      "subject": "fix(permissions): make command substitution ask, not deny (#4093) (#4386)",
+      "body_excerpt": "* fix(permissions): make command substitution ask, not deny (#4093)\n\n`resolveDefaultPermission` hard-denied any shell command containing\n$(), backticks, <(), or >(). Two problems:\n\n1. The deny couldn't be overridden by YOLO mode — YOLO sees the\n   result only as `'ask'` or `'default'`, never `'deny'`.\n2. It fired inconsistently: only when `hasRelevantRules()` happened\n   to be true. A compound command like\n   `echo hello && python3 -c \"print($(echo hello))\"` was hard-denied\n   because `echo hello` matched an unrelated allow rule and made\n   `hasRelevantRules()` true, while the same `python3` sub-command\n   in isolation kept its L3 `'ask'` (PM skipped) and was approvable.\n   Same substitution, opposite verdict — purely a function of which\n   unrelated rules were loaded.\n\nThis is the surviving half of a two-step migration. `fb7e30ad3\n\"fix(shell): remove command substitution deny check from\ngetDefaultPermission\"` removed the equivalent L3 deny but missed\nthe L4 mirror — this commit completes that cleanup.\n\nWhat changes:\n- `resolveDefaultPermission` no longer special-cases substitution; the\n  AST read-only check already marks substitution-bearing commands as\n  non-read-only, so they fa",
+      "changed_count": 20,
+      "implementation_count": 11,
+      "test_count": 9,
+      "implementation_sample": [
+        "packages/cli/src/ui/commands/directoryCommand.tsx",
+        "packages/cli/src/ui/components/messages/ToolConfirmationMessage.tsx",
+        "packages/cli/src/ui/hooks/useCommandCompletion.tsx",
+        "packages/core/src/core/openaiContentGenerator/provider/dashscope.ts",
+        "packages/core/src/permissions/permission-manager.ts",
+        "packages/core/src/tools/monitor.ts",
+        "packages/core/src/tools/shell.ts",
+        "packages/core/src/tools/tools.ts"
+      ],
+      "test_sample": [
+        "packages/cli/src/ui/commands/directoryCommand.test.tsx",
+        "packages/cli/src/ui/components/messages/ToolConfirmationMessage.test.tsx",
+        "packages/cli/src/ui/hooks/useCommandCompletion.test.ts",
+        "packages/cli/src/ui/hooks/useSlashCompletion.test.ts",
+        "packages/core/src/permissions/permission-manager.test.ts",
+        "packages/core/src/tools/monitor.test.ts",
+        "packages/core/src/tools/shell.test.ts",
+        "packages/core/src/utils/shell-utils.test.ts"
+      ],
+      "file_sample": [
+        "packages/cli/src/ui/commands/directoryCommand.test.tsx",
+        "packages/cli/src/ui/commands/directoryCommand.tsx",
+        "packages/cli/src/ui/components/messages/ToolConfirmationMessage.test.tsx",
+        "packages/cli/src/ui/components/messages/ToolConfirmationMessage.tsx",
+        "packages/cli/src/ui/hooks/useCommandCompletion.test.ts",
+        "packages/cli/src/ui/hooks/useCommandCompletion.tsx",
+        "packages/cli/src/ui/hooks/useSlashCompletion.test.ts",
+        "packages/core/src/core/openaiContentGenerator/provider/dashscope.ts",
+        "packages/core/src/permissions/permission-manager.test.ts",
+        "packages/core/src/permissions/permission-manager.ts",
+        "packages/core/src/tools/monitor.test.ts",
+        "packages/core/src/tools/monitor.ts",
+        "packages/core/src/tools/shell.test.ts",
+        "packages/core/src/tools/shell.ts",
+        "packages/core/src/tools/tools.ts",
+        "packages/core/src/utils/shell-utils.test.ts",
+        "packages/core/src/utils/shell-utils.ts",
+        "packages/core/src/utils/shellAstParser.test.ts",
+        "packages/core/src/utils/shellAstParser.ts",
+        "packages/core/src/utils/shellReadOnlyChecker.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "permission-policy-enforcement",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/QwenLM/qwen-code/pull/4093",
+      "selected_for": "train"
+    },
+    {
+      "category": "11-permission-policy-enforcement",
+      "theme": "permission policy consistency and bypass prevention",
+      "repo": "google-gemini/gemini-cli",
+      "number": 17353,
+      "role": "holdout",
+      "ref": "770800910387d34b86cd11df447304e149dd27bb",
+      "parents": [
+        "00f60ef532e010c2f5364dab0207c906373bbdfc"
+      ],
+      "subject": "fix(security): enforce strict policy directory permissions (#17353)",
+      "body_excerpt": "Co-authored-by: Yuna Seol <yunaseol@google.com>",
+      "changed_count": 7,
+      "implementation_count": 3,
+      "test_count": 3,
+      "implementation_sample": [
+        "packages/core/src/config/storage.ts",
+        "packages/core/src/policy/config.ts",
+        "packages/core/src/utils/security.ts"
+      ],
+      "test_sample": [
+        "packages/core/src/config/storage.test.ts",
+        "packages/core/src/policy/config.test.ts",
+        "packages/core/src/utils/security.test.ts"
+      ],
+      "file_sample": [
+        "docs/core/policy-engine.md",
+        "packages/core/src/config/storage.test.ts",
+        "packages/core/src/config/storage.ts",
+        "packages/core/src/policy/config.test.ts",
+        "packages/core/src/policy/config.ts",
+        "packages/core/src/utils/security.test.ts",
+        "packages/core/src/utils/security.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "permission-policy-enforcement",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/google-gemini/gemini-cli/pull/17353",
+      "selected_for": "holdout"
+    },
+    {
+      "category": "12-path-root-and-worktree-resolution",
+      "theme": "canonical path resolution against the intended repository or worktree root",
+      "repo": "Aider-AI/aider",
+      "number": 4711,
+      "role": "train",
+      "ref": "b2bec25c2c785989d6456cb03321a61f539bcc86",
+      "parents": [
+        "4625ebb4b517ce51db0aa7eb92c3fea61243610f"
+      ],
+      "subject": "fix: handle symlink loops in safe_abs_path() (#4711)",
+      "body_excerpt": "Path.resolve() raises RuntimeError on circular symlinks. Catch\nRuntimeError and OSError, fall back to Path.absolute().\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+      "changed_count": 2,
+      "implementation_count": 1,
+      "test_count": 1,
+      "implementation_sample": [
+        "aider/utils.py"
+      ],
+      "test_sample": [
+        "tests/basic/test_utils.py"
+      ],
+      "file_sample": [
+        "aider/utils.py",
+        "tests/basic/test_utils.py"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "path-root-and-worktree-resolution",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/Aider-AI/aider/pull/4711",
+      "selected_for": "train"
+    },
+    {
+      "category": "12-path-root-and-worktree-resolution",
+      "theme": "canonical path resolution against the intended repository or worktree root",
+      "repo": "earendil-works/pi",
+      "number": 7221,
+      "role": "train",
+      "ref": "cced6a21da273b26ee4a23a803680614bbe8dd1e",
+      "parents": [
+        "f9476a61e557bfdce2fbf3ffeaad0988fe47c184"
+      ],
+      "subject": "fix(coding-agent): stop loading AGENTS.md twice in nested git worktrees (#7221)",
+      "body_excerpt": "Running from a linked worktree nested under its main repo loaded the\nproject's AGENTS.md/CLAUDE.md twice. The ancestor walk climbs from cwd to\nthe filesystem root, so it picked up the worktree's copy and then the main\nrepo's copy above it, even though both are the same tracked file.\n\nThe walk now drops that one duplicate: the main repo root's copy is skipped\nwhen the worktree root has a context file of the same name. Nothing else\nchanges. The worktree still inherits the main repo's copy when it has none,\ndirectories above the main repo keep loading, and ordinary repos, sibling\nworktrees, submodules and bare layouts are untouched.",
+      "changed_count": 3,
+      "implementation_count": 2,
+      "test_count": 1,
+      "implementation_sample": [
+        "packages/coding-agent/src/core/footer-data-provider.ts",
+        "packages/coding-agent/src/core/resource-loader.ts"
+      ],
+      "test_sample": [
+        "packages/coding-agent/test/resource-loader.test.ts"
+      ],
+      "file_sample": [
+        "packages/coding-agent/src/core/footer-data-provider.ts",
+        "packages/coding-agent/src/core/resource-loader.ts",
+        "packages/coding-agent/test/resource-loader.test.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "path-root-and-worktree-resolution",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/earendil-works/pi/pull/7221",
+      "selected_for": "train"
+    },
+    {
+      "category": "12-path-root-and-worktree-resolution",
+      "theme": "canonical path resolution against the intended repository or worktree root",
+      "repo": "NousResearch/hermes-agent",
+      "number": 35399,
+      "role": "train",
+      "ref": "96643b4a52b118477b07c838e30eb8ae7372062c",
+      "parents": [
+        "0c6e133c0434ec856d4aea2b08f216f36c0e7dac"
+      ],
+      "subject": "fix(file-tools): anchor relative-path resolution to absolute base; report resolved path (#35399)",
+      "body_excerpt": "Relative paths in write_file/patch could resolve against the agent PROCESS cwd\ninstead of the terminal's working directory. In a git-worktree session with a\nstale TERMINAL_CWD='.' (a relative base), early edits silently landed in the\nMAIN checkout, verified there, and reported success — while the agent inspected\nthe worktree and saw nothing, misreading it as the patch tool no-op'ing.\n\n- _resolve_base_dir(): resolution base is now ALWAYS absolute. A relative\n  TERMINAL_CWD is anchored to the process cwd once, deterministically, instead\n  of being left to resolve()-time cwd. Live terminal cwd stays authoritative.\n- write_file/patch pass the resolved absolute path to the shell FileOps layer\n  so the tool layer and shell layer can't disagree about which file is edited.\n- Responses now report the absolute resolved_path and files_modified, so a\n  wrong-cwd mismatch is visible on the first call.\n- _path_resolution_warning(): emits a _warning when a relative path resolves\n  OUTSIDE the live terminal cwd (e.g. a worktree session writing into main).\n\nValidation: 11 new unit tests + 43 live E2E assertions (worktree routing,\nmid-session cd, V4A patches, divergence warning, absolute paths, cons",
+      "changed_count": 2,
+      "implementation_count": 1,
+      "test_count": 1,
+      "implementation_sample": [
+        "tools/file_tools.py"
+      ],
+      "test_sample": [
+        "tests/tools/test_file_tools_cwd_resolution.py"
+      ],
+      "file_sample": [
+        "tests/tools/test_file_tools_cwd_resolution.py",
+        "tools/file_tools.py"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "path-root-and-worktree-resolution",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/NousResearch/hermes-agent/pull/35399",
+      "selected_for": "train"
+    },
+    {
+      "category": "12-path-root-and-worktree-resolution",
+      "theme": "canonical path resolution against the intended repository or worktree root",
+      "repo": "google-gemini/gemini-cli",
+      "number": 6507,
+      "role": "train",
+      "ref": "6fc68ff8d4536f35f0ed76af535d5e1e7ac37675",
+      "parents": [
+        "fb3ceb0da4e2cd636013c2c36a9c0016c01aa47f"
+      ],
+      "subject": "fix(tools): Handle special characters in file paths for glob and read_many_files (#6507)",
+      "body_excerpt": "Co-authored-by: Jacob Richman <jacob314@gmail.com>",
+      "changed_count": 4,
+      "implementation_count": 2,
+      "test_count": 2,
+      "implementation_sample": [
+        "packages/core/src/tools/glob.ts",
+        "packages/core/src/tools/read-many-files.ts"
+      ],
+      "test_sample": [
+        "packages/core/src/tools/glob.test.ts",
+        "packages/core/src/tools/read-many-files.test.ts"
+      ],
+      "file_sample": [
+        "packages/core/src/tools/glob.test.ts",
+        "packages/core/src/tools/glob.ts",
+        "packages/core/src/tools/read-many-files.test.ts",
+        "packages/core/src/tools/read-many-files.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "path-root-and-worktree-resolution",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/google-gemini/gemini-cli/pull/6507",
+      "selected_for": "train"
+    },
+    {
+      "category": "12-path-root-and-worktree-resolution",
+      "theme": "canonical path resolution against the intended repository or worktree root",
+      "repo": "openai/codex",
+      "number": 810,
+      "role": "holdout",
+      "ref": "5d924d44cff3826da012160034ea1e0696cba41d",
+      "parents": [
+        "a134bdde49d5839fc4d4c8bb55e2d672441da669"
+      ],
+      "subject": "fix: ensure apply_patch resolves relative paths against workdir or project cwd (#810)",
+      "body_excerpt": "https://github.com/openai/codex/pull/800 kicked off some work to be more\ndisciplined about honoring the `cwd` param passed in rather than\nassuming `std::env::current_dir()` as the `cwd`. As part of this, we\nneed to ensure `apply_patch` calls honor the appropriate `cwd` as well,\nwhich is significant if the paths in the `apply_patch` arg are not\nabsolute paths themselves. Failing that:\n\n- The `apply_patch` function call can contain an optional`workdir`\nparam, so:\n- If specified and is an absolute path, it should be used to resolve\nrelative paths\n- If specified and is a relative path, should be resolved against\n`Config.cwd` and then any relative paths will be resolved against the\nresult\n- If `workdir` is not specified on the function call, relative paths\nshould be resolved against `Config.cwd`\n\nNote that we had a similar issue in the TypeScript CLI that was fixed in\nhttps://github.com/openai/codex/pull/556.\n\nAs part of the fix, this PR introduces `ApplyPatchAction` so clients can\ndeal with that instead of the raw `HashMap<PathBuf,\nApplyPatchFileChange>`. This enables us to enforce, by construction,\nthat all paths contained in the `ApplyPatchAction` are absolute paths.",
+      "changed_count": 3,
+      "implementation_count": 3,
+      "test_count": 0,
+      "implementation_sample": [
+        "codex-rs/apply-patch/src/lib.rs",
+        "codex-rs/core/src/codex.rs",
+        "codex-rs/core/src/safety.rs"
+      ],
+      "test_sample": [],
+      "file_sample": [
+        "codex-rs/apply-patch/src/lib.rs",
+        "codex-rs/core/src/codex.rs",
+        "codex-rs/core/src/safety.rs"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "path-root-and-worktree-resolution",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/openai/codex/pull/810",
+      "selected_for": "holdout"
+    },
+    {
+      "category": "13-diff-rendering-and-review-navigation",
+      "theme": "bounded diff presentation and review navigation",
+      "repo": "Aider-AI/aider",
+      "number": 403,
+      "role": "train",
+      "ref": "6165fcc960de72d423928d8864f13997cd650307",
+      "parents": [
+        "3aa17c46ddf1a865b16dba1c913e57fef9c13c12",
+        "7ab3b99914f2f4a72fdb9885ca7e28c775a1eed5"
+      ],
+      "subject": "Merge pull request #403 from paul-gauthier/udiff-simple-squashed",
+      "body_excerpt": "Unified diffs editing format",
+      "changed_count": 26,
+      "implementation_count": 14,
+      "test_count": 7,
+      "implementation_sample": [
+        "aider/coders/__init__.py",
+        "aider/coders/base_coder.py",
+        "aider/coders/editblock_coder.py",
+        "aider/coders/search_replace.py",
+        "aider/coders/udiff_coder.py",
+        "aider/coders/udiff_prompts.py",
+        "aider/coders/wholefile_coder.py",
+        "aider/main.py"
+      ],
+      "test_sample": [
+        "tests/test_coder.py",
+        "tests/test_commands.py",
+        "tests/test_io.py",
+        "tests/test_main.py",
+        "tests/test_repo.py",
+        "tests/test_repomap.py",
+        "tests/utils.py"
+      ],
+      "file_sample": [
+        "aider/coders/__init__.py",
+        "aider/coders/base_coder.py",
+        "aider/coders/editblock_coder.py",
+        "aider/coders/search_replace.py",
+        "aider/coders/udiff_coder.py",
+        "aider/coders/udiff_prompts.py",
+        "aider/coders/wholefile_coder.py",
+        "aider/main.py",
+        "aider/models/__init__.py",
+        "aider/models/openai.py",
+        "aider/utils.py",
+        "assets/udiffs.jpg",
+        "benchmark/benchmark.py",
+        "benchmark/prompts.py",
+        "benchmark/refactor_tools.py",
+        "dev-requirements.txt",
+        "docs/unified-diffs.md",
+        "requirements.in",
+        "requirements.txt",
+        "tests/test_coder.py"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "diff-rendering-and-review-navigation",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/Aider-AI/aider/pull/403",
+      "selected_for": "train"
+    },
+    {
+      "category": "13-diff-rendering-and-review-navigation",
+      "theme": "bounded diff presentation and review navigation",
+      "repo": "NousResearch/hermes-agent",
+      "number": 50731,
+      "role": "train",
+      "ref": "04a1d9efd76db1c5860bd5b928da95e37babb8b7",
+      "parents": [
+        "b9f302441fb3fc7927507ccd074a806d600b34d3",
+        "61c266b0dc75562a97dc0a377a7dc141d0b0a5ac"
+      ],
+      "subject": "feat(desktop): PR-style file diffs in chat (#50731)",
+      "body_excerpt": "* feat(desktop): add Update now button to About panel\n\nThe About > Updates panel only surfaced \"See what's new\" when an update\nwas available, which just opens the changelog overlay — there was no way\nto start the install directly from About. Add an \"Update now\" primary\nbutton that opens the updates overlay (for apply progress) and kicks off\nthe install for the active target (backend in remote mode, else client).\n\n* feat(desktop): PR-style file diffs in chat\n\nRender write_file/edit_file/patch as a reviewable diff instead of raw\nresult JSON, closer to a Cursor/T3 per-edit review.\n\n- Unified diff via FileDiffPanel: strip git file-header + @@ hunk noise,\n  drop the +/- gutter, color by line with a 2px gutter accent, full-bleed\n  to the card, transparent context lines, compact scroll height.\n- Header shows filename + language icon + +N/-N stats; full path moves to\n  a hover tooltip (no Edited verb, no ms).\n- Treat the three file-edit tools uniformly (isFileEditTool); read diff\n  from inline_diff or patch's diff field; suppress raw-arg detail.\n- Reusable FileTypeIcon primitive sharing the code-block icon mapping\n  (codiconForFilename), codicon fallback.\n- Per-row scaffolding fade (not th",
+      "changed_count": 8,
+      "implementation_count": 6,
+      "test_count": 1,
+      "implementation_sample": [
+        "apps/desktop/src/components/assistant-ui/tool-fallback-model.ts",
+        "apps/desktop/src/components/assistant-ui/tool-fallback.tsx",
+        "apps/desktop/src/components/chat/diff-lines.tsx",
+        "apps/desktop/src/components/chat/shiki-highlighter.tsx",
+        "apps/desktop/src/components/ui/file-type-icon.tsx",
+        "apps/desktop/src/lib/markdown-code.ts"
+      ],
+      "test_sample": [
+        "apps/desktop/src/components/assistant-ui/tool-fallback-model.test.ts"
+      ],
+      "file_sample": [
+        "apps/desktop/src/components/assistant-ui/tool-fallback-model.test.ts",
+        "apps/desktop/src/components/assistant-ui/tool-fallback-model.ts",
+        "apps/desktop/src/components/assistant-ui/tool-fallback.tsx",
+        "apps/desktop/src/components/chat/diff-lines.tsx",
+        "apps/desktop/src/components/chat/shiki-highlighter.tsx",
+        "apps/desktop/src/components/ui/file-type-icon.tsx",
+        "apps/desktop/src/lib/markdown-code.ts",
+        "apps/desktop/src/styles.css"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "diff-rendering-and-review-navigation",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/NousResearch/hermes-agent/pull/50731",
+      "selected_for": "train"
+    },
+    {
+      "category": "13-diff-rendering-and-review-navigation",
+      "theme": "bounded diff presentation and review navigation",
+      "repo": "openai/codex",
+      "number": 41143,
+      "role": "train",
+      "ref": "a847c71a159cfa55509fbac1619c9c2294ed4718",
+      "parents": [
+        "694edc23b22b4696400dc47663ecacd437623870"
+      ],
+      "subject": "Limit inline diff previews in the TUI (#41143)",
+      "body_excerpt": "## Why\n\nLarge or minified diffs can require substantial work to allocate wrapped rows and syntax-highlighted spans in the inline patch view.\n\n## What changed\n\n- Limit inline patch previews to 12 rendered rows across all changed files, while retaining file summaries and directing users to the transcript when content is omitted.\n- Preserve complete diff content in transcript and raw views.\n- Bound preview source scanning to 64 KiB so zero-width content cannot bypass the row budget.\n\n## Testing\n\nAdd coverage for added, deleted, updated, renamed, minified, narrow-width, wide-character, combining-character, and multi-file diffs, including preservation of complete transcript and raw output.\n\nGitOrigin-RevId: 1899129ab548771c29d226ff624549573fb2f688",
+      "changed_count": 4,
+      "implementation_count": 4,
+      "test_count": 0,
+      "implementation_sample": [
+        "codex-rs/tui/src/diff_render.rs",
+        "codex-rs/tui/src/diff_render/preview.rs",
+        "codex-rs/tui/src/history_cell/patches.rs",
+        "codex-rs/tui/src/history_cell/tests.rs"
+      ],
+      "test_sample": [],
+      "file_sample": [
+        "codex-rs/tui/src/diff_render.rs",
+        "codex-rs/tui/src/diff_render/preview.rs",
+        "codex-rs/tui/src/history_cell/patches.rs",
+        "codex-rs/tui/src/history_cell/tests.rs"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "diff-rendering-and-review-navigation",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/openai/codex/pull/41143",
+      "selected_for": "train"
+    },
+    {
+      "category": "13-diff-rendering-and-review-navigation",
+      "theme": "bounded diff presentation and review navigation",
+      "repo": "QwenLM/qwen-code",
+      "number": 7054,
+      "role": "train",
+      "ref": "582fb49603c74158e13f735cdfa97e987d0c58d2",
+      "parents": [
+        "a0ce04a9929527a7884422842a8079e0af99ead0"
+      ],
+      "subject": "feat(web-shell): git status chip, visual working-tree diff, and sidebar git status (#7054)",
+      "body_excerpt": "* feat(web-shell): git status chip, visual working-tree diff, and sidebar git status\n\nBring working-tree Git awareness to the Web Shell (browser daemon session UI):\n\n- Toolbar branch chip becomes a live status indicator: dirty (staged/unstaged/\n  untracked), ahead/behind upstream, stash count, detached HEAD, in-progress\n  operation (merge/rebase/cherry-pick/revert/bisect), and conflict count, each\n  with a non-color cue.\n- Read-only \"Changes\" dialog: working-tree-vs-HEAD file list with per-file,\n  line-level, per-side syntax-highlighted diffs; opens via /diff or a dirty\n  chip; untracked files expand as fully-added and deleted files still diff.\n- Per-workspace git status in the sidebar: a compact icon-only chip per trusted\n  workspace (status dot + hover tooltip); click opens that workspace's dialog.\n\nAll git access goes through the daemon REST API with per-workspace trust\ngating; new SDK status fields are optional and additive (v2).\n\n* fix(web-shell): themed tooltips and git-chip review follow-ups\n\nTooltips now render on the themed popover surface (bg-popover /\ntext-popover-foreground / border + fill-popover arrow) instead of the\ninverted bg-foreground default, so they read dark-o",
+      "changed_count": 46,
+      "implementation_count": 27,
+      "test_count": 14,
+      "implementation_sample": [
+        "packages/cli/src/serve/routes/workspace-git-diff.ts",
+        "packages/cli/src/serve/server.ts",
+        "packages/cli/src/serve/workspace-git-state.ts",
+        "packages/cli/src/ui/commands/diffCommand.ts",
+        "packages/cli/src/ui/components/DiffDialog.tsx",
+        "packages/cli/src/ui/components/messages/DiffStatsDisplay.tsx",
+        "packages/cli/src/ui/types.ts",
+        "packages/cli/src/ui/utils/textUtils.ts"
+      ],
+      "test_sample": [
+        "packages/cli/src/serve/routes/workspace-git-diff.test.ts",
+        "packages/cli/src/serve/workspace-git-state.test.ts",
+        "packages/cli/src/ui/commands/diffCommand.test.ts",
+        "packages/cli/src/ui/components/DiffDialog.test.tsx",
+        "packages/cli/src/ui/components/messages/DiffStatsDisplay.test.tsx",
+        "packages/cli/src/ui/utils/textUtils.test.ts",
+        "packages/core/src/utils/gitDiff.test.ts",
+        "packages/sdk-typescript/test/unit/DaemonClient.test.ts"
+      ],
+      "file_sample": [
+        "docs/design/2026-07-16-webshell-git-status-diff.md",
+        "docs/plans/2026-07-16-webshell-git-integration.md",
+        "packages/cli/src/serve/routes/workspace-git-diff.test.ts",
+        "packages/cli/src/serve/routes/workspace-git-diff.ts",
+        "packages/cli/src/serve/server.ts",
+        "packages/cli/src/serve/workspace-git-state.test.ts",
+        "packages/cli/src/serve/workspace-git-state.ts",
+        "packages/cli/src/ui/commands/diffCommand.test.ts",
+        "packages/cli/src/ui/commands/diffCommand.ts",
+        "packages/cli/src/ui/components/DiffDialog.test.tsx",
+        "packages/cli/src/ui/components/DiffDialog.tsx",
+        "packages/cli/src/ui/components/messages/DiffStatsDisplay.test.tsx",
+        "packages/cli/src/ui/components/messages/DiffStatsDisplay.tsx",
+        "packages/cli/src/ui/types.ts",
+        "packages/cli/src/ui/utils/textUtils.test.ts",
+        "packages/cli/src/ui/utils/textUtils.ts",
+        "packages/core/src/utils/gitDiff.test.ts",
+        "packages/core/src/utils/gitDiff.ts",
+        "packages/sdk-typescript/scripts/build.js",
+        "packages/sdk-typescript/src/daemon/DaemonClient.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "diff-rendering-and-review-navigation",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/QwenLM/qwen-code/pull/7054",
+      "selected_for": "train"
+    },
+    {
+      "category": "13-diff-rendering-and-review-navigation",
+      "theme": "bounded diff presentation and review navigation",
+      "repo": "google-gemini/gemini-cli",
+      "number": 29378,
+      "role": "holdout",
+      "ref": "e5b6680332883bd72aaa59292936b184f340256f",
+      "parents": [
+        "196c772a970166a26fa0e5f92f4fbd89ec265301"
+      ],
+      "subject": "fix(vscode-ide-companion): preserve terminal focus when closing diff tabs (#29378)",
+      "body_excerpt": "",
+      "changed_count": 19,
+      "implementation_count": 8,
+      "test_count": 4,
+      "implementation_sample": [
+        "eslint.config.js",
+        "packages/vscode-ide-companion/esbuild.js",
+        "packages/vscode-ide-companion/scripts/run-integration-tests.js",
+        "packages/vscode-ide-companion/src/diff-manager.ts",
+        "packages/vscode-ide-companion/src/extension.ts",
+        "packages/vscode-ide-companion/src/integration-tests/run-test.ts",
+        "packages/vscode-ide-companion/src/utils/vscode-mock.ts",
+        "packages/vscode-ide-companion/vitest.config.ts"
+      ],
+      "test_sample": [
+        "packages/vscode-ide-companion/src/diff-manager.test.ts",
+        "packages/vscode-ide-companion/src/extension.test.ts",
+        "packages/vscode-ide-companion/src/ide-server.test.ts",
+        "packages/vscode-ide-companion/src/integration-tests/focus.test.ts"
+      ],
+      "file_sample": [
+        ".github/actions/run-tests/action.yml",
+        ".gitignore",
+        ".prettierignore",
+        "eslint.config.js",
+        "package-lock.json",
+        "package.json",
+        "packages/vscode-ide-companion/esbuild.js",
+        "packages/vscode-ide-companion/package.json",
+        "packages/vscode-ide-companion/scripts/run-integration-tests.js",
+        "packages/vscode-ide-companion/src/diff-manager.test.ts",
+        "packages/vscode-ide-companion/src/diff-manager.ts",
+        "packages/vscode-ide-companion/src/extension.test.ts",
+        "packages/vscode-ide-companion/src/extension.ts",
+        "packages/vscode-ide-companion/src/ide-server.test.ts",
+        "packages/vscode-ide-companion/src/integration-tests/focus.test.ts",
+        "packages/vscode-ide-companion/src/integration-tests/run-test.ts",
+        "packages/vscode-ide-companion/src/utils/vscode-mock.ts",
+        "packages/vscode-ide-companion/tsconfig.json",
+        "packages/vscode-ide-companion/vitest.config.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "diff-rendering-and-review-navigation",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/google-gemini/gemini-cli/pull/29378",
+      "selected_for": "holdout"
+    },
+    {
+      "category": "14-key-event-normalization-and-shortcuts",
+      "theme": "portable key-event normalization and conflict-free shortcuts",
+      "repo": "earendil-works/pi",
+      "number": 746,
+      "role": "train",
+      "ref": "39ee5fee92c5c4c004fb117382411487ed30fadc",
+      "parents": [
+        "cd83e73845f2304791c782741d42d7354a32053c"
+      ],
+      "subject": "fix(plan-mode): change shortcut from Shift+P to Ctrl+Alt+P (#746)",
+      "body_excerpt": "Shift+P conflicts with typing capital P. Ctrl+Alt+P is cross-platform\nsafe and doesn't conflict with common shortcuts like:\n- Ctrl+Shift+P (command palette on Windows/VS Code)\n- Shift+Alt+P (types π on macOS)",
+      "changed_count": 3,
+      "implementation_count": 1,
+      "test_count": 0,
+      "implementation_sample": [
+        "packages/coding-agent/examples/extensions/plan-mode/index.ts"
+      ],
+      "test_sample": [],
+      "file_sample": [
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/coding-agent/examples/extensions/plan-mode/README.md",
+        "packages/coding-agent/examples/extensions/plan-mode/index.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "key-event-normalization-and-shortcuts",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/earendil-works/pi/pull/746",
+      "selected_for": "train"
+    },
+    {
+      "category": "14-key-event-normalization-and-shortcuts",
+      "theme": "portable key-event normalization and conflict-free shortcuts",
+      "repo": "openai/codex",
+      "number": 2412,
+      "role": "train",
+      "ref": "db30a6f5d86650ae7c5a3d40975c7c4e9daf98af",
+      "parents": [
+        "ecb388045c5d542de3b124c3fc255a78e74c2a84"
+      ],
+      "subject": "Fix #2391 Add Ctrl+H as backspace keyboard shortcut (#2412)",
+      "body_excerpt": "This pull request resolves #2391. ctrl + h is not assigned to any other\noperations at this moment, and this feature request sounds valid to me.\nIf we don't prefer having this, please feel free to close this.",
+      "changed_count": 1,
+      "implementation_count": 1,
+      "test_count": 0,
+      "implementation_sample": [
+        "codex-rs/tui/src/bottom_pane/textarea.rs"
+      ],
+      "test_sample": [],
+      "file_sample": [
+        "codex-rs/tui/src/bottom_pane/textarea.rs"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "key-event-normalization-and-shortcuts",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/openai/codex/pull/2412",
+      "selected_for": "train"
+    },
+    {
+      "category": "14-key-event-normalization-and-shortcuts",
+      "theme": "portable key-event normalization and conflict-free shortcuts",
+      "repo": "google-gemini/gemini-cli",
+      "number": 582,
+      "role": "train",
+      "ref": "98dcf43214da5f03055213f02f999b047a5f00d4",
+      "parents": [
+        "27a773d5b29ce361ea3116578dd3de462030b696"
+      ],
+      "subject": "Add a keybinding for ctrl+w to delete the previous word. (#582)",
+      "body_excerpt": "Adds the following new keybindings to the cli text input buffer:\n\n- `Ctrl+W` : Delete previous word",
+      "changed_count": 1,
+      "implementation_count": 1,
+      "test_count": 0,
+      "implementation_sample": [
+        "packages/cli/src/ui/components/shared/text-buffer.ts"
+      ],
+      "test_sample": [],
+      "file_sample": [
+        "packages/cli/src/ui/components/shared/text-buffer.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "key-event-normalization-and-shortcuts",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/google-gemini/gemini-cli/pull/582",
+      "selected_for": "train"
+    },
+    {
+      "category": "14-key-event-normalization-and-shortcuts",
+      "theme": "portable key-event normalization and conflict-free shortcuts",
+      "repo": "QwenLM/qwen-code",
+      "number": 2011,
+      "role": "train",
+      "ref": "c353fbbfa3d7418920044fd194c53c970624955f",
+      "parents": [
+        "6fdd7154587c731fbffaf416cb20b8336b52b662"
+      ],
+      "subject": "feat(cli): add Ctrl+Y shortcut to retry failed requests (#2011)",
+      "body_excerpt": "* feat: add Ctrl+Y shortcut to retry failed requests\n\n- Add Ctrl+Y keyboard shortcut for retrying the last failed request\n- Add isNetworkError() to detect transient network failures (ECONNREFUSED, ETIMEDOUT, etc.)\n- Add DashScope 1305 error code to rate limit detection\n- Add error hint \\\"Press Ctrl+Y to retry\\\" in error messages\n- Support user-defined error codes for retry via config\n- Add retryLastPrompt() hook in useGeminiStream\n- Update keyboard shortcuts documentation\n\n* feat: improve Ctrl+Y retry feature with tests, docs, and rate limit config\n\n- Add comprehensive tests for Ctrl+Y retry shortcut in InputPrompt\n- Add unit tests for retryLastPrompt in useGeminiStream hook\n- Add detailed JSDoc comments for retryLastPrompt function and Ctrl+Y shortcut\n- Extend isRateLimitError to support custom error codes via retryErrorCodes config\n- Fix rate limit retry log variable reference (RATE_LIMIT_RETRY_OPTIONS → maxRateLimitRetries)\n- Add Eclipse IDE files to .gitignore\n\nCo-authored-by: Qwen-Coder <qwen-coder@alibabacloud.com>\n\n* refactor(ui): consolidate retry countdown as inline hint in error messages\n\nCo-authored-by: Qwen-Coder <qwen-coder@alibabacloud.com>\n\n* feat(cli): enhance error",
+      "changed_count": 18,
+      "implementation_count": 11,
+      "test_count": 6,
+      "implementation_sample": [
+        "packages/cli/src/config/keyBindings.ts",
+        "packages/cli/src/i18n/locales/en.js",
+        "packages/cli/src/i18n/locales/zh.js",
+        "packages/cli/src/ui/AppContainer.tsx",
+        "packages/cli/src/ui/components/HistoryItemDisplay.tsx",
+        "packages/cli/src/ui/components/InputPrompt.tsx",
+        "packages/cli/src/ui/components/KeyboardShortcuts.tsx",
+        "packages/cli/src/ui/components/messages/ErrorMessage.tsx"
+      ],
+      "test_sample": [
+        "packages/cli/src/ui/AppContainer.test.tsx",
+        "packages/cli/src/ui/auth/AuthDialog.test.tsx",
+        "packages/cli/src/ui/components/Composer.test.tsx",
+        "packages/cli/src/ui/components/InputPrompt.test.tsx",
+        "packages/cli/src/ui/hooks/useGeminiStream.test.tsx",
+        "packages/cli/src/ui/keyMatchers.test.ts"
+      ],
+      "file_sample": [
+        "docs/users/reference/keyboard-shortcuts.md",
+        "packages/cli/src/config/keyBindings.ts",
+        "packages/cli/src/i18n/locales/en.js",
+        "packages/cli/src/i18n/locales/zh.js",
+        "packages/cli/src/ui/AppContainer.test.tsx",
+        "packages/cli/src/ui/AppContainer.tsx",
+        "packages/cli/src/ui/auth/AuthDialog.test.tsx",
+        "packages/cli/src/ui/components/Composer.test.tsx",
+        "packages/cli/src/ui/components/HistoryItemDisplay.tsx",
+        "packages/cli/src/ui/components/InputPrompt.test.tsx",
+        "packages/cli/src/ui/components/InputPrompt.tsx",
+        "packages/cli/src/ui/components/KeyboardShortcuts.tsx",
+        "packages/cli/src/ui/components/messages/ErrorMessage.tsx",
+        "packages/cli/src/ui/contexts/UIActionsContext.tsx",
+        "packages/cli/src/ui/hooks/useGeminiStream.test.tsx",
+        "packages/cli/src/ui/hooks/useGeminiStream.ts",
+        "packages/cli/src/ui/keyMatchers.test.ts",
+        "packages/cli/src/ui/types.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "key-event-normalization-and-shortcuts",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/QwenLM/qwen-code/pull/2011",
+      "selected_for": "train"
+    },
+    {
+      "category": "14-key-event-normalization-and-shortcuts",
+      "theme": "portable key-event normalization and conflict-free shortcuts",
+      "repo": "NousResearch/hermes-agent",
+      "number": 91611,
+      "role": "holdout",
+      "ref": "e63432152702c0c07a2eed203e8387324cf1dcc9",
+      "parents": [
+        "15c775aa220779ea355a45eb6750f9d91dacccc2"
+      ],
+      "subject": "fix(desktop): keybind normalization survives a missing KeyboardEvent.code (#91611)",
+      "body_excerpt": "baseKeyFromCode assumed event.code is always a string; synthetic and IME\nkeydowns can arrive without one, and code.startsWith threw a TypeError\ninside the packaged renderer's keybind listener (crash logs in the issue).\nGuard the input: a non-string or empty code yields no physical-key\nfallback, so comboFromEvent still resolves via event.key when that is\nvalid and returns null otherwise.\n\nCo-authored-by: wodesiku <wodesiku@example.com>",
+      "changed_count": 2,
+      "implementation_count": 1,
+      "test_count": 1,
+      "implementation_sample": [
+        "apps/desktop/src/lib/keybinds/combo.ts"
+      ],
+      "test_sample": [
+        "apps/desktop/src/lib/keybinds/combo.test.ts"
+      ],
+      "file_sample": [
+        "apps/desktop/src/lib/keybinds/combo.test.ts",
+        "apps/desktop/src/lib/keybinds/combo.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "key-event-normalization-and-shortcuts",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/NousResearch/hermes-agent/pull/91611",
+      "selected_for": "holdout"
+    },
+    {
+      "category": "15-unicode-width-and-terminal-rendering",
+      "theme": "Unicode-safe width calculation, wrapping, and terminal rendering",
+      "repo": "Aider-AI/aider",
+      "number": 2692,
+      "role": "train",
+      "ref": "9befec5cd1fbd5a091b4b5ea3415940061c6e150",
+      "parents": [
+        "be6811b29a388c8170f8c7ee5c049627c9dfbab0",
+        "5c92491bc085d5d10c80bced00d07a916bf4ad2f"
+      ],
+      "subject": "Merge pull request #2692 from mdklab/fix-issue-1802-unicode-error",
+      "body_excerpt": "Fix issue #1802: Handle UnicodeDecodeError in repo file paths",
+      "changed_count": 2,
+      "implementation_count": 1,
+      "test_count": 1,
+      "implementation_sample": [
+        "aider/main.py"
+      ],
+      "test_sample": [
+        "tests/basic/test_sanity_check_repo.py"
+      ],
+      "file_sample": [
+        "aider/main.py",
+        "tests/basic/test_sanity_check_repo.py"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "unicode-width-and-terminal-rendering",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/Aider-AI/aider/pull/2692",
+      "selected_for": "train"
+    },
+    {
+      "category": "15-unicode-width-and-terminal-rendering",
+      "theme": "Unicode-safe width calculation, wrapping, and terminal rendering",
+      "repo": "earendil-works/pi",
+      "number": 6987,
+      "role": "train",
+      "ref": "dfe47d3fbd8bf27841becaf8ec042dc0e73804a6",
+      "parents": [
+        "2c3041242040179b63841922ac58188f8499d2cd"
+      ],
+      "subject": "fix(tui): align grapheme widths with terminal cells (#6987)",
+      "body_excerpt": "Intl.Segmenter can group Indic conjuncts and spacing marks into one grapheme even when wcwidth-style terminals allocate multiple cells. Count visible consonants after marks and Unicode spacing marks separately while preserving zero-width exceptions.\n\nThis is a compatibility heuristic. Unicode Spacing_Mark indicates positive advance, not a full terminal cell; Kitty keeps many Indic continuations in the initial cell, while xterm-style terminals advance for them, so Pi overcounts some clusters in Kitty.\n\nOvercounting causes horizontal drift, but undercounting can trigger terminal autowrap, so this change favors overcounting.\n\nClusters can contain repeated marks and mark-consonant continuations, so this implementation leaves their widths uncapped. Collapsing them would undercount terminals that advance for every visible continuation.\n\nMode 2027 does not report cluster widths, so Pi still needs local width calculations. This change does not implement OSC 66, which would be preferable where supported.\n\nFixes #6124\n\nCo-authored-by: Mario Zechner <badlogicgames@gmail.com>",
+      "changed_count": 3,
+      "implementation_count": 1,
+      "test_count": 1,
+      "implementation_sample": [
+        "packages/tui/src/utils.ts"
+      ],
+      "test_sample": [
+        "packages/tui/test/truncate-to-width.test.ts"
+      ],
+      "file_sample": [
+        "packages/tui/CHANGELOG.md",
+        "packages/tui/src/utils.ts",
+        "packages/tui/test/truncate-to-width.test.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "unicode-width-and-terminal-rendering",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/earendil-works/pi/pull/6987",
+      "selected_for": "train"
+    },
+    {
+      "category": "15-unicode-width-and-terminal-rendering",
+      "theme": "Unicode-safe width calculation, wrapping, and terminal rendering",
+      "repo": "NousResearch/hermes-agent",
+      "number": 26011,
+      "role": "train",
+      "ref": "9fb40e6a3d6338b6a6a616010de7a16672148924",
+      "parents": [
+        "d5416284f11ccbc735c8357f0ab35ce5f683ccc3"
+      ],
+      "subject": "fix(tui): restrict fast-echo bypass to ASCII so Vietnamese/CJK/IME input renders correctly (#26011)",
+      "body_excerpt": "* fix(tui): restrict fast-echo bypass to ASCII so Vietnamese/CJK/IME input renders correctly\n\nThe composer's fast-echo path (canFastAppend / canFastBackspace) writes\ncharacters straight to stdout to skip an Ink re-render on the hot\ntyping path. The previous guard only checked\n'stringWidth(text) === text.length', which lets a lot of non-ASCII\nthrough:\n\n  - Vietnamese precomposed letters (ề, ắ, ờ, ự, ...) report width 1 and\n    length 1, but a Vietnamese Telex / IME stack produces them across\n    multiple keystrokes; the intermediate composition state must be\n    drawn by Ink so the rendered cell, the stored value, and the\n    cursor column stay in lockstep when the final commit replaces the\n    preview.\n  - NFD combining marks (U+0300..U+036F) are zero-width but length 1,\n    so even a passing equality lets them slip and silently desync the\n    cell column.\n  - CJK/East-Asian wide and emoji rejected only because their length\n    differs, but the boundary was shape-shaped, not intent-shaped.\n\nUser-visible bug from the original report:\n  Example: eê noiói nge neène\n  -> the bypass committed the IME preview char before the diacritic\n     replaced it, leaving doubled letters on screen.\n",
+      "changed_count": 2,
+      "implementation_count": 1,
+      "test_count": 1,
+      "implementation_sample": [
+        "ui-tui/src/components/textInput.tsx"
+      ],
+      "test_sample": [
+        "ui-tui/src/__tests__/textInputFastEcho.test.ts"
+      ],
+      "file_sample": [
+        "ui-tui/src/__tests__/textInputFastEcho.test.ts",
+        "ui-tui/src/components/textInput.tsx"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "unicode-width-and-terminal-rendering",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/NousResearch/hermes-agent/pull/26011",
+      "selected_for": "train"
+    },
+    {
+      "category": "15-unicode-width-and-terminal-rendering",
+      "theme": "Unicode-safe width calculation, wrapping, and terminal rendering",
+      "repo": "QwenLM/qwen-code",
+      "number": 5999,
+      "role": "train",
+      "ref": "a756676b2180bd5ba8c0062f98f140c5f0a9e732",
+      "parents": [
+        "52f875a875c20e927092a8b3aeb162614797543a"
+      ],
+      "subject": "fix(cli): replace all emoji with Unicode text symbols in TUI rendering (#5999)",
+      "body_excerpt": "* fix(cli): replace all emoji status icons with Unicode text symbols\n\nComprehensive cleanup of emoji in TUI rendering paths (follow-up to\n#5787 / #5788). Replaces width-2 emoji with width-1 Unicode text symbols\nfrom the project's existing glyph vocabulary.\n\n## Source changes (25 source files)\n\nStatus indicators:\n- McpStatus: 🟢→● 🔄→◐ 🔴→● (colors preserved via Text color prop)\n- ideCommand: 🟢→● 🟡→◐ 🔴→● (both getIdeStatusMessage functions)\n- Footer: 🔒 removed (sandbox text label is self-explanatory)\n- Footer: ⚙→▷ (workflow active indicator)\n- ToolMessage: ⏳→◌ (progress + queued approval)\n- McpStatus: ⏳→◌ (server startup message)\n- LiveAgentPanel: ⏸→‖ (pause glyph)\n\nText prefixes and labels:\n- StatusMessages: 🔎→◎ (vision bridge gutter prefix)\n- Session: 🚫→✗ (blocked notifications)\n- useGeminiStream: 🔎→◎ 🚫→✗ 💡→★ (prefixes and headers)\n- useContextualTips: 💡→★ (tip prefix)\n- WelcomeBackDialog: 👋🎯📋 removed (text labels are self-explanatory)\n- CreationSummary: ✅→✓ ❌→✗\n- summaryCommand: ❌→✗\n- AppContainer: ❌→✗\n- AgentEditStep: ❌→✗\n- useAutoAcceptIndicator: ℹ️→i\n- McpStatus Tips: 💡→★\n\nCore package:\n- agent-statistics: 📋→▸ 🔧→● ⏱️→(stripped) 🔁→● 🔢→● ✅→✓ 🚀→● 💡→★\n- shell: 🤖 removed from PR attri",
+      "changed_count": 39,
+      "implementation_count": 29,
+      "test_count": 8,
+      "implementation_sample": [
+        "packages/cli/src/acp-integration/session/Session.ts",
+        "packages/cli/src/i18n/locales/ca.js",
+        "packages/cli/src/i18n/locales/de.js",
+        "packages/cli/src/i18n/locales/en.js",
+        "packages/cli/src/i18n/locales/fr.js",
+        "packages/cli/src/i18n/locales/ja.js",
+        "packages/cli/src/i18n/locales/pt.js",
+        "packages/cli/src/i18n/locales/ru.js"
+      ],
+      "test_sample": [
+        "packages/cli/src/ui/commands/ideCommand.test.ts",
+        "packages/cli/src/ui/commands/lspCommand.test.ts",
+        "packages/cli/src/ui/components/Footer.test.tsx",
+        "packages/cli/src/ui/components/HistoryItemDisplay.test.tsx",
+        "packages/cli/src/ui/components/views/McpStatus.test.tsx",
+        "packages/cli/src/ui/components/views/__snapshots__/McpStatus.test.tsx.snap",
+        "packages/cli/src/ui/hooks/useGeminiStream.test.tsx",
+        "packages/core/src/agents/runtime/agent-statistics.test.ts"
+      ],
+      "file_sample": [
+        "docs/users/features/status-line.md",
+        "docs/users/ide-integration/ide-integration.md",
+        "packages/cli/src/acp-integration/session/Session.ts",
+        "packages/cli/src/i18n/locales/ca.js",
+        "packages/cli/src/i18n/locales/de.js",
+        "packages/cli/src/i18n/locales/en.js",
+        "packages/cli/src/i18n/locales/fr.js",
+        "packages/cli/src/i18n/locales/ja.js",
+        "packages/cli/src/i18n/locales/pt.js",
+        "packages/cli/src/i18n/locales/ru.js",
+        "packages/cli/src/i18n/locales/zh-TW.js",
+        "packages/cli/src/i18n/locales/zh.js",
+        "packages/cli/src/services/command-migration-tool.ts",
+        "packages/cli/src/ui/AppContainer.tsx",
+        "packages/cli/src/ui/CommandFormatMigrationNudge.tsx",
+        "packages/cli/src/ui/commands/ideCommand.test.ts",
+        "packages/cli/src/ui/commands/ideCommand.ts",
+        "packages/cli/src/ui/commands/lspCommand.test.ts",
+        "packages/cli/src/ui/commands/summaryCommand.ts",
+        "packages/cli/src/ui/components/Footer.test.tsx"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "unicode-width-and-terminal-rendering",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/QwenLM/qwen-code/pull/5999",
+      "selected_for": "train"
+    },
+    {
+      "category": "15-unicode-width-and-terminal-rendering",
+      "theme": "Unicode-safe width calculation, wrapping, and terminal rendering",
+      "repo": "google-gemini/gemini-cli",
+      "number": 18240,
+      "role": "holdout",
+      "ref": "49533cd106a646d0a80da16efaf45e00d9efe108",
+      "parents": [
+        "a2174751de2e25c0f8b9ea4540c15cc1fcfba9c6"
+      ],
+      "subject": "feat(ux): added text wrapping capabilities to markdown tables (#18240)",
+      "body_excerpt": "Co-authored-by: jacob314 <jacob314@gmail.com>",
+      "changed_count": 6,
+      "implementation_count": 1,
+      "test_count": 2,
+      "implementation_sample": [
+        "packages/cli/src/ui/utils/TableRenderer.tsx"
+      ],
+      "test_sample": [
+        "packages/cli/src/ui/utils/TableRenderer.test.tsx",
+        "packages/cli/src/ui/utils/__snapshots__/TableRenderer.test.tsx.snap"
+      ],
+      "file_sample": [
+        "package-lock.json",
+        "package.json",
+        "packages/cli/package.json",
+        "packages/cli/src/ui/utils/TableRenderer.test.tsx",
+        "packages/cli/src/ui/utils/TableRenderer.tsx",
+        "packages/cli/src/ui/utils/__snapshots__/TableRenderer.test.tsx.snap"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "unicode-width-and-terminal-rendering",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/google-gemini/gemini-cli/pull/18240",
+      "selected_for": "holdout"
+    },
+    {
+      "category": "16-extension-lifecycle-and-reload",
+      "theme": "extension loading, identity, uninstall, and reload lifecycle",
+      "repo": "earendil-works/pi",
+      "number": 681,
+      "role": "train",
+      "ref": "843f2352518cb75343f9e6e47bb86f708e1f4769",
+      "parents": [
+        "53d9e61bac3408b4ff6b4ccf9dd49e1c4c9640b1"
+      ],
+      "subject": "fix: extension loading in Bun binary (#681)",
+      "body_excerpt": "- Remove loader exports from index.ts to break circular dependency\n- Static import of index.js in loader.ts for virtualModules\n- Add @mariozechner/pi-agent-core to virtualModules\n- Update @mariozechner/jiti to 2.6.5 (bundles babel for Bun binary)\n- Update SDK docs to use correct extension terminology",
+      "changed_count": 7,
+      "implementation_count": 2,
+      "test_count": 0,
+      "implementation_sample": [
+        "packages/coding-agent/src/core/extensions/loader.ts",
+        "packages/coding-agent/src/index.ts"
+      ],
+      "test_sample": [],
+      "file_sample": [
+        "package-lock.json",
+        "package.json",
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/coding-agent/docs/sdk.md",
+        "packages/coding-agent/examples/sdk/README.md",
+        "packages/coding-agent/src/core/extensions/loader.ts",
+        "packages/coding-agent/src/index.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "extension-lifecycle-and-reload",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/earendil-works/pi/pull/681",
+      "selected_for": "train"
+    },
+    {
+      "category": "16-extension-lifecycle-and-reload",
+      "theme": "extension loading, identity, uninstall, and reload lifecycle",
+      "repo": "NousResearch/hermes-agent",
+      "number": 64178,
+      "role": "train",
+      "ref": "8be9c76f8c01f652e1c7acd576c37e4bdaed30be",
+      "parents": [
+        "eac1e25127a75c61116a0bbb8ce7681a2f8b61b4"
+      ],
+      "subject": "fix(plugins): hook delivery parity + symmetric force-reload (#64178)",
+      "body_excerpt": "Salvaged from PR #64188 (@Bartok9), re-reviewed against the #64229\nownership ledger (landed in #84923).\n\nDelivery parity (survived):\n- Module-level invoke_hook/invoke_middleware/has_hook/has_middleware\n  lazily run plugin discovery via _delivery_manager(), so surfaces that\n  never import model_tools (dashboards, TUI slash workers, query mode,\n  cron, gateway platform events) deliver plugin callbacks instead of\n  silently dropping them (#50776, #67597, #67890, #50937).\n- _delivery_manager() joins any in-flight background discovery first and\n  tolerates test doubles that monkeypatch get_plugin_manager().\n\nSymmetric force-reload (survived):\n- agent/shell_hooks.py gains re_register_config_hooks(); the force branch\n  of discover_and_load() calls it after a successful sweep, restoring\n  config.yaml shell hooks that the ledger-driven unload wiped but cannot\n  restore (they are config-owned, not plugin-owned) (#60036).\n- unload(plugin=None) now sweeps pre-ledger _plugin_tool_names entries\n  out of the process-global tools.registry, mirroring the platform-name\n  sweep that already existed, so zombie tools cannot survive a force\n  reload in long-lived pre-ledger processes (#60050).\n\nSupersed",
+      "changed_count": 3,
+      "implementation_count": 2,
+      "test_count": 1,
+      "implementation_sample": [
+        "agent/shell_hooks.py",
+        "hermes_cli/plugins.py"
+      ],
+      "test_sample": [
+        "tests/hermes_cli/test_plugins.py"
+      ],
+      "file_sample": [
+        "agent/shell_hooks.py",
+        "hermes_cli/plugins.py",
+        "tests/hermes_cli/test_plugins.py"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "extension-lifecycle-and-reload",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/NousResearch/hermes-agent/pull/64178",
+      "selected_for": "train"
+    },
+    {
+      "category": "16-extension-lifecycle-and-reload",
+      "theme": "extension loading, identity, uninstall, and reload lifecycle",
+      "repo": "google-gemini/gemini-cli",
+      "number": 8692,
+      "role": "train",
+      "ref": "2d406ffc755f79dc903c6993aae03150e1678dc0",
+      "parents": [
+        "0534ca74d4e67b00ed51e9f8bf568efc3ecaf834"
+      ],
+      "subject": "fix(cli): uninstall extensions using their source URL (#8692)",
+      "body_excerpt": "Co-authored-by: Taneja Hriday <hridayt@google.com>",
+      "changed_count": 3,
+      "implementation_count": 2,
+      "test_count": 1,
+      "implementation_sample": [
+        "packages/cli/src/commands/extensions/uninstall.ts",
+        "packages/cli/src/config/extension.ts"
+      ],
+      "test_sample": [
+        "packages/cli/src/config/extension.test.ts"
+      ],
+      "file_sample": [
+        "packages/cli/src/commands/extensions/uninstall.ts",
+        "packages/cli/src/config/extension.test.ts",
+        "packages/cli/src/config/extension.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "extension-lifecycle-and-reload",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/google-gemini/gemini-cli/pull/8692",
+      "selected_for": "train"
+    },
+    {
+      "category": "16-extension-lifecycle-and-reload",
+      "theme": "extension loading, identity, uninstall, and reload lifecycle",
+      "repo": "QwenLM/qwen-code",
+      "number": 6347,
+      "role": "train",
+      "ref": "151d2694136da5d89c8133bbdb8c08897ae2c107",
+      "parents": [
+        "271664b34b15c55366815ccb11f3eeb0698b8ad5"
+      ],
+      "subject": "feat: extension file reload — watch for plugin changes and hot-reload runtime (#6347)",
+      "body_excerpt": "* feat: extension file reload — watch for plugin changes and hot-reload runtime\n\n- Extract refreshExtensionRuntime to centralize MCP, skills, subagents, hooks, and memory refresh\n- Add ExtensionFileWatcher (chokidar) for auto-detecting extension file changes\n- Add ExtensionRefreshState with per-session scoped instance and mutation suppression\n- Replace monkey-patching with ExtensionManager native mutation listeners\n- Add /reload-plugins slash command with i18n-aware summary across all 9 locales\n- Add auto-refresh of extension content (commands/skills/agents) on file change\n- Add HookRegistry.reloadConfiguredHooks() with correct error recovery\n- Fix async mutation pairing via id-based Map instead of LIFO stack\n- Fix bootstrap watcher close() UB with queueMicrotask deferral\n- Fix concurrent refresh with runningRef/pendingRef guard\n- Fix error propagation from refreshExtensionContentRuntime to UI\n- Fix isIgnored cross-platform path splitting (path.sep → regex)\n- Fix wrong ExtensionMutationEvent type via import from core\n- Fix addItem on unmounted component with mountedRef guard\n- Set followSymlinks: false on chokidar watchers\n\n* fix: address extension reload review feedback\n\n* docs: e",
+      "changed_count": 36,
+      "implementation_count": 24,
+      "test_count": 11,
+      "implementation_sample": [
+        "packages/cli/src/config/extension-file-watcher.ts",
+        "packages/cli/src/config/extension-refresh-state.ts",
+        "packages/cli/src/config/extension-runtime-reload.ts",
+        "packages/cli/src/gemini.tsx",
+        "packages/cli/src/i18n/locales/ca.js",
+        "packages/cli/src/i18n/locales/de.js",
+        "packages/cli/src/i18n/locales/en.js",
+        "packages/cli/src/i18n/locales/fr.js"
+      ],
+      "test_sample": [
+        "packages/cli/src/config/extension-file-watcher.test.ts",
+        "packages/cli/src/config/extension-refresh-state.test.ts",
+        "packages/cli/src/config/extension-runtime-reload.test.ts",
+        "packages/cli/src/gemini.test.tsx",
+        "packages/cli/src/services/BuiltinCommandLoader.test.ts",
+        "packages/cli/src/ui/commands/reload-plugins-command.test.ts",
+        "packages/cli/src/ui/hooks/slashCommandProcessor.test.ts",
+        "packages/core/src/extension/extension-runtime-refresh.test.ts"
+      ],
+      "file_sample": [
+        "docs/design/extension-file-reload.md",
+        "packages/cli/src/config/extension-file-watcher.test.ts",
+        "packages/cli/src/config/extension-file-watcher.ts",
+        "packages/cli/src/config/extension-refresh-state.test.ts",
+        "packages/cli/src/config/extension-refresh-state.ts",
+        "packages/cli/src/config/extension-runtime-reload.test.ts",
+        "packages/cli/src/config/extension-runtime-reload.ts",
+        "packages/cli/src/gemini.test.tsx",
+        "packages/cli/src/gemini.tsx",
+        "packages/cli/src/i18n/locales/ca.js",
+        "packages/cli/src/i18n/locales/de.js",
+        "packages/cli/src/i18n/locales/en.js",
+        "packages/cli/src/i18n/locales/fr.js",
+        "packages/cli/src/i18n/locales/ja.js",
+        "packages/cli/src/i18n/locales/pt.js",
+        "packages/cli/src/i18n/locales/ru.js",
+        "packages/cli/src/i18n/locales/zh-TW.js",
+        "packages/cli/src/i18n/locales/zh.js",
+        "packages/cli/src/services/BuiltinCommandLoader.test.ts",
+        "packages/cli/src/services/BuiltinCommandLoader.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "extension-lifecycle-and-reload",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/QwenLM/qwen-code/pull/6347",
+      "selected_for": "train"
+    },
+    {
+      "category": "16-extension-lifecycle-and-reload",
+      "theme": "extension loading, identity, uninstall, and reload lifecycle",
+      "repo": "openai/codex",
+      "number": 47679,
+      "role": "holdout",
+      "ref": "8de2d336b880bed7e6135fedfc2e65e722a744b3",
+      "parents": [
+        "9477081ccd334537072d7f3dffe5e05be0f73146"
+      ],
+      "subject": "Add extension hooks for model requests and response streams (#47679)",
+      "body_excerpt": "## What changed\n\nAdd `ModelRequestContributor` and `ModelResponseInterceptor` to the extension API. Contributors can add filtered `client_metadata` without overwriting existing or reserved fields and create interceptors for individual requests.\n\nWire contributors into HTTP and WebSocket requests, distinguishing generation from warmup. Apply response interceptors in registration order before tracing and response bookkeeping so transformed output is recorded consistently. Interceptors can inspect, buffer, or transform events, with stream ownership carrying request state and cancellation.\n\n## Testing\n\nAdd tests for metadata protection, incremental event transformation, interceptor ordering, upstream cancellation, and consistency between delivered output, traces, and WebSocket bookkeeping. Integration tests cover output gating and interruption over HTTP and WebSocket, including a contributor that bypasses gating for warmup requests.\n\nGitOrigin-RevId: d4bc1745d2cacf8636728dbc0a58ab9f250e9392",
+      "changed_count": 18,
+      "implementation_count": 11,
+      "test_count": 5,
+      "implementation_sample": [
+        "codex-rs/core/src/client.rs",
+        "codex-rs/core/src/client_tests.rs",
+        "codex-rs/core/src/lib.rs",
+        "codex-rs/core/src/model_request.rs",
+        "codex-rs/core/src/model_request_tests.rs",
+        "codex-rs/core/src/session/session.rs",
+        "codex-rs/core/src/session/tests.rs",
+        "codex-rs/ext/extension-api/src/lib.rs"
+      ],
+      "test_sample": [
+        "codex-rs/core/tests/responses_headers.rs",
+        "codex-rs/core/tests/suite/client.rs",
+        "codex-rs/core/tests/suite/client_websockets.rs",
+        "codex-rs/core/tests/suite/mod.rs",
+        "codex-rs/core/tests/suite/model_request.rs"
+      ],
+      "file_sample": [
+        "codex-rs/Cargo.lock",
+        "codex-rs/core/src/client.rs",
+        "codex-rs/core/src/client_tests.rs",
+        "codex-rs/core/src/lib.rs",
+        "codex-rs/core/src/model_request.rs",
+        "codex-rs/core/src/model_request_tests.rs",
+        "codex-rs/core/src/session/session.rs",
+        "codex-rs/core/src/session/tests.rs",
+        "codex-rs/core/tests/responses_headers.rs",
+        "codex-rs/core/tests/suite/client.rs",
+        "codex-rs/core/tests/suite/client_websockets.rs",
+        "codex-rs/core/tests/suite/mod.rs",
+        "codex-rs/core/tests/suite/model_request.rs",
+        "codex-rs/ext/extension-api/Cargo.toml",
+        "codex-rs/ext/extension-api/src/lib.rs",
+        "codex-rs/ext/extension-api/src/model_request.rs",
+        "codex-rs/ext/extension-api/src/registry.rs",
+        "codex-rs/memories/write/src/runtime.rs"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "extension-lifecycle-and-reload",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/openai/codex/pull/47679",
+      "selected_for": "holdout"
+    },
+    {
+      "category": "17-link-integrity-and-browser-handoff",
+      "theme": "preserve link targets and route browser handoff through the correct host",
+      "repo": "earendil-works/pi",
+      "number": 7657,
+      "role": "train",
+      "ref": "b780d20aa17c4144ace7bff728150993236b88ee",
+      "parents": [
+        "6bfd50261dfa103a761c2638965248381251827c"
+      ],
+      "subject": "fix(tui): close truncated OSC 8 links (#7657)",
+      "body_excerpt": "When truncateToWidth() cut through an OSC 8 hyperlink label, the retained prefix could leave the hyperlink open. Close an active hyperlink before the existing reset and ellipsis, preserving its BEL or ST terminator.\nAdded a focused regression test for the reported BEL-terminated case.",
+      "changed_count": 2,
+      "implementation_count": 1,
+      "test_count": 1,
+      "implementation_sample": [
+        "packages/tui/src/utils.ts"
+      ],
+      "test_sample": [
+        "packages/tui/test/truncate-to-width.test.ts"
+      ],
+      "file_sample": [
+        "packages/tui/src/utils.ts",
+        "packages/tui/test/truncate-to-width.test.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "link-integrity-and-browser-handoff",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/earendil-works/pi/pull/7657",
+      "selected_for": "train"
+    },
+    {
+      "category": "17-link-integrity-and-browser-handoff",
+      "theme": "preserve link targets and route browser handoff through the correct host",
+      "repo": "NousResearch/hermes-agent",
+      "number": 120790,
+      "role": "train",
+      "ref": "074349fb2744eacafbf80234444541aa736b1689",
+      "parents": [
+        "58c896ea4ebaff5425a068f461b6c6fedadb8b40",
+        "08944e1681db10833cfd4fc1209460519efc7159"
+      ],
+      "subject": "Merge pull request #120790 from benbarclay/feat/desktop-external-browser-setting",
+      "body_excerpt": "feat(desktop): setting to always open links in the external browser",
+      "changed_count": 9,
+      "implementation_count": 7,
+      "test_count": 2,
+      "implementation_sample": [
+        "apps/desktop/src/app/settings/config-settings.tsx",
+        "apps/desktop/src/i18n/en.ts",
+        "apps/desktop/src/i18n/ru.ts",
+        "apps/desktop/src/i18n/types.ts",
+        "apps/desktop/src/i18n/zh.ts",
+        "apps/desktop/src/lib/external-link.tsx",
+        "apps/desktop/src/store/external-links.ts"
+      ],
+      "test_sample": [
+        "apps/desktop/src/lib/external-link.test.tsx",
+        "apps/desktop/src/store/external-links.test.ts"
+      ],
+      "file_sample": [
+        "apps/desktop/src/app/settings/config-settings.tsx",
+        "apps/desktop/src/i18n/en.ts",
+        "apps/desktop/src/i18n/ru.ts",
+        "apps/desktop/src/i18n/types.ts",
+        "apps/desktop/src/i18n/zh.ts",
+        "apps/desktop/src/lib/external-link.test.tsx",
+        "apps/desktop/src/lib/external-link.tsx",
+        "apps/desktop/src/store/external-links.test.ts",
+        "apps/desktop/src/store/external-links.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "link-integrity-and-browser-handoff",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/NousResearch/hermes-agent/pull/120790",
+      "selected_for": "train"
+    },
+    {
+      "category": "17-link-integrity-and-browser-handoff",
+      "theme": "preserve link targets and route browser handoff through the correct host",
+      "repo": "openai/codex",
+      "number": 25485,
+      "role": "train",
+      "ref": "f94c49cf465b7403f22894f2db1432dee66fd64e",
+      "parents": [
+        "12c37a6b5cdb3fff2c03a355ca9948866bf1df07"
+      ],
+      "subject": "Use deep links for macOS codex app paths (#25485)",
+      "body_excerpt": "## Why\n\n`codex app [PATH]` is the documented CLI entry point for opening Codex\nDesktop on a workspace. Recent desktop builds can focus the app while\nfailing to honor paths passed as macOS document-open arguments via `open\n-a Codex.app <workspace>`, which broke `codex app .` for users. See\n#25333; related report: #25166.\n\nThe desktop app still supports the explicit\n`codex://threads/new?path=...` route, so the CLI should use that\napp-owned launch surface instead of depending on folder-open event\ndelivery.\n\n## What Changed\n\n- Build a `codex://threads/new?path=<workspace>` URL in the macOS app\nlauncher.\n- Pass that URL to `open -a <Codex.app>` instead of passing the\nworkspace path as a document argument.\n- Add coverage that workspace paths needing escaping round-trip through\nURL query encoding.\n\n## Verification\n\n- `just test -p codex-cli codex_new_thread_url_encodes_workspace_path`",
+      "changed_count": 1,
+      "implementation_count": 1,
+      "test_count": 0,
+      "implementation_sample": [
+        "codex-rs/cli/src/desktop_app/mac.rs"
+      ],
+      "test_sample": [],
+      "file_sample": [
+        "codex-rs/cli/src/desktop_app/mac.rs"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "link-integrity-and-browser-handoff",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/openai/codex/pull/25485",
+      "selected_for": "train"
+    },
+    {
+      "category": "17-link-integrity-and-browser-handoff",
+      "theme": "preserve link targets and route browser handoff through the correct host",
+      "repo": "google-gemini/gemini-cli",
+      "number": 5367,
+      "role": "train",
+      "ref": "e7b468e122a29341a6e2e2ca67366e6d62014a6d",
+      "parents": [
+        "dca040908affc6277884514b4c726365359fd10b"
+      ],
+      "subject": "feat(cli): Prevent redundant opening of browser tabs when zero MCP servers are configured (#5367)",
+      "body_excerpt": "Co-authored-by: Allen Hutchison <adh@google.com>",
+      "changed_count": 2,
+      "implementation_count": 1,
+      "test_count": 1,
+      "implementation_sample": [
+        "packages/cli/src/ui/commands/mcpCommand.ts"
+      ],
+      "test_sample": [
+        "packages/cli/src/ui/commands/mcpCommand.test.ts"
+      ],
+      "file_sample": [
+        "packages/cli/src/ui/commands/mcpCommand.test.ts",
+        "packages/cli/src/ui/commands/mcpCommand.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "link-integrity-and-browser-handoff",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/google-gemini/gemini-cli/pull/5367",
+      "selected_for": "train"
+    },
+    {
+      "category": "17-link-integrity-and-browser-handoff",
+      "theme": "preserve link targets and route browser handoff through the correct host",
+      "repo": "QwenLM/qwen-code",
+      "number": 9069,
+      "role": "holdout",
+      "ref": "5c1d77a3571a2068b9f0facb9ddd988521b7d280",
+      "parents": [
+        "71b45e32599eb6f55718bb412fb96eabaf2cbb75"
+      ],
+      "subject": "fix(desktop): open external URL artifacts and markdown links (#9069)",
+      "body_excerpt": "* fix(desktop): open external URL artifacts and markdown links\n\nThe Web Shell relied on the webview's implicit target=\"_blank\" /\nwindow.open handling for every external link. In the packaged desktop\nshell that path silently drops failed new-window requests, so link\nartifacts (type: link, storage: external_url) and markdown links in\nassistant messages appeared styled but dead, with no error feedback.\n\nAdd an explicit open_external_url command to the Tauri shell (validated\nagainst http/https/mailto, opened via the OS default browser) and route\nexternal clicks through it when the Web Shell detects the desktop\nbridge. The artifact details panel gains an \"Open link\" action next to\nthe Location URL, and failures surface as error toasts instead of\nsilent no-ops. Plain browsers keep native anchor behavior.\n\nFixes #9060; follows up on #8593 for the Tauri shell.\n\n* test(web-shell): keep real ToastHost exports in App mock\n\nThe App test suite replaces ToastHost with a stub; after adding\nTOAST_REQUEST_EVENT/requestToast to the module, the partial mock broke\nevery App test. Spread importActual so new exports stay available.\n\n* fix(desktop): declare external URL permission\n\n* fix(desktop): author",
+      "changed_count": 14,
+      "implementation_count": 7,
+      "test_count": 4,
+      "implementation_sample": [
+        "packages/desktop-shell/scripts/test-release.js",
+        "packages/web-shell/client/App.tsx",
+        "packages/web-shell/client/components/ToastHost.tsx",
+        "packages/web-shell/client/components/artifacts/ArtifactPanel.tsx",
+        "packages/web-shell/client/components/messages/Markdown.tsx",
+        "packages/web-shell/client/i18n.tsx",
+        "packages/web-shell/client/utils/externalOpen.ts"
+      ],
+      "test_sample": [
+        "packages/web-shell/client/App.test.tsx",
+        "packages/web-shell/client/components/artifacts/ArtifactPanel.test.tsx",
+        "packages/web-shell/client/components/messages/Markdown.test.ts",
+        "packages/web-shell/client/utils/externalOpen.test.ts"
+      ],
+      "file_sample": [
+        "packages/desktop-shell/scripts/test-release.js",
+        "packages/desktop-shell/src-tauri/capabilities/web-shell-external-url.json",
+        "packages/desktop-shell/src-tauri/tauri.conf.json",
+        "packages/web-shell/client/App.test.tsx",
+        "packages/web-shell/client/App.tsx",
+        "packages/web-shell/client/components/ToastHost.tsx",
+        "packages/web-shell/client/components/artifacts/ArtifactPanel.module.css",
+        "packages/web-shell/client/components/artifacts/ArtifactPanel.test.tsx",
+        "packages/web-shell/client/components/artifacts/ArtifactPanel.tsx",
+        "packages/web-shell/client/components/messages/Markdown.test.ts",
+        "packages/web-shell/client/components/messages/Markdown.tsx",
+        "packages/web-shell/client/i18n.tsx",
+        "packages/web-shell/client/utils/externalOpen.test.ts",
+        "packages/web-shell/client/utils/externalOpen.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "link-integrity-and-browser-handoff",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/QwenLM/qwen-code/pull/9069",
+      "selected_for": "holdout"
+    },
+    {
+      "category": "18-cross-platform-release-packaging",
+      "theme": "cross-platform release asset completeness and packaging",
+      "repo": "Aider-AI/aider",
+      "number": 4899,
+      "role": "train",
+      "ref": "861a1e4d154f268547a06497cc380e5a5dc8483a",
+      "parents": [
+        "265d8a473b5d5bf001db321b251674a120ad75da",
+        "975e5a899168444cba6f85d57070cb0012deb75d"
+      ],
+      "subject": "Merge pull request #4899 from turian/codex/python-3-14-support",
+      "body_excerpt": "Add Python 3.13 and 3.14 support",
+      "changed_count": 15,
+      "implementation_count": 1,
+      "test_count": 0,
+      "implementation_sample": [
+        "scripts/pip-compile.sh"
+      ],
+      "test_sample": [],
+      "file_sample": [
+        ".github/workflows/check_pypi_version.yml",
+        ".github/workflows/ubuntu-tests.yml",
+        ".github/workflows/windows-tests.yml",
+        ".github/workflows/windows_check_pypi_version.yml",
+        "pyproject.toml",
+        "requirements.txt",
+        "requirements/common-constraints.txt",
+        "requirements/pydub.in",
+        "requirements/python-compat.in",
+        "requirements/requirements-browser.txt",
+        "requirements/requirements-dev.txt",
+        "requirements/requirements-help.in",
+        "requirements/requirements-help.txt",
+        "requirements/requirements.in",
+        "scripts/pip-compile.sh"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "cross-platform-release-packaging",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/Aider-AI/aider/pull/4899",
+      "selected_for": "train"
+    },
+    {
+      "category": "18-cross-platform-release-packaging",
+      "theme": "cross-platform release asset completeness and packaging",
+      "repo": "earendil-works/pi",
+      "number": 4458,
+      "role": "train",
+      "ref": "93708de65d34ecceb2b86f626d18c2df356bd70c",
+      "parents": [
+        "ac75abee43cc2b3ebbaf616b98a5c5a9c51b804d",
+        "c786efda9dfa76225e2a1bd17f62d504f5fccf88"
+      ],
+      "subject": "Merge pull request #4458 from brianmichel/brian/add-windows-arm-binary",
+      "body_excerpt": "Add Windows ARM64 Binary Output",
+      "changed_count": 2,
+      "implementation_count": 1,
+      "test_count": 0,
+      "implementation_sample": [
+        "scripts/build-binaries.sh"
+      ],
+      "test_sample": [],
+      "file_sample": [
+        ".github/workflows/build-binaries.yml",
+        "scripts/build-binaries.sh"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "cross-platform-release-packaging",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/earendil-works/pi/pull/4458",
+      "selected_for": "train"
+    },
+    {
+      "category": "18-cross-platform-release-packaging",
+      "theme": "cross-platform release asset completeness and packaging",
+      "repo": "NousResearch/hermes-agent",
+      "number": 36134,
+      "role": "train",
+      "ref": "fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f",
+      "parents": [
+        "77bb64813cb987ad80236219a20c6cb549b40049"
+      ],
+      "subject": "fix(install): build desktop in 'desktop' stage on macOS/Linux instead of silently skipping (#36134)",
+      "body_excerpt": "The thin installer (apps/bootstrap-installer) drives install.sh stage-by-stage,\neach in its own process. The `desktop` stage never called check_node, so the\nHermes-managed Node provisioned earlier (at $HERMES_HOME/node/bin) wasn't on\nPATH. install_desktop's `command -v npm` check then failed and the build was\nskipped — yet the stage still reported {\"ok\":true,\"skipped\":false}, so the\ninstaller showed \"Installation Complete\" and only failed at the end with\n\"Couldn't find a built Hermes desktop ... the desktop build step may have been\nskipped or failed.\"\n\nFix:\n- Call check_node in the `desktop` stage (mirrors every other Node-dependent\n  stage) so the managed Node is on PATH (or installed).\n- Make install_desktop self-provision via check_node and hard-fail (return 1)\n  if npm is still unavailable, instead of a silent `return 0`. The desktop\n  stage only runs when a build is explicitly requested (--include-desktop), so\n  an unavailable toolchain is a real failure, not graceful degradation.\n\nVerified on macOS arm64: the `desktop` stage now builds\nrelease/mac-arm64/Hermes.app, which matches resolve_hermes_desktop_exe, so the\ninstaller's \"Launch Hermes\" succeeds.",
+      "changed_count": 1,
+      "implementation_count": 1,
+      "test_count": 0,
+      "implementation_sample": [
+        "scripts/install.sh"
+      ],
+      "test_sample": [],
+      "file_sample": [
+        "scripts/install.sh"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "cross-platform-release-packaging",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/NousResearch/hermes-agent/pull/36134",
+      "selected_for": "train"
+    },
+    {
+      "category": "18-cross-platform-release-packaging",
+      "theme": "cross-platform release asset completeness and packaging",
+      "repo": "google-gemini/gemini-cli",
+      "number": 19171,
+      "role": "train",
+      "ref": "a5fd5d0b9fcafcc2eb1cc92e8e6405716dbb103f",
+      "parents": [
+        "55db3c776c86798938ccf386f53b1d5593c37468"
+      ],
+      "subject": "feat(release): ship esbuild bundle in npm package (#19171)",
+      "body_excerpt": "Co-authored-by: Yuna Seol <yunaseol@gmail.com>",
+      "changed_count": 2,
+      "implementation_count": 1,
+      "test_count": 0,
+      "implementation_sample": [
+        "scripts/prepare-npm-release.js"
+      ],
+      "test_sample": [],
+      "file_sample": [
+        ".github/actions/publish-release/action.yml",
+        "scripts/prepare-npm-release.js"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "cross-platform-release-packaging",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/google-gemini/gemini-cli/pull/19171",
+      "selected_for": "train"
+    },
+    {
+      "category": "18-cross-platform-release-packaging",
+      "theme": "cross-platform release asset completeness and packaging",
+      "repo": "QwenLM/qwen-code",
+      "number": 12649,
+      "role": "holdout",
+      "ref": "010941d202def21d73f42e28bc2ee50fca3c8b2f",
+      "parents": [
+        "2686cad25fe8ffc24f582d8cb50f49743a884e3b"
+      ],
+      "subject": "fix(standalone): pin @lydell/node-pty-linux-arm64 and fail release on missing prebuilds (#12649)",
+      "body_excerpt": "* fix(standalone): pin @lydell/node-pty-linux-arm64 and make missing prebuilds fatal at release\n\nThe wrapper publishes a linux-arm64 prebuild at the same 1.2.0-beta.10 pin,\nbut the root and core manifests never declared it, so the linux-arm64\nstandalone archive and the linux-arm64 Desktop runtime both degraded to\n\"PTY not available\" while every other target shipped a working web\nterminal.\n\nWith the pin in place every shipped target resolves a prebuild package, so\nthe release archive build can stop degrading silently: release.yml now\nexports QWEN_STANDALONE_REQUIRE_NODE_PTY_PREBUILD=1 next to the existing\naudio-capture gate, turning a missing prebuild into a hard failure instead\nof another #11872.\n\nFixes #11872\n\n* fix(standalone): update pnpm lockfile for the linux-arm64 node-pty pin\n\nThe two package.json manifests gained @lydell/node-pty-linux-arm64 but\npnpm-lock.yaml was not regenerated, so every CI job failed at the\nfrozen-lockfile install with ERR_PNPM_OUTDATED_LOCKFILE.\n\n* docs(standalone): align the linux-arm64 PTY guide and tripwire with the pin\n\nPinning @lydell/node-pty-linux-arm64 makes linux-arm64 a supported PTY target,\nbut INSTALLATION_GUIDE.md still told users that arch",
+      "changed_count": 11,
+      "implementation_count": 4,
+      "test_count": 2,
+      "implementation_sample": [
+        "esbuild.config.js",
+        "packages/desktop-shell/scripts/prepare-runtime.js",
+        "packages/desktop-shell/scripts/test-release.js",
+        "scripts/create-standalone-package.js"
+      ],
+      "test_sample": [
+        "packages/core/src/services/conpty-host.test.ts",
+        "scripts/tests/install-script.test.js"
+      ],
+      "file_sample": [
+        ".github/workflows/release.yml",
+        "esbuild.config.js",
+        "package.json",
+        "packages/core/package.json",
+        "packages/core/src/services/conpty-host.test.ts",
+        "packages/desktop-shell/scripts/prepare-runtime.js",
+        "packages/desktop-shell/scripts/test-release.js",
+        "pnpm-lock.yaml",
+        "scripts/create-standalone-package.js",
+        "scripts/installation/INSTALLATION_GUIDE.md",
+        "scripts/tests/install-script.test.js"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "cross-platform-release-packaging",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/QwenLM/qwen-code/pull/12649",
+      "selected_for": "holdout"
+    },
+    {
+      "category": "19-sensitive-data-redaction-in-diagnostics",
+      "theme": "redact secrets and sensitive payloads at logging and diagnostics boundaries",
+      "repo": "NousResearch/hermes-agent",
+      "number": 77484,
+      "role": "train",
+      "ref": "72eda946be949a5932923df3325037a0d6c5da49",
+      "parents": [
+        "2a743e5f4377419c54054ce7c65c79cff98a092c"
+      ],
+      "subject": "fix(security): redact terminal exception results and ACP stderr logs (#77484)",
+      "body_excerpt": "Closes the last two emission gaps from #77484:\n\n- tools/terminal_tool.py: both exception paths (generic except and\n  TERMINAL_DEGRADED_MODE=fail) returned raw str(e) + traceback.format_exc()\n  to the model — only the logger copy was redacted. Exception text can\n  embed the failing command line and any secrets inline in it; both fields\n  now pass through redact_sensitive_text.\n- acp_adapter/entry.py: _setup_logging cleared root handlers and installed\n  a plain logging.Formatter, bypassing redaction entirely on ACP stderr.\n  Now uses RedactingFormatter like every other logging surface.\n\nThe other three gaps from #77484 (process(list), *_KEY regex variants,\ncontrol-char splits) were fixed in #80964/#80965.",
+      "changed_count": 4,
+      "implementation_count": 2,
+      "test_count": 2,
+      "implementation_sample": [
+        "acp_adapter/entry.py",
+        "tools/terminal_tool.py"
+      ],
+      "test_sample": [
+        "tests/acp_adapter/test_acp_logging_redaction.py",
+        "tests/tools/test_terminal_tool_exception_redaction.py"
+      ],
+      "file_sample": [
+        "acp_adapter/entry.py",
+        "tests/acp_adapter/test_acp_logging_redaction.py",
+        "tests/tools/test_terminal_tool_exception_redaction.py",
+        "tools/terminal_tool.py"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "sensitive-data-redaction-in-diagnostics",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/NousResearch/hermes-agent/pull/77484",
+      "selected_for": "train"
+    },
+    {
+      "category": "19-sensitive-data-redaction-in-diagnostics",
+      "theme": "redact secrets and sensitive payloads at logging and diagnostics boundaries",
+      "repo": "openai/codex",
+      "number": 48686,
+      "role": "train",
+      "ref": "4a36f4549dfce7f7d95bd037a52147c81b79916d",
+      "parents": [
+        "88d743c3abbef69778dc64a3a776a16510fa77fe"
+      ],
+      "subject": "Remove WebSocket headers and tool payloads from info logs (#48686)",
+      "body_excerpt": "Stop logging response headers on successful WebSocket connections and payload\npreviews for tool calls. Keep the connection URL, tool name, and thread ID in\ntheir respective log entries.\n\nGitOrigin-RevId: 1d410b6aef8f12153da9bfc60c515b8e797a9de0\n(cherry picked from commit 41f9084b30812db321a0b592def4f500d1e79cf4)",
+      "changed_count": 2,
+      "implementation_count": 2,
+      "test_count": 0,
+      "implementation_sample": [
+        "codex-rs/codex-api/src/endpoint/responses_websocket.rs",
+        "codex-rs/core/src/stream_events_utils.rs"
+      ],
+      "test_sample": [],
+      "file_sample": [
+        "codex-rs/codex-api/src/endpoint/responses_websocket.rs",
+        "codex-rs/core/src/stream_events_utils.rs"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "sensitive-data-redaction-in-diagnostics",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/openai/codex/pull/48686",
+      "selected_for": "train"
+    },
+    {
+      "category": "19-sensitive-data-redaction-in-diagnostics",
+      "theme": "redact secrets and sensitive payloads at logging and diagnostics boundaries",
+      "repo": "google-gemini/gemini-cli",
+      "number": 26153,
+      "role": "train",
+      "ref": "2194da2b0213fa39062302ea3a2ee75ef768648e",
+      "parents": [
+        "dce13019b9e43b253d03e7fb2c12550cdd94e0aa"
+      ],
+      "subject": "Respect logPrompts flag for logging sensitive fields (#26153)",
+      "body_excerpt": "Co-authored-by: David Pierce <davidapierce@google.com>\nCo-authored-by: Gal Zahavi <38544478+galz10@users.noreply.github.com>",
+      "changed_count": 4,
+      "implementation_count": 2,
+      "test_count": 2,
+      "implementation_sample": [
+        "packages/core/src/telemetry/conseca-logger.ts",
+        "packages/core/src/telemetry/types.ts"
+      ],
+      "test_sample": [
+        "packages/core/src/telemetry/conseca-logger.test.ts",
+        "packages/core/src/telemetry/loggers.test.ts"
+      ],
+      "file_sample": [
+        "packages/core/src/telemetry/conseca-logger.test.ts",
+        "packages/core/src/telemetry/conseca-logger.ts",
+        "packages/core/src/telemetry/loggers.test.ts",
+        "packages/core/src/telemetry/types.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "sensitive-data-redaction-in-diagnostics",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/google-gemini/gemini-cli/pull/26153",
+      "selected_for": "train"
+    },
+    {
+      "category": "19-sensitive-data-redaction-in-diagnostics",
+      "theme": "redact secrets and sensitive payloads at logging and diagnostics boundaries",
+      "repo": "QwenLM/qwen-code",
+      "number": 6200,
+      "role": "train",
+      "ref": "c1235d8c69fcccadf96609af54ed1e08b72fa7ed",
+      "parents": [
+        "006ac59a33b60bcd87086b5ddd6afa5abe85e448"
+      ],
+      "subject": "fix(qqbot): security hardening — gateway validation, atomic state, sanitized logging (#6200)",
+      "body_excerpt": "* fix(qqbot): validate gateway URL protocol to prevent SSRF\n\n- Add validateGatewayUrl(): enforce wss:// protocol, warn on unexpected hostnames\n- Integrate into fetchGatewayUrl() return path\n- Truncate error body in fetchAccessToken() to 80 chars\n- Add 6 tests covering protocol rejection, wss acceptance, and edge cases\n\n* fix(qqbot): atomic state persistence and error log sanitization\n\nState persistence hardening:\n- Atomic saveQQState() via tmp+renameSync with disposed guard and unref()\n- Atomic flushQQState() with {mode: 0o600} permissions\n- Entry type validation in restoreQQState() for chatTypeMap and msgSeqMap\n\nError log sanitization:\n- Wrap all user-controlled data in process.stderr.write() with sanitizeLogText()\n- Covering: connect retry, sendMessage errors, state persistence failures,\n  token refresh, malformed gateway, WebSocket errors, reconnect, and\n  C2C/group handler error paths\n\n* fix(qqbot): add replyMsgId validation in restoreQQState()\n\nAdd type/length validation for replyMsgId entries when restoring from\npersisted state, consistent with the existing chatTypeMap and msgSeqMap\ninput validation filters. Entries must be strings ≤ 128 chars.\n\n* fix(qqbot): add test coverag",
+      "changed_count": 4,
+      "implementation_count": 2,
+      "test_count": 2,
+      "implementation_sample": [
+        "packages/channels/qqbot/src/QQChannel.ts",
+        "packages/channels/qqbot/src/api.ts"
+      ],
+      "test_sample": [
+        "packages/channels/qqbot/src/api.test.ts",
+        "packages/channels/qqbot/src/send.test.ts"
+      ],
+      "file_sample": [
+        "packages/channels/qqbot/src/QQChannel.ts",
+        "packages/channels/qqbot/src/api.test.ts",
+        "packages/channels/qqbot/src/api.ts",
+        "packages/channels/qqbot/src/send.test.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "sensitive-data-redaction-in-diagnostics",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/QwenLM/qwen-code/pull/6200",
+      "selected_for": "train"
+    },
+    {
+      "category": "19-sensitive-data-redaction-in-diagnostics",
+      "theme": "redact secrets and sensitive payloads at logging and diagnostics boundaries",
+      "repo": "Aider-AI/aider",
+      "number": 94,
+      "role": "holdout",
+      "ref": "7c3bbcede6d1be500d48755223072fed0dae4164",
+      "parents": [
+        "fb11754492a5ad9f8c1ed3b6f8a04e6d502b4d71"
+      ],
+      "subject": "aider: Scrub sensitive information from verbose logs before saving.",
+      "body_excerpt": "# Aider chat conversation:\n\nUSER: open api key saved in log file when run in verbose mode #94\nOpen\njoshuavial opened this issue 8 hours ago · 2 comments\nComments\n@joshuavial\njoshuavial commented 8 hours ago\nSeems like it would be easy for someone (particularly new to coding) to forget to add the log file to a .gitignore and inadvertently publish their key. Maybe the logger should scrub the keys before saving?\n\nASSISTANT: To address this issue, we need to modify the `aider/main.py` file. We will add a function to scrub sensitive information like the OpenAI API key from the verbose logs before they are saved.\n\nHere are the steps:\n\n1. Define a new function `scrub_sensitive_info` that takes a string as input and replaces sensitive information (like the OpenAI API key) with a placeholder like `***`.\n2. Call this function before logging the arguments in verbose mode.\n\nHere is the *edit block* for these changes:\n\n```python\naider/main.py\n<<<<<<< ORIGINAL\n    if args.verbose:\n        show = parser.format_values()\n        io.tool_output(show)\n        io.tool_output(\"Option settings:\")\n        for arg, val in sorted(vars(args).items()):\n            io.tool_output(f\"  - {arg}: {val}\")\n=======\n",
+      "changed_count": 1,
+      "implementation_count": 1,
+      "test_count": 0,
+      "implementation_sample": [
+        "aider/main.py"
+      ],
+      "test_sample": [],
+      "file_sample": [
+        "aider/main.py"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "sensitive-data-redaction-in-diagnostics",
+      "artifact_type": "issue",
+      "artifact_url": "https://github.com/Aider-AI/aider/issues/94",
+      "selected_for": "holdout"
+    },
+    {
+      "category": "20-persistent-state-and-schema-consistency",
+      "theme": "persistent cache and state schema consistency",
+      "repo": "Aider-AI/aider",
+      "number": 1397,
+      "role": "train",
+      "ref": "3a36edb8ec341b940d8d10a33dd6e8f53a09e076",
+      "parents": [
+        "2663233b60c0c9d96c3e439ac0d5d4af22480926",
+        "795810ffb8e94536830aed698ef3639be0aafa38"
+      ],
+      "subject": "Merge pull request #1397 from fry69/prompt-cache",
+      "body_excerpt": "Enable prompt caching for OpenRouter",
+      "changed_count": 1,
+      "implementation_count": 1,
+      "test_count": 0,
+      "implementation_sample": [
+        "aider/models.py"
+      ],
+      "test_sample": [],
+      "file_sample": [
+        "aider/models.py"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "persistent-state-and-schema-consistency",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/Aider-AI/aider/pull/1397",
+      "selected_for": "train"
+    },
+    {
+      "category": "20-persistent-state-and-schema-consistency",
+      "theme": "persistent cache and state schema consistency",
+      "repo": "earendil-works/pi",
+      "number": 6594,
+      "role": "train",
+      "ref": "9e7582aa03e54f410fa9688197a3b64514e93400",
+      "parents": [
+        "54fad505b9d8cbc8922ff55d7e2938f70cbf6a3d"
+      ],
+      "subject": "feat: sqlite session storage (#6594)",
+      "body_excerpt": "This PR:\n\n- Adds retainedTail to compaction entries in the new agent harness so we don't have to walk up the tree for the 2000 tokens before compaction,\n- Changes getPathToRoot to getPathToRootOrCompaction to only load until last compaction, as unnecessary to access all nodes where it is called,\n- Adds a SQLite storage backend, in a separate packages/session-backend-sqlite, with a migration system and schemas as per on-site discussions: sessions to match session header messages (except for metadata, which I couldn't understand what it's used for or where it gets written, so I omitted it), session_entries for shared entry types as columns plus payload as a json for what remains, session_sequences to represent the append-only, serialized nature of the jsonl files, branch_entries to attribute nodes to branches (relationship one-to-many), and session_materialized with the session info (see /session in TUI) to act as a \"cache\" or quick-access for costs, message count, token info, labels, session name, and model-thinking-level config (e.g. for fast resume).\n- This is compatible with the new agent harness Session abstraction.",
+      "changed_count": 40,
+      "implementation_count": 21,
+      "test_count": 5,
+      "implementation_sample": [
+        "packages/agent/src/harness/agent-harness.ts",
+        "packages/agent/src/harness/compaction/compaction.ts",
+        "packages/agent/src/harness/session/jsonl-storage.ts",
+        "packages/agent/src/harness/session/memory-storage.ts",
+        "packages/agent/src/harness/session/repo-utils.ts",
+        "packages/agent/src/harness/session/session.ts",
+        "packages/agent/src/harness/types.ts",
+        "packages/agent/src/index.ts"
+      ],
+      "test_sample": [
+        "packages/agent/test/harness/compaction.test.ts",
+        "packages/agent/test/harness/session.test.ts",
+        "packages/agent/test/harness/sqlite-migrations.test.ts",
+        "packages/agent/test/harness/sqlite-node.test.ts",
+        "packages/agent/test/harness/storage.test.ts"
+      ],
+      "file_sample": [
+        "biome.json",
+        "package-lock.json",
+        "package.json",
+        "packages/agent/README.md",
+        "packages/agent/package.json",
+        "packages/agent/src/harness/agent-harness.ts",
+        "packages/agent/src/harness/compaction/compaction.ts",
+        "packages/agent/src/harness/session/jsonl-storage.ts",
+        "packages/agent/src/harness/session/memory-storage.ts",
+        "packages/agent/src/harness/session/repo-utils.ts",
+        "packages/agent/src/harness/session/session.ts",
+        "packages/agent/src/harness/types.ts",
+        "packages/agent/src/index.ts",
+        "packages/agent/test/harness/compaction.test.ts",
+        "packages/agent/test/harness/session.test.ts",
+        "packages/agent/test/harness/sqlite-migrations.test.ts",
+        "packages/agent/test/harness/sqlite-node.test.ts",
+        "packages/agent/test/harness/storage.test.ts",
+        "packages/agent/vitest.harness.config.ts",
+        "packages/coding-agent/docs/session-format.md"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "persistent-state-and-schema-consistency",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/earendil-works/pi/pull/6594",
+      "selected_for": "train"
+    },
+    {
+      "category": "20-persistent-state-and-schema-consistency",
+      "theme": "persistent cache and state schema consistency",
+      "repo": "NousResearch/hermes-agent",
+      "number": 3249,
+      "role": "train",
+      "ref": "b81d49dc450a56791a4ba39401f785eaff573d59",
+      "parents": [
+        "3a7907b278169110d4fe16e1d50cb316ad5944e0"
+      ],
+      "subject": "fix(state): SQLite concurrency hardening + session transcript integrity (#3249)",
+      "body_excerpt": "* fix(session-db): survive CLI/gateway concurrent write contention\n\nCloses #3139\n\nThree layered fixes for the scenario where CLI and gateway write to\nstate.db concurrently, causing create_session() to fail with\n'database is locked' and permanently disabling session_search on the\ngateway side.\n\n1. Increase SQLite connection timeout: 10s -> 30s\n   hermes_state.py: longer window for the WAL writer to finish a batch\n   flush before the other process gives up entirely.\n\n2. INSERT OR IGNORE in create_session\n   hermes_state.py: prevents IntegrityError on duplicate session IDs\n   (e.g. gateway restarts while CLI session is still alive).\n\n3. Don't null out _session_db on create_session failure  (main fix)\n   run_agent.py: a transient lock at agent startup must not permanently\n   disable session_search for the lifetime of that agent instance.\n   _session_db now stays alive so subsequent flushes and searches work\n   once the lock clears.\n\n4. New ensure_session() helper + call it during flush\n   hermes_state.py: INSERT OR IGNORE for a minimal session row.\n   run_agent.py _flush_messages_to_session_db: calls ensure_session()\n   before appending messages, so the FK constraint is satisfied even\n",
+      "changed_count": 5,
+      "implementation_count": 3,
+      "test_count": 2,
+      "implementation_sample": [
+        "gateway/session.py",
+        "hermes_state.py",
+        "run_agent.py"
+      ],
+      "test_sample": [
+        "tests/gateway/test_session.py",
+        "tests/test_hermes_state.py"
+      ],
+      "file_sample": [
+        "gateway/session.py",
+        "hermes_state.py",
+        "run_agent.py",
+        "tests/gateway/test_session.py",
+        "tests/test_hermes_state.py"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "persistent-state-and-schema-consistency",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/NousResearch/hermes-agent/pull/3249",
+      "selected_for": "train"
+    },
+    {
+      "category": "20-persistent-state-and-schema-consistency",
+      "theme": "persistent cache and state schema consistency",
+      "repo": "google-gemini/gemini-cli",
+      "number": 18506,
+      "role": "train",
+      "ref": "6d3fff2ea445c18348c76feb72f524f2b685be21",
+      "parents": [
+        "be2ebd1772e3562f4caf535067bb2d0e071ae6b8"
+      ],
+      "subject": "fix(core): prevent race condition in policy persistence (#18506)",
+      "body_excerpt": "Co-authored-by: Allen Hutchison <adh@google.com>",
+      "changed_count": 6,
+      "implementation_count": 3,
+      "test_count": 3,
+      "implementation_sample": [
+        "packages/core/src/policy/config.ts",
+        "packages/core/src/policy/toml-loader.ts",
+        "packages/core/src/policy/utils.ts"
+      ],
+      "test_sample": [
+        "packages/core/src/policy/persistence.test.ts",
+        "packages/core/src/policy/policy-updater.test.ts",
+        "packages/core/src/policy/utils.test.ts"
+      ],
+      "file_sample": [
+        "packages/core/src/policy/config.ts",
+        "packages/core/src/policy/persistence.test.ts",
+        "packages/core/src/policy/policy-updater.test.ts",
+        "packages/core/src/policy/toml-loader.ts",
+        "packages/core/src/policy/utils.test.ts",
+        "packages/core/src/policy/utils.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "persistent-state-and-schema-consistency",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/google-gemini/gemini-cli/pull/18506",
+      "selected_for": "train"
+    },
+    {
+      "category": "20-persistent-state-and-schema-consistency",
+      "theme": "persistent cache and state schema consistency",
+      "repo": "QwenLM/qwen-code",
+      "number": 9426,
+      "role": "holdout",
+      "ref": "02d303f849800945b3db45db32836a432f76f684",
+      "parents": [
+        "43aea24550d3a92c8f2b471d2b26764ff7eb0460"
+      ],
+      "subject": "feat(serve): persist prompt terminal ledger for cold-load reconciliation (#9426)",
+      "body_excerpt": "* feat(serve): persist prompt terminal ledger for cold-load reconciliation\n\nTurn terminal events (turn_complete / turn_error) were synthesized by the ACP bridge and published over SSE only, so a prompt that was in flight when the daemon died could never be resolved after a restart: the cold load replay emits transcript chunks and carries no terminal evidence, leaving promptId-keyed orchestrators stuck on \"unknown\".\n\nEach session now owns an append-only sidecar ledger next to its transcript. The bridge appends one in_flight record at prompt admission and one terminal record at the single publishPromptTerminal exit (covering the close/kill/channel-crash/daemon-shutdown flushes) through an injected synchronous sink. Ledger writes are best-effort and never block prompt execution or teardown, and records carry only ids, states, and timestamps — no prompt text, user content, or paths.\n\nOn a cold session load the serve layer reconciles prompts left dangling by a dead daemon: it classifies the transcript tail with the existing turn-interruption detector and appends a completed (stop reason reconstructed_from_transcript) or interrupted (code daemon_lost) verdict, guarded by an attribution c",
+      "changed_count": 20,
+      "implementation_count": 11,
+      "test_count": 7,
+      "implementation_sample": [
+        "packages/acp-bridge/src/bridge.ts",
+        "packages/acp-bridge/src/bridgeOptions.ts",
+        "packages/acp-bridge/src/index.ts",
+        "packages/acp-bridge/src/prompt-ledger.ts",
+        "packages/cli/src/serve/prompt-terminal-ledger.ts",
+        "packages/cli/src/serve/routes/session.ts",
+        "packages/cli/src/serve/run-qwen-serve.ts",
+        "packages/cli/src/services/insight/generators/DataProcessor.ts"
+      ],
+      "test_sample": [
+        "packages/acp-bridge/src/bridge-prompt-ledger.test.ts",
+        "packages/acp-bridge/src/prompt-ledger.test.ts",
+        "packages/cli/src/serve/prompt-terminal-ledger.test.ts",
+        "packages/cli/src/serve/routes/session-prompt-terminals.test.ts",
+        "packages/cli/src/services/insight/generators/DataProcessor.test.ts",
+        "packages/core/src/services/sessionService.test.ts",
+        "packages/core/src/services/usageHistoryService.test.ts"
+      ],
+      "file_sample": [
+        "docs/design/2026-08-19-prompt-terminal-ledger-design.md",
+        "packages/acp-bridge/package.json",
+        "packages/acp-bridge/src/bridge-prompt-ledger.test.ts",
+        "packages/acp-bridge/src/bridge.ts",
+        "packages/acp-bridge/src/bridgeOptions.ts",
+        "packages/acp-bridge/src/index.ts",
+        "packages/acp-bridge/src/prompt-ledger.test.ts",
+        "packages/acp-bridge/src/prompt-ledger.ts",
+        "packages/cli/src/serve/prompt-terminal-ledger.test.ts",
+        "packages/cli/src/serve/prompt-terminal-ledger.ts",
+        "packages/cli/src/serve/routes/session-prompt-terminals.test.ts",
+        "packages/cli/src/serve/routes/session.ts",
+        "packages/cli/src/serve/run-qwen-serve.ts",
+        "packages/cli/src/services/insight/generators/DataProcessor.test.ts",
+        "packages/cli/src/services/insight/generators/DataProcessor.ts",
+        "packages/cli/vitest.config.ts",
+        "packages/core/src/services/sessionService.test.ts",
+        "packages/core/src/services/sessionService.ts",
+        "packages/core/src/services/usageHistoryService.test.ts",
+        "packages/core/src/services/usageHistoryService.ts"
+      ],
+      "shortstat": "tree-only audit; blob line statistics intentionally skipped",
+      "category_slug": "persistent-state-and-schema-consistency",
+      "artifact_type": "pull_request",
+      "artifact_url": "https://github.com/QwenLM/qwen-code/pull/9426",
+      "selected_for": "holdout"
+    }
+  ]
+}

@@ -1,0 +1,253 @@
+{
+  "schema_version": "agent-core-thirteen-category-extraction-v2",
+  "generated_at": "2026-10-01",
+  "category": "subprocess-and-pty-lifecycle",
+  "theme": "subprocess and pseudo-terminal lifecycle finalization",
+  "policy": {
+    "train_cases": 4,
+    "leave_one_repository_out_holdout": true,
+    "holdout_in_separate_manifest": true,
+    "holdout_excluded_from_extraction": true,
+    "local_git_offline_fallback": true,
+    "target_model": "openai/gpt-5.6-sol"
+  },
+  "counts": {
+    "total": 4,
+    "implementation_plus_test": 2,
+    "implementation_only": 2
+  },
+  "cases": [
+    {
+      "case_id": "earendil-works__pi__4426__subprocess-and-pty-lifecycle",
+      "repository": "earendil-works/pi",
+      "issue": 4426,
+      "issue_url": "https://github.com/earendil-works/pi/pull/4426",
+      "artifact_type": "pull_request",
+      "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+      "category": "subprocess-and-pty-lifecycle",
+      "theme": "subprocess and pseudo-terminal lifecycle finalization",
+      "role": "train_candidate",
+      "split": "train_candidate",
+      "sample_kind": "verified_implementation_pull_request",
+      "source": "agent_core_thirteen_category_extraction_v2",
+      "resolution_url": "https://github.com/earendil-works/pi/pull/4426",
+      "ref": "5998b579585d62491541ee44ef6451dc8695bb86",
+      "extraction_ref": "5998b579585d62491541ee44ef6451dc8695bb86",
+      "title": "Merge pull request #4426 from ofa1/fix/restore-tty-on-uncaught-exception",
+      "ref_exists_in_checkout": true,
+      "commit_subjects": [
+        "Merge pull request #4426 from ofa1/fix/restore-tty-on-uncaught-exception"
+      ],
+      "linked_issue_numbers": [
+        4426
+      ],
+      "file_sample": [
+        "packages/coding-agent/src/modes/interactive/interactive-mode.ts"
+      ],
+      "quality": "implementation_only",
+      "evidence_status": "ready_for_codex_extraction",
+      "provenance": {
+        "classification": "direct_implementation_artifact",
+        "resolution_artifact": {
+          "type": "pull_request",
+          "number": 4426,
+          "url": "https://github.com/earendil-works/pi/pull/4426"
+        },
+        "commit": {
+          "sha": "5998b579585d62491541ee44ef6451dc8695bb86",
+          "subject": "Merge pull request #4426 from ofa1/fix/restore-tty-on-uncaught-exception",
+          "parents": [
+            "64882c6a516c6fe0e207ee3b114704f965e4eef6",
+            "9d84e28692f9483eea5a950ca017174cb641867a"
+          ],
+          "body_excerpt": "fix(coding-agent): restore terminal on uncaught exception"
+        },
+        "verification": [
+          "local_git_commit_resolved",
+          "first_parent_and_changed_files_recorded",
+          "implementation_change_present",
+          "no_test_file_change_observed"
+        ]
+      },
+      "pull_request": 4426
+    },
+    {
+      "case_id": "NousResearch__hermes-agent__14901__subprocess-and-pty-lifecycle",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 14901,
+      "issue_url": "https://github.com/NousResearch/hermes-agent/pull/14901",
+      "artifact_type": "pull_request",
+      "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+      "category": "subprocess-and-pty-lifecycle",
+      "theme": "subprocess and pseudo-terminal lifecycle finalization",
+      "role": "train_candidate",
+      "split": "train_candidate",
+      "sample_kind": "verified_implementation_pull_request",
+      "source": "agent_core_thirteen_category_extraction_v2",
+      "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/14901",
+      "ref": "379b2273d95566e8a69eadabceabc6ee08521b49",
+      "extraction_ref": "379b2273d95566e8a69eadabceabc6ee08521b49",
+      "title": "fix(mcp): route stdio subprocess stderr to log file, not user TTY (#14901)",
+      "ref_exists_in_checkout": true,
+      "commit_subjects": [
+        "fix(mcp): route stdio subprocess stderr to log file, not user TTY (#14901)"
+      ],
+      "linked_issue_numbers": [
+        14901
+      ],
+      "file_sample": [
+        "tools/mcp_tool.py"
+      ],
+      "quality": "implementation_only",
+      "evidence_status": "ready_for_codex_extraction",
+      "provenance": {
+        "classification": "direct_implementation_artifact",
+        "resolution_artifact": {
+          "type": "pull_request",
+          "number": 14901,
+          "url": "https://github.com/NousResearch/hermes-agent/pull/14901"
+        },
+        "commit": {
+          "sha": "379b2273d95566e8a69eadabceabc6ee08521b49",
+          "subject": "fix(mcp): route stdio subprocess stderr to log file, not user TTY (#14901)",
+          "parents": [
+            "7db2703b332bbe8afe2c89b1fed2dd8c03cbd9af"
+          ],
+          "body_excerpt": "MCP stdio servers' stderr was being dumped directly onto the user's\nterminal during hermes launch. Servers like FastMCP-based ones print a\nlarge ASCII banner at startup; slack-mcp-server emits JSON logs; etc.\nWith prompt_toolkit / Rich rendering the TUI concurrently, these\nunsolicited writes corrupt the terminal state — hanging the session\n~80% of the time for one user with Google Ads Tools + slack-mcp\nconfigured, forcing Ctrl+C and restart loops.\n\nRoot cause: `stdio_client(server_params)` in tools/mcp_tool.py was\ncalled without `errlog=`, and the SDK's default is `sys.stderr` —\ni.e. the real parent-process stderr, which is the TTY.\n\nFix: open a shared, append-mode log at $HERMES_HOME/logs/mcp-stderr.log\n(created once per process, line-buffered, real fd required by asyncio's\nsubprocess machinery) and pass it as `errlog` to every stdio_client.\nEach server's spawn writes a timestamped header so the shared log stays\nreadable when multiple servers are running. Falls back to /dev/null if\nthe log file cannot be opened.\n\nVerified by E2E spawning a subprocess with the log fd as its stderr:\nbanner lines land in the log file, nothing reaches the calling TTY."
+        },
+        "verification": [
+          "local_git_commit_resolved",
+          "first_parent_and_changed_files_recorded",
+          "implementation_change_present",
+          "no_test_file_change_observed"
+        ]
+      },
+      "pull_request": 14901
+    },
+    {
+      "case_id": "openai__codex__26734__subprocess-and-pty-lifecycle",
+      "repository": "openai/codex",
+      "issue": 26734,
+      "issue_url": "https://github.com/openai/codex/pull/26734",
+      "artifact_type": "pull_request",
+      "checkout": "/home/chenyujia/tritonToLlvm/codex-agent",
+      "category": "subprocess-and-pty-lifecycle",
+      "theme": "subprocess and pseudo-terminal lifecycle finalization",
+      "role": "train_candidate",
+      "split": "train_candidate",
+      "sample_kind": "verified_implementation_pull_request",
+      "source": "agent_core_thirteen_category_extraction_v2",
+      "resolution_url": "https://github.com/openai/codex/pull/26734",
+      "ref": "f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519",
+      "extraction_ref": "f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519",
+      "title": "[codex] Handle Ctrl-C for non-TTY unified exec (#26734)",
+      "ref_exists_in_checkout": true,
+      "commit_subjects": [
+        "[codex] Handle Ctrl-C for non-TTY unified exec (#26734)"
+      ],
+      "linked_issue_numbers": [
+        26734
+      ],
+      "file_sample": [
+        "codex-rs/core/src/unified_exec/process.rs",
+        "codex-rs/core/src/unified_exec/process_manager.rs",
+        "codex-rs/core/src/unified_exec/process_tests.rs",
+        "codex-rs/core/tests/suite/unified_exec.rs",
+        "codex-rs/exec-server/src/client.rs",
+        "codex-rs/exec-server/src/lib.rs",
+        "codex-rs/exec-server/src/local_process.rs",
+        "codex-rs/exec-server/src/process.rs",
+        "codex-rs/exec-server/src/protocol.rs",
+        "codex-rs/exec-server/src/remote_process.rs",
+        "codex-rs/exec-server/src/server/handler.rs",
+        "codex-rs/exec-server/src/server/process_handler.rs",
+        "codex-rs/exec-server/src/server/registry.rs",
+        "codex-rs/exec-server/tests/exec_process.rs",
+        "codex-rs/utils/pty/src/lib.rs",
+        "codex-rs/utils/pty/src/pipe.rs",
+        "codex-rs/utils/pty/src/process.rs",
+        "codex-rs/utils/pty/src/process_group.rs",
+        "codex-rs/utils/pty/src/pty.rs"
+      ],
+      "quality": "implementation_plus_test",
+      "evidence_status": "ready_for_codex_extraction",
+      "provenance": {
+        "classification": "direct_implementation_artifact",
+        "resolution_artifact": {
+          "type": "pull_request",
+          "number": 26734,
+          "url": "https://github.com/openai/codex/pull/26734"
+        },
+        "commit": {
+          "sha": "f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519",
+          "subject": "[codex] Handle Ctrl-C for non-TTY unified exec (#26734)",
+          "parents": [
+            "f574946960a4d21e884453ac9963a869153b847d"
+          ],
+          "body_excerpt": "## Why\n\nA long-running unified exec process started with `tty: false` could not\nbe interrupted via `write_stdin`: ordinary non-TTY stdin writes are\nrejected once stdin is closed, but an exact U+0003 payload should still\nmap to a process interrupt. The interrupt should flow through the same\nprocess lifecycle path as a real signal so Codex preserves\nprocess-reported output and exit metadata instead of fabricating a\nCtrl-C exit code or tearing down the session early.\n\n## What Changed\n\n- Add `process/signal` to exec-server with `ProcessSignal::Interrupt`\nand an empty response.\n- Add a non-consuming `ProcessHandle::signal` path for spawned\nprocesses; on Unix it sends SIGINT to the process group and leaves\nterminate/hard-kill unchanged.\n- Route non-TTY U+0003 `write_stdin` through `process.signal(...)`\ninstead of `terminate`, then let the normal post-write collection path\ndrain output and observe exit.\n- Add exec-server coverage where a shell `trap INT` handler prints the\nsignal and exits with its own code.\n- Add unified exec coverage where a `tty: false` process traps SIGINT,\nemits output, and exits with its own code.\n\n## Validation\n\n- `just test -p codex-exec-server\nexec_process_signal"
+        },
+        "verification": [
+          "local_git_commit_resolved",
+          "first_parent_and_changed_files_recorded",
+          "implementation_change_present",
+          "test_or_spec_change_present"
+        ]
+      },
+      "pull_request": 26734
+    },
+    {
+      "case_id": "google-gemini__gemini-cli__29379__subprocess-and-pty-lifecycle",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 29379,
+      "issue_url": "https://github.com/google-gemini/gemini-cli/pull/29379",
+      "artifact_type": "pull_request",
+      "checkout": "/home/chenyujia/tritonToLlvm/gemini-cli",
+      "category": "subprocess-and-pty-lifecycle",
+      "theme": "subprocess and pseudo-terminal lifecycle finalization",
+      "role": "train_candidate",
+      "split": "train_candidate",
+      "sample_kind": "verified_implementation_pull_request",
+      "source": "agent_core_thirteen_category_extraction_v2",
+      "resolution_url": "https://github.com/google-gemini/gemini-cli/pull/29379",
+      "ref": "4577750da8e9fcee42297a2f54fbae18c0fa6324",
+      "extraction_ref": "4577750da8e9fcee42297a2f54fbae18c0fa6324",
+      "title": "fix(core): synchronize ConPTY process exit lifecycle and harden PTY output finalization (#29379)",
+      "ref_exists_in_checkout": true,
+      "commit_subjects": [
+        "fix(core): synchronize ConPTY process exit lifecycle and harden PTY output finalization (#29379)"
+      ],
+      "linked_issue_numbers": [
+        29379
+      ],
+      "file_sample": [
+        "packages/core/src/services/shellExecutionService.test.ts",
+        "packages/core/src/services/shellExecutionService.ts"
+      ],
+      "quality": "implementation_plus_test",
+      "evidence_status": "ready_for_codex_extraction",
+      "provenance": {
+        "classification": "direct_implementation_artifact",
+        "resolution_artifact": {
+          "type": "pull_request",
+          "number": 29379,
+          "url": "https://github.com/google-gemini/gemini-cli/pull/29379"
+        },
+        "commit": {
+          "sha": "4577750da8e9fcee42297a2f54fbae18c0fa6324",
+          "subject": "fix(core): synchronize ConPTY process exit lifecycle and harden PTY output finalization (#29379)",
+          "parents": [
+            "09e048fd61bc56df18676211f65703e7f0075f3a"
+          ],
+          "body_excerpt": "Co-authored-by: David Pierce <davidapierce@google.com>"
+        },
+        "verification": [
+          "local_git_commit_resolved",
+          "first_parent_and_changed_files_recorded",
+          "implementation_change_present",
+          "test_or_spec_change_present"
+        ]
+      },
+      "pull_request": 29379
+    }
+  ]
+}

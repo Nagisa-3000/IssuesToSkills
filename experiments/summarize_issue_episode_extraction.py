@@ -227,7 +227,7 @@ def summarize(
         "holdout_leaks": sum("holdout URL leaked" in error for error in errors),
     }
     inventory = {
-        "schema_version": "agent-core-seven-category-extraction-inventory-v2-contract",
+        "schema_version": "agent-core-common-category-extraction-inventory-v2-contract",
         "scope": "ChangeEpisode plus candidate Atomic and actionable Workflow extraction only",
         "run": {
             "path": str(run_root),
@@ -249,7 +249,7 @@ def summarize(
 def render_markdown(inventory: dict[str, Any]) -> str:
     counts = inventory["counts"]
     lines = [
-        "# Agent-core seven-category extraction: actionable Workflow contract",
+        "# Agent-core common-category extraction: actionable Workflow contract",
         "",
         "## Summary",
         "",
