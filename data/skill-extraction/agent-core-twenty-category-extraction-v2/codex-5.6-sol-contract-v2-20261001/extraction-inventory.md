@@ -56,3 +56,4 @@ This index combines the completed 01–07 and 08–20 extraction runs without du
 
 - Validation errors: 0
 - Holdout URL leaks: 0
+- Deterministic corpus audit: `extraction-validation.json`

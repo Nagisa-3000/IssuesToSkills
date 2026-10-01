@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -14,6 +15,20 @@ INVENTORY = (
     / "codex-5.6-sol-contract-v2-20261001"
     / "extraction-inventory.json"
 )
+VALIDATION_REPORT = INVENTORY.with_name("extraction-validation.json")
+VALIDATOR_SCRIPT = (
+    ROOT
+    / "data"
+    / "skill-extraction"
+    / "packages"
+    / "universal-resolution-distiller"
+    / "scripts"
+    / "validate_extraction_inventory.py"
+)
+SPEC = importlib.util.spec_from_file_location("extraction_inventory_validator", VALIDATOR_SCRIPT)
+assert SPEC and SPEC.loader
+VALIDATOR = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(VALIDATOR)
 
 
 def _load_object(path: Path) -> dict[str, Any]:
@@ -121,3 +136,51 @@ def test_extracted_cases_are_grounded_and_do_not_contain_holdouts() -> None:
             artifact_text = artifact.read_text(encoding="utf-8")
             assert holdout["case_id"] not in artifact_text
             assert holdout["issue_url"] not in artifact_text
+
+
+def test_distiller_validator_accepts_the_frozen_twenty_category_corpus() -> None:
+    report = VALIDATOR.validate_inventory(
+        INVENTORY,
+        repository_root=ROOT,
+        expected_categories=20,
+        expected_training_per_category=4,
+        expected_model="openai/gpt-5.6-sol",
+    )
+
+    assert report["valid"] is True
+    assert report["errors"] == []
+    assert report["counts"] == {
+        "categories": 20,
+        "training_cases": 80,
+        "holdouts": 20,
+        "candidate_atomics": 218,
+        "candidate_workflows": 83,
+        "holdout_leaks": 0,
+    }
+    assert report == _load_object(VALIDATION_REPORT)
+
+
+def test_distiller_validator_rejects_a_training_holdout_repository_overlap(
+    tmp_path: Path,
+) -> None:
+    inventory = _load_object(INVENTORY)
+    first_category = inventory["category_summaries"][0]["category"]
+    first_training_record = next(
+        record for record in inventory["records"] if record["category"] == first_category
+    )
+    inventory["category_summaries"][0]["holdout"]["repository"] = first_training_record[
+        "repository"
+    ]
+    tampered = tmp_path / "inventory.json"
+    tampered.write_text(json.dumps(inventory), encoding="utf-8")
+
+    report = VALIDATOR.validate_inventory(
+        tampered,
+        repository_root=ROOT,
+        expected_categories=20,
+        expected_training_per_category=4,
+        expected_model="openai/gpt-5.6-sol",
+    )
+
+    assert report["valid"] is False
+    assert any("holdout repository appears in training records" in error for error in report["errors"])

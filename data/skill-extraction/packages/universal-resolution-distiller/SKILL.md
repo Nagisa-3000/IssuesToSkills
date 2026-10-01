@@ -17,6 +17,8 @@ Pattern as a user-facing Skill.
 - the caller needs an evidence-backed Action, Workflow, or cross-project Pattern
   candidate;
 - a training/holdout split and leakage audit are available.
+- a category-scale corpus needs four or more cross-project training episodes
+  while preserving a repository-disjoint untouched holdout.
 
 ## Do not use this skill when
 
@@ -71,6 +73,14 @@ Never induce a Pattern from one Issue or one Workflow. Never load a holdout
 solution ref, target-only test, descendant commit, target repository solution
 node, or previous agent transcript into training extraction or Pattern support.
 
+For a multi-case category run, read
+[`references/category-extraction-protocol.md`](references/category-extraction-protocol.md)
+before selecting cases or launching extraction processes. Freeze the split
+before any holdout solution inspection, isolate parallel case outputs, and run
+`scripts/validate_extraction_inventory.py` before declaring the extraction
+stage complete. Do not proceed into Pattern induction or agent evaluation when
+the caller requested extraction only.
+
 ## Action / Atomic contract
 
 An Action is one independently testable semantic operation, not a filename or
@@ -110,7 +120,7 @@ issue_workflow:
     - <explicit exclusion or missing prerequisite>
   inputs: []
   steps:
-    - action_id: <real Action node id>
+    - action_ref: <real extraction-local action_name or materialized action_id>
       role: diagnose|establish-contract|implement|reconcile|validate|repair
       required: true
       depends_on: []
@@ -126,9 +136,12 @@ issue_workflow:
   evidence_ids: []
 ```
 
-Every `action_id` must resolve to an admitted Action. Do not use loose
-`atomic_names` as the only linkage. Make optional branches and anti-goals
-explicit so an Agent can tell both what to do and what not to do.
+Every step reference must resolve to a real Action in the same extraction
+record. The extraction contract may use `action_name`; graph materialization
+must convert it to a stable `action_id` and reject dangling or ambiguous
+references. Do not use a loose list of `atomic_names` as the only linkage.
+Make optional branches and anti-goals explicit so an Agent can tell both what
+to do and what not to do.
 
 ## Pattern contract
 
