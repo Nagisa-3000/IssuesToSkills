@@ -9,13 +9,12 @@ history are never copied into an agent prompt or synthetic repository.
 from __future__ import annotations
 
 import argparse
-from collections import Counter
 import hashlib
 import json
-from pathlib import Path
 import subprocess
+from collections import Counter
+from pathlib import Path
 from typing import Any
-
 
 NODE_TOOL = Path(__file__).resolve().with_name("run_holdout_node_tool.py")
 
@@ -24,8 +23,8 @@ def run_git(repo: Path, *args: str, check: bool = True) -> str:
     proc = subprocess.run(
         ["git", "-C", str(repo), *args],
         text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
+        check=False,
     )
     if check and proc.returncode:
         raise RuntimeError(f"git {' '.join(args)} failed in {repo}: {proc.stderr.strip()}")
@@ -90,8 +89,8 @@ def test_patch(repo: Path, parent: str, ref: str, paths: list[str]) -> str:
     proc = subprocess.run(
         ["git", "-C", str(repo), "diff", "--binary", "--full-index", parent, ref, "--", *paths],
         text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
+        check=False,
     )
     if proc.returncode:
         raise RuntimeError(f"could not create test patch: {proc.stderr.strip()}")
@@ -172,6 +171,7 @@ def prepare_case(case: dict[str, Any], *, output_dir: Path, max_test_paths: int)
     has_pnpm_lock = subprocess.run(
         ["git", "-C", str(repo), "cat-file", "-e", f"{parent}:pnpm-lock.yaml"],
         capture_output=True,
+        check=False,
     ).returncode == 0
     pyproject_text = run_git(repo, "show", f"{parent}:pyproject.toml", check=False)
     python_minor = "3.14" if "python_version >= '3.14'" in pyproject_text else "3.11"
@@ -209,6 +209,9 @@ def prepare_case(case: dict[str, Any], *, output_dir: Path, max_test_paths: int)
         "visible_support_paths": support_paths,
         "test_commands": _test_command(repository, test_paths),
         "setup_commands": setup_commands,
+        "apply_visible_tests_to_solution": bool(
+            case.get("apply_visible_tests_to_solution", False)
+        ),
         "changed_file_count": len(changes),
         "changed_files_sample": changes[:100],
         "test_patch_sha256": hashlib.sha256(patch.encode()).hexdigest(),
@@ -232,7 +235,7 @@ def main() -> int:
     args = parser.parse_args()
     raw = json.loads(args.manifest.read_text(encoding="utf-8"))
     if not isinstance(raw, list):
-        raise ValueError("manifest must be a JSON array")
+        raise TypeError("manifest must be a JSON array")
     args.output_dir.mkdir(parents=True, exist_ok=True)
     rows = [prepare_case(dict(case), output_dir=args.output_dir, max_test_paths=max(1, args.max_test_paths)) for case in raw]
     report = {

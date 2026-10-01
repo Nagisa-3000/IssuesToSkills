@@ -1,0 +1,64 @@
+[
+  {
+    "id": "earendil-works__pi__5823__provider-interface-adaptation",
+    "repository": "earendil-works/pi",
+    "repository_path": "/home/chenyujia/tritonToLlvm/pi-agent",
+    "base_ref": "de1560a7ba76dd3a3f9d8966ac62417011454066",
+    "solution_ref": "7364696ae6f26d365a6ddef2e51c613425c79999",
+    "issue_number": 5823,
+    "category": "provider-interface-adaptation",
+    "theme": "model provider and endpoint resolution",
+    "issue_title": "--model provider/model ignores provider when model ID exists on multiple providers",
+    "issue_body": "## Description\n\nWhen the same model ID (e.g. `gemma-4-12b`) is configured on multiple providers, `--model provider-b/gemma-4-12b` ignores the explicit provider and uses the default provider instead.\n\n## Steps to reproduce\n\n1. Configure two providers in `auth.json` with the same model ID available on both\n2. Set one as the default provider\n3. Run `pi --model provider-b/model-name -p \"test\"`\n4. Observe that provider-a (the default) is used instead of provider-b\n\n## Expected behavior\n\n`--model provider/model` should honor the provider part of the specification, even when the model ID exists on the default provider.\n\n## Workaround\n\nGive each provider a unique model ID (e.g. `gemma-4-12b-200k` vs `gemma-4-12b-128k`).\n\n## Impact\n\nBreaks fleet setups where the same model runs on different hardware with different context sizes. The orchestrator and subagents need different providers but share a model name.",
+    "visible_test_paths": [
+      "packages/coding-agent/test/model-resolver-provider-precedence.holdout.test.ts"
+    ],
+    "visible_support_paths": [],
+    "test_commands": [
+      "env PATH=/home/chenyujia/.local/node22/bin:/usr/bin:/bin npm --prefix packages/coding-agent test -- 'test/model-resolver-provider-precedence.holdout.test.ts'",
+      "git diff --check HEAD"
+    ],
+    "setup_commands": [
+      "env PATH=/home/chenyujia/.local/node22/bin:/usr/bin:/bin npm ci --ignore-scripts --no-audit --no-fund",
+      "env PATH=/home/chenyujia/.local/node22/bin:/usr/bin:/bin ./node_modules/.bin/tsgo -p packages/ai/tsconfig.build.json"
+    ],
+    "pre_patch_setup_commands": [],
+    "timeout_seconds": 1200,
+    "changed_file_count": 2,
+    "changed_files_sample": [
+      {
+        "status": "M",
+        "path": "packages/coding-agent/src/core/model-resolver.ts"
+      },
+      {
+        "status": "A",
+        "path": "packages/coding-agent/test/model-resolver-provider-precedence.holdout.test.ts"
+      }
+    ],
+    "test_patch_sha256": "04f53ddd5105194f1fdbada4f7d63cfb73747c9a9eedfa7f6440f45280b8cb0f",
+    "test_patch_characters": 1839,
+    "split": "held_out_test",
+    "held_out_repository": "earendil-works/pi",
+    "manifest_source": {
+      "case_id": "earendil-works__pi__5823__provider-interface-adaptation",
+      "repository": "earendil-works/pi",
+      "issue": 5823,
+      "issue_url": "https://github.com/earendil-works/pi/issues/5823",
+      "category": "provider-interface-adaptation",
+      "role": "holdout_candidate",
+      "split": "holdout_candidate",
+      "extraction_forbidden": true,
+      "resolution_lineage": [
+        "7364696ae6f26d365a6ddef2e51c613425c79999",
+        "1b2c32c653582628e17622a4c32b3fbdeeff8ce1",
+        "b04faa2dae8d06b31208ace84ca4d8911c2d3c27"
+      ],
+      "oracle_solution_ref": "7364696ae6f26d365a6ddef2e51c613425c79999",
+      "oracle_selection_reason": "Earliest focused commit in the later documented resolution chain that adds an explicit provider/model precedence regression test matching the visible issue contract.",
+      "solution_hidden_from_agent": true,
+      "visible_oracle_kind": "evaluator_authored_regression_test",
+      "visible_oracle_contract": "An explicit provider/model reference must outrank an earlier catalog entry whose raw model id equals the full reference."
+    },
+    "apply_visible_tests_to_solution": true
+  }
+]

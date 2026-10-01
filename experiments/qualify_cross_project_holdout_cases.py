@@ -70,6 +70,7 @@ def oracle_blocker(
     solution_pre_patch_setup: list[dict],
     solution_setup: list[dict],
     solution_tests: list[dict],
+    solution_patch: object | None = None,
 ) -> str | None:
     """Return why the visible-test oracle is not runnable on both snapshots.
 
@@ -96,6 +97,12 @@ def oracle_blocker(
         ),
         first_command_failure("base setup", base_setup),
         first_command_failure("solution pre-patch setup", solution_pre_patch_setup),
+        (
+            f"solution visible test patch failed (exit {int(getattr(solution_patch, 'returncode', 1))})"
+            if case.apply_visible_tests_to_solution
+            and int(getattr(solution_patch, "returncode", 1)) != 0
+            else None
+        ),
         first_command_failure("solution setup", solution_setup),
     )
     for failure in stage_failures:
@@ -127,8 +134,14 @@ def qualify(case: Case, output: Path, workspace_root: Path) -> dict:
     base_tests=run_commands(functional,base,env,case.timeout_seconds,case_dir/"base-tests") if base_patch.returncode==0 and all(x["returncode"]==0 for x in base_pre_patch_setup) and all(x["returncode"]==0 for x in base_setup) and functional else []
     _git_archive(case.repository_path,case.solution_ref,solution)
     solution_pre_patch_setup=run_commands(case.pre_patch_setup_commands,solution,env,case.timeout_seconds,case_dir/"solution-pre-patch-setup")
+    solution_patch=(
+        _apply_visible_tests(case,solution,case_dir/"solution-visible-tests")
+        if case.apply_visible_tests_to_solution
+        else None
+    )
     solution_setup=run_commands(case.setup_commands,solution,env,case.timeout_seconds,case_dir/"solution-setup")
-    solution_tests=run_commands(functional,solution,env,case.timeout_seconds,case_dir/"solution-tests") if all(x["returncode"]==0 for x in solution_pre_patch_setup) and all(x["returncode"]==0 for x in solution_setup) and functional else []
+    solution_patch_passes = solution_patch is None or solution_patch.returncode == 0
+    solution_tests=run_commands(functional,solution,env,case.timeout_seconds,case_dir/"solution-tests") if all(x["returncode"]==0 for x in solution_pre_patch_setup) and solution_patch_passes and all(x["returncode"]==0 for x in solution_setup) and functional else []
     base_pass=bool(base_tests) and all(x["returncode"]==0 for x in base_tests)
     solution_pass=bool(solution_tests) and all(x["returncode"]==0 for x in solution_tests)
     blocker = oracle_blocker(
@@ -141,9 +154,10 @@ def qualify(case: Case, output: Path, workspace_root: Path) -> dict:
         solution_pre_patch_setup=solution_pre_patch_setup,
         solution_setup=solution_setup,
         solution_tests=solution_tests,
+        solution_patch=solution_patch,
     )
     oracle_qualified = blocker is None
-    row.update({"base_pre_patch_setup":base_pre_patch_setup,"base_visible_test_patch":asdict(base_patch),"base_setup":base_setup,"base_tests":base_tests,"solution_pre_patch_setup":solution_pre_patch_setup,"solution_setup":solution_setup,"solution_tests":solution_tests,"base_passes":base_pass,"solution_passes":solution_pass,"oracle_qualified":oracle_qualified,"oracle_blocker":blocker,"qualified":(oracle_qualified and not base_pass and solution_pass),"wall_seconds":time.perf_counter()-start})
+    row.update({"base_pre_patch_setup":base_pre_patch_setup,"base_visible_test_patch":asdict(base_patch),"base_setup":base_setup,"base_tests":base_tests,"solution_pre_patch_setup":solution_pre_patch_setup,"solution_visible_test_patch":asdict(solution_patch) if solution_patch is not None else None,"solution_setup":solution_setup,"solution_tests":solution_tests,"base_passes":base_pass,"solution_passes":solution_pass,"oracle_qualified":oracle_qualified,"oracle_blocker":blocker,"qualified":(oracle_qualified and not base_pass and solution_pass),"wall_seconds":time.perf_counter()-start})
     _write_json(case_dir/"qualification.json",row)
     return row
 

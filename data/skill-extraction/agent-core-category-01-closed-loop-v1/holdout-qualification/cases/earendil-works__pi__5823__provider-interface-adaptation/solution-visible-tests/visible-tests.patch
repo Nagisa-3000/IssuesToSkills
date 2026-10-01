@@ -1,0 +1,48 @@
+diff --git a/packages/coding-agent/test/model-resolver-provider-precedence.holdout.test.ts b/packages/coding-agent/test/model-resolver-provider-precedence.holdout.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..cdd8b1f0106c3fd5177d1e764baf99e04416e539
+--- /dev/null
++++ b/packages/coding-agent/test/model-resolver-provider-precedence.holdout.test.ts
+@@ -0,0 +1,42 @@
++import type { Model } from "@mariozechner/pi-ai";
++import { describe, expect, test } from "vitest";
++import { resolveCliModel } from "../src/core/model-resolver.ts";
++
++const explicitProviderModel: Model<"anthropic-messages"> = {
++	id: "glm-5",
++	name: "GLM-5 on Z.AI",
++	api: "anthropic-messages",
++	provider: "zai",
++	baseUrl: "https://open.bigmodel.cn/api/paas/v4",
++	reasoning: true,
++	input: ["text"],
++	cost: { input: 1, output: 2, cacheRead: 0.1, cacheWrite: 1 },
++	contextWindow: 128000,
++	maxTokens: 8192,
++};
++
++const defaultProviderModelWithSlashId: Model<"anthropic-messages"> = {
++	...explicitProviderModel,
++	id: "zai/glm-5",
++	name: "GLM-5 through the default gateway",
++	provider: "vercel-ai-gateway",
++	baseUrl: "https://ai-gateway.vercel.sh",
++};
++
++describe("explicit provider/model precedence", () => {
++	test("honors the explicit provider even when another provider exposes the full string as a model id", () => {
++		const registry = {
++			// Put the competing/default-provider entry first to make catalog order adversarial.
++			getAll: () => [defaultProviderModelWithSlashId, explicitProviderModel],
++		} as unknown as Parameters<typeof resolveCliModel>[0]["modelRegistry"];
++
++		const result = resolveCliModel({
++			cliModel: "zai/glm-5",
++			modelRegistry: registry,
++		});
++
++		expect(result.error).toBeUndefined();
++		expect(result.model?.provider).toBe("zai");
++		expect(result.model?.id).toBe("glm-5");
++	});
++});

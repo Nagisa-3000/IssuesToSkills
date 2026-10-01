@@ -91,6 +91,31 @@ def test_oracle_blocker_accepts_runnable_discriminating_oracle(tmp_path: Path) -
     assert blocker is None
 
 
+def test_oracle_blocker_rejects_failed_solution_only_test_patch(tmp_path: Path) -> None:
+    original = _case(tmp_path)
+    case = Case(
+        **{
+            **original.__dict__,
+            "apply_visible_tests_to_solution": True,
+        }
+    )
+
+    blocker = oracle_blocker(
+        case,
+        ("pytest -q test.py",),
+        base_pre_patch_setup=[_command()],
+        base_patch=_patch_result(),
+        base_setup=[],
+        base_tests=[_command(returncode=1)],
+        solution_pre_patch_setup=[_command()],
+        solution_setup=[],
+        solution_tests=[],
+        solution_patch=_patch_result(returncode=1),
+    )
+
+    assert blocker == "solution visible test patch failed (exit 1)"
+
+
 def test_agent_prompt_exposes_exact_validation_commands(tmp_path: Path) -> None:
     prompt = _prompt(_case(tmp_path), "no_skill", None)
 

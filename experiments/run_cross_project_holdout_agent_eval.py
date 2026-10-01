@@ -66,6 +66,7 @@ class Case:
     setup_commands: tuple[str, ...]
     test_patch_path: Path
     pre_patch_setup_commands: tuple[str, ...] = ()
+    apply_visible_tests_to_solution: bool = False
     timeout_seconds: int = 900
     source: Mapping[str, Any] | None = None
 
@@ -102,6 +103,9 @@ def load_cases(path: Path, cases_root: Path) -> list[Case]:
                 test_patch_path=case_dir / "visible-tests.patch",
                 pre_patch_setup_commands=tuple(
                     str(x) for x in item.get("pre_patch_setup_commands", [])
+                ),
+                apply_visible_tests_to_solution=bool(
+                    item.get("apply_visible_tests_to_solution", False)
                 ),
                 timeout_seconds=int(item.get("timeout_seconds", 900)),
                 source=item.get("manifest_source") if isinstance(item.get("manifest_source"), Mapping) else item,
