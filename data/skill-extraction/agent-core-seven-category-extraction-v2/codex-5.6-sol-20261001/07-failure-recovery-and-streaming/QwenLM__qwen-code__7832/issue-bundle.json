@@ -1,0 +1,105 @@
+{
+  "source": "local_git_pinned_ref",
+  "repository": "QwenLM/qwen-code",
+  "issue_number": 7832,
+  "issue": {
+    "number": 7832,
+    "title": "fix(core): resume long streams cut by a socket-level close (#7896)",
+    "body": null,
+    "metadata_unavailable": [
+      "issue body",
+      "comments",
+      "timeline",
+      "author/review discussion"
+    ]
+  },
+  "comments": [],
+  "timeline": [],
+  "linked_pull_requests": [
+    {
+      "pull_request": {
+        "number": 7896,
+        "title": "fix(core): resume long streams cut by a socket-level close (#7896)",
+        "metadata_unavailable": [
+          "PR body",
+          "reviews",
+          "status checks"
+        ]
+      },
+      "files": [
+        {
+          "status_line": "M\tpackages/core/src/core/geminiChat.test.ts"
+        },
+        {
+          "status_line": "M\tpackages/core/src/core/geminiChat.ts"
+        }
+      ],
+      "commits": [
+        {
+          "sha": "d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5",
+          "subject": "fix(core): resume long streams cut by a socket-level close (#7896)"
+        }
+      ]
+    }
+  ],
+  "checkout": "/home/chenyujia/tritonToLlvm/qwen-code",
+  "pinned_ref": "d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5",
+  "resolved_commit": "d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5",
+  "parent_commit": "3d1eba935f6a75d9e67adf667002700c5c592ec2",
+  "commit_show_stat": "commit d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5\nAuthor:     LHMQ878 <72402929@cityu-dg.edu.cn>\nAuthorDate: Sun Aug 2 22:20:05 2026 +0800\nCommit:     GitHub <noreply@github.com>\nCommitDate: Sun Aug 2 14:20:05 2026 +0000\n\n    fix(core): resume long streams cut by a socket-level close (#7896)\n    \n    * fix(core): resume long streams cut by a socket-level close\n    \n    Long generations that are cut mid-response by a gateway SSE idle timeout\n    (DashScope closes at ~3-5 min) failed outright, however many retries were\n    configured. The stream retry loop could only recover by *replaying* the\n    request, and that path is gated on `!streamYieldedChunk` — by the time a\n    long answer is cut, chunks have obviously been delivered, so the gate was\n    shut exactly when recovery was needed.\n    \n    Two changes:\n    \n    - Widen the replay gate from \"any chunk yielded\" to \"visible output\n      yielded\" (non-blank answer text or a functionCall). Thinking models emit\n      reasoning within seconds, which made replay unreachable for the very\n      generations that need it. The UI's non-continuation RETRY handler clears\n      the thought buffer, and the rate-limit and invalid-stream branches\n      already re-send after thoughts have streamed, so this matches existing\n      behaviour rather than adding risk.\n    \n    - Add continuation recovery for cuts that already delivered answer text,\n      where replaying would duplicate what the caller has on screen. Keep the\n      delivered text, ask the model to resume from it, and emit\n      `{ RETRY, isContinuation: true }` so the UI keeps its text buffer — the\n      same shape the MAX_TOKENS truncation path already uses. The synthetic\n      turns are built into the request only, never written to `history`, so\n      they cannot leak into the transcript or a later compression; on success\n      the delivered prefix is merged back into the trailing model turn, with\n      replayed overlap deduped by the existing recovery helper. Budget of 3,\n      since one generation can be cut repeatedly by the same timeout.\n    \n    Cuts that delivered a `functionCall` are excluded: injecting a user turn\n    between a `functionCall` and its `functionResponse` yields a sequence\n    providers reject, and the scheduler's repair path already covers it.\n    \n    Fixes #7832\n    \n    * fix(core): reset continuation state on every fresh-restart retry\n    \n    Review found that the `suppressNextRetryEvent` arm bypasses the\n    continuation reset. Two branches emit a non-continuation RETRY *and* set\n    `suppressNextRetryEvent`, so the next loop iteration takes the suppress\n    arm and skips the `else if` that clears the staged continuation:\n    \n    - the transport replay branch, reachable when a continuation attempt is\n      itself cut before yielding visible output, and\n    - the reactive compression branch, which is if anything more likely on a\n      continuation attempt, since that request carries the delivered text and\n      the resume instruction on top of the original contents.\n    \n    Either way the UI has dropped the delivered text (plain RETRY) while the\n    request still asks the model to resume from it, and the merge on success\n    writes that discarded text back into history — a permanent UI/history\n    mismatch visible on `/compress` and `--resume`.\n    \n    Extract the reset into `resetTransportContinuation()` and call it from\n    both branches before they set the flag. Resetting inside the suppress arm\n    instead would clear the state of a continuation that is legitimately in\n    flight.\n    \n    The pre-existing supersession test used `InvalidStreamError`, whose retry\n    branch does not set `suppressNextRetryEvent`, so it exercised the\n    `else if` path and neither trigger. Add a test per branch; both fail if\n    their reset is removed.\n    \n    * fix(core): dedup replayed overlap when an intermediate cut is continued\n    \n    The continuation buffer accumulated each attempt's delivered text with a\n    raw `+=`. Overlap dedup ran only at merge time, comparing the *final*\n    attempt against the buffer, so an overlap replayed by an intermediate\n    attempt was never stripped: it was baked into the buffer, sent in every\n    later request, and merged into durable history.\n    \n    Reachable because maxContinuationRetries is 3, so two cuts fit in one\n    send. Attempt 1 delivers \"part one \" and is cut; attempt 2 replays its\n    tail as \"part one part two \" and is cut too. The buffer became\n    \"part one part one part two \" — corrupting /compress, --resume, and the\n    context of every later turn.\n    \n    The fix folds one attempt at a time. A per-attempt buffer collects the\n    running attempt's text, and the catch path folds it into the accumulated\n    buffer through getRecoveryContinuationSuffix, stripping whatever that\n    attempt replayed. Deduping per chunk instead would be wrong: the overlap\n    scan is suffix-anchored, so it would eat legitimately repeated text\n    mid-stream. The attempt boundary is the only place a replay can occur.\n    \n    Also covers the two untested branches of the delivered-text merge, both\n    of which already behaved correctly: a continuation leading with a thought\n    part (the text merges into the text part, not ahead of the thinking) and\n    one that finishes with only a thought part (the delivered text is\n    inserted after it). Without coverage a regression in the insert position\n    would silently misplace text in history.\n    \n    276 tests pass in geminiChat.test.ts; tsc and eslint clean.\n    \n    * fix(core): keep continuing when a later attempt is cut before it delivers\n    \n    The replay gate tests `!streamYieldedContentChunk`, which is declared inside\n    the attempt loop and therefore per-attempt. That cannot distinguish \"nothing\n    has been delivered to the caller\" from \"this attempt was cut before delivering\n    anything, after earlier attempts already put text on screen\" — and only the\n    first is replayable. Because the replay branch is checked before the\n    continuation branch, the second case fell into it: `resetTransportContinuation()`\n    dropped the accumulated text and a plain RETRY (no `isContinuation`) told the UI\n    to discard output the user was watching, after which the model regenerated it\n    from scratch.\n    \n    Reachable two ways once a continuation is in flight, both with\n    `transportStreamRetryCount` still 0 so the replay budget is intact:\n    \n      - attempt 1 delivers \"part one \" -> continuation; attempt 2 is cut while\n        still in its thinking phase, so it yields only a thought part and\n        `streamYieldedContentChunk` is false;\n      - the same, with attempt 2 cut having yielded nothing at all.\n    \n    Gate the replay branch on the accumulated buffer being empty as well. The two\n    gates are now exact complements (`=== 0` here, `> 0` on the continuation\n    branch), so a retryable transport cut after any delivered text always\n    continues and never replays. The `resetTransportContinuation()` call inside the\n    branch now has nothing to clear; it stays as an assertion of that invariant so\n    a future gate change cannot leak staged text into a restarted attempt.\n    \n    `drops a pending continuation when a replay takes over` asserted the old\n    behaviour for the yielded-nothing case — it was written to pin the design's\n    internal consistency, not a user-visible requirement, and that premise is what\n    this fixes. Rewritten as `keeps continuing when a later attempt is cut with\n    nothing yielded`, asserting the delivered text survives into the third request\n    and into history. The sibling tests covering the *other* plain-RETRY paths\n    (fresh-restart retry, reactive compression) are unchanged and still pass:\n    those genuinely do discard the delivered text, and reaching them still resets.\n    \n    Also extracts the resume instruction shared verbatim by\n    OUTPUT_RECOVERY_MESSAGE and TRANSPORT_CONTINUATION_MESSAGE into\n    RECOVERY_RESUME_INSTRUCTION. Only the lead-in sentence naming the cause\n    differed, so tuning the wording on one path silently left the other on the old\n    text. Both resulting strings are byte-identical to before.\n    \n    277 tests pass in geminiChat.test.ts; both new tests verified failing without\n    the source change. tsc --noEmit and eslint clean.\n    \n    * docs(core): correct the foldTransportAttemptText call-site comment\n    \n    The comment claimed the fold runs on both exits from an attempt. It runs\n    only in the catch block; the success exit merges the continuation prefix\n    into history and breaks without folding.\n    \n    No behaviour change — every read of the accumulated buffer is inside the\n    catch, after the fold. But the comment would mislead anyone adding a\n    post-loop read, which would silently omit the last attempt's text, so the\n    note now says which exit folds and what a new reader would have to do.\n    \n    ---------\n    \n    Co-authored-by: LHMQ878 <LHMQ878@users.noreply.github.com>\n\n packages/core/src/core/geminiChat.test.ts | 1011 ++++++++++++++++++++++++++---\n packages/core/src/core/geminiChat.ts      |  327 +++++++++-\n 2 files changed, 1229 insertions(+), 109 deletions(-)\n",
+  "changed_files_name_status": "M\tpackages/core/src/core/geminiChat.test.ts\nM\tpackages/core/src/core/geminiChat.ts\n",
+  "linked_issue_numbers": [
+    7832
+  ],
+  "manifest_metadata": {
+    "category": "failure-recovery-and-streaming",
+    "theme": "retry, timeout, streaming, and network recovery",
+    "file_sample": [
+      "packages/core/src/core/geminiChat.test.ts",
+      "packages/core/src/core/geminiChat.ts"
+    ],
+    "case_id": "QwenLM__qwen-code__7832__failure-recovery-and-streaming",
+    "role": "train_candidate",
+    "split": "train_candidate",
+    "sample_kind": "exact_table_row",
+    "seed_issue": 7832,
+    "seed_issue_url": "https://github.com/QwenLM/qwen-code/issues/7832",
+    "seed_relation": "exact_table_row_with_verified_resolution",
+    "resolution_url": "https://github.com/QwenLM/qwen-code/pull/7896",
+    "source": "agent_core_seven_category_extraction_v2",
+    "provenance": {
+      "classification": "exact_table_row",
+      "seed": {
+        "repository": "QwenLM/qwen-code",
+        "issue": 7832,
+        "url": "https://github.com/QwenLM/qwen-code/issues/7832",
+        "table_note": "socket close in YOLO mode is not retried"
+      },
+      "resolution_artifact": {
+        "type": "issue",
+        "number": 7832,
+        "url": "https://github.com/QwenLM/qwen-code/issues/7832",
+        "pull_request": 7896,
+        "pull_request_url": "https://github.com/QwenLM/qwen-code/pull/7896"
+      },
+      "commit": {
+        "sha": "d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5",
+        "subject": "fix(core): resume long streams cut by a socket-level close (#7896)",
+        "parents": [
+          "3d1eba935f6a75d9e67adf667002700c5c592ec2"
+        ],
+        "body_excerpt": "* fix(core): resume long streams cut by a socket-level close\n\nLong generations that are cut mid-response by a gateway SSE idle timeout\n(DashScope closes at ~3-5 min) failed outright, however many retries were\nconfigured. The stream retry loop could only recover by *replaying* the\nrequest, and that path is gated on `!streamYieldedChunk` — by the time a\nlong answer is cut, chunks have obviously been delivered, so the gate was\nshut exactly when recovery was needed.\n\nTwo changes:\n\n- Widen the replay gate from \"any chunk yielded\" to \"visible output\n  yielded\" (non-blank answer text or a functionCall). Thinking models emit\n  reasoning within seconds, which made replay unreachable for the very\n  generations that need it. The UI's non-continuation RETRY handler clears\n  the thought buffer, and the"
+      },
+      "verification": [
+        "local_git_commit_resolved",
+        "parent_and_changed_files_recorded",
+        "implementation_diff_present",
+        "test_or_spec_change_present"
+      ]
+    }
+  },
+  "fetched_at": "2026-10-01T09:02:10.491477+00:00",
+  "limitations": [
+    "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+  ]
+}

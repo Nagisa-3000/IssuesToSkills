@@ -11,17 +11,16 @@ from __future__ import annotations
 
 import argparse
 import base64
-from datetime import datetime, timezone
 import json
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
-import sys
 import urllib.error
 import urllib.request
-from typing import Any, Iterable
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA = ROOT / "schemas" / "codex-change-episode-v1.schema.json"
@@ -43,7 +42,7 @@ QUALIFYING_EVIDENCE_KINDS = {
 
 
 def now_id() -> str:
-    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    return datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
 
 
 def gh_json(url: str, token: str | None) -> Any:
@@ -76,7 +75,13 @@ def extract_pr_numbers(value: Any) -> set[int]:
 
 
 def _git(checkout: Path, *args: str) -> str:
-    proc = subprocess.run(["git", *args], cwd=checkout, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc = subprocess.run(
+        ["git", *args],
+        cwd=checkout,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
     if proc.returncode:
         raise RuntimeError(f"git {' '.join(args)} failed: {proc.stderr.strip()}")
     return proc.stdout
@@ -127,8 +132,17 @@ def local_issue_bundle(case: dict[str, Any]) -> dict[str, Any]:
         "checkout": str(checkout), "pinned_ref": ref, "resolved_commit": commit, "parent_commit": parent,
         "commit_show_stat": show, "changed_files_name_status": names,
         "linked_issue_numbers": case.get("linked_issue_numbers", [int(case["issue"])]),
-        "manifest_metadata": {k: case[k] for k in ("category", "theme", "module_families", "file_sample", "quality") if k in case},
-        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "manifest_metadata": {
+            k: case[k]
+            for k in (
+                "category", "theme", "module_families", "file_sample", "quality",
+                "case_id", "role", "split", "sample_kind", "seed_issue",
+                "seed_issue_url", "seed_relation", "resolution_url", "source",
+                "provenance",
+            )
+            if k in case
+        },
+        "fetched_at": datetime.now(UTC).isoformat(),
         "limitations": limitations,
     }
 
@@ -163,7 +177,7 @@ def issue_bundle(case: dict[str, Any], token: str | None, max_linked_prs: int) -
         "timeline": timeline,
         "linked_pull_requests": pull_requests,
         "checkout": str(case["checkout"]),
-        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "fetched_at": datetime.now(UTC).isoformat(),
     }
 
 
@@ -274,7 +288,15 @@ def run_codex(executable: str, checkout: Path, prompt: str, response_path: Path,
         # length/quoting limits, this is the stable non-interactive path used by
         # the direct JSONL pilot.  The final structured response is still
         # written by Codex to response_path via -o.
-        proc = subprocess.run(command, cwd=process_cwd, input=prompt, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout_seconds)
+        proc = subprocess.run(
+            command,
+            cwd=process_cwd,
+            input=prompt,
+            text=True,
+            capture_output=True,
+            timeout=timeout_seconds,
+            check=False,
+        )
         stdout, stderr, returncode = proc.stdout, proc.stderr, proc.returncode
     except subprocess.TimeoutExpired as exc:
         stdout = exc.stdout if isinstance(exc.stdout, str) else ""
@@ -349,6 +371,12 @@ def canonical_episode(response: dict[str, Any], bundle: dict[str, Any], case: di
             "category": case.get("category") or case.get("theme"),
             "role": case.get("role") or case.get("split"),
             "case_id": case.get("case_id"),
+            "sample_kind": case.get("sample_kind"),
+            "seed_issue": case.get("seed_issue"),
+            "seed_issue_url": case.get("seed_issue_url"),
+            "seed_relation": case.get("seed_relation"),
+            "resolution_url": case.get("resolution_url"),
+            "provenance": case.get("provenance"),
         },
         "github_bundle": bundle,
         "codex_response": response,
@@ -368,7 +396,7 @@ def load_cases(path: Path | None, role: str = "all") -> list[dict[str, Any]]:
     if isinstance(data, dict):
         data = data.get("cases")
     if not isinstance(data, list):
-        raise ValueError("manifest must be a JSON array or an object with a cases array")
+        raise TypeError("manifest must be a JSON array or an object with a cases array")
     cases = [dict(item) for item in data]
     if role != "all":
         cases = [
@@ -422,6 +450,8 @@ def main() -> int:
             response_path = case_dir / "codex-response.json"
             command_meta = {
                 "executable": args.codex,
+                "profile": args.codex_profile,
+                "model": args.codex_model,
                 "sandbox": args.codex_sandbox,
                 "bypass_sandbox": args.codex_bypass_sandbox,
                 "schema": str(SCHEMA),
@@ -446,7 +476,7 @@ def main() -> int:
                 admitted.append(episode)
             else:
                 record["admitted"] = False
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - one failed case must not abort the batch
             record["valid"] = False
             record["admitted"] = False
             record["error"] = f"{type(exc).__name__}: {exc}"
@@ -461,6 +491,9 @@ def main() -> int:
         "max_cases": args.max_cases,
         "max_linked_prs": args.max_linked_prs,
         "codex_timeout_seconds": args.codex_timeout_seconds,
+        "codex_profile": args.codex_profile,
+        "codex_model": args.codex_model,
+        "codex_sandbox": args.codex_sandbox,
         "admitted_episodes": len(admitted),
         "insufficient_or_failed": sum(not bool(item.get("admitted")) for item in records),
         "records": records,

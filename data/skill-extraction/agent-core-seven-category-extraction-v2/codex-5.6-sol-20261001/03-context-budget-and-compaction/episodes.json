@@ -1,0 +1,2124 @@
+[
+  {
+    "episode_id": "Aider-AI__aider__3764__188e9e11",
+    "title": "Make recursive chat-history compaction use non-mutating head selection and accurate tail accounting",
+    "before": "At parent dc2d7b1dfe76b46a371e897aff76c3af76c73dd0, ChatSummary.summarize_real split oversized history into a head and preserved tail, truncated the head to the summarizer model's input allowance by reversing both the head messages and their token tuples, and then reversed the retained messages again before summarization. It subsequently attempted to calculate tail_tokens from sized[split_index:] after sized had already been replaced by sized[:split_index], so that slice was empty and the preserved tail contributed zero to the decision whether another compaction pass was required.",
+    "after": "At 188e9e1114f0dfdeb95f9b1592bc81777a8226fa, summarize_real keeps the original tokenization intact, creates sized_head for the head, accumulates head messages directly without in-place reversal, and computes tail_tokens from the untouched sized list. It returns summary plus tail only when their measured tokens fit max_tokens; otherwise it recursively compacts that combined result with an incremented depth.",
+    "diff": "The single-file change in aider/history.py replaces mutation and reversal of head/sized with a sized_head iteration, retains the existing model-input fallback and 512-token reserve, moves tail-token calculation to the original sized sequence, and constructs summary + tail only at the return or recursive call. No tests were added or modified in the pinned commit.",
+    "repository": "Aider-AI/aider",
+    "revision": "github-issue-3764",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "Aider-AI/aider",
+      "issue": 3764,
+      "checkout": "/home/chenyujia/tritonToLlvm/aider-agent",
+      "manifest_metadata": {
+        "category": "context-budget-and-compaction",
+        "role": "train_candidate",
+        "case_id": "Aider-AI__aider__3764__context-budget-and-compaction",
+        "sample_kind": "verified_substitute",
+        "seed_issue": 3493,
+        "seed_issue_url": "https://github.com/Aider-AI/aider/issues/3493",
+        "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+        "resolution_url": "https://github.com/Aider-AI/aider/pull/3764",
+        "provenance": {
+          "classification": "verified_substitute",
+          "seed": {
+            "repository": "Aider-AI/aider",
+            "issue": 3493,
+            "url": "https://github.com/Aider-AI/aider/issues/3493",
+            "table_note": "maximum chat-history token limit is ineffective"
+          },
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 3764,
+            "url": "https://github.com/Aider-AI/aider/pull/3764",
+            "pull_request": 3764,
+            "pull_request_url": "https://github.com/Aider-AI/aider/pull/3764"
+          },
+          "commit": {
+            "sha": "188e9e1114f0dfdeb95f9b1592bc81777a8226fa",
+            "subject": "Optimize head‑truncation loop in `summarize_real`",
+            "parents": [
+              "dc2d7b1dfe76b46a371e897aff76c3af76c73dd0"
+            ],
+            "body_excerpt": ""
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "parent_and_changed_files_recorded",
+            "implementation_diff_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "Aider-AI/aider",
+        "issue_number": 3764,
+        "issue": {
+          "number": 3764,
+          "title": "Optimize head‑truncation loop in `summarize_real`",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 3764,
+              "title": "Optimize head‑truncation loop in `summarize_real`",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\taider/history.py"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "188e9e1114f0dfdeb95f9b1592bc81777a8226fa",
+                "subject": "Optimize head‑truncation loop in `summarize_real`"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/aider-agent",
+        "pinned_ref": "188e9e1114f0dfdeb95f9b1592bc81777a8226fa",
+        "resolved_commit": "188e9e1114f0dfdeb95f9b1592bc81777a8226fa",
+        "parent_commit": "dc2d7b1dfe76b46a371e897aff76c3af76c73dd0",
+        "commit_show_stat": "commit 188e9e1114f0dfdeb95f9b1592bc81777a8226fa\nAuthor:     jayeshthk <thakarej91@gmail.com>\nAuthorDate: Thu Apr 10 02:29:40 2025 +0530\nCommit:     jayeshthk <thakarej91@gmail.com>\nCommitDate: Thu Apr 10 02:29:40 2025 +0530\n\n    Optimize head‑truncation loop in `summarize_real`\n\n aider/history.py | 35 ++++++++++++++++++-----------------\n 1 file changed, 18 insertions(+), 17 deletions(-)\n",
+        "changed_files_name_status": "M\taider/history.py\n",
+        "linked_issue_numbers": [
+          3764
+        ],
+        "manifest_metadata": {
+          "category": "context-budget-and-compaction",
+          "theme": "context budget and compaction",
+          "file_sample": [
+            "aider/history.py"
+          ],
+          "case_id": "Aider-AI__aider__3764__context-budget-and-compaction",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_substitute",
+          "seed_issue": 3493,
+          "seed_issue_url": "https://github.com/Aider-AI/aider/issues/3493",
+          "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+          "resolution_url": "https://github.com/Aider-AI/aider/pull/3764",
+          "source": "agent_core_seven_category_extraction_v2",
+          "provenance": {
+            "classification": "verified_substitute",
+            "seed": {
+              "repository": "Aider-AI/aider",
+              "issue": 3493,
+              "url": "https://github.com/Aider-AI/aider/issues/3493",
+              "table_note": "maximum chat-history token limit is ineffective"
+            },
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 3764,
+              "url": "https://github.com/Aider-AI/aider/pull/3764",
+              "pull_request": 3764,
+              "pull_request_url": "https://github.com/Aider-AI/aider/pull/3764"
+            },
+            "commit": {
+              "sha": "188e9e1114f0dfdeb95f9b1592bc81777a8226fa",
+              "subject": "Optimize head‑truncation loop in `summarize_real`",
+              "parents": [
+                "dc2d7b1dfe76b46a371e897aff76c3af76c73dd0"
+              ],
+              "body_excerpt": ""
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "parent_and_changed_files_recorded",
+              "implementation_diff_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T08:56:18.689248+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "Aider-AI__aider__3764__188e9e11",
+          "title": "Make recursive chat-history compaction use non-mutating head selection and accurate tail accounting",
+          "before": "At parent dc2d7b1dfe76b46a371e897aff76c3af76c73dd0, ChatSummary.summarize_real split oversized history into a head and preserved tail, truncated the head to the summarizer model's input allowance by reversing both the head messages and their token tuples, and then reversed the retained messages again before summarization. It subsequently attempted to calculate tail_tokens from sized[split_index:] after sized had already been replaced by sized[:split_index], so that slice was empty and the preserved tail contributed zero to the decision whether another compaction pass was required.",
+          "after": "At 188e9e1114f0dfdeb95f9b1592bc81777a8226fa, summarize_real keeps the original tokenization intact, creates sized_head for the head, accumulates head messages directly without in-place reversal, and computes tail_tokens from the untouched sized list. It returns summary plus tail only when their measured tokens fit max_tokens; otherwise it recursively compacts that combined result with an incremented depth.",
+          "diff": "The single-file change in aider/history.py replaces mutation and reversal of head/sized with a sized_head iteration, retains the existing model-input fallback and 512-token reserve, moves tail-token calculation to the original sized sequence, and constructs summary + tail only at the return or recursive call. No tests were added or modified in the pinned commit."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "Commit 188e9e1114f0dfdeb95f9b1592bc81777a8226fa is titled \"Optimize head-truncation loop in `summarize_real`\", has parent dc2d7b1dfe76b46a371e897aff76c3af76c73dd0, and modifies only aider/history.py.",
+            "source": "git show --stat --format=fuller 188e9e1114f0dfdeb95f9b1592bc81777a8226fa; issue-bundle.json linked_pull_requests[0].commits and files"
+          },
+          {
+            "id": "E2",
+            "kind": "implementation",
+            "claim": "In the parent implementation, summarize_real assigns sized = sized[:split_index], reverses head and sized, selects messages under model_max_input_tokens, and reverses keep before calling summarize_all.",
+            "source": "git show dc2d7b1dfe76b46a371e897aff76c3af76c73dd0:aider/history.py, ChatSummary.summarize_real"
+          },
+          {
+            "id": "E3",
+            "kind": "implementation",
+            "claim": "In the parent implementation, tail_tokens is calculated with sum(... for ... in sized[split_index:]) after sized was truncated to sized[:split_index], making the measured tail slice empty.",
+            "source": "git show dc2d7b1dfe76b46a371e897aff76c3af76c73dd0:aider/history.py, ChatSummary.summarize_real"
+          },
+          {
+            "id": "E4",
+            "kind": "diff",
+            "claim": "The change introduces sized_head = sized[:split_index] and iterates its (tokens, msg) pairs directly, eliminating the in-place reversal of message and token lists while retaining the model maximum-input fallback and 512-token reserve.",
+            "source": "git diff dc2d7b1dfe76b46a371e897aff76c3af76c73dd0 188e9e1114f0dfdeb95f9b1592bc81777a8226fa -- aider/history.py"
+          },
+          {
+            "id": "E5",
+            "kind": "diff",
+            "claim": "The change computes tail_tokens from the untouched sized[split_index:] and uses summary_tokens + tail_tokens to choose between returning summary + tail and recursively compacting summary + tail at depth + 1.",
+            "source": "git diff dc2d7b1dfe76b46a371e897aff76c3af76c73dd0 188e9e1114f0dfdeb95f9b1592bc81777a8226fa -- aider/history.py"
+          },
+          {
+            "id": "E6",
+            "kind": "call_site",
+            "claim": "Application startup constructs ChatSummary from the weak and main models and a configured or model-default chat-history token budget, making summarize_real part of runtime context-budget enforcement.",
+            "source": "git show 188e9e1114f0dfdeb95f9b1592bc81777a8226fa:aider/main.py, ChatSummary construction near main startup"
+          },
+          {
+            "id": "E7",
+            "kind": "call_site",
+            "claim": "Coder initialization also constructs ChatSummary with the weak and main models and main_model.max_chat_history_tokens; coder transitions separately call summarize_all when an edit-format change requires condensing prior messages.",
+            "source": "git show 188e9e1114f0dfdeb95f9b1592bc81777a8226fa:aider/coders/base_coder.py, Coder initialization and from_coder transition logic"
+          },
+          {
+            "id": "E8",
+            "kind": "test",
+            "claim": "The pinned test module covers tokenization, oversized-history summarization, summary production, and fallback to a second model, but contains no assertion identifying exactly which head messages are passed to summarize_all or explicitly exercising nonempty tail-token accounting.",
+            "source": "git show 188e9e1114f0dfdeb95f9b1592bc81777a8226fa:tests/basic/test_history.py"
+          },
+          {
+            "id": "E9",
+            "kind": "validation",
+            "claim": "The focused pinned test module completed successfully in an isolated archive of the implementation commit.",
+            "source": "python -m pytest -q <git-archive-of-188e9e1114f0dfdeb95f9b1592bc81777a8226fa>/tests/basic/test_history.py (exit status 0)"
+          },
+          {
+            "id": "E10",
+            "kind": "implementation",
+            "claim": "The pinned implementation retains existing guards: histories within max_tokens are returned unchanged at depth zero; histories of four or fewer messages or recursion depth above three are summarized as a whole; and the tail split is aligned so the head ends with an assistant message.",
+            "source": "git show 188e9e1114f0dfdeb95f9b1592bc81777a8226fa:aider/history.py, ChatSummary.summarize_real"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "select-head-within-summarizer-input-budget",
+            "description": "Select a bounded subset of the compactable history head using its precomputed token sizes, without mutating the full history tokenization needed by later budget checks.",
+            "evidence_ids": [
+              "E2",
+              "E4",
+              "E10"
+            ],
+            "semantic_action": {
+              "intent": "Keep the input sent to the summarization model within its available input context while preserving token-accounting data for the complete history split.",
+              "module_role": "history-compaction input selector",
+              "operation": "bound",
+              "pre_state": "An oversized message history has been split into a compactable head and a recent tail, with per-message token sizes available and a summarizer input limit that may be undefined.",
+              "post_state": "A sequence of head messages whose cumulative measured size does not exceed the summarizer input allowance minus the safety reserve is available for summarization, while the original full tokenization remains intact.",
+              "validation": "Inspect the selected sequence passed to the head summarizer and verify its accumulated token count respects the model input allowance; the existing focused tests establish only broad integration success, not exact selection semantics.",
+              "parameters": [
+                "message history",
+                "head split index",
+                "per-message token sizes",
+                "model maximum input tokens",
+                "512-token safety reserve",
+                "4096-token fallback"
+              ],
+              "evidence_ids": [
+                "E2",
+                "E4",
+                "E8",
+                "E9",
+                "E10"
+              ]
+            }
+          },
+          {
+            "name": "reconcile-summary-and-tail-against-output-budget",
+            "description": "Measure the generated summary together with the preserved tail and recurse only when their combined size remains above the configured history budget.",
+            "evidence_ids": [
+              "E3",
+              "E5",
+              "E6",
+              "E7",
+              "E9"
+            ],
+            "semantic_action": {
+              "intent": "Prevent a compacted history from being accepted based on an incomplete token total that omits the preserved recent tail.",
+              "module_role": "recursive history-budget reconciler",
+              "operation": "reconcile",
+              "pre_state": "A compactable head has been summarized, a recent tail must be preserved, and both summary and tail token sizes can be measured.",
+              "post_state": "The summary and tail are returned only when their combined measured size is below the configured history budget; otherwise their combination enters another bounded compaction pass.",
+              "validation": "Verify tail tokens are computed from the intact full tokenization and that the return/recursion branch compares summary_tokens plus tail_tokens with max_tokens; the pinned focused test module exits successfully.",
+              "parameters": [
+                "generated summary",
+                "preserved tail",
+                "full per-message tokenization",
+                "configured history token budget",
+                "recursion depth"
+              ],
+              "evidence_ids": [
+                "E3",
+                "E5",
+                "E6",
+                "E7",
+                "E9",
+                "E10"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "compact-oversized-history-with-complete-budget-accounting",
+            "description": "For an oversized conversational history, preserve a recent tail, bound the older material sent to the summarizer, then account for both the generated summary and preserved tail before accepting the compacted result or recursing.",
+            "atomic_names": [
+              "select-head-within-summarizer-input-budget",
+              "reconcile-summary-and-tail-against-output-budget"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E8",
+              "E9",
+              "E10"
+            ],
+            "workflow_graph": {
+              "goal": "Produce a compacted chat history that respects both the summarizer's input capacity and the configured retained-history budget without losing the recent tail from budget accounting.",
+              "entry_state": "A runtime chat history exceeds its configured token budget and contains enough messages to split an older head from a recent tail.",
+              "exit_state": "The older head has been summarized from a bounded input and the returned summary-plus-tail fits the configured history budget, or established depth/size guards have reduced the entire remaining history through whole-history summarization.",
+              "steps": [
+                {
+                  "action_name": "select-head-within-summarizer-input-budget",
+                  "role": "implement",
+                  "optional": false
+                },
+                {
+                  "action_name": "reconcile-summary-and-tail-against-output-budget",
+                  "role": "reconcile",
+                  "optional": false
+                }
+              ],
+              "edges": [
+                {
+                  "from": "select-head-within-summarizer-input-budget",
+                  "to": "reconcile-summary-and-tail-against-output-budget",
+                  "type": "enables"
+                }
+              ],
+              "unresolved_or_deferred": [
+                "The pinned tests do not provide a targeted oracle for which portion of the head should be retained when it exceeds the summarizer input limit.",
+                "No test added by the change directly demonstrates that a nonempty tail triggers recursion when summary plus tail exceeds max_tokens.",
+                "Cross-project pattern induction and holdout promotion are deferred because this episode supplies only one repository workflow."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "The parent selected a suffix of the head by reversing it before truncation, whereas the pinned implementation iterates sized_head in original order and therefore selects a prefix. The available issue bundle has no body or review discussion, and the tests do not establish whether this behavioral change was intentional.",
+          "The focused test suite passed, but no commit-specific regression test proves exact head-selection ordering or the corrected tail-budget branch.",
+          "GitHub PR body, reviews, comments, timeline, and status-check metadata are unavailable in the supplied evidence bundle."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "select-head-within-summarizer-input-budget",
+          "description": "Select a bounded subset of the compactable history head using its precomputed token sizes, without mutating the full history tokenization needed by later budget checks.",
+          "evidence_ids": [
+            "E2",
+            "E4",
+            "E10"
+          ],
+          "semantic_action": {
+            "intent": "Keep the input sent to the summarization model within its available input context while preserving token-accounting data for the complete history split.",
+            "module_role": "history-compaction input selector",
+            "operation": "bound",
+            "pre_state": "An oversized message history has been split into a compactable head and a recent tail, with per-message token sizes available and a summarizer input limit that may be undefined.",
+            "post_state": "A sequence of head messages whose cumulative measured size does not exceed the summarizer input allowance minus the safety reserve is available for summarization, while the original full tokenization remains intact.",
+            "validation": "Inspect the selected sequence passed to the head summarizer and verify its accumulated token count respects the model input allowance; the existing focused tests establish only broad integration success, not exact selection semantics.",
+            "parameters": [
+              "message history",
+              "head split index",
+              "per-message token sizes",
+              "model maximum input tokens",
+              "512-token safety reserve",
+              "4096-token fallback"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E4",
+              "E8",
+              "E9",
+              "E10"
+            ]
+          }
+        },
+        {
+          "name": "reconcile-summary-and-tail-against-output-budget",
+          "description": "Measure the generated summary together with the preserved tail and recurse only when their combined size remains above the configured history budget.",
+          "evidence_ids": [
+            "E3",
+            "E5",
+            "E6",
+            "E7",
+            "E9"
+          ],
+          "semantic_action": {
+            "intent": "Prevent a compacted history from being accepted based on an incomplete token total that omits the preserved recent tail.",
+            "module_role": "recursive history-budget reconciler",
+            "operation": "reconcile",
+            "pre_state": "A compactable head has been summarized, a recent tail must be preserved, and both summary and tail token sizes can be measured.",
+            "post_state": "The summary and tail are returned only when their combined measured size is below the configured history budget; otherwise their combination enters another bounded compaction pass.",
+            "validation": "Verify tail tokens are computed from the intact full tokenization and that the return/recursion branch compares summary_tokens plus tail_tokens with max_tokens; the pinned focused test module exits successfully.",
+            "parameters": [
+              "generated summary",
+              "preserved tail",
+              "full per-message tokenization",
+              "configured history token budget",
+              "recursion depth"
+            ],
+            "evidence_ids": [
+              "E3",
+              "E5",
+              "E6",
+              "E7",
+              "E9",
+              "E10"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "compact-oversized-history-with-complete-budget-accounting",
+          "description": "For an oversized conversational history, preserve a recent tail, bound the older material sent to the summarizer, then account for both the generated summary and preserved tail before accepting the compacted result or recursing.",
+          "atomic_names": [
+            "select-head-within-summarizer-input-budget",
+            "reconcile-summary-and-tail-against-output-budget"
+          ],
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E8",
+            "E9",
+            "E10"
+          ],
+          "workflow_graph": {
+            "goal": "Produce a compacted chat history that respects both the summarizer's input capacity and the configured retained-history budget without losing the recent tail from budget accounting.",
+            "entry_state": "A runtime chat history exceeds its configured token budget and contains enough messages to split an older head from a recent tail.",
+            "exit_state": "The older head has been summarized from a bounded input and the returned summary-plus-tail fits the configured history budget, or established depth/size guards have reduced the entire remaining history through whole-history summarization.",
+            "steps": [
+              {
+                "action_name": "select-head-within-summarizer-input-budget",
+                "role": "implement",
+                "optional": false
+              },
+              {
+                "action_name": "reconcile-summary-and-tail-against-output-budget",
+                "role": "reconcile",
+                "optional": false
+              }
+            ],
+            "edges": [
+              {
+                "from": "select-head-within-summarizer-input-budget",
+                "to": "reconcile-summary-and-tail-against-output-budget",
+                "type": "enables"
+              }
+            ],
+            "unresolved_or_deferred": [
+              "The pinned tests do not provide a targeted oracle for which portion of the head should be retained when it exceeds the summarizer input limit.",
+              "No test added by the change directly demonstrates that a nonempty tail triggers recursion when summary plus tail exceeds max_tokens.",
+              "Cross-project pattern induction and holdout promotion are deferred because this episode supplies only one repository workflow."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The parent selected a suffix of the head by reversing it before truncation, whereas the pinned implementation iterates sized_head in original order and therefore selects a prefix. The available issue bundle has no body or review discussion, and the tests do not establish whether this behavioral change was intentional.",
+        "The focused test suite passed, but no commit-specific regression test proves exact head-selection ordering or the corrected tail-budget branch.",
+        "GitHub PR body, reviews, comments, timeline, and status-check metadata are unavailable in the supplied evidence bundle."
+      ]
+    },
+    "call_sites": [
+      "Application startup constructs ChatSummary from the weak and main models and a configured or model-default chat-history token budget, making summarize_real part of runtime context-budget enforcement.",
+      "Coder initialization also constructs ChatSummary with the weak and main models and main_model.max_chat_history_tokens; coder transitions separately call summarize_all when an edit-format change requires condensing prior messages."
+    ],
+    "tests": [
+      "The pinned test module covers tokenization, oversized-history summarization, summary production, and fallback to a second model, but contains no assertion identifying exactly which head messages are passed to summarize_all or explicitly exercising nonempty tail-token accounting."
+    ]
+  },
+  {
+    "episode_id": "earendil-works__pi__6647__65dd2e0",
+    "title": "Retry transient compaction and branch-summary failures under the configured retry budget",
+    "before": "At parent 4b91ec66fd33026e6e44a0dca5a954a59abd3ee9, compaction, split-turn summarization, and branch summarization each issued one assistant completion request. A transient stream or transport error such as \"terminated\" immediately failed the summarization and therefore the enclosing context-compaction or branch-navigation operation. Existing assistant-turn retry settings were not applied to these internal summarization requests, and no summarization-specific retry lifecycle events were exposed.",
+    "after": "At merge commit 65dd2e0ed6c71bd61d698353c29f2de24968bf76, all compaction and branch-summary completion paths pass through a reusable bounded retry operation. It applies the configured retry policy only to errors classified as transient, uses exponential backoff, stops at maxRetries, returns quota/billing and abort outcomes without retrying, and normalizes cancellation during backoff to an aborted assistant response. Coding-agent sessions and the reusable agent harness pass retry policy and callbacks into summarization, emit operation-aware retry lifecycle events, and update interactive retry indicators. Tests cover recovery, exhaustion, disabled policy, non-retryable errors, event ordering, and cancellation during backoff.",
+    "diff": "The change added RetryPolicy, RetryCallbacks, abort-aware backoff, and retryAssistantCall to the AI utility layer; replaced direct single-shot completion calls in compaction, split-turn, and branch-summary paths with retry-wrapped completion choke points; threaded retry settings and callbacks from coding-agent sessions and AgentHarness call sites; added typed retry lifecycle events and interactive status handling; and added unit, harness, and issue-specific regression tests. The first-parent diff contains 916 insertions and 27 deletions across 16 files.",
+    "repository": "earendil-works/pi",
+    "revision": "github-issue-6647",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10",
+      "E11",
+      "E12",
+      "E13",
+      "E14"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "earendil-works/pi",
+      "issue": 6647,
+      "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+      "manifest_metadata": {
+        "category": "context-budget-and-compaction",
+        "role": "train_candidate",
+        "case_id": "earendil-works__pi__6647__context-budget-and-compaction",
+        "sample_kind": "verified_substitute",
+        "seed_issue": 10075,
+        "seed_issue_url": "https://github.com/earendil-works/pi/issues/10075",
+        "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+        "resolution_url": "https://github.com/earendil-works/pi/pull/6901",
+        "provenance": {
+          "classification": "verified_substitute",
+          "seed": {
+            "repository": "earendil-works/pi",
+            "issue": 10075,
+            "url": "https://github.com/earendil-works/pi/issues/10075",
+            "table_note": "user-turn boundary unexpectedly loses about 100k provider context"
+          },
+          "resolution_artifact": {
+            "type": "issue",
+            "number": 6647,
+            "url": "https://github.com/earendil-works/pi/issues/6647",
+            "pull_request": 6901,
+            "pull_request_url": "https://github.com/earendil-works/pi/pull/6901"
+          },
+          "commit": {
+            "sha": "65dd2e0ed6c71bd61d698353c29f2de24968bf76",
+            "subject": "Merge pull request #6901 from earendil-works/fix/issue-6647-retry-summary-requests-2",
+            "parents": [
+              "4b91ec66fd33026e6e44a0dca5a954a59abd3ee9",
+              "7540da4016bdbf405b9c4dc62d401cca15e270d1"
+            ],
+            "body_excerpt": "compaction & branch summarization follow retry policy"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "parent_and_changed_files_recorded",
+            "implementation_diff_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "earendil-works/pi",
+        "issue_number": 6647,
+        "issue": {
+          "number": 6647,
+          "title": "Merge pull request #6901 from earendil-works/fix/issue-6647-retry-summary-requests-2",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 6901,
+              "title": "Merge pull request #6901 from earendil-works/fix/issue-6647-retry-summary-requests-2",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tpackages/agent/docs/agent-harness.md"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/agent-harness.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/compaction/branch-summarization.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/compaction/compaction.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/types.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/test/harness/agent-harness.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/utils/retry.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/test/retry.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/docs/json.md"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/docs/rpc.md"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/docs/sdk.md"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/core/agent-session.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/core/compaction/branch-summarization.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/core/compaction/compaction.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/modes/interactive/interactive-mode.ts"
+              },
+              {
+                "status_line": "A\tpackages/coding-agent/test/suite/regressions/6647-compaction-retries-transient-stream-drop.test.ts"
+              },
+              {
+                "status_line": "M\t.github/workflows/build-binaries.yml"
+              },
+              {
+                "status_line": "M\tREADME.md"
+              },
+              {
+                "status_line": "A\tscripts/create-source-archive.sh"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "65dd2e0ed6c71bd61d698353c29f2de24968bf76",
+                "subject": "Merge pull request #6901 from earendil-works/fix/issue-6647-retry-summary-requests-2"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+        "pinned_ref": "65dd2e0ed6c71bd61d698353c29f2de24968bf76",
+        "resolved_commit": "65dd2e0ed6c71bd61d698353c29f2de24968bf76",
+        "parent_commit": "4b91ec66fd33026e6e44a0dca5a954a59abd3ee9",
+        "commit_show_stat": "commit 65dd2e0ed6c71bd61d698353c29f2de24968bf76\nMerge: 4b91ec66f 7540da401\nAuthor:     David Brailovsky <davidbrai@gmail.com>\nAuthorDate: Tue Jul 21 17:45:03 2026 +0200\nCommit:     GitHub <noreply@github.com>\nCommitDate: Tue Jul 21 17:45:03 2026 +0200\n\n    Merge pull request #6901 from earendil-works/fix/issue-6647-retry-summary-requests-2\n    \n    compaction & branch summarization follow retry policy\n\n packages/agent/docs/agent-harness.md               |  10 ++\n packages/agent/src/harness/agent-harness.ts        |  26 ++-\n .../src/harness/compaction/branch-summarization.ts |  24 ++-\n .../agent/src/harness/compaction/compaction.ts     |  50 +++++-\n packages/agent/src/harness/types.ts                |  28 +++\n packages/agent/test/harness/agent-harness.test.ts  | 174 +++++++++++++++++++\n packages/ai/src/utils/retry.ts                     | 122 +++++++++++++\n packages/ai/test/retry.test.ts                     | 137 ++++++++++++++-\n packages/coding-agent/docs/json.md                 |   6 +-\n packages/coding-agent/docs/rpc.md                  |  33 ++++\n packages/coding-agent/docs/sdk.md                  |   3 +\n packages/coding-agent/src/core/agent-session.ts    |  54 +++++-\n .../src/core/compaction/branch-summarization.ts    |  17 +-\n .../coding-agent/src/core/compaction/compaction.ts |  41 ++++-\n .../src/modes/interactive/interactive-mode.ts      |  26 +++\n ...ompaction-retries-transient-stream-drop.test.ts | 192 +++++++++++++++++++++\n 16 files changed, 916 insertions(+), 27 deletions(-)\n",
+        "changed_files_name_status": "M\tpackages/agent/docs/agent-harness.md\nM\tpackages/agent/src/harness/agent-harness.ts\nM\tpackages/agent/src/harness/compaction/branch-summarization.ts\nM\tpackages/agent/src/harness/compaction/compaction.ts\nM\tpackages/agent/src/harness/types.ts\nM\tpackages/agent/test/harness/agent-harness.test.ts\nM\tpackages/ai/src/utils/retry.ts\nM\tpackages/ai/test/retry.test.ts\nM\tpackages/coding-agent/docs/json.md\nM\tpackages/coding-agent/docs/rpc.md\nM\tpackages/coding-agent/docs/sdk.md\nM\tpackages/coding-agent/src/core/agent-session.ts\nM\tpackages/coding-agent/src/core/compaction/branch-summarization.ts\nM\tpackages/coding-agent/src/core/compaction/compaction.ts\nM\tpackages/coding-agent/src/modes/interactive/interactive-mode.ts\nA\tpackages/coding-agent/test/suite/regressions/6647-compaction-retries-transient-stream-drop.test.ts\nM\t.github/workflows/build-binaries.yml\nM\tREADME.md\nA\tscripts/create-source-archive.sh\n",
+        "linked_issue_numbers": [
+          6647
+        ],
+        "manifest_metadata": {
+          "category": "context-budget-and-compaction",
+          "theme": "context budget and compaction",
+          "file_sample": [
+            "packages/agent/docs/agent-harness.md",
+            "packages/agent/src/harness/agent-harness.ts",
+            "packages/agent/src/harness/compaction/branch-summarization.ts",
+            "packages/agent/src/harness/compaction/compaction.ts",
+            "packages/agent/src/harness/types.ts",
+            "packages/agent/test/harness/agent-harness.test.ts",
+            "packages/ai/src/utils/retry.ts",
+            "packages/ai/test/retry.test.ts",
+            "packages/coding-agent/docs/json.md",
+            "packages/coding-agent/docs/rpc.md",
+            "packages/coding-agent/docs/sdk.md",
+            "packages/coding-agent/src/core/agent-session.ts",
+            "packages/coding-agent/src/core/compaction/branch-summarization.ts",
+            "packages/coding-agent/src/core/compaction/compaction.ts",
+            "packages/coding-agent/src/modes/interactive/interactive-mode.ts",
+            "packages/coding-agent/test/suite/regressions/6647-compaction-retries-transient-stream-drop.test.ts"
+          ],
+          "case_id": "earendil-works__pi__6647__context-budget-and-compaction",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_substitute",
+          "seed_issue": 10075,
+          "seed_issue_url": "https://github.com/earendil-works/pi/issues/10075",
+          "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+          "resolution_url": "https://github.com/earendil-works/pi/pull/6901",
+          "source": "agent_core_seven_category_extraction_v2",
+          "provenance": {
+            "classification": "verified_substitute",
+            "seed": {
+              "repository": "earendil-works/pi",
+              "issue": 10075,
+              "url": "https://github.com/earendil-works/pi/issues/10075",
+              "table_note": "user-turn boundary unexpectedly loses about 100k provider context"
+            },
+            "resolution_artifact": {
+              "type": "issue",
+              "number": 6647,
+              "url": "https://github.com/earendil-works/pi/issues/6647",
+              "pull_request": 6901,
+              "pull_request_url": "https://github.com/earendil-works/pi/pull/6901"
+            },
+            "commit": {
+              "sha": "65dd2e0ed6c71bd61d698353c29f2de24968bf76",
+              "subject": "Merge pull request #6901 from earendil-works/fix/issue-6647-retry-summary-requests-2",
+              "parents": [
+                "4b91ec66fd33026e6e44a0dca5a954a59abd3ee9",
+                "7540da4016bdbf405b9c4dc62d401cca15e270d1"
+              ],
+              "body_excerpt": "compaction & branch summarization follow retry policy"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "parent_and_changed_files_recorded",
+              "implementation_diff_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T08:59:03.897290+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "earendil-works__pi__6647__65dd2e0",
+          "title": "Retry transient compaction and branch-summary failures under the configured retry budget",
+          "before": "At parent 4b91ec66fd33026e6e44a0dca5a954a59abd3ee9, compaction, split-turn summarization, and branch summarization each issued one assistant completion request. A transient stream or transport error such as \"terminated\" immediately failed the summarization and therefore the enclosing context-compaction or branch-navigation operation. Existing assistant-turn retry settings were not applied to these internal summarization requests, and no summarization-specific retry lifecycle events were exposed.",
+          "after": "At merge commit 65dd2e0ed6c71bd61d698353c29f2de24968bf76, all compaction and branch-summary completion paths pass through a reusable bounded retry operation. It applies the configured retry policy only to errors classified as transient, uses exponential backoff, stops at maxRetries, returns quota/billing and abort outcomes without retrying, and normalizes cancellation during backoff to an aborted assistant response. Coding-agent sessions and the reusable agent harness pass retry policy and callbacks into summarization, emit operation-aware retry lifecycle events, and update interactive retry indicators. Tests cover recovery, exhaustion, disabled policy, non-retryable errors, event ordering, and cancellation during backoff.",
+          "diff": "The change added RetryPolicy, RetryCallbacks, abort-aware backoff, and retryAssistantCall to the AI utility layer; replaced direct single-shot completion calls in compaction, split-turn, and branch-summary paths with retry-wrapped completion choke points; threaded retry settings and callbacks from coding-agent sessions and AgentHarness call sites; added typed retry lifecycle events and interactive status handling; and added unit, harness, and issue-specific regression tests. The first-parent diff contains 916 insertions and 27 deletions across 16 files."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "The pinned merge commit resolves PR #6901 with the stated purpose \"compaction & branch summarization follow retry policy\" and has first parent 4b91ec66fd33026e6e44a0dca5a954a59abd3ee9.",
+            "source": "git show --format=fuller 65dd2e0ed6c71bd61d698353c29f2de24968bf76; issue-bundle.json resolved_commit, parent_commit, and commit_show_stat"
+          },
+          {
+            "id": "E2",
+            "kind": "diff",
+            "claim": "Before the change, coding-agent completeSummarization directly invoked completeSimple or streamFn(...).result() once, with no retry policy or callbacks.",
+            "source": "git show 65dd2e0ed6c71bd61d698353c29f2de24968bf76^1:packages/coding-agent/src/core/compaction/compaction.ts, completeSummarization"
+          },
+          {
+            "id": "E3",
+            "kind": "implementation",
+            "claim": "retryAssistantCall performs an initial call plus at most maxRetries transient-error retries, with exponential delay baseDelayMs * 2^(attempt-1), and emits scheduled, attempt-start, and finished callbacks.",
+            "source": "65dd2e0ed6c71bd61d698353c29f2de24968bf76:packages/ai/src/utils/retry.ts, RetryPolicy, RetryCallbacks, and retryAssistantCall"
+          },
+          {
+            "id": "E4",
+            "kind": "implementation",
+            "claim": "The retry operation returns successful and non-retryable responses immediately, never retries an aborted response, and converts cancellation during retry sleep into an AssistantMessage with stopReason \"aborted\".",
+            "source": "65dd2e0ed6c71bd61d698353c29f2de24968bf76:packages/ai/src/utils/retry.ts, retryAssistantCall and RetrySleepAbortError"
+          },
+          {
+            "id": "E5",
+            "kind": "implementation",
+            "claim": "Transient classification includes transport, connection, timeout, server, rate-limit, premature-stream, and explicit retry-guidance errors, while quota, billing, budget, and subscription-limit errors are explicitly excluded.",
+            "source": "65dd2e0ed6c71bd61d698353c29f2de24968bf76:packages/ai/src/utils/retry.ts, RETRYABLE_PROVIDER_ERROR_PATTERN, NON_RETRYABLE_PROVIDER_LIMIT_ERROR_PATTERN, and isRetryableAssistantError"
+          },
+          {
+            "id": "E6",
+            "kind": "call_site",
+            "claim": "Coding-agent routes history summaries, split-turn prefix summaries, and branch summaries through completeSummarization, which wraps either the configured stream function or simple completion with retryAssistantCall.",
+            "source": "65dd2e0ed6c71bd61d698353c29f2de24968bf76:packages/coding-agent/src/core/compaction/compaction.ts and packages/coding-agent/src/core/compaction/branch-summarization.ts"
+          },
+          {
+            "id": "E7",
+            "kind": "call_site",
+            "claim": "AgentSession supplies settingsManager.getRetrySettings() for manual, threshold, and overflow compaction and for branch summarization, and supplies callbacks carrying compaction reason or branch-summary source.",
+            "source": "65dd2e0ed6c71bd61d698353c29f2de24968bf76:packages/coding-agent/src/core/agent-session.ts, compact call sites, branch-summary call site, and _summarizationRetryCallbacks"
+          },
+          {
+            "id": "E8",
+            "kind": "call_site",
+            "claim": "AgentHarness accepts an optional RetryPolicy, passes it to compaction and branch-summary generation, and maps retry callbacks to operation-tagged harness events.",
+            "source": "65dd2e0ed6c71bd61d698353c29f2de24968bf76:packages/agent/src/harness/agent-harness.ts and packages/agent/src/harness/types.ts"
+          },
+          {
+            "id": "E9",
+            "kind": "implementation",
+            "claim": "Coding-agent exposes summarization_retry_scheduled, summarization_retry_attempt_start, and summarization_retry_finished events; interactive mode uses them to show the error/backoff state and restore the underlying compaction or branch-summary indicator when a retry begins.",
+            "source": "65dd2e0ed6c71bd61d698353c29f2de24968bf76:packages/coding-agent/src/core/agent-session.ts and packages/coding-agent/src/modes/interactive/interactive-mode.ts"
+          },
+          {
+            "id": "E10",
+            "kind": "test",
+            "claim": "Retry utility tests assert immediate success, terminal aborts, fail-fast quota errors, bounded exhaustion, recovery before exhaustion, disabled policy, callback ordering, and cancellation during backoff.",
+            "source": "65dd2e0ed6c71bd61d698353c29f2de24968bf76:packages/ai/test/retry.test.ts, describe(\"retryAssistantCall\")"
+          },
+          {
+            "id": "E11",
+            "kind": "test",
+            "claim": "AgentHarness tests assert transient compaction and branch-summary recovery with operation-tagged lifecycle events, no retry for insufficient_quota, and final failure after the configured retry count.",
+            "source": "65dd2e0ed6c71bd61d698353c29f2de24968bf76:packages/agent/test/harness/agent-harness.test.ts, describe(\"summarization retries\")"
+          },
+          {
+            "id": "E12",
+            "kind": "test",
+            "claim": "The #6647 regression test drives real session compaction through a scripted stream and verifies recovery after transient \"terminated\" errors, no retry for insufficient_quota or disabled policy, bounded exhaustion, retry event emission, and abortCompaction cancelling a backoff.",
+            "source": "65dd2e0ed6c71bd61d698353c29f2de24968bf76:packages/coding-agent/test/suite/regressions/6647-compaction-retries-transient-stream-drop.test.ts"
+          },
+          {
+            "id": "E13",
+            "kind": "diff",
+            "claim": "The first-parent merge diff changes 16 files with 916 insertions and 27 deletions, spanning retry utilities, both summarization implementations, session and harness call sites, event documentation, UI handling, and tests.",
+            "source": "git diff --stat 65dd2e0ed6c71bd61d698353c29f2de24968bf76^1 65dd2e0ed6c71bd61d698353c29f2de24968bf76"
+          },
+          {
+            "id": "E14",
+            "kind": "validation",
+            "claim": "The regression oracle defines successful resolution as preserving compaction completion after retryable stream drops while retaining immediate failure for deterministic errors, honoring retry bounds, and remaining cancellable during backoff.",
+            "source": "65dd2e0ed6c71bd61d698353c29f2de24968bf76:packages/coding-agent/test/suite/regressions/6647-compaction-retries-transient-stream-drop.test.ts"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "retry-transient-assistant-operation-with-bounded-backoff",
+            "description": "Wrap one assistant-producing operation in policy-controlled retries that distinguish transient failures from terminal errors and remain cancellable during backoff.",
+            "evidence_ids": [
+              "E3",
+              "E4",
+              "E5",
+              "E10"
+            ],
+            "semantic_action": {
+              "intent": "Allow a state-preserving internal model operation to recover from temporary provider or transport failure without retrying deterministic failures indefinitely.",
+              "module_role": "shared assistant-operation resilience layer",
+              "operation": "guard",
+              "pre_state": "An assistant-producing operation can return success, abort, a deterministic error, or an error classified as transient; an optional retry policy and cancellation signal are available.",
+              "post_state": "Success and deterministic terminal outcomes return immediately; transient errors are retried no more than the configured budget with exponential backoff; cancellation terminates both requests and backoff in a uniform aborted result.",
+              "validation": "Unit tests verify call counts, retry bounds, error classification, callback ordering, recovery, exhaustion, disabled policy, and abort behavior.",
+              "parameters": [
+                "assistant-producing operation",
+                "retry enabled flag",
+                "maximum retry count",
+                "base backoff delay",
+                "abort signal",
+                "retry lifecycle callbacks",
+                "transient-error classifier"
+              ],
+              "evidence_ids": [
+                "E3",
+                "E4",
+                "E5",
+                "E10"
+              ]
+            }
+          },
+          {
+            "name": "apply-retry-policy-to-context-summarization-boundaries",
+            "description": "Route every compaction and branch-summary model request through the same retry-aware completion boundary and propagate policy from owning sessions or harnesses.",
+            "evidence_ids": [
+              "E2",
+              "E6",
+              "E7",
+              "E8",
+              "E11",
+              "E12"
+            ],
+            "semantic_action": {
+              "intent": "Prevent a transient summarization stream failure from aborting context compaction or branch navigation on the first failed request.",
+              "module_role": "context-reduction and continuity orchestration",
+              "operation": "adapt",
+              "pre_state": "Compaction, split-turn, and branch-summary paths issue single-shot model requests even though the enclosing session or harness has retry configuration.",
+              "post_state": "All summarization request variants use the shared retry operation with the caller's configured policy and preserve existing request functions, signals, prompts, and result handling.",
+              "validation": "Harness and coding-agent regression tests inject transient failures into compaction and branch summarization, then assert recovery, bounded failure, disabled-policy behavior, and non-retryable failure behavior.",
+              "parameters": [
+                "compaction request",
+                "split-turn prefix request",
+                "branch-summary request",
+                "session retry settings",
+                "stream completion function",
+                "simple completion function",
+                "operation cancellation signal"
+              ],
+              "evidence_ids": [
+                "E2",
+                "E6",
+                "E7",
+                "E8",
+                "E11",
+                "E12"
+              ]
+            }
+          },
+          {
+            "name": "publish-summarization-retry-lifecycle",
+            "description": "Expose retry scheduling, attempt restart, and completion so API consumers and interactive interfaces can represent a delayed summarization operation accurately.",
+            "evidence_ids": [
+              "E7",
+              "E8",
+              "E9",
+              "E11",
+              "E12"
+            ],
+            "semantic_action": {
+              "intent": "Keep observers informed while a compaction or branch-summary operation temporarily leaves its normal active state for retry backoff.",
+              "module_role": "operation lifecycle and presentation boundary",
+              "operation": "map",
+              "pre_state": "Retrying an internal summarization request changes timing and status, but consumers cannot distinguish backoff, restarted execution, and retry-loop completion.",
+              "post_state": "Observers receive typed lifecycle events containing retry progress and operation context; interactive presentation shows retry status and restores the correct underlying activity indicator when the next attempt starts.",
+              "validation": "Harness tests assert ordered operation-tagged events, regression tests assert scheduled and finished event counts, and event handlers cover scheduled, attempt-start, and finished variants.",
+              "parameters": [
+                "retry attempt",
+                "maximum attempts",
+                "delay",
+                "error message",
+                "operation source",
+                "compaction reason",
+                "event subscriber",
+                "status indicator"
+              ],
+              "evidence_ids": [
+                "E7",
+                "E8",
+                "E9",
+                "E11",
+                "E12"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "make-context-reduction-resilient-to-transient-stream-failures",
+            "description": "Introduce bounded, cancellable retry behavior at the shared summarization boundary, propagate the existing policy through every context-reduction call path, and expose the retry lifecycle without retrying deterministic failures.",
+            "atomic_names": [
+              "retry-transient-assistant-operation-with-bounded-backoff",
+              "apply-retry-policy-to-context-summarization-boundaries",
+              "publish-summarization-retry-lifecycle"
+            ],
+            "evidence_ids": [
+              "E1",
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E10",
+              "E11",
+              "E12",
+              "E14"
+            ],
+            "workflow_graph": {
+              "goal": "Compaction and branch summarization survive retryable provider or transport interruptions while remaining bounded, cancellable, observable, and fail-fast for deterministic errors.",
+              "entry_state": "Context-reduction model calls are single-shot even when their owning runtime already has retry settings, so a transient stream drop aborts the enclosing operation.",
+              "exit_state": "Every context-reduction request shares a classified bounded-retry boundary; retry policy and cancellation flow from the owning runtime; observers can track retry state; success, exhaustion, deterministic errors, disabled retry, and cancellation have explicit test oracles.",
+              "steps": [
+                {
+                  "action_name": "retry-transient-assistant-operation-with-bounded-backoff",
+                  "role": "establish-contract",
+                  "optional": false
+                },
+                {
+                  "action_name": "apply-retry-policy-to-context-summarization-boundaries",
+                  "role": "implement",
+                  "optional": false
+                },
+                {
+                  "action_name": "publish-summarization-retry-lifecycle",
+                  "role": "reconcile",
+                  "optional": false
+                }
+              ],
+              "edges": [
+                {
+                  "from": "retry-transient-assistant-operation-with-bounded-backoff",
+                  "to": "apply-retry-policy-to-context-summarization-boundaries",
+                  "type": "enables"
+                },
+                {
+                  "from": "apply-retry-policy-to-context-summarization-boundaries",
+                  "to": "publish-summarization-retry-lifecycle",
+                  "type": "enables"
+                },
+                {
+                  "from": "publish-summarization-retry-lifecycle",
+                  "to": "retry-transient-assistant-operation-with-bounded-backoff",
+                  "type": "validates"
+                },
+                {
+                  "from": "apply-retry-policy-to-context-summarization-boundaries",
+                  "to": "retry-transient-assistant-operation-with-bounded-backoff",
+                  "type": "requires"
+                }
+              ],
+              "unresolved_or_deferred": [
+                "No independent test-run or CI result is present in the supplied GitHub bundle; validation is grounded in the committed test implementations and assertions.",
+                "The bundle lacks the original issue body, PR body, comments, reviews, and status checks, so user-reported reproduction details beyond the regression test's \"terminated\" stream-drop scenario are unavailable.",
+                "Cross-repository pattern induction and holdout validation are outside this single ChangeEpisode and remain deferred."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Were the added unit, harness, and regression tests executed successfully at the pinned merge commit? The supplied evidence records test code but no CI or local execution result.",
+          "What exact production provider and transport trace originally triggered issue #6647? GitHub discussion metadata is unavailable in the bundle.",
+          "Whether this workflow generalizes into a promoted cross-project resolution pattern requires independent workflows from another repository and untouched holdout validation."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "retry-transient-assistant-operation-with-bounded-backoff",
+          "description": "Wrap one assistant-producing operation in policy-controlled retries that distinguish transient failures from terminal errors and remain cancellable during backoff.",
+          "evidence_ids": [
+            "E3",
+            "E4",
+            "E5",
+            "E10"
+          ],
+          "semantic_action": {
+            "intent": "Allow a state-preserving internal model operation to recover from temporary provider or transport failure without retrying deterministic failures indefinitely.",
+            "module_role": "shared assistant-operation resilience layer",
+            "operation": "guard",
+            "pre_state": "An assistant-producing operation can return success, abort, a deterministic error, or an error classified as transient; an optional retry policy and cancellation signal are available.",
+            "post_state": "Success and deterministic terminal outcomes return immediately; transient errors are retried no more than the configured budget with exponential backoff; cancellation terminates both requests and backoff in a uniform aborted result.",
+            "validation": "Unit tests verify call counts, retry bounds, error classification, callback ordering, recovery, exhaustion, disabled policy, and abort behavior.",
+            "parameters": [
+              "assistant-producing operation",
+              "retry enabled flag",
+              "maximum retry count",
+              "base backoff delay",
+              "abort signal",
+              "retry lifecycle callbacks",
+              "transient-error classifier"
+            ],
+            "evidence_ids": [
+              "E3",
+              "E4",
+              "E5",
+              "E10"
+            ]
+          }
+        },
+        {
+          "name": "apply-retry-policy-to-context-summarization-boundaries",
+          "description": "Route every compaction and branch-summary model request through the same retry-aware completion boundary and propagate policy from owning sessions or harnesses.",
+          "evidence_ids": [
+            "E2",
+            "E6",
+            "E7",
+            "E8",
+            "E11",
+            "E12"
+          ],
+          "semantic_action": {
+            "intent": "Prevent a transient summarization stream failure from aborting context compaction or branch navigation on the first failed request.",
+            "module_role": "context-reduction and continuity orchestration",
+            "operation": "adapt",
+            "pre_state": "Compaction, split-turn, and branch-summary paths issue single-shot model requests even though the enclosing session or harness has retry configuration.",
+            "post_state": "All summarization request variants use the shared retry operation with the caller's configured policy and preserve existing request functions, signals, prompts, and result handling.",
+            "validation": "Harness and coding-agent regression tests inject transient failures into compaction and branch summarization, then assert recovery, bounded failure, disabled-policy behavior, and non-retryable failure behavior.",
+            "parameters": [
+              "compaction request",
+              "split-turn prefix request",
+              "branch-summary request",
+              "session retry settings",
+              "stream completion function",
+              "simple completion function",
+              "operation cancellation signal"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E6",
+              "E7",
+              "E8",
+              "E11",
+              "E12"
+            ]
+          }
+        },
+        {
+          "name": "publish-summarization-retry-lifecycle",
+          "description": "Expose retry scheduling, attempt restart, and completion so API consumers and interactive interfaces can represent a delayed summarization operation accurately.",
+          "evidence_ids": [
+            "E7",
+            "E8",
+            "E9",
+            "E11",
+            "E12"
+          ],
+          "semantic_action": {
+            "intent": "Keep observers informed while a compaction or branch-summary operation temporarily leaves its normal active state for retry backoff.",
+            "module_role": "operation lifecycle and presentation boundary",
+            "operation": "map",
+            "pre_state": "Retrying an internal summarization request changes timing and status, but consumers cannot distinguish backoff, restarted execution, and retry-loop completion.",
+            "post_state": "Observers receive typed lifecycle events containing retry progress and operation context; interactive presentation shows retry status and restores the correct underlying activity indicator when the next attempt starts.",
+            "validation": "Harness tests assert ordered operation-tagged events, regression tests assert scheduled and finished event counts, and event handlers cover scheduled, attempt-start, and finished variants.",
+            "parameters": [
+              "retry attempt",
+              "maximum attempts",
+              "delay",
+              "error message",
+              "operation source",
+              "compaction reason",
+              "event subscriber",
+              "status indicator"
+            ],
+            "evidence_ids": [
+              "E7",
+              "E8",
+              "E9",
+              "E11",
+              "E12"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "make-context-reduction-resilient-to-transient-stream-failures",
+          "description": "Introduce bounded, cancellable retry behavior at the shared summarization boundary, propagate the existing policy through every context-reduction call path, and expose the retry lifecycle without retrying deterministic failures.",
+          "atomic_names": [
+            "retry-transient-assistant-operation-with-bounded-backoff",
+            "apply-retry-policy-to-context-summarization-boundaries",
+            "publish-summarization-retry-lifecycle"
+          ],
+          "evidence_ids": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10",
+            "E11",
+            "E12",
+            "E14"
+          ],
+          "workflow_graph": {
+            "goal": "Compaction and branch summarization survive retryable provider or transport interruptions while remaining bounded, cancellable, observable, and fail-fast for deterministic errors.",
+            "entry_state": "Context-reduction model calls are single-shot even when their owning runtime already has retry settings, so a transient stream drop aborts the enclosing operation.",
+            "exit_state": "Every context-reduction request shares a classified bounded-retry boundary; retry policy and cancellation flow from the owning runtime; observers can track retry state; success, exhaustion, deterministic errors, disabled retry, and cancellation have explicit test oracles.",
+            "steps": [
+              {
+                "action_name": "retry-transient-assistant-operation-with-bounded-backoff",
+                "role": "establish-contract",
+                "optional": false
+              },
+              {
+                "action_name": "apply-retry-policy-to-context-summarization-boundaries",
+                "role": "implement",
+                "optional": false
+              },
+              {
+                "action_name": "publish-summarization-retry-lifecycle",
+                "role": "reconcile",
+                "optional": false
+              }
+            ],
+            "edges": [
+              {
+                "from": "retry-transient-assistant-operation-with-bounded-backoff",
+                "to": "apply-retry-policy-to-context-summarization-boundaries",
+                "type": "enables"
+              },
+              {
+                "from": "apply-retry-policy-to-context-summarization-boundaries",
+                "to": "publish-summarization-retry-lifecycle",
+                "type": "enables"
+              },
+              {
+                "from": "publish-summarization-retry-lifecycle",
+                "to": "retry-transient-assistant-operation-with-bounded-backoff",
+                "type": "validates"
+              },
+              {
+                "from": "apply-retry-policy-to-context-summarization-boundaries",
+                "to": "retry-transient-assistant-operation-with-bounded-backoff",
+                "type": "requires"
+              }
+            ],
+            "unresolved_or_deferred": [
+              "No independent test-run or CI result is present in the supplied GitHub bundle; validation is grounded in the committed test implementations and assertions.",
+              "The bundle lacks the original issue body, PR body, comments, reviews, and status checks, so user-reported reproduction details beyond the regression test's \"terminated\" stream-drop scenario are unavailable.",
+              "Cross-repository pattern induction and holdout validation are outside this single ChangeEpisode and remain deferred."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Were the added unit, harness, and regression tests executed successfully at the pinned merge commit? The supplied evidence records test code but no CI or local execution result.",
+        "What exact production provider and transport trace originally triggered issue #6647? GitHub discussion metadata is unavailable in the bundle.",
+        "Whether this workflow generalizes into a promoted cross-project resolution pattern requires independent workflows from another repository and untouched holdout validation."
+      ]
+    },
+    "call_sites": [
+      "Coding-agent routes history summaries, split-turn prefix summaries, and branch summaries through completeSummarization, which wraps either the configured stream function or simple completion with retryAssistantCall.",
+      "AgentSession supplies settingsManager.getRetrySettings() for manual, threshold, and overflow compaction and for branch summarization, and supplies callbacks carrying compaction reason or branch-summary source.",
+      "AgentHarness accepts an optional RetryPolicy, passes it to compaction and branch-summary generation, and maps retry callbacks to operation-tagged harness events."
+    ],
+    "tests": [
+      "Retry utility tests assert immediate success, terminal aborts, fail-fast quota errors, bounded exhaustion, recovery before exhaustion, disabled policy, callback ordering, and cancellation during backoff.",
+      "AgentHarness tests assert transient compaction and branch-summary recovery with operation-tagged lifecycle events, no retry for insufficient_quota, and final failure after the configured retry count.",
+      "The #6647 regression test drives real session compaction through a scripted stream and verifies recovery after transient \"terminated\" errors, no retry for insufficient_quota or disabled policy, bounded exhaustion, retry event emission, and abortCompaction cancelling a backoff."
+    ]
+  },
+  {
+    "episode_id": "google-gemini__gemini-cli__8379__b416508e",
+    "title": "Cap shell-tool output truncation to the remaining model context budget",
+    "before": "At parent commit 4f91037af49556763fe3e5bd15a71016a5b69e88, Config.getTruncateToolOutputThreshold() returned only the configured truncation threshold. Consequently, the shell-result handling call site could pass that fixed threshold to truncation even when it exceeded the model context window remaining after the last prompt.",
+    "after": "At b416508ef1c64db6cdac2f185afa579368c353cf, Config.getTruncateToolOutputThreshold() returns the smaller of the configured threshold and four times the difference between the active model's token limit and the last prompt token count. The existing shell-result handling call site therefore truncates against a character estimate of the remaining context whenever that estimate is smaller, while preserving lower default or custom caps.",
+    "diff": "The change imports the model token-limit resolver and UI prompt-token telemetry into the configuration module, replaces the fixed threshold getter with Math.min(4 * (tokenLimit(model) - lastPromptTokenCount), configuredThreshold), and adds three unit-test cases covering a remaining-context cap, retention of a smaller default cap, and retention or override of a custom cap. No shell scheduler code was changed; its existing threshold consumer automatically receives the adaptive value.",
+    "repository": "google-gemini/gemini-cli",
+    "revision": "github-issue-8379",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 8379,
+      "checkout": "/home/chenyujia/tritonToLlvm/gemini-cli",
+      "manifest_metadata": {
+        "category": "context-budget-and-compaction",
+        "role": "train_candidate",
+        "case_id": "google-gemini__gemini-cli__8379__context-budget-and-compaction",
+        "sample_kind": "verified_substitute",
+        "seed_issue": 27738,
+        "seed_issue_url": "https://github.com/google-gemini/gemini-cli/issues/27738",
+        "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+        "resolution_url": "https://github.com/google-gemini/gemini-cli/pull/8379",
+        "provenance": {
+          "classification": "verified_substitute",
+          "seed": {
+            "repository": "google-gemini/gemini-cli",
+            "issue": 27738,
+            "url": "https://github.com/google-gemini/gemini-cli/issues/27738",
+            "table_note": "large tool output is not bounded and permanently stalls the session"
+          },
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 8379,
+            "url": "https://github.com/google-gemini/gemini-cli/pull/8379",
+            "pull_request": 8379,
+            "pull_request_url": "https://github.com/google-gemini/gemini-cli/pull/8379"
+          },
+          "commit": {
+            "sha": "b416508ef1c64db6cdac2f185afa579368c353cf",
+            "subject": "feat(core): Cap shell output truncation threshold to the remaining context window size (#8379)",
+            "parents": [
+              "4f91037af49556763fe3e5bd15a71016a5b69e88"
+            ],
+            "body_excerpt": ""
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "parent_and_changed_files_recorded",
+            "implementation_diff_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "google-gemini/gemini-cli",
+        "issue_number": 8379,
+        "issue": {
+          "number": 8379,
+          "title": "feat(core): Cap shell output truncation threshold to the remaining context window size (#8379)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 8379,
+              "title": "feat(core): Cap shell output truncation threshold to the remaining context window size (#8379)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tpackages/core/src/config/config.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/core/src/config/config.ts"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "b416508ef1c64db6cdac2f185afa579368c353cf",
+                "subject": "feat(core): Cap shell output truncation threshold to the remaining context window size (#8379)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/gemini-cli",
+        "pinned_ref": "b416508ef1c64db6cdac2f185afa579368c353cf",
+        "resolved_commit": "b416508ef1c64db6cdac2f185afa579368c353cf",
+        "parent_commit": "4f91037af49556763fe3e5bd15a71016a5b69e88",
+        "commit_show_stat": "commit b416508ef1c64db6cdac2f185afa579368c353cf\nAuthor:     Sandy Tao <sandytao520@icloud.com>\nAuthorDate: Fri Sep 12 15:11:41 2025 -0700\nCommit:     GitHub <noreply@github.com>\nCommitDate: Fri Sep 12 22:11:41 2025 +0000\n\n    feat(core): Cap shell output truncation threshold to the remaining context window size (#8379)\n\n packages/core/src/config/config.test.ts | 59 +++++++++++++++++++++++++++++++++\n packages/core/src/config/config.ts      |  9 ++++-\n 2 files changed, 67 insertions(+), 1 deletion(-)\n",
+        "changed_files_name_status": "M\tpackages/core/src/config/config.test.ts\nM\tpackages/core/src/config/config.ts\n",
+        "linked_issue_numbers": [
+          8379
+        ],
+        "manifest_metadata": {
+          "category": "context-budget-and-compaction",
+          "theme": "context budget and compaction",
+          "file_sample": [
+            "packages/core/src/config/config.test.ts",
+            "packages/core/src/config/config.ts"
+          ],
+          "case_id": "google-gemini__gemini-cli__8379__context-budget-and-compaction",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_substitute",
+          "seed_issue": 27738,
+          "seed_issue_url": "https://github.com/google-gemini/gemini-cli/issues/27738",
+          "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+          "resolution_url": "https://github.com/google-gemini/gemini-cli/pull/8379",
+          "source": "agent_core_seven_category_extraction_v2",
+          "provenance": {
+            "classification": "verified_substitute",
+            "seed": {
+              "repository": "google-gemini/gemini-cli",
+              "issue": 27738,
+              "url": "https://github.com/google-gemini/gemini-cli/issues/27738",
+              "table_note": "large tool output is not bounded and permanently stalls the session"
+            },
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 8379,
+              "url": "https://github.com/google-gemini/gemini-cli/pull/8379",
+              "pull_request": 8379,
+              "pull_request_url": "https://github.com/google-gemini/gemini-cli/pull/8379"
+            },
+            "commit": {
+              "sha": "b416508ef1c64db6cdac2f185afa579368c353cf",
+              "subject": "feat(core): Cap shell output truncation threshold to the remaining context window size (#8379)",
+              "parents": [
+                "4f91037af49556763fe3e5bd15a71016a5b69e88"
+              ],
+              "body_excerpt": ""
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "parent_and_changed_files_recorded",
+              "implementation_diff_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T09:01:23.946568+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "google-gemini__gemini-cli__8379__b416508e",
+          "title": "Cap shell-tool output truncation to the remaining model context budget",
+          "before": "At parent commit 4f91037af49556763fe3e5bd15a71016a5b69e88, Config.getTruncateToolOutputThreshold() returned only the configured truncation threshold. Consequently, the shell-result handling call site could pass that fixed threshold to truncation even when it exceeded the model context window remaining after the last prompt.",
+          "after": "At b416508ef1c64db6cdac2f185afa579368c353cf, Config.getTruncateToolOutputThreshold() returns the smaller of the configured threshold and four times the difference between the active model's token limit and the last prompt token count. The existing shell-result handling call site therefore truncates against a character estimate of the remaining context whenever that estimate is smaller, while preserving lower default or custom caps.",
+          "diff": "The change imports the model token-limit resolver and UI prompt-token telemetry into the configuration module, replaces the fixed threshold getter with Math.min(4 * (tokenLimit(model) - lastPromptTokenCount), configuredThreshold), and adds three unit-test cases covering a remaining-context cap, retention of a smaller default cap, and retention or override of a custom cap. No shell scheduler code was changed; its existing threshold consumer automatically receives the adaptive value."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "Commit b416508ef1c64db6cdac2f185afa579368c353cf is the implementation-bearing resolution linked to issue/PR 8379, has parent 4f91037af49556763fe3e5bd15a71016a5b69e88, and changes config.ts plus config.test.ts.",
+            "source": "issue-bundle.json linked_pull_requests[0], resolved_commit, parent_commit, changed_files_name_status; git show --stat --format=fuller b416508ef1c64db6cdac2f185afa579368c353cf"
+          },
+          {
+            "id": "E2",
+            "kind": "implementation",
+            "claim": "The parent implementation of Config.getTruncateToolOutputThreshold() returned this.truncateToolOutputThreshold without considering model capacity or current prompt usage.",
+            "source": "git show 4f91037af49556763fe3e5bd15a71016a5b69e88:packages/core/src/config/config.ts, getTruncateToolOutputThreshold"
+          },
+          {
+            "id": "E3",
+            "kind": "diff",
+            "claim": "The resolved implementation computes Math.min(4 * (tokenLimit(this.model) - uiTelemetryService.getLastPromptTokenCount()), this.truncateToolOutputThreshold), documenting the factor as an estimate that one token is approximately four characters.",
+            "source": "git show b416508ef1c64db6cdac2f185afa579368c353cf -- packages/core/src/config/config.ts"
+          },
+          {
+            "id": "E4",
+            "kind": "implementation",
+            "claim": "The token-limit resolver supplies model-specific context limits and a default limit, providing the total-capacity input used by the adaptive threshold calculation.",
+            "source": "packages/core/src/core/tokenLimits.ts at b416508ef1c64db6cdac2f185afa579368c353cf, tokenLimit and DEFAULT_TOKEN_LIMIT"
+          },
+          {
+            "id": "E5",
+            "kind": "implementation",
+            "claim": "The UI telemetry service exposes getLastPromptTokenCount(), which returns its recorded last-prompt token count and supplies the consumed-context input to the calculation.",
+            "source": "packages/core/src/telemetry/uiTelemetry.ts at b416508ef1c64db6cdac2f185afa579368c353cf, getLastPromptTokenCount"
+          },
+          {
+            "id": "E6",
+            "kind": "call_site",
+            "claim": "When a successful tool result is string content from the shell tool and truncation is enabled, the core tool scheduler obtains Config.getTruncateToolOutputThreshold() and passes that value to truncateAndSaveToFile; therefore the changed getter directly controls the shell-output truncation boundary.",
+            "source": "packages/core/src/core/coreToolScheduler.ts at b416508ef1c64db6cdac2f185afa579368c353cf, lines 1012-1033"
+          },
+          {
+            "id": "E7",
+            "kind": "test",
+            "claim": "A unit test sets a 32,000-token limit and 1,000-token prompt count and expects a 124,000-character threshold instead of the 4,000,000 default.",
+            "source": "git show b416508ef1c64db6cdac2f185afa579368c353cf -- packages/core/src/config/config.test.ts, test 'should return the calculated threshold when it is smaller than the default'"
+          },
+          {
+            "id": "E8",
+            "kind": "test",
+            "claim": "A unit test expects the 4,000,000 default threshold to remain in force when the calculated remaining-context estimate is 6,000,000 characters.",
+            "source": "git show b416508ef1c64db6cdac2f185afa579368c353cf -- packages/core/src/config/config.test.ts, test 'should return the default threshold when the calculated value is larger'"
+          },
+          {
+            "id": "E9",
+            "kind": "test",
+            "claim": "A unit test verifies that a custom 50,000-character threshold is reduced to 24,000 when remaining context is smaller and remains 50,000 when remaining context is larger.",
+            "source": "git show b416508ef1c64db6cdac2f185afa579368c353cf -- packages/core/src/config/config.test.ts, test 'should use a custom truncateToolOutputThreshold if provided'"
+          },
+          {
+            "id": "E10",
+            "kind": "validation",
+            "claim": "The added tests collectively validate both sides of the minimum operation for default and custom configured caps, but the available evidence does not include an executed test result or an end-to-end shell-output test added by this commit.",
+            "source": "Inspection of the three added tests in packages/core/src/config/config.test.ts and the two-file commit stat for b416508ef1c64db6cdac2f185afa579368c353cf"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "bound-output-threshold-by-remaining-context",
+            "description": "Derive an output-size threshold from remaining context capacity and clamp the configured threshold to that dynamic bound before the output consumer performs truncation.",
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9"
+            ],
+            "semantic_action": {
+              "intent": "Prevent a large tool result from being admitted under a static output threshold that is larger than the context capacity remaining after the current prompt.",
+              "module_role": "runtime output-budget policy",
+              "operation": "clamp",
+              "pre_state": "Output truncation uses a configured character threshold, while the runtime can provide both the active model's token capacity and the last prompt's token consumption.",
+              "post_state": "The effective output threshold is no greater than either the configured cap or the estimated remaining context expressed in characters.",
+              "validation": "Mock total token capacity and consumed prompt tokens, then assert the effective threshold equals the remaining-context estimate when smaller and equals the default or custom configured cap when that cap is smaller.",
+              "parameters": [
+                "configured_output_character_cap",
+                "active_model_identifier",
+                "model_token_limit",
+                "last_prompt_token_count",
+                "token_to_character_estimate"
+              ],
+              "evidence_ids": [
+                "E2",
+                "E3",
+                "E4",
+                "E5",
+                "E6",
+                "E7",
+                "E8",
+                "E9"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "make-tool-output-truncation-context-aware",
+            "description": "Replace a purely static tool-output boundary with an effective boundary capped by estimated remaining context, while retaining existing lower configuration limits and leaving the output consumer unchanged.",
+            "atomic_names": [
+              "bound-output-threshold-by-remaining-context"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E10"
+            ],
+            "workflow_graph": {
+              "goal": "Ensure shell output is truncated before its allowed size can exceed the model context budget remaining after the latest prompt.",
+              "entry_state": "The shell-result consumer already supports truncation and obtains its threshold from configuration, but that getter returns only a fixed configured value.",
+              "exit_state": "The existing consumer receives the minimum of its configured character cap and an estimate of remaining context capacity, with unit coverage for dynamic, default-cap, and custom-cap outcomes.",
+              "steps": [
+                {
+                  "action_name": "bound-output-threshold-by-remaining-context",
+                  "role": "implement",
+                  "optional": false
+                }
+              ],
+              "edges": [],
+              "unresolved_or_deferred": [
+                "No execution result for the unit-test suite is present in the checkout or GitHub evidence bundle.",
+                "No newly added end-to-end test demonstrates an oversized shell result flowing through the scheduler and truncation utility.",
+                "Behavior when the recorded prompt token count exceeds the model token limit, which would produce a negative calculated threshold, is not covered by the added tests.",
+                "The four-characters-per-token conversion is explicitly an estimate and is not validated for different content distributions."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Did CI or a local run execute and pass packages/core/src/config/config.test.ts for this commit? The supplied evidence lacks status-check and test-execution metadata.",
+          "Should the remaining-context calculation be clamped at zero when the last prompt token count is greater than the model token limit? The implementation and tests do not establish that boundary behavior.",
+          "Does using only the last prompt token count fully represent the context already occupied at the shell-output admission point? The available implementation evidence establishes the chosen signal but not its completeness."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "bound-output-threshold-by-remaining-context",
+          "description": "Derive an output-size threshold from remaining context capacity and clamp the configured threshold to that dynamic bound before the output consumer performs truncation.",
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9"
+          ],
+          "semantic_action": {
+            "intent": "Prevent a large tool result from being admitted under a static output threshold that is larger than the context capacity remaining after the current prompt.",
+            "module_role": "runtime output-budget policy",
+            "operation": "clamp",
+            "pre_state": "Output truncation uses a configured character threshold, while the runtime can provide both the active model's token capacity and the last prompt's token consumption.",
+            "post_state": "The effective output threshold is no greater than either the configured cap or the estimated remaining context expressed in characters.",
+            "validation": "Mock total token capacity and consumed prompt tokens, then assert the effective threshold equals the remaining-context estimate when smaller and equals the default or custom configured cap when that cap is smaller.",
+            "parameters": [
+              "configured_output_character_cap",
+              "active_model_identifier",
+              "model_token_limit",
+              "last_prompt_token_count",
+              "token_to_character_estimate"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "make-tool-output-truncation-context-aware",
+          "description": "Replace a purely static tool-output boundary with an effective boundary capped by estimated remaining context, while retaining existing lower configuration limits and leaving the output consumer unchanged.",
+          "atomic_names": [
+            "bound-output-threshold-by-remaining-context"
+          ],
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10"
+          ],
+          "workflow_graph": {
+            "goal": "Ensure shell output is truncated before its allowed size can exceed the model context budget remaining after the latest prompt.",
+            "entry_state": "The shell-result consumer already supports truncation and obtains its threshold from configuration, but that getter returns only a fixed configured value.",
+            "exit_state": "The existing consumer receives the minimum of its configured character cap and an estimate of remaining context capacity, with unit coverage for dynamic, default-cap, and custom-cap outcomes.",
+            "steps": [
+              {
+                "action_name": "bound-output-threshold-by-remaining-context",
+                "role": "implement",
+                "optional": false
+              }
+            ],
+            "edges": [],
+            "unresolved_or_deferred": [
+              "No execution result for the unit-test suite is present in the checkout or GitHub evidence bundle.",
+              "No newly added end-to-end test demonstrates an oversized shell result flowing through the scheduler and truncation utility.",
+              "Behavior when the recorded prompt token count exceeds the model token limit, which would produce a negative calculated threshold, is not covered by the added tests.",
+              "The four-characters-per-token conversion is explicitly an estimate and is not validated for different content distributions."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Did CI or a local run execute and pass packages/core/src/config/config.test.ts for this commit? The supplied evidence lacks status-check and test-execution metadata.",
+        "Should the remaining-context calculation be clamped at zero when the last prompt token count is greater than the model token limit? The implementation and tests do not establish that boundary behavior.",
+        "Does using only the last prompt token count fully represent the context already occupied at the shell-output admission point? The available implementation evidence establishes the chosen signal but not its completeness."
+      ]
+    },
+    "call_sites": [
+      "When a successful tool result is string content from the shell tool and truncation is enabled, the core tool scheduler obtains Config.getTruncateToolOutputThreshold() and passes that value to truncateAndSaveToFile; therefore the changed getter directly controls the shell-output truncation boundary."
+    ],
+    "tests": [
+      "A unit test sets a 32,000-token limit and 1,000-token prompt count and expects a 124,000-character threshold instead of the 4,000,000 default.",
+      "A unit test expects the 4,000,000 default threshold to remain in force when the calculated remaining-context estimate is 6,000,000 characters.",
+      "A unit test verifies that a custom 50,000-character threshold is reduced to 24,000 when remaining context is smaller and remains 50,000 when remaining context is larger."
+    ]
+  },
+  {
+    "episode_id": "QwenLM__qwen-code__11894__3987391392",
+    "title": "Recognize an official model alias when resolving context and output budgets",
+    "before": "At parent commit 156092e892db5b098bd6d0ecf606dd37449538fe, the ordered input-limit table recognized only names beginning with `deepseek-v4` as the 1,000,000-token tier. The official `deepseek-flash` name therefore matched the later generic `deepseek` rule and resolved to 131,072 input tokens. The output table likewise recognized only `deepseek-v4`; because `deepseek-flash` matched no output-specific rule, `tokenLimit(..., 'output')` returned the 32,000-token default. Existing tests covered V4-prefixed and older-family names but not the official alias.",
+    "after": "At commit 3987391392611e5d1f66851681f13ee7e55f4864, both ordered tables recognize names beginning with either `deepseek-v4` or `deepseek-flash` before their generic fallbacks. Consequently, `deepseek-flash` resolves to a 1,000,000-token input context and a 384,000-token output limit, while older DeepSeek families retain their existing 128K input and family-specific/default output behavior. A focused regression test asserts both limits for the official alias.",
+    "diff": "The change replaces `/^deepseek-v4/` with `/^deepseek-(?:v4|flash)/` in the input and output limit tables, adds comments explaining the official-name alias and ordered-fallback hazard, and adds two regression assertions for `tokenLimit('deepseek-flash')` and `tokenLimit('deepseek-flash', 'output')`. No normalization, compaction algorithm, or generic fallback values were changed.",
+    "repository": "QwenLM/qwen-code",
+    "revision": "github-issue-11894",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "QwenLM/qwen-code",
+      "issue": 11894,
+      "checkout": "/home/chenyujia/tritonToLlvm/qwen-code",
+      "manifest_metadata": {
+        "category": "context-budget-and-compaction",
+        "role": "train_candidate",
+        "case_id": "QwenLM__qwen-code__11894__context-budget-and-compaction",
+        "sample_kind": "exact_table_row",
+        "seed_issue": 11894,
+        "seed_issue_url": "https://github.com/QwenLM/qwen-code/issues/11894",
+        "seed_relation": "exact_table_row_with_verified_resolution",
+        "resolution_url": "https://github.com/QwenLM/qwen-code/pull/11909",
+        "provenance": {
+          "classification": "exact_table_row",
+          "seed": {
+            "repository": "QwenLM/qwen-code",
+            "issue": 11894,
+            "url": "https://github.com/QwenLM/qwen-code/issues/11894",
+            "table_note": "wrong model token-limit mapping breaks long-session compaction"
+          },
+          "resolution_artifact": {
+            "type": "issue",
+            "number": 11894,
+            "url": "https://github.com/QwenLM/qwen-code/issues/11894",
+            "pull_request": 11909,
+            "pull_request_url": "https://github.com/QwenLM/qwen-code/pull/11909"
+          },
+          "commit": {
+            "sha": "3987391392611e5d1f66851681f13ee7e55f4864",
+            "subject": "fix(core): resolve DeepSeek's official API `deepseek-flash` name at V4 limits (#11909)",
+            "parents": [
+              "156092e892db5b098bd6d0ecf606dd37449538fe"
+            ],
+            "body_excerpt": "The official DeepSeek API only accepts `deepseek-flash` and `deepseek-v4-pro`\nas model names, but the V4 rules keyed on `/^deepseek-v4/`, so the direct-API\nname fell through to the generic 128K/32K row and long sessions died on\nCOMPRESSION_FAILED_OUTPUT_TRUNCATED. Both rules now match\n`/^deepseek-(?:v4|flash)/`; older families keep their pinned fallbacks.\n\nCloses #11894"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "parent_and_changed_files_recorded",
+            "implementation_diff_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "QwenLM/qwen-code",
+        "issue_number": 11894,
+        "issue": {
+          "number": 11894,
+          "title": "fix(core): resolve DeepSeek's official API `deepseek-flash` name at V4 limits (#11909)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 11909,
+              "title": "fix(core): resolve DeepSeek's official API `deepseek-flash` name at V4 limits (#11909)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tpackages/core/src/core/tokenLimits.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/core/src/core/tokenLimits.ts"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "3987391392611e5d1f66851681f13ee7e55f4864",
+                "subject": "fix(core): resolve DeepSeek's official API `deepseek-flash` name at V4 limits (#11909)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/qwen-code",
+        "pinned_ref": "3987391392611e5d1f66851681f13ee7e55f4864",
+        "resolved_commit": "3987391392611e5d1f66851681f13ee7e55f4864",
+        "parent_commit": "156092e892db5b098bd6d0ecf606dd37449538fe",
+        "commit_show_stat": "commit 3987391392611e5d1f66851681f13ee7e55f4864\nAuthor:     Yufeng He <40085740+he-yufeng@users.noreply.github.com>\nAuthorDate: Fri Sep 18 00:58:35 2026 +0000\nCommit:     GitHub <noreply@github.com>\nCommitDate: Fri Sep 18 00:58:35 2026 +0000\n\n    fix(core): resolve DeepSeek's official API `deepseek-flash` name at V4 limits (#11909)\n    \n    The official DeepSeek API only accepts `deepseek-flash` and `deepseek-v4-pro`\n    as model names, but the V4 rules keyed on `/^deepseek-v4/`, so the direct-API\n    name fell through to the generic 128K/32K row and long sessions died on\n    COMPRESSION_FAILED_OUTPUT_TRUNCATED. Both rules now match\n    `/^deepseek-(?:v4|flash)/`; older families keep their pinned fallbacks.\n    \n    Closes #11894\n\n packages/core/src/core/tokenLimits.test.ts | 7 +++++++\n packages/core/src/core/tokenLimits.ts      | 7 +++++--\n 2 files changed, 12 insertions(+), 2 deletions(-)\n",
+        "changed_files_name_status": "M\tpackages/core/src/core/tokenLimits.test.ts\nM\tpackages/core/src/core/tokenLimits.ts\n",
+        "linked_issue_numbers": [
+          11894
+        ],
+        "manifest_metadata": {
+          "category": "context-budget-and-compaction",
+          "theme": "context budget and compaction",
+          "file_sample": [
+            "packages/core/src/core/tokenLimits.test.ts",
+            "packages/core/src/core/tokenLimits.ts"
+          ],
+          "case_id": "QwenLM__qwen-code__11894__context-budget-and-compaction",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "exact_table_row",
+          "seed_issue": 11894,
+          "seed_issue_url": "https://github.com/QwenLM/qwen-code/issues/11894",
+          "seed_relation": "exact_table_row_with_verified_resolution",
+          "resolution_url": "https://github.com/QwenLM/qwen-code/pull/11909",
+          "source": "agent_core_seven_category_extraction_v2",
+          "provenance": {
+            "classification": "exact_table_row",
+            "seed": {
+              "repository": "QwenLM/qwen-code",
+              "issue": 11894,
+              "url": "https://github.com/QwenLM/qwen-code/issues/11894",
+              "table_note": "wrong model token-limit mapping breaks long-session compaction"
+            },
+            "resolution_artifact": {
+              "type": "issue",
+              "number": 11894,
+              "url": "https://github.com/QwenLM/qwen-code/issues/11894",
+              "pull_request": 11909,
+              "pull_request_url": "https://github.com/QwenLM/qwen-code/pull/11909"
+            },
+            "commit": {
+              "sha": "3987391392611e5d1f66851681f13ee7e55f4864",
+              "subject": "fix(core): resolve DeepSeek's official API `deepseek-flash` name at V4 limits (#11909)",
+              "parents": [
+                "156092e892db5b098bd6d0ecf606dd37449538fe"
+              ],
+              "body_excerpt": "The official DeepSeek API only accepts `deepseek-flash` and `deepseek-v4-pro`\nas model names, but the V4 rules keyed on `/^deepseek-v4/`, so the direct-API\nname fell through to the generic 128K/32K row and long sessions died on\nCOMPRESSION_FAILED_OUTPUT_TRUNCATED. Both rules now match\n`/^deepseek-(?:v4|flash)/`; older families keep their pinned fallbacks.\n\nCloses #11894"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "parent_and_changed_files_recorded",
+              "implementation_diff_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T09:06:50.639984+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "QwenLM__qwen-code__11894__3987391392",
+          "title": "Recognize an official model alias when resolving context and output budgets",
+          "before": "At parent commit 156092e892db5b098bd6d0ecf606dd37449538fe, the ordered input-limit table recognized only names beginning with `deepseek-v4` as the 1,000,000-token tier. The official `deepseek-flash` name therefore matched the later generic `deepseek` rule and resolved to 131,072 input tokens. The output table likewise recognized only `deepseek-v4`; because `deepseek-flash` matched no output-specific rule, `tokenLimit(..., 'output')` returned the 32,000-token default. Existing tests covered V4-prefixed and older-family names but not the official alias.",
+          "after": "At commit 3987391392611e5d1f66851681f13ee7e55f4864, both ordered tables recognize names beginning with either `deepseek-v4` or `deepseek-flash` before their generic fallbacks. Consequently, `deepseek-flash` resolves to a 1,000,000-token input context and a 384,000-token output limit, while older DeepSeek families retain their existing 128K input and family-specific/default output behavior. A focused regression test asserts both limits for the official alias.",
+          "diff": "The change replaces `/^deepseek-v4/` with `/^deepseek-(?:v4|flash)/` in the input and output limit tables, adds comments explaining the official-name alias and ordered-fallback hazard, and adds two regression assertions for `tokenLimit('deepseek-flash')` and `tokenLimit('deepseek-flash', 'output')`. No normalization, compaction algorithm, or generic fallback values were changed."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "Commit 3987391392611e5d1f66851681f13ee7e55f4864 is the implementation-bearing resolution linked to issue 11894 through PR 11909; its parent is 156092e892db5b098bd6d0ecf606dd37449538fe and it changes only the token-limit implementation and its unit test.",
+            "source": "issue-bundle.json fields resolved_commit, parent_commit, linked_pull_requests, commit_show_stat, and changed_files_name_status; local `git show --stat 3987391392611e5d1f66851681f13ee7e55f4864`"
+          },
+          {
+            "id": "E2",
+            "kind": "implementation",
+            "claim": "In the parent implementation, the specific input rule `/^deepseek-v4/` mapped to 1,000,000 tokens and preceded the generic `/^deepseek/` rule mapped to 131,072 tokens, so normalized `deepseek-flash` selected the generic 128K rule.",
+            "source": "`git show 156092e892db5b098bd6d0ecf606dd37449538fe:packages/core/src/core/tokenLimits.ts`, PATTERNS DeepSeek section and first-match `findTokenLimit` loop"
+          },
+          {
+            "id": "E3",
+            "kind": "implementation",
+            "claim": "In the parent output table, only `/^deepseek-v4/` mapped to 384,000 tokens; `deepseek-flash` matched none of the listed DeepSeek output rules and therefore `tokenLimit` used DEFAULT_OUTPUT_TOKEN_LIMIT, whose value is 32,000.",
+            "source": "`git show 156092e892db5b098bd6d0ecf606dd37449538fe:packages/core/src/core/tokenLimits.ts`, DEFAULT_OUTPUT_TOKEN_LIMIT, OUTPUT_PATTERNS, findTokenLimit, and tokenLimit"
+          },
+          {
+            "id": "E4",
+            "kind": "diff",
+            "claim": "The resolution broadens both the input and output V4-tier matchers from `/^deepseek-v4/` to `/^deepseek-(?:v4|flash)/`, keeping these specific rules ahead of generic family fallbacks.",
+            "source": "`git show 3987391392611e5d1f66851681f13ee7e55f4864 -- packages/core/src/core/tokenLimits.ts`"
+          },
+          {
+            "id": "E5",
+            "kind": "implementation",
+            "claim": "The post-change comments state that the official API exposes V4 flash as `deepseek-flash`, that the alternative V4.1 spelling belongs to another endpoint, and that the alias must not fall through to the 128K family rule.",
+            "source": "`git show 3987391392611e5d1f66851681f13ee7e55f4864:packages/core/src/core/tokenLimits.ts`, PATTERNS DeepSeek section"
+          },
+          {
+            "id": "E6",
+            "kind": "call_site",
+            "claim": "`tokenLimit` normalizes the supplied model identifier, performs first-match lookup in the selected input or output table, and falls back to the corresponding default. Its contract documents that it is primarily used during configuration initialization to auto-detect context-window and output-generation limits.",
+            "source": "`git show 3987391392611e5d1f66851681f13ee7e55f4864:packages/core/src/core/tokenLimits.ts`, normalize, findTokenLimit, tokenLimit, and tokenLimit documentation"
+          },
+          {
+            "id": "E7",
+            "kind": "test",
+            "claim": "The added regression test asserts that the official `deepseek-flash` name resolves to 1,000,000 input tokens and 384,000 output tokens.",
+            "source": "`git show 3987391392611e5d1f66851681f13ee7e55f4864:packages/core/src/core/tokenLimits.test.ts`, DeepSeek describe block"
+          },
+          {
+            "id": "E8",
+            "kind": "test",
+            "claim": "Adjacent retained tests assert that V4-prefixed names still resolve to 1,000,000 input tokens and older names such as `deepseek-r1`, `deepseek-v3`, and `deepseek-chat` remain at 131,072 input tokens.",
+            "source": "`git show 3987391392611e5d1f66851681f13ee7e55f4864:packages/core/src/core/tokenLimits.test.ts`, DeepSeek describe block"
+          },
+          {
+            "id": "E9",
+            "kind": "commit",
+            "claim": "The commit message reports that the incorrect 128K/32K resolution caused long sessions to fail with `COMPRESSION_FAILED_OUTPUT_TRUNCATED` and states that the matcher expansion preserves older-family fallbacks.",
+            "source": "Local `git show --format=fuller 3987391392611e5d1f66851681f13ee7e55f4864`; issue-bundle.json provenance.commit.body_excerpt"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "map-official-alias-to-capability-tier",
+            "description": "Extend the specific, ordered resource-limit matchers so an official model alias selects the same input and output capability tier as its equivalent family names without widening the generic family fallback.",
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E8"
+            ],
+            "semantic_action": {
+              "intent": "Prevent a supported model alias from being assigned undersized context and output budgets that can trigger premature compaction or truncated compaction output.",
+              "module_role": "ordered model-capability resolver for context-window and generation budgets",
+              "operation": "map",
+              "pre_state": "A normalized official alias bypasses the specific high-capacity rules, then selects a generic input fallback and the default output fallback.",
+              "post_state": "The official alias selects the intended high-capacity input and output rules before generic fallbacks, while previously classified family names retain their established limits.",
+              "validation": "Resolve both budget types for the alias and check neighboring specific and generic family cases for preservation.",
+              "parameters": [
+                "model identifier alias (`deepseek-flash`)",
+                "specific family matcher (`deepseek-v4`)",
+                "input capability tier (1,000,000)",
+                "output capability tier (384,000)",
+                "generic family input fallback (131,072)",
+                "default output fallback (32,000)"
+              ],
+              "evidence_ids": [
+                "E2",
+                "E3",
+                "E4",
+                "E5",
+                "E6",
+                "E8"
+              ]
+            }
+          },
+          {
+            "name": "lock-alias-budget-resolution-with-regression-coverage",
+            "description": "Add a focused contract test proving that the newly recognized alias resolves correctly in both input-context and output-generation lookup modes.",
+            "evidence_ids": [
+              "E7",
+              "E8"
+            ],
+            "semantic_action": {
+              "intent": "Detect future regressions in either half of the alias-to-budget mapping.",
+              "module_role": "resource-capability mapping regression suite",
+              "operation": "validate",
+              "pre_state": "Tests cover related family spellings and generic fallbacks but do not exercise the official alias.",
+              "post_state": "The regression suite explicitly requires the official alias to return its intended input and output limits and retains coverage of neighboring family behavior.",
+              "validation": "Unit assertions require 1,000,000 for the default input lookup and 384,000 for the output lookup; adjacent assertions cover related V4 and older-family names.",
+              "parameters": [
+                "model identifier alias (`deepseek-flash`)",
+                "lookup mode (`input` or `output`)",
+                "expected input limit (1,000,000)",
+                "expected output limit (384,000)"
+              ],
+              "evidence_ids": [
+                "E7",
+                "E8"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "repair-resource-budget-resolution-for-an-official-alias",
+            "description": "When an accepted runtime identifier falls through an ordered capability table and produces undersized context or output budgets, identify both fallback paths, extend the narrow capability-tier matcher, and lock both lookup modes with regression coverage while preserving neighboring family mappings.",
+            "atomic_names": [
+              "map-official-alias-to-capability-tier",
+              "lock-alias-budget-resolution-with-regression-coverage"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9"
+            ],
+            "workflow_graph": {
+              "goal": "Make a supported official identifier resolve to its actual context-window and output-generation capacities without changing unrelated model-family budgets.",
+              "entry_state": "The identifier is accepted by the external service but is absent from the resolver's specific high-capacity matchers, causing ordered lookup to select generic/default budgets and destabilize long-session compaction.",
+              "exit_state": "Both input and output lookups classify the identifier at the intended capability tier, regression assertions enforce those values, and existing specific and generic family examples retain their prior mappings.",
+              "steps": [
+                {
+                  "action_name": "map-official-alias-to-capability-tier",
+                  "role": "implement",
+                  "optional": false
+                },
+                {
+                  "action_name": "lock-alias-budget-resolution-with-regression-coverage",
+                  "role": "validate",
+                  "optional": false
+                }
+              ],
+              "edges": [
+                {
+                  "from": "map-official-alias-to-capability-tier",
+                  "to": "lock-alias-budget-resolution-with-regression-coverage",
+                  "type": "enables"
+                },
+                {
+                  "from": "lock-alias-budget-resolution-with-regression-coverage",
+                  "to": "map-official-alias-to-capability-tier",
+                  "type": "validates"
+                }
+              ],
+              "unresolved_or_deferred": [
+                "No independent end-to-end long-session or compaction test was added, so prevention of `COMPRESSION_FAILED_OUTPUT_TRUNCATED` is supported by the corrected budget mapping and commit report rather than a reproduced end-to-end oracle.",
+                "GitHub issue body, discussion, reviews, and status checks are unavailable in the supplied evidence bundle.",
+                "This single repository workflow is insufficient to promote a cross-project resolution pattern under the supplied meta-skill contract."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "The checkout working tree is not populated with the tracked files and no JavaScript runtime is available in the environment, so the changed unit test was inspected from the pinned Git objects but not executed during extraction.",
+          "The external service's published capacity documentation is not included in the bundle; the intended 1,000,000/384,000 values are established by repository implementation comments, the commit message, and the added regression expectations.",
+          "No runtime call-site change was required. The inspected function contract establishes configuration-time consumption, but a complete inventory of downstream configuration consumers was not necessary to establish this narrowly scoped mapping resolution."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "map-official-alias-to-capability-tier",
+          "description": "Extend the specific, ordered resource-limit matchers so an official model alias selects the same input and output capability tier as its equivalent family names without widening the generic family fallback.",
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E8"
+          ],
+          "semantic_action": {
+            "intent": "Prevent a supported model alias from being assigned undersized context and output budgets that can trigger premature compaction or truncated compaction output.",
+            "module_role": "ordered model-capability resolver for context-window and generation budgets",
+            "operation": "map",
+            "pre_state": "A normalized official alias bypasses the specific high-capacity rules, then selects a generic input fallback and the default output fallback.",
+            "post_state": "The official alias selects the intended high-capacity input and output rules before generic fallbacks, while previously classified family names retain their established limits.",
+            "validation": "Resolve both budget types for the alias and check neighboring specific and generic family cases for preservation.",
+            "parameters": [
+              "model identifier alias (`deepseek-flash`)",
+              "specific family matcher (`deepseek-v4`)",
+              "input capability tier (1,000,000)",
+              "output capability tier (384,000)",
+              "generic family input fallback (131,072)",
+              "default output fallback (32,000)"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E8"
+            ]
+          }
+        },
+        {
+          "name": "lock-alias-budget-resolution-with-regression-coverage",
+          "description": "Add a focused contract test proving that the newly recognized alias resolves correctly in both input-context and output-generation lookup modes.",
+          "evidence_ids": [
+            "E7",
+            "E8"
+          ],
+          "semantic_action": {
+            "intent": "Detect future regressions in either half of the alias-to-budget mapping.",
+            "module_role": "resource-capability mapping regression suite",
+            "operation": "validate",
+            "pre_state": "Tests cover related family spellings and generic fallbacks but do not exercise the official alias.",
+            "post_state": "The regression suite explicitly requires the official alias to return its intended input and output limits and retains coverage of neighboring family behavior.",
+            "validation": "Unit assertions require 1,000,000 for the default input lookup and 384,000 for the output lookup; adjacent assertions cover related V4 and older-family names.",
+            "parameters": [
+              "model identifier alias (`deepseek-flash`)",
+              "lookup mode (`input` or `output`)",
+              "expected input limit (1,000,000)",
+              "expected output limit (384,000)"
+            ],
+            "evidence_ids": [
+              "E7",
+              "E8"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "repair-resource-budget-resolution-for-an-official-alias",
+          "description": "When an accepted runtime identifier falls through an ordered capability table and produces undersized context or output budgets, identify both fallback paths, extend the narrow capability-tier matcher, and lock both lookup modes with regression coverage while preserving neighboring family mappings.",
+          "atomic_names": [
+            "map-official-alias-to-capability-tier",
+            "lock-alias-budget-resolution-with-regression-coverage"
+          ],
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9"
+          ],
+          "workflow_graph": {
+            "goal": "Make a supported official identifier resolve to its actual context-window and output-generation capacities without changing unrelated model-family budgets.",
+            "entry_state": "The identifier is accepted by the external service but is absent from the resolver's specific high-capacity matchers, causing ordered lookup to select generic/default budgets and destabilize long-session compaction.",
+            "exit_state": "Both input and output lookups classify the identifier at the intended capability tier, regression assertions enforce those values, and existing specific and generic family examples retain their prior mappings.",
+            "steps": [
+              {
+                "action_name": "map-official-alias-to-capability-tier",
+                "role": "implement",
+                "optional": false
+              },
+              {
+                "action_name": "lock-alias-budget-resolution-with-regression-coverage",
+                "role": "validate",
+                "optional": false
+              }
+            ],
+            "edges": [
+              {
+                "from": "map-official-alias-to-capability-tier",
+                "to": "lock-alias-budget-resolution-with-regression-coverage",
+                "type": "enables"
+              },
+              {
+                "from": "lock-alias-budget-resolution-with-regression-coverage",
+                "to": "map-official-alias-to-capability-tier",
+                "type": "validates"
+              }
+            ],
+            "unresolved_or_deferred": [
+              "No independent end-to-end long-session or compaction test was added, so prevention of `COMPRESSION_FAILED_OUTPUT_TRUNCATED` is supported by the corrected budget mapping and commit report rather than a reproduced end-to-end oracle.",
+              "GitHub issue body, discussion, reviews, and status checks are unavailable in the supplied evidence bundle.",
+              "This single repository workflow is insufficient to promote a cross-project resolution pattern under the supplied meta-skill contract."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The checkout working tree is not populated with the tracked files and no JavaScript runtime is available in the environment, so the changed unit test was inspected from the pinned Git objects but not executed during extraction.",
+        "The external service's published capacity documentation is not included in the bundle; the intended 1,000,000/384,000 values are established by repository implementation comments, the commit message, and the added regression expectations.",
+        "No runtime call-site change was required. The inspected function contract establishes configuration-time consumption, but a complete inventory of downstream configuration consumers was not necessary to establish this narrowly scoped mapping resolution."
+      ]
+    },
+    "call_sites": [
+      "`tokenLimit` normalizes the supplied model identifier, performs first-match lookup in the selected input or output table, and falls back to the corresponding default. Its contract documents that it is primarily used during configuration initialization to auto-detect context-window and output-generation limits."
+    ],
+    "tests": [
+      "The added regression test asserts that the official `deepseek-flash` name resolves to 1,000,000 input tokens and 384,000 output tokens.",
+      "Adjacent retained tests assert that V4-prefixed names still resolve to 1,000,000 input tokens and older names such as `deepseek-r1`, `deepseek-v3`, and `deepseek-chat` remain at 131,072 input tokens."
+    ]
+  }
+]

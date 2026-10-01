@@ -1,0 +1,2819 @@
+[
+  {
+    "episode_id": "NousResearch__hermes-agent__115822__656eb28309",
+    "title": "Recover reasoning-only incomplete turns by failing over without leaking protocol-specific replay state",
+    "before": "At parent d45fd1aa31e54e411a0df2661849ccb255c22ed6, an incomplete Codex Responses turn used one bare replay and then a synthetic continuation nudge, but all incomplete responses shared one three-attempt counter. On the third incomplete response, even when every response contained only internal reasoning and no visible answer or tool call, the turn reset the counter, persisted the transcript, and returned a terminal partial result. It did not classify this condition as a failover reason, activate a configured fallback, grant a bounded call when the iteration budget was exhausted, rebind the system prompt to the fallback identity, or remove the Codex-only nudge when assembling a request for another protocol.",
+    "after": "At merge commit 656eb283096c979ae4e6dc454920c2038e622990, the turn maintains a separate consecutive reasoning-only streak, resetting it when visible output or a normal response breaks the streak. The third consecutive incomplete response with neither visible text nor a tool call activates the next configured fallback using the semantic reason incomplete_response. If the trigger consumed the iteration budget, exactly one grace call is armed so the fallback can answer. Response intake then refreshes the active system prompt after failover and continues the same turn. When the destination uses a different protocol, request assembly drops both thinking-only replay rows and the synthetic continuation nudge before merging adjacent user rows, preserving valid role alternation. If no fallback is available, the existing terminal partial-result path remains.",
+    "diff": "The change adds an incomplete_response failover category and per-turn reasoning-only streak state; extends incomplete-response continuation to distinguish visible partials from reasoning-only stalls, activate fallback after three consecutive stalls, and arm one bounded grace call; propagates a fallback-activated control result through response intake so the system prompt is synchronized before retrying; extends transcript normalization with an optional exact nudge marker and applies it only on cross-protocol requests; and adds focused tests for successful fallback with one grace call, streak behavior after visible partial output, cross-protocol cleanup and role alternation, plus enum coverage and fixture initialization.",
+    "repository": "NousResearch/hermes-agent",
+    "revision": "github-issue-115822",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10",
+      "E11",
+      "E12",
+      "E13",
+      "E14",
+      "E15",
+      "E16"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 115822,
+      "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+      "manifest_metadata": {
+        "category": "failure-recovery-and-streaming",
+        "role": "train_candidate",
+        "case_id": "NousResearch__hermes-agent__115822__failure-recovery-and-streaming",
+        "sample_kind": "verified_substitute",
+        "seed_issue": 121320,
+        "seed_issue_url": "https://github.com/NousResearch/hermes-agent/issues/121320",
+        "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+        "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/115822",
+        "provenance": {
+          "classification": "verified_substitute",
+          "seed": {
+            "repository": "NousResearch/hermes-agent",
+            "issue": 121320,
+            "url": "https://github.com/NousResearch/hermes-agent/issues/121320",
+            "table_note": "stream closes before message_stop and persists a truncated answer without retry"
+          },
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 115822,
+            "url": "https://github.com/NousResearch/hermes-agent/pull/115822",
+            "pull_request": 115822,
+            "pull_request_url": "https://github.com/NousResearch/hermes-agent/pull/115822"
+          },
+          "commit": {
+            "sha": "656eb283096c979ae4e6dc454920c2038e622990",
+            "subject": "Merge pull request #115822 from NousResearch/fix/boa-streaming-stalls-timeouts-reasoning-streak",
+            "parents": [
+              "d45fd1aa31e54e411a0df2661849ccb255c22ed6",
+              "e85cb94da126ce77e2e637c29ceabe19164a0ed2"
+            ],
+            "body_excerpt": "fix(agent): Codex reasoning-only stalls switch to the fallback provider instead of ending incomplete (#67321, salvage #67336)"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "parent_and_changed_files_recorded",
+            "implementation_diff_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "NousResearch/hermes-agent",
+        "issue_number": 115822,
+        "issue": {
+          "number": 115822,
+          "title": "Merge pull request #115822 from NousResearch/fix/boa-streaming-stalls-timeouts-reasoning-streak",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 115822,
+              "title": "Merge pull request #115822 from NousResearch/fix/boa-streaming-stalls-timeouts-reasoning-streak",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tagent/agent_runtime_helpers.py"
+              },
+              {
+                "status_line": "M\tagent/error_classifier.py"
+              },
+              {
+                "status_line": "M\tagent/turn_context.py"
+              },
+              {
+                "status_line": "M\tagent/turn_request_assembly.py"
+              },
+              {
+                "status_line": "M\tagent/turn_response_intake.py"
+              },
+              {
+                "status_line": "M\tagent/turn_truncation.py"
+              },
+              {
+                "status_line": "M\ttests/agent/test_codex_incomplete_budget_escalation.py"
+              },
+              {
+                "status_line": "A\ttests/agent/test_codex_reasoning_only_streak.py"
+              },
+              {
+                "status_line": "M\ttests/agent/test_error_classifier.py"
+              },
+              {
+                "status_line": "M\twebsite/docs/developer-guide/agent-loop.md"
+              },
+              {
+                "status_line": "M\tacp_adapter/server.py"
+              },
+              {
+                "status_line": "M\tacp_adapter/session.py"
+              },
+              {
+                "status_line": "M\tagent/chat_completion_helpers.py"
+              },
+              {
+                "status_line": "M\tagent/codex_runtime.py"
+              },
+              {
+                "status_line": "M\tagent/error_classifier.py"
+              },
+              {
+                "status_line": "M\tagent/model_metadata.py"
+              },
+              {
+                "status_line": "M\tagent/transports/codex_app_server_session.py"
+              },
+              {
+                "status_line": "M\tagent/turn_recovery.py"
+              },
+              {
+                "status_line": "M\tagent/turn_response_check.py"
+              },
+              {
+                "status_line": "A\tcontributors/emails/wjsrjsdn12@gmail.com"
+              },
+              {
+                "status_line": "M\tcron/scheduler.py"
+              },
+              {
+                "status_line": "M\tgateway/platforms/api_server.py"
+              },
+              {
+                "status_line": "M\tgateway/run.py"
+              },
+              {
+                "status_line": "M\tgateway/run_turn.py"
+              },
+              {
+                "status_line": "M\tgateway/run_turn_runner.py"
+              },
+              {
+                "status_line": "M\thermes_cli/fallback_config.py"
+              },
+              {
+                "status_line": "M\thermes_cli/runtime_provider_backends.py"
+              },
+              {
+                "status_line": "M\thermes_cli/runtime_provider_custom.py"
+              },
+              {
+                "status_line": "M\ttests/acp_adapter/test_acp_dashboard_model_switch_validation.py"
+              },
+              {
+                "status_line": "M\ttests/acp_adapter/test_session.py"
+              },
+              {
+                "status_line": "M\ttests/agent/test_auxiliary_parameter_rung_chaining.py"
+              },
+              {
+                "status_line": "M\ttests/agent/test_codex_app_server_persist.py"
+              },
+              {
+                "status_line": "A\ttests/agent/test_codex_runtime_prompt_handoff.py"
+              },
+              {
+                "status_line": "A\ttests/agent/test_codex_soft_failure_pool_rotation.py"
+              },
+              {
+                "status_line": "M\ttests/agent/test_error_classifier.py"
+              },
+              {
+                "status_line": "M\ttests/agent/test_output_cap_parsing.py"
+              },
+              {
+                "status_line": "M\ttests/agent/test_reasoning_disable_recovery.py"
+              },
+              {
+                "status_line": "M\ttests/agent/transports/test_codex_app_server_session.py"
+              },
+              {
+                "status_line": "A\ttests/cron/test_cron_pre_agent_fallback_notice.py"
+              },
+              {
+                "status_line": "A\ttests/gateway/test_pre_agent_fallback_notice.py"
+              },
+              {
+                "status_line": "M\ttests/hermes_cli/test_runtime_provider_resolution.py"
+              },
+              {
+                "status_line": "A\ttests/tui_gateway/test_pre_agent_fallback_notice.py"
+              },
+              {
+                "status_line": "M\ttui_gateway/server.py"
+              },
+              {
+                "status_line": "M\twebsite/docs/integrations/providers.md"
+              },
+              {
+                "status_line": "M\twebsite/docs/user-guide/features/codex-app-server-runtime.md"
+              },
+              {
+                "status_line": "M\twebsite/docs/user-guide/features/credential-pools.md"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "656eb283096c979ae4e6dc454920c2038e622990",
+                "subject": "Merge pull request #115822 from NousResearch/fix/boa-streaming-stalls-timeouts-reasoning-streak"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+        "pinned_ref": "656eb283096c979ae4e6dc454920c2038e622990",
+        "resolved_commit": "656eb283096c979ae4e6dc454920c2038e622990",
+        "parent_commit": "d45fd1aa31e54e411a0df2661849ccb255c22ed6",
+        "commit_show_stat": "commit 656eb283096c979ae4e6dc454920c2038e622990\nMerge: d45fd1aa31 e85cb94da1\nAuthor:     Teknium <127238744+teknium1@users.noreply.github.com>\nAuthorDate: Sat Sep 19 11:09:15 2026 -0700\nCommit:     GitHub <noreply@github.com>\nCommitDate: Sat Sep 19 11:09:15 2026 -0700\n\n    Merge pull request #115822 from NousResearch/fix/boa-streaming-stalls-timeouts-reasoning-streak\n    \n    fix(agent): Codex reasoning-only stalls switch to the fallback provider instead of ending incomplete (#67321, salvage #67336)\n\n agent/agent_runtime_helpers.py                     |  13 +-\n agent/error_classifier.py                          |   3 +-\n agent/turn_context.py                              |   3 +\n agent/turn_request_assembly.py                     |  11 +-\n agent/turn_response_intake.py                      |  19 ++-\n agent/turn_truncation.py                           |  43 ++++++-\n .../test_codex_incomplete_budget_escalation.py     |   1 +\n tests/agent/test_codex_reasoning_only_streak.py    | 137 +++++++++++++++++++++\n tests/agent/test_error_classifier.py               |   1 +\n website/docs/developer-guide/agent-loop.md         |   1 +\n 10 files changed, 218 insertions(+), 14 deletions(-)\n",
+        "changed_files_name_status": "M\tagent/agent_runtime_helpers.py\nM\tagent/error_classifier.py\nM\tagent/turn_context.py\nM\tagent/turn_request_assembly.py\nM\tagent/turn_response_intake.py\nM\tagent/turn_truncation.py\nM\ttests/agent/test_codex_incomplete_budget_escalation.py\nA\ttests/agent/test_codex_reasoning_only_streak.py\nM\ttests/agent/test_error_classifier.py\nM\twebsite/docs/developer-guide/agent-loop.md\nM\tacp_adapter/server.py\nM\tacp_adapter/session.py\nM\tagent/chat_completion_helpers.py\nM\tagent/codex_runtime.py\nM\tagent/error_classifier.py\nM\tagent/model_metadata.py\nM\tagent/transports/codex_app_server_session.py\nM\tagent/turn_recovery.py\nM\tagent/turn_response_check.py\nA\tcontributors/emails/wjsrjsdn12@gmail.com\nM\tcron/scheduler.py\nM\tgateway/platforms/api_server.py\nM\tgateway/run.py\nM\tgateway/run_turn.py\nM\tgateway/run_turn_runner.py\nM\thermes_cli/fallback_config.py\nM\thermes_cli/runtime_provider_backends.py\nM\thermes_cli/runtime_provider_custom.py\nM\ttests/acp_adapter/test_acp_dashboard_model_switch_validation.py\nM\ttests/acp_adapter/test_session.py\nM\ttests/agent/test_auxiliary_parameter_rung_chaining.py\nM\ttests/agent/test_codex_app_server_persist.py\nA\ttests/agent/test_codex_runtime_prompt_handoff.py\nA\ttests/agent/test_codex_soft_failure_pool_rotation.py\nM\ttests/agent/test_error_classifier.py\nM\ttests/agent/test_output_cap_parsing.py\nM\ttests/agent/test_reasoning_disable_recovery.py\nM\ttests/agent/transports/test_codex_app_server_session.py\nA\ttests/cron/test_cron_pre_agent_fallback_notice.py\nA\ttests/gateway/test_pre_agent_fallback_notice.py\nM\ttests/hermes_cli/test_runtime_provider_resolution.py\nA\ttests/tui_gateway/test_pre_agent_fallback_notice.py\nM\ttui_gateway/server.py\nM\twebsite/docs/integrations/providers.md\nM\twebsite/docs/user-guide/features/codex-app-server-runtime.md\nM\twebsite/docs/user-guide/features/credential-pools.md\n",
+        "linked_issue_numbers": [
+          115822
+        ],
+        "manifest_metadata": {
+          "category": "failure-recovery-and-streaming",
+          "theme": "retry, timeout, streaming, and network recovery",
+          "file_sample": [
+            "agent/agent_runtime_helpers.py",
+            "agent/error_classifier.py",
+            "agent/turn_context.py",
+            "agent/turn_request_assembly.py",
+            "agent/turn_response_intake.py",
+            "agent/turn_truncation.py",
+            "tests/agent/test_codex_incomplete_budget_escalation.py",
+            "tests/agent/test_codex_reasoning_only_streak.py",
+            "tests/agent/test_error_classifier.py",
+            "website/docs/developer-guide/agent-loop.md"
+          ],
+          "case_id": "NousResearch__hermes-agent__115822__failure-recovery-and-streaming",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_substitute",
+          "seed_issue": 121320,
+          "seed_issue_url": "https://github.com/NousResearch/hermes-agent/issues/121320",
+          "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+          "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/115822",
+          "source": "agent_core_seven_category_extraction_v2",
+          "provenance": {
+            "classification": "verified_substitute",
+            "seed": {
+              "repository": "NousResearch/hermes-agent",
+              "issue": 121320,
+              "url": "https://github.com/NousResearch/hermes-agent/issues/121320",
+              "table_note": "stream closes before message_stop and persists a truncated answer without retry"
+            },
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 115822,
+              "url": "https://github.com/NousResearch/hermes-agent/pull/115822",
+              "pull_request": 115822,
+              "pull_request_url": "https://github.com/NousResearch/hermes-agent/pull/115822"
+            },
+            "commit": {
+              "sha": "656eb283096c979ae4e6dc454920c2038e622990",
+              "subject": "Merge pull request #115822 from NousResearch/fix/boa-streaming-stalls-timeouts-reasoning-streak",
+              "parents": [
+                "d45fd1aa31e54e411a0df2661849ccb255c22ed6",
+                "e85cb94da126ce77e2e637c29ceabe19164a0ed2"
+              ],
+              "body_excerpt": "fix(agent): Codex reasoning-only stalls switch to the fallback provider instead of ending incomplete (#67321, salvage #67336)"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "parent_and_changed_files_recorded",
+              "implementation_diff_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T08:56:18.735416+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "NousResearch__hermes-agent__115822__656eb28309",
+          "title": "Recover reasoning-only incomplete turns by failing over without leaking protocol-specific replay state",
+          "before": "At parent d45fd1aa31e54e411a0df2661849ccb255c22ed6, an incomplete Codex Responses turn used one bare replay and then a synthetic continuation nudge, but all incomplete responses shared one three-attempt counter. On the third incomplete response, even when every response contained only internal reasoning and no visible answer or tool call, the turn reset the counter, persisted the transcript, and returned a terminal partial result. It did not classify this condition as a failover reason, activate a configured fallback, grant a bounded call when the iteration budget was exhausted, rebind the system prompt to the fallback identity, or remove the Codex-only nudge when assembling a request for another protocol.",
+          "after": "At merge commit 656eb283096c979ae4e6dc454920c2038e622990, the turn maintains a separate consecutive reasoning-only streak, resetting it when visible output or a normal response breaks the streak. The third consecutive incomplete response with neither visible text nor a tool call activates the next configured fallback using the semantic reason incomplete_response. If the trigger consumed the iteration budget, exactly one grace call is armed so the fallback can answer. Response intake then refreshes the active system prompt after failover and continues the same turn. When the destination uses a different protocol, request assembly drops both thinking-only replay rows and the synthetic continuation nudge before merging adjacent user rows, preserving valid role alternation. If no fallback is available, the existing terminal partial-result path remains.",
+          "diff": "The change adds an incomplete_response failover category and per-turn reasoning-only streak state; extends incomplete-response continuation to distinguish visible partials from reasoning-only stalls, activate fallback after three consecutive stalls, and arm one bounded grace call; propagates a fallback-activated control result through response intake so the system prompt is synchronized before retrying; extends transcript normalization with an optional exact nudge marker and applies it only on cross-protocol requests; and adds focused tests for successful fallback with one grace call, streak behavior after visible partial output, cross-protocol cleanup and role alternation, plus enum coverage and fixture initialization."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "The pinned implementation is merge commit 656eb283096c979ae4e6dc454920c2038e622990 with first parent d45fd1aa31e54e411a0df2661849ccb255c22ed6; its subject identifies PR #115822 and describes switching reasoning-only stalls to a fallback provider instead of ending incomplete.",
+            "source": "git show --format=fuller --stat 656eb283096c979ae4e6dc454920c2038e622990; issue-bundle.json resolved_commit, parent_commit, and commit_show_stat"
+          },
+          {
+            "id": "E2",
+            "kind": "implementation",
+            "claim": "The parent implementation incremented one aggregate incomplete counter, retried only while it was below three, then reset the counter, persisted the session, and returned a partial result stating that the response remained incomplete after three continuation attempts.",
+            "source": "git show d45fd1aa31e54e411a0df2661849ccb255c22ed6:agent/turn_truncation.py, continue_codex_incomplete"
+          },
+          {
+            "id": "E3",
+            "kind": "diff",
+            "claim": "The change computes reasoning_only as absence of visible content and tool calls, advances a separate consecutive streak only for that condition, and resets the streak on a non-reasoning-only incomplete response.",
+            "source": "git diff d45fd1aa31e54e411a0df2661849ccb255c22ed6 656eb283096c979ae4e6dc454920c2038e622990 -- agent/turn_truncation.py, hunk around continue_codex_incomplete"
+          },
+          {
+            "id": "E4",
+            "kind": "implementation",
+            "claim": "On a reasoning-only streak of at least three, continuation attempts fallback activation with FailoverReason.incomplete_response; successful activation resets both counters, records the session messages, emits diagnostics, and returns the CODEX_FALLBACK_ACTIVATED control value.",
+            "source": "git show 656eb283096c979ae4e6dc454920c2038e622990:agent/turn_truncation.py, continue_codex_incomplete"
+          },
+          {
+            "id": "E5",
+            "kind": "implementation",
+            "claim": "If failover is activated after the normal iteration allowance is consumed, the implementation sets _budget_grace_call so the next iteration can make one fallback request; the streak is reset, preventing this branch from independently granting another grace call.",
+            "source": "git show 656eb283096c979ae4e6dc454920c2038e622990:agent/turn_truncation.py, reasoning-only fallback branch and accompanying invariant comment"
+          },
+          {
+            "id": "E6",
+            "kind": "implementation",
+            "claim": "The error taxonomy gains incomplete_response as the semantic reason for an incomplete turn stuck emitting reasoning without an answer or tool call after replay and nudge.",
+            "source": "git diff d45fd1aa31e54e411a0df2661849ccb255c22ed6 656eb283096c979ae4e6dc454920c2038e622990 -- agent/error_classifier.py"
+          },
+          {
+            "id": "E7",
+            "kind": "implementation",
+            "claim": "Per-turn initialization now resets _codex_reasoning_only_streak to zero independently of the aggregate incomplete-response counter.",
+            "source": "git diff d45fd1aa31e54e411a0df2661849ccb255c22ed6 656eb283096c979ae4e6dc454920c2038e622990 -- agent/turn_context.py"
+          },
+          {
+            "id": "E8",
+            "kind": "call_site",
+            "claim": "Response intake recognizes CODEX_FALLBACK_ACTIVATED, synchronizes the failover system message to the new model/provider identity, returns a continue verdict, and carries the rebound active_system_prompt to its caller.",
+            "source": "git show 656eb283096c979ae4e6dc454920c2038e622990:agent/turn_response_intake.py, ResponseIntakeVerdict and normalize_model_response"
+          },
+          {
+            "id": "E9",
+            "kind": "implementation",
+            "claim": "Transcript normalization accepts an optional exact nudge marker, removes matching synthetic user rows in the same pass as thinking-only assistant rows, and then merges adjacent users to retain valid role alternation.",
+            "source": "git show 656eb283096c979ae4e6dc454920c2038e622990:agent/agent_runtime_helpers.py, drop_thinking_only_and_merge_users"
+          },
+          {
+            "id": "E10",
+            "kind": "call_site",
+            "claim": "Request assembly treats any non-Codex destination as cross-protocol and supplies the Codex continuation nudge as a drop marker while also dropping Codex reasoning items.",
+            "source": "git show 656eb283096c979ae4e6dc454920c2038e622990:agent/turn_request_assembly.py, assemble_api_request"
+          },
+          {
+            "id": "E11",
+            "kind": "test",
+            "claim": "A focused test supplies three reasoning-only incomplete responses followed by a fallback answer and asserts completion, FailoverReason.incomplete_response, four total API calls from a three-call budget, and consumption of the single grace-call flag.",
+            "source": "git show 656eb283096c979ae4e6dc454920c2038e622990:tests/agent/test_codex_reasoning_only_streak.py, test_reasoning_only_streak_reaches_fallback_with_one_grace_call"
+          },
+          {
+            "id": "E12",
+            "kind": "test",
+            "claim": "A focused test places visible partial progress before three reasoning-only responses and verifies that the turn still reaches the configured fallback and completes with its answer, exercising separation of the local consecutive streak from aggregate incomplete handling.",
+            "source": "git show 656eb283096c979ae4e6dc454920c2038e622990:tests/agent/test_codex_reasoning_only_streak.py, test_visible_partial_resets_reasoning_only_streak"
+          },
+          {
+            "id": "E13",
+            "kind": "test",
+            "claim": "A cross-protocol test switches the fallback to chat completions and asserts that the final wire request contains neither the synthetic Codex nudge nor encrypted reasoning items and that its non-system message roles alternate.",
+            "source": "git show 656eb283096c979ae4e6dc454920c2038e622990:tests/agent/test_codex_reasoning_only_streak.py, test_cross_protocol_fallback_wire_drops_codex_nudge_and_replay_state"
+          },
+          {
+            "id": "E14",
+            "kind": "test",
+            "claim": "Enum coverage is updated to require incomplete_response among the supported failover reasons, and existing incomplete-budget test setup initializes the new streak state.",
+            "source": "git diff d45fd1aa31e54e411a0df2661849ccb255c22ed6 656eb283096c979ae4e6dc454920c2038e622990 -- tests/agent/test_error_classifier.py tests/agent/test_codex_incomplete_budget_escalation.py"
+          },
+          {
+            "id": "E15",
+            "kind": "validation",
+            "claim": "Developer documentation records the operational invariant: three consecutive reasoning-only continuations fail over, and exhaustion of the iteration budget permits exactly one bounded fallback grace call.",
+            "source": "git diff d45fd1aa31e54e411a0df2661849ccb255c22ed6 656eb283096c979ae4e6dc454920c2038e622990 -- website/docs/developer-guide/agent-loop.md"
+          },
+          {
+            "id": "E16",
+            "kind": "diff",
+            "claim": "The merge's first-parent diff contains implementation and test changes across the turn state, continuation, response-intake, request-assembly, transcript-normalization, error-taxonomy, and focused-test modules rather than only metadata or documentation.",
+            "source": "git diff --stat d45fd1aa31e54e411a0df2661849ccb255c22ed6 656eb283096c979ae4e6dc454920c2038e622990"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "track-consecutive-nonproductive-stream-responses",
+            "description": "Classify incomplete responses by observable productivity and maintain a local consecutive-stall counter that is independent of the aggregate continuation count.",
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E7",
+              "E12"
+            ],
+            "semantic_action": {
+              "intent": "Distinguish a repeatedly nonproductive response stream from incomplete responses that contain visible progress, so recovery escalation is based on a consecutive failure signal.",
+              "module_role": "turn-level response-state tracker",
+              "operation": "classify",
+              "pre_state": "An incomplete response has been normalized, and the turn has an aggregate continuation count but no independent consecutive reasoning-only signal.",
+              "post_state": "The turn's reasoning-only streak is incremented only when the response has neither visible text nor a tool call and is reset when that predicate is false or normal processing resumes.",
+              "validation": "Exercise a sequence containing visible partial output followed by reasoning-only incompletes and verify that escalation occurs only after the required consecutive reasoning-only responses.",
+              "parameters": [
+                "normalized assistant response",
+                "visible content",
+                "tool calls",
+                "per-turn reasoning-only streak",
+                "aggregate incomplete count"
+              ],
+              "evidence_ids": [
+                "E3",
+                "E7",
+                "E12"
+              ]
+            }
+          },
+          {
+            "name": "escalate-persistent-stream-stall-to-bounded-failover",
+            "description": "After the bounded replay-and-nudge ladder fails to produce an answer or tool call, activate a configured fallback and ensure it receives at most one call beyond an exhausted turn budget.",
+            "evidence_ids": [
+              "E2",
+              "E4",
+              "E5",
+              "E6",
+              "E11",
+              "E15"
+            ],
+            "semantic_action": {
+              "intent": "Recover a turn that repeatedly emits only internal reasoning instead of terminating it as an incomplete partial result when another execution backend is available.",
+              "module_role": "turn recovery and failover controller",
+              "operation": "escalate",
+              "pre_state": "The same turn has produced at least three consecutive incomplete responses with no visible answer and no tool call after the existing replay and continuation-nudge attempts.",
+              "post_state": "A configured fallback is activated with an incomplete-response reason, continuation counters are reset, and the fallback can make exactly one bounded grace request if the ordinary iteration budget was exhausted; without an available fallback, the prior terminal partial path remains.",
+              "validation": "Feed three reasoning-only incomplete responses under a three-call iteration budget, then a fallback answer; assert the semantic failover reason, successful completion, four total calls, and a consumed grace flag.",
+              "parameters": [
+                "consecutive-stall threshold",
+                "fallback chain",
+                "failover reason",
+                "iteration budget",
+                "grace-call flag",
+                "session messages"
+              ],
+              "evidence_ids": [
+                "E4",
+                "E5",
+                "E6",
+                "E11",
+                "E15"
+              ]
+            }
+          },
+          {
+            "name": "reconcile-turn-identity-after-midturn-failover",
+            "description": "Propagate a distinct failover-activated control result through response intake and refresh the active system prompt before continuing the same turn.",
+            "evidence_ids": [
+              "E4",
+              "E8",
+              "E11"
+            ],
+            "semantic_action": {
+              "intent": "Ensure the request following midturn failover represents the newly active model and provider rather than retaining stale identity metadata.",
+              "module_role": "response-intake and turn-continuation coordinator",
+              "operation": "reconcile",
+              "pre_state": "Incomplete-response recovery has activated a fallback during response intake, while the caller still holds a system prompt assembled for the previous backend.",
+              "post_state": "The active system prompt is synchronized to the fallback identity and returned with a continue verdict for the next iteration.",
+              "validation": "Complete a reasoning-only stall sequence through fallback and verify that the same turn continues to and accepts the fallback response; the code-level oracle is the distinct activation sentinel and rebound active_system_prompt.",
+              "parameters": [
+                "fallback activation sentinel",
+                "API messages",
+                "active system prompt",
+                "new model identity",
+                "new provider identity"
+              ],
+              "evidence_ids": [
+                "E4",
+                "E8",
+                "E11"
+              ]
+            }
+          },
+          {
+            "name": "sanitize-protocol-specific-recovery-state-on-failover",
+            "description": "Remove the source protocol's continuation marker and opaque reasoning replay state before sending the preserved conversation to a different protocol, then restore role alternation.",
+            "evidence_ids": [
+              "E9",
+              "E10",
+              "E13"
+            ],
+            "semantic_action": {
+              "intent": "Prevent internal recovery controls and opaque replay artifacts from leaking into a fallback request that cannot interpret them.",
+              "module_role": "outbound conversation projection and normalization",
+              "operation": "sanitize",
+              "pre_state": "A turn has failed over across protocols, and its preserved transcript may contain thinking-only assistant replay rows plus a synthetic user continuation marker.",
+              "post_state": "The destination request excludes source-protocol reasoning state and the exact synthetic marker, adjacent user messages are merged, and non-system roles alternate.",
+              "validation": "Capture the first cross-protocol fallback request and assert absence of both the marker and encrypted reasoning items while checking adjacent roles differ.",
+              "parameters": [
+                "source protocol",
+                "destination protocol",
+                "synthetic continuation marker",
+                "reasoning replay fields",
+                "API message copy"
+              ],
+              "evidence_ids": [
+                "E9",
+                "E10",
+                "E13"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "recover-a-reasoning-only-stream-stall-through-safe-failover",
+            "description": "Detect consecutive nonproductive incomplete responses, escalate only after bounded continuation attempts, reconcile the active turn identity, and project a clean transcript to the fallback protocol before validating completion and budget bounds.",
+            "atomic_names": [
+              "track-consecutive-nonproductive-stream-responses",
+              "escalate-persistent-stream-stall-to-bounded-failover",
+              "reconcile-turn-identity-after-midturn-failover",
+              "sanitize-protocol-specific-recovery-state-on-failover"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E8",
+              "E9",
+              "E10",
+              "E11",
+              "E12",
+              "E13",
+              "E15"
+            ],
+            "workflow_graph": {
+              "goal": "Complete a turn through an available fallback when bounded stream continuation repeatedly yields internal reasoning but no visible answer or tool call, without unbounded retries or protocol-state leakage.",
+              "entry_state": "A streaming/response-oriented backend has returned an incomplete response, the turn supports replay and continuation, and a fallback may be configured.",
+              "exit_state": "Either the configured fallback receives a normalized continuation and completes the same turn within the bounded grace policy, or no fallback is available and the established terminal partial-result behavior is used.",
+              "steps": [
+                {
+                  "action_name": "track-consecutive-nonproductive-stream-responses",
+                  "role": "diagnose",
+                  "optional": false
+                },
+                {
+                  "action_name": "escalate-persistent-stream-stall-to-bounded-failover",
+                  "role": "repair",
+                  "optional": false
+                },
+                {
+                  "action_name": "reconcile-turn-identity-after-midturn-failover",
+                  "role": "reconcile",
+                  "optional": false
+                },
+                {
+                  "action_name": "sanitize-protocol-specific-recovery-state-on-failover",
+                  "role": "implement",
+                  "optional": true
+                }
+              ],
+              "edges": [
+                {
+                  "from": "track-consecutive-nonproductive-stream-responses",
+                  "to": "escalate-persistent-stream-stall-to-bounded-failover",
+                  "type": "enables"
+                },
+                {
+                  "from": "escalate-persistent-stream-stall-to-bounded-failover",
+                  "to": "reconcile-turn-identity-after-midturn-failover",
+                  "type": "requires"
+                },
+                {
+                  "from": "reconcile-turn-identity-after-midturn-failover",
+                  "to": "sanitize-protocol-specific-recovery-state-on-failover",
+                  "type": "enables"
+                },
+                {
+                  "from": "sanitize-protocol-specific-recovery-state-on-failover",
+                  "to": "escalate-persistent-stream-stall-to-bounded-failover",
+                  "type": "validates"
+                }
+              ],
+              "unresolved_or_deferred": [
+                "Cross-protocol transcript sanitization is conditional: it is unnecessary when the fallback retains the same response protocol.",
+                "The evidence establishes the configured no-fallback branch by implementation inspection, but the new focused test file does not include a dedicated assertion for that branch.",
+                "This single repository workflow is insufficient to induce or promote a cross-project resolution pattern."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "The checkout worktree is sparse and does not contain the tests directory; focused tests were inspected directly from the pinned Git objects, but an attempted isolated archive-based test run was interrupted before completion, so no local execution result is claimed.",
+          "The GitHub bundle lacks the PR body, reviews, comments, timeline, and status checks; therefore motivation and acceptance claims are limited to the pinned commit, first-parent implementation diff, test code, and documentation.",
+          "The bundle identifies this PR as a verified same-repository substitute for unresolved seed issue 121320. No equivalence claim is made beyond the supplied provenance and the directly established behavior of PR #115822."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "track-consecutive-nonproductive-stream-responses",
+          "description": "Classify incomplete responses by observable productivity and maintain a local consecutive-stall counter that is independent of the aggregate continuation count.",
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E7",
+            "E12"
+          ],
+          "semantic_action": {
+            "intent": "Distinguish a repeatedly nonproductive response stream from incomplete responses that contain visible progress, so recovery escalation is based on a consecutive failure signal.",
+            "module_role": "turn-level response-state tracker",
+            "operation": "classify",
+            "pre_state": "An incomplete response has been normalized, and the turn has an aggregate continuation count but no independent consecutive reasoning-only signal.",
+            "post_state": "The turn's reasoning-only streak is incremented only when the response has neither visible text nor a tool call and is reset when that predicate is false or normal processing resumes.",
+            "validation": "Exercise a sequence containing visible partial output followed by reasoning-only incompletes and verify that escalation occurs only after the required consecutive reasoning-only responses.",
+            "parameters": [
+              "normalized assistant response",
+              "visible content",
+              "tool calls",
+              "per-turn reasoning-only streak",
+              "aggregate incomplete count"
+            ],
+            "evidence_ids": [
+              "E3",
+              "E7",
+              "E12"
+            ]
+          }
+        },
+        {
+          "name": "escalate-persistent-stream-stall-to-bounded-failover",
+          "description": "After the bounded replay-and-nudge ladder fails to produce an answer or tool call, activate a configured fallback and ensure it receives at most one call beyond an exhausted turn budget.",
+          "evidence_ids": [
+            "E2",
+            "E4",
+            "E5",
+            "E6",
+            "E11",
+            "E15"
+          ],
+          "semantic_action": {
+            "intent": "Recover a turn that repeatedly emits only internal reasoning instead of terminating it as an incomplete partial result when another execution backend is available.",
+            "module_role": "turn recovery and failover controller",
+            "operation": "escalate",
+            "pre_state": "The same turn has produced at least three consecutive incomplete responses with no visible answer and no tool call after the existing replay and continuation-nudge attempts.",
+            "post_state": "A configured fallback is activated with an incomplete-response reason, continuation counters are reset, and the fallback can make exactly one bounded grace request if the ordinary iteration budget was exhausted; without an available fallback, the prior terminal partial path remains.",
+            "validation": "Feed three reasoning-only incomplete responses under a three-call iteration budget, then a fallback answer; assert the semantic failover reason, successful completion, four total calls, and a consumed grace flag.",
+            "parameters": [
+              "consecutive-stall threshold",
+              "fallback chain",
+              "failover reason",
+              "iteration budget",
+              "grace-call flag",
+              "session messages"
+            ],
+            "evidence_ids": [
+              "E4",
+              "E5",
+              "E6",
+              "E11",
+              "E15"
+            ]
+          }
+        },
+        {
+          "name": "reconcile-turn-identity-after-midturn-failover",
+          "description": "Propagate a distinct failover-activated control result through response intake and refresh the active system prompt before continuing the same turn.",
+          "evidence_ids": [
+            "E4",
+            "E8",
+            "E11"
+          ],
+          "semantic_action": {
+            "intent": "Ensure the request following midturn failover represents the newly active model and provider rather than retaining stale identity metadata.",
+            "module_role": "response-intake and turn-continuation coordinator",
+            "operation": "reconcile",
+            "pre_state": "Incomplete-response recovery has activated a fallback during response intake, while the caller still holds a system prompt assembled for the previous backend.",
+            "post_state": "The active system prompt is synchronized to the fallback identity and returned with a continue verdict for the next iteration.",
+            "validation": "Complete a reasoning-only stall sequence through fallback and verify that the same turn continues to and accepts the fallback response; the code-level oracle is the distinct activation sentinel and rebound active_system_prompt.",
+            "parameters": [
+              "fallback activation sentinel",
+              "API messages",
+              "active system prompt",
+              "new model identity",
+              "new provider identity"
+            ],
+            "evidence_ids": [
+              "E4",
+              "E8",
+              "E11"
+            ]
+          }
+        },
+        {
+          "name": "sanitize-protocol-specific-recovery-state-on-failover",
+          "description": "Remove the source protocol's continuation marker and opaque reasoning replay state before sending the preserved conversation to a different protocol, then restore role alternation.",
+          "evidence_ids": [
+            "E9",
+            "E10",
+            "E13"
+          ],
+          "semantic_action": {
+            "intent": "Prevent internal recovery controls and opaque replay artifacts from leaking into a fallback request that cannot interpret them.",
+            "module_role": "outbound conversation projection and normalization",
+            "operation": "sanitize",
+            "pre_state": "A turn has failed over across protocols, and its preserved transcript may contain thinking-only assistant replay rows plus a synthetic user continuation marker.",
+            "post_state": "The destination request excludes source-protocol reasoning state and the exact synthetic marker, adjacent user messages are merged, and non-system roles alternate.",
+            "validation": "Capture the first cross-protocol fallback request and assert absence of both the marker and encrypted reasoning items while checking adjacent roles differ.",
+            "parameters": [
+              "source protocol",
+              "destination protocol",
+              "synthetic continuation marker",
+              "reasoning replay fields",
+              "API message copy"
+            ],
+            "evidence_ids": [
+              "E9",
+              "E10",
+              "E13"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "recover-a-reasoning-only-stream-stall-through-safe-failover",
+          "description": "Detect consecutive nonproductive incomplete responses, escalate only after bounded continuation attempts, reconcile the active turn identity, and project a clean transcript to the fallback protocol before validating completion and budget bounds.",
+          "atomic_names": [
+            "track-consecutive-nonproductive-stream-responses",
+            "escalate-persistent-stream-stall-to-bounded-failover",
+            "reconcile-turn-identity-after-midturn-failover",
+            "sanitize-protocol-specific-recovery-state-on-failover"
+          ],
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E8",
+            "E9",
+            "E10",
+            "E11",
+            "E12",
+            "E13",
+            "E15"
+          ],
+          "workflow_graph": {
+            "goal": "Complete a turn through an available fallback when bounded stream continuation repeatedly yields internal reasoning but no visible answer or tool call, without unbounded retries or protocol-state leakage.",
+            "entry_state": "A streaming/response-oriented backend has returned an incomplete response, the turn supports replay and continuation, and a fallback may be configured.",
+            "exit_state": "Either the configured fallback receives a normalized continuation and completes the same turn within the bounded grace policy, or no fallback is available and the established terminal partial-result behavior is used.",
+            "steps": [
+              {
+                "action_name": "track-consecutive-nonproductive-stream-responses",
+                "role": "diagnose",
+                "optional": false
+              },
+              {
+                "action_name": "escalate-persistent-stream-stall-to-bounded-failover",
+                "role": "repair",
+                "optional": false
+              },
+              {
+                "action_name": "reconcile-turn-identity-after-midturn-failover",
+                "role": "reconcile",
+                "optional": false
+              },
+              {
+                "action_name": "sanitize-protocol-specific-recovery-state-on-failover",
+                "role": "implement",
+                "optional": true
+              }
+            ],
+            "edges": [
+              {
+                "from": "track-consecutive-nonproductive-stream-responses",
+                "to": "escalate-persistent-stream-stall-to-bounded-failover",
+                "type": "enables"
+              },
+              {
+                "from": "escalate-persistent-stream-stall-to-bounded-failover",
+                "to": "reconcile-turn-identity-after-midturn-failover",
+                "type": "requires"
+              },
+              {
+                "from": "reconcile-turn-identity-after-midturn-failover",
+                "to": "sanitize-protocol-specific-recovery-state-on-failover",
+                "type": "enables"
+              },
+              {
+                "from": "sanitize-protocol-specific-recovery-state-on-failover",
+                "to": "escalate-persistent-stream-stall-to-bounded-failover",
+                "type": "validates"
+              }
+            ],
+            "unresolved_or_deferred": [
+              "Cross-protocol transcript sanitization is conditional: it is unnecessary when the fallback retains the same response protocol.",
+              "The evidence establishes the configured no-fallback branch by implementation inspection, but the new focused test file does not include a dedicated assertion for that branch.",
+              "This single repository workflow is insufficient to induce or promote a cross-project resolution pattern."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The checkout worktree is sparse and does not contain the tests directory; focused tests were inspected directly from the pinned Git objects, but an attempted isolated archive-based test run was interrupted before completion, so no local execution result is claimed.",
+        "The GitHub bundle lacks the PR body, reviews, comments, timeline, and status checks; therefore motivation and acceptance claims are limited to the pinned commit, first-parent implementation diff, test code, and documentation.",
+        "The bundle identifies this PR as a verified same-repository substitute for unresolved seed issue 121320. No equivalence claim is made beyond the supplied provenance and the directly established behavior of PR #115822."
+      ]
+    },
+    "call_sites": [
+      "Response intake recognizes CODEX_FALLBACK_ACTIVATED, synchronizes the failover system message to the new model/provider identity, returns a continue verdict, and carries the rebound active_system_prompt to its caller.",
+      "Request assembly treats any non-Codex destination as cross-protocol and supplies the Codex continuation nudge as a drop marker while also dropping Codex reasoning items."
+    ],
+    "tests": [
+      "A focused test supplies three reasoning-only incomplete responses followed by a fallback answer and asserts completion, FailoverReason.incomplete_response, four total API calls from a three-call budget, and consumption of the single grace-call flag.",
+      "A focused test places visible partial progress before three reasoning-only responses and verifies that the turn still reaches the configured fallback and completes with its answer, exercising separation of the local consecutive streak from aggregate incomplete handling.",
+      "A cross-protocol test switches the fallback to chat completions and asserts that the final wire request contains neither the synthetic Codex nudge nor encrypted reasoning items and that its non-system message roles alternate.",
+      "Enum coverage is updated to require incomplete_response among the supported failover reasons, and existing incomplete-budget test setup initializes the new streak state."
+    ]
+  },
+  {
+    "episode_id": "QwenLM__qwen-code__7832__d7c0d4ca",
+    "title": "Resume partially delivered streams after retryable socket closure without duplicating output",
+    "before": "At parent commit 3d1eba935f6a75d9e67adf667002700c5c592ec2, the stream loop could replay a request only when the current attempt had produced no non-thought content. If a retryable socket-level transport error occurred after visible answer text had reached the caller, replay was rejected to avoid duplication and the transport error propagated. Text-only partial output was not durable history, so there was no continuation path that both preserved the caller's visible prefix and reconstructed the complete model turn.",
+    "after": "At d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5, retryable transport cuts with accumulated nonblank text and no function call enter a separately budgeted continuation path. Each continuation request temporarily appends the delivered model prefix and a fenced resume instruction, emits a continuation RETRY so consumers retain displayed text, deduplicates overlap at attempt boundaries, and merges the delivered prefix into the successful trailing model turn. Fresh-restart retries and reactive compression clear staged continuation state; function-call cuts and exhausted continuation budgets still propagate.",
+    "diff": "The change adds a three-attempt continuation budget and shared recovery-message construction; tracks per-attempt and accumulated delivered text plus function-call presence; distinguishes clean replay from continuation using accumulated visible output; creates request-only synthetic continuation turns; emits continuation-aware retry events; resets staged state whenever another recovery branch restarts from rebuilt/original contents; folds repeated overlap between attempts; and prepends the recovered prefix into durable history. The test suite adds scenarios for successful continuation, history reconstruction, repeated cuts, overlap removal, thought-only or empty later attempts, budget exhaustion, function-call exclusion, clean replay cases, and continuation supersession by other retry paths.",
+    "repository": "QwenLM/qwen-code",
+    "revision": "github-issue-7832",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10",
+      "E11",
+      "E12",
+      "E13",
+      "E14"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "QwenLM/qwen-code",
+      "issue": 7832,
+      "checkout": "/home/chenyujia/tritonToLlvm/qwen-code",
+      "manifest_metadata": {
+        "category": "failure-recovery-and-streaming",
+        "role": "train_candidate",
+        "case_id": "QwenLM__qwen-code__7832__failure-recovery-and-streaming",
+        "sample_kind": "exact_table_row",
+        "seed_issue": 7832,
+        "seed_issue_url": "https://github.com/QwenLM/qwen-code/issues/7832",
+        "seed_relation": "exact_table_row_with_verified_resolution",
+        "resolution_url": "https://github.com/QwenLM/qwen-code/pull/7896",
+        "provenance": {
+          "classification": "exact_table_row",
+          "seed": {
+            "repository": "QwenLM/qwen-code",
+            "issue": 7832,
+            "url": "https://github.com/QwenLM/qwen-code/issues/7832",
+            "table_note": "socket close in YOLO mode is not retried"
+          },
+          "resolution_artifact": {
+            "type": "issue",
+            "number": 7832,
+            "url": "https://github.com/QwenLM/qwen-code/issues/7832",
+            "pull_request": 7896,
+            "pull_request_url": "https://github.com/QwenLM/qwen-code/pull/7896"
+          },
+          "commit": {
+            "sha": "d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5",
+            "subject": "fix(core): resume long streams cut by a socket-level close (#7896)",
+            "parents": [
+              "3d1eba935f6a75d9e67adf667002700c5c592ec2"
+            ],
+            "body_excerpt": "* fix(core): resume long streams cut by a socket-level close\n\nLong generations that are cut mid-response by a gateway SSE idle timeout\n(DashScope closes at ~3-5 min) failed outright, however many retries were\nconfigured. The stream retry loop could only recover by *replaying* the\nrequest, and that path is gated on `!streamYieldedChunk` — by the time a\nlong answer is cut, chunks have obviously been delivered, so the gate was\nshut exactly when recovery was needed.\n\nTwo changes:\n\n- Widen the replay gate from \"any chunk yielded\" to \"visible output\n  yielded\" (non-blank answer text or a functionCall). Thinking models emit\n  reasoning within seconds, which made replay unreachable for the very\n  generations that need it. The UI's non-continuation RETRY handler clears\n  the thought buffer, and the"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "parent_and_changed_files_recorded",
+            "implementation_diff_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "QwenLM/qwen-code",
+        "issue_number": 7832,
+        "issue": {
+          "number": 7832,
+          "title": "fix(core): resume long streams cut by a socket-level close (#7896)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 7896,
+              "title": "fix(core): resume long streams cut by a socket-level close (#7896)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tpackages/core/src/core/geminiChat.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/core/src/core/geminiChat.ts"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5",
+                "subject": "fix(core): resume long streams cut by a socket-level close (#7896)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/qwen-code",
+        "pinned_ref": "d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5",
+        "resolved_commit": "d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5",
+        "parent_commit": "3d1eba935f6a75d9e67adf667002700c5c592ec2",
+        "commit_show_stat": "commit d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5\nAuthor:     LHMQ878 <72402929@cityu-dg.edu.cn>\nAuthorDate: Sun Aug 2 22:20:05 2026 +0800\nCommit:     GitHub <noreply@github.com>\nCommitDate: Sun Aug 2 14:20:05 2026 +0000\n\n    fix(core): resume long streams cut by a socket-level close (#7896)\n    \n    * fix(core): resume long streams cut by a socket-level close\n    \n    Long generations that are cut mid-response by a gateway SSE idle timeout\n    (DashScope closes at ~3-5 min) failed outright, however many retries were\n    configured. The stream retry loop could only recover by *replaying* the\n    request, and that path is gated on `!streamYieldedChunk` — by the time a\n    long answer is cut, chunks have obviously been delivered, so the gate was\n    shut exactly when recovery was needed.\n    \n    Two changes:\n    \n    - Widen the replay gate from \"any chunk yielded\" to \"visible output\n      yielded\" (non-blank answer text or a functionCall). Thinking models emit\n      reasoning within seconds, which made replay unreachable for the very\n      generations that need it. The UI's non-continuation RETRY handler clears\n      the thought buffer, and the rate-limit and invalid-stream branches\n      already re-send after thoughts have streamed, so this matches existing\n      behaviour rather than adding risk.\n    \n    - Add continuation recovery for cuts that already delivered answer text,\n      where replaying would duplicate what the caller has on screen. Keep the\n      delivered text, ask the model to resume from it, and emit\n      `{ RETRY, isContinuation: true }` so the UI keeps its text buffer — the\n      same shape the MAX_TOKENS truncation path already uses. The synthetic\n      turns are built into the request only, never written to `history`, so\n      they cannot leak into the transcript or a later compression; on success\n      the delivered prefix is merged back into the trailing model turn, with\n      replayed overlap deduped by the existing recovery helper. Budget of 3,\n      since one generation can be cut repeatedly by the same timeout.\n    \n    Cuts that delivered a `functionCall` are excluded: injecting a user turn\n    between a `functionCall` and its `functionResponse` yields a sequence\n    providers reject, and the scheduler's repair path already covers it.\n    \n    Fixes #7832\n    \n    * fix(core): reset continuation state on every fresh-restart retry\n    \n    Review found that the `suppressNextRetryEvent` arm bypasses the\n    continuation reset. Two branches emit a non-continuation RETRY *and* set\n    `suppressNextRetryEvent`, so the next loop iteration takes the suppress\n    arm and skips the `else if` that clears the staged continuation:\n    \n    - the transport replay branch, reachable when a continuation attempt is\n      itself cut before yielding visible output, and\n    - the reactive compression branch, which is if anything more likely on a\n      continuation attempt, since that request carries the delivered text and\n      the resume instruction on top of the original contents.\n    \n    Either way the UI has dropped the delivered text (plain RETRY) while the\n    request still asks the model to resume from it, and the merge on success\n    writes that discarded text back into history — a permanent UI/history\n    mismatch visible on `/compress` and `--resume`.\n    \n    Extract the reset into `resetTransportContinuation()` and call it from\n    both branches before they set the flag. Resetting inside the suppress arm\n    instead would clear the state of a continuation that is legitimately in\n    flight.\n    \n    The pre-existing supersession test used `InvalidStreamError`, whose retry\n    branch does not set `suppressNextRetryEvent`, so it exercised the\n    `else if` path and neither trigger. Add a test per branch; both fail if\n    their reset is removed.\n    \n    * fix(core): dedup replayed overlap when an intermediate cut is continued\n    \n    The continuation buffer accumulated each attempt's delivered text with a\n    raw `+=`. Overlap dedup ran only at merge time, comparing the *final*\n    attempt against the buffer, so an overlap replayed by an intermediate\n    attempt was never stripped: it was baked into the buffer, sent in every\n    later request, and merged into durable history.\n    \n    Reachable because maxContinuationRetries is 3, so two cuts fit in one\n    send. Attempt 1 delivers \"part one \" and is cut; attempt 2 replays its\n    tail as \"part one part two \" and is cut too. The buffer became\n    \"part one part one part two \" — corrupting /compress, --resume, and the\n    context of every later turn.\n    \n    The fix folds one attempt at a time. A per-attempt buffer collects the\n    running attempt's text, and the catch path folds it into the accumulated\n    buffer through getRecoveryContinuationSuffix, stripping whatever that\n    attempt replayed. Deduping per chunk instead would be wrong: the overlap\n    scan is suffix-anchored, so it would eat legitimately repeated text\n    mid-stream. The attempt boundary is the only place a replay can occur.\n    \n    Also covers the two untested branches of the delivered-text merge, both\n    of which already behaved correctly: a continuation leading with a thought\n    part (the text merges into the text part, not ahead of the thinking) and\n    one that finishes with only a thought part (the delivered text is\n    inserted after it). Without coverage a regression in the insert position\n    would silently misplace text in history.\n    \n    276 tests pass in geminiChat.test.ts; tsc and eslint clean.\n    \n    * fix(core): keep continuing when a later attempt is cut before it delivers\n    \n    The replay gate tests `!streamYieldedContentChunk`, which is declared inside\n    the attempt loop and therefore per-attempt. That cannot distinguish \"nothing\n    has been delivered to the caller\" from \"this attempt was cut before delivering\n    anything, after earlier attempts already put text on screen\" — and only the\n    first is replayable. Because the replay branch is checked before the\n    continuation branch, the second case fell into it: `resetTransportContinuation()`\n    dropped the accumulated text and a plain RETRY (no `isContinuation`) told the UI\n    to discard output the user was watching, after which the model regenerated it\n    from scratch.\n    \n    Reachable two ways once a continuation is in flight, both with\n    `transportStreamRetryCount` still 0 so the replay budget is intact:\n    \n      - attempt 1 delivers \"part one \" -> continuation; attempt 2 is cut while\n        still in its thinking phase, so it yields only a thought part and\n        `streamYieldedContentChunk` is false;\n      - the same, with attempt 2 cut having yielded nothing at all.\n    \n    Gate the replay branch on the accumulated buffer being empty as well. The two\n    gates are now exact complements (`=== 0` here, `> 0` on the continuation\n    branch), so a retryable transport cut after any delivered text always\n    continues and never replays. The `resetTransportContinuation()` call inside the\n    branch now has nothing to clear; it stays as an assertion of that invariant so\n    a future gate change cannot leak staged text into a restarted attempt.\n    \n    `drops a pending continuation when a replay takes over` asserted the old\n    behaviour for the yielded-nothing case — it was written to pin the design's\n    internal consistency, not a user-visible requirement, and that premise is what\n    this fixes. Rewritten as `keeps continuing when a later attempt is cut with\n    nothing yielded`, asserting the delivered text survives into the third request\n    and into history. The sibling tests covering the *other* plain-RETRY paths\n    (fresh-restart retry, reactive compression) are unchanged and still pass:\n    those genuinely do discard the delivered text, and reaching them still resets.\n    \n    Also extracts the resume instruction shared verbatim by\n    OUTPUT_RECOVERY_MESSAGE and TRANSPORT_CONTINUATION_MESSAGE into\n    RECOVERY_RESUME_INSTRUCTION. Only the lead-in sentence naming the cause\n    differed, so tuning the wording on one path silently left the other on the old\n    text. Both resulting strings are byte-identical to before.\n    \n    277 tests pass in geminiChat.test.ts; both new tests verified failing without\n    the source change. tsc --noEmit and eslint clean.\n    \n    * docs(core): correct the foldTransportAttemptText call-site comment\n    \n    The comment claimed the fold runs on both exits from an attempt. It runs\n    only in the catch block; the success exit merges the continuation prefix\n    into history and breaks without folding.\n    \n    No behaviour change — every read of the accumulated buffer is inside the\n    catch, after the fold. But the comment would mislead anyone adding a\n    post-loop read, which would silently omit the last attempt's text, so the\n    note now says which exit folds and what a new reader would have to do.\n    \n    ---------\n    \n    Co-authored-by: LHMQ878 <LHMQ878@users.noreply.github.com>\n\n packages/core/src/core/geminiChat.test.ts | 1011 ++++++++++++++++++++++++++---\n packages/core/src/core/geminiChat.ts      |  327 +++++++++-\n 2 files changed, 1229 insertions(+), 109 deletions(-)\n",
+        "changed_files_name_status": "M\tpackages/core/src/core/geminiChat.test.ts\nM\tpackages/core/src/core/geminiChat.ts\n",
+        "linked_issue_numbers": [
+          7832
+        ],
+        "manifest_metadata": {
+          "category": "failure-recovery-and-streaming",
+          "theme": "retry, timeout, streaming, and network recovery",
+          "file_sample": [
+            "packages/core/src/core/geminiChat.test.ts",
+            "packages/core/src/core/geminiChat.ts"
+          ],
+          "case_id": "QwenLM__qwen-code__7832__failure-recovery-and-streaming",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "exact_table_row",
+          "seed_issue": 7832,
+          "seed_issue_url": "https://github.com/QwenLM/qwen-code/issues/7832",
+          "seed_relation": "exact_table_row_with_verified_resolution",
+          "resolution_url": "https://github.com/QwenLM/qwen-code/pull/7896",
+          "source": "agent_core_seven_category_extraction_v2",
+          "provenance": {
+            "classification": "exact_table_row",
+            "seed": {
+              "repository": "QwenLM/qwen-code",
+              "issue": 7832,
+              "url": "https://github.com/QwenLM/qwen-code/issues/7832",
+              "table_note": "socket close in YOLO mode is not retried"
+            },
+            "resolution_artifact": {
+              "type": "issue",
+              "number": 7832,
+              "url": "https://github.com/QwenLM/qwen-code/issues/7832",
+              "pull_request": 7896,
+              "pull_request_url": "https://github.com/QwenLM/qwen-code/pull/7896"
+            },
+            "commit": {
+              "sha": "d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5",
+              "subject": "fix(core): resume long streams cut by a socket-level close (#7896)",
+              "parents": [
+                "3d1eba935f6a75d9e67adf667002700c5c592ec2"
+              ],
+              "body_excerpt": "* fix(core): resume long streams cut by a socket-level close\n\nLong generations that are cut mid-response by a gateway SSE idle timeout\n(DashScope closes at ~3-5 min) failed outright, however many retries were\nconfigured. The stream retry loop could only recover by *replaying* the\nrequest, and that path is gated on `!streamYieldedChunk` — by the time a\nlong answer is cut, chunks have obviously been delivered, so the gate was\nshut exactly when recovery was needed.\n\nTwo changes:\n\n- Widen the replay gate from \"any chunk yielded\" to \"visible output\n  yielded\" (non-blank answer text or a functionCall). Thinking models emit\n  reasoning within seconds, which made replay unreachable for the very\n  generations that need it. The UI's non-continuation RETRY handler clears\n  the thought buffer, and the"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "parent_and_changed_files_recorded",
+              "implementation_diff_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T09:02:10.491477+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "QwenLM__qwen-code__7832__d7c0d4ca",
+          "title": "Resume partially delivered streams after retryable socket closure without duplicating output",
+          "before": "At parent commit 3d1eba935f6a75d9e67adf667002700c5c592ec2, the stream loop could replay a request only when the current attempt had produced no non-thought content. If a retryable socket-level transport error occurred after visible answer text had reached the caller, replay was rejected to avoid duplication and the transport error propagated. Text-only partial output was not durable history, so there was no continuation path that both preserved the caller's visible prefix and reconstructed the complete model turn.",
+          "after": "At d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5, retryable transport cuts with accumulated nonblank text and no function call enter a separately budgeted continuation path. Each continuation request temporarily appends the delivered model prefix and a fenced resume instruction, emits a continuation RETRY so consumers retain displayed text, deduplicates overlap at attempt boundaries, and merges the delivered prefix into the successful trailing model turn. Fresh-restart retries and reactive compression clear staged continuation state; function-call cuts and exhausted continuation budgets still propagate.",
+          "diff": "The change adds a three-attempt continuation budget and shared recovery-message construction; tracks per-attempt and accumulated delivered text plus function-call presence; distinguishes clean replay from continuation using accumulated visible output; creates request-only synthetic continuation turns; emits continuation-aware retry events; resets staged state whenever another recovery branch restarts from rebuilt/original contents; folds repeated overlap between attempts; and prepends the recovered prefix into durable history. The test suite adds scenarios for successful continuation, history reconstruction, repeated cuts, overlap removal, thought-only or empty later attempts, budget exhaustion, function-call exclusion, clean replay cases, and continuation supersession by other retry paths."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "Commit d7c0d4ca resolves issue #7832 through PR #7896 and states that long streams cut after visible output previously failed because replay was unsafe and unavailable.",
+            "source": "issue-bundle.json linked_pull_requests[0] and commit_show_stat; commit d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5"
+          },
+          {
+            "id": "E2",
+            "kind": "implementation",
+            "claim": "The parent implementation replayed curated transport failures only while the current attempt had yielded no non-thought content; otherwise it logged skipped_after_content and propagated the error.",
+            "source": "git show 3d1eba935f6a75d9e67adf667002700c5c592ec2:packages/core/src/core/geminiChat.ts, stream transport retry branch around parent lines 2681-2720"
+          },
+          {
+            "id": "E3",
+            "kind": "diff",
+            "claim": "The change introduces maxContinuationRetries=3, separate accumulated/per-attempt continuation text, a continuation prefix, and attempt-boundary overlap folding.",
+            "source": "git diff 3d1eba935f6a75d9e67adf667002700c5c592ec2 d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5 -- packages/core/src/core/geminiChat.ts; resulting lines 489-502 and 2527-2660"
+          },
+          {
+            "id": "E4",
+            "kind": "implementation",
+            "claim": "A continuation attempt is admitted only for a retryable transport error with no yielded function call, nonblank accumulated text, and remaining continuation budget; it emits RETRY with isContinuation=true.",
+            "source": "git show d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5:packages/core/src/core/geminiChat.ts lines 2906-2943"
+          },
+          {
+            "id": "E5",
+            "kind": "implementation",
+            "claim": "Continuation requests append the accumulated prefix as a synthetic model turn and a fenced resume instruction as a synthetic user turn without writing those turns to durable history.",
+            "source": "git show d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5:packages/core/src/core/geminiChat.ts lines 2596-2631"
+          },
+          {
+            "id": "E6",
+            "kind": "implementation",
+            "claim": "On each failed attempt, delivered text is folded into the accumulated buffer through the existing recovery suffix helper, removing replayed overlap at the attempt boundary.",
+            "source": "git show d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5:packages/core/src/core/geminiChat.ts lines 2647-2660 and 2731-2737"
+          },
+          {
+            "id": "E7",
+            "kind": "implementation",
+            "claim": "After a successful continuation, the delivered prefix is merged into the trailing model turn, preserving leading thought parts and deduplicating overlap with continuation text.",
+            "source": "git show d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5:packages/core/src/core/geminiChat.ts lines 2724-2729 and 4901-4947"
+          },
+          {
+            "id": "E8",
+            "kind": "implementation",
+            "claim": "Fresh-restart recovery paths clear all continuation state, including ordinary replay and reactive compression, so request state and the caller's buffer-discarding retry event remain consistent.",
+            "source": "git show d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5:packages/core/src/core/geminiChat.ts lines 2632-2645, 2873-2888, and 3033-3043"
+          },
+          {
+            "id": "E9",
+            "kind": "call_site",
+            "claim": "The stream producer uses the pre-existing continuation-aware retry event shape, emitting isContinuation=true when the consumer must preserve already displayed text and plain RETRY when a fresh restart discards it.",
+            "source": "git show d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5:packages/core/src/core/geminiChat.ts lines 2935-2943; same file also contains existing MAX_TOKENS continuation emissions around lines 3368 and 3448"
+          },
+          {
+            "id": "E10",
+            "kind": "test",
+            "claim": "Tests verify that a visible prefix survives a socket cut, the next request carries the prefix and resume instruction, the retry is marked as a continuation, and caller output is delivered once in order.",
+            "source": "git show d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5:packages/core/src/core/geminiChat.test.ts lines 7623-7685"
+          },
+          {
+            "id": "E11",
+            "kind": "test",
+            "claim": "Tests verify durable history reconstruction, absence of synthetic recovery instructions from history, overlap removal, repeated-cut accumulation, and correct placement around thought parts.",
+            "source": "git show d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5:packages/core/src/core/geminiChat.test.ts lines 7687-7994"
+          },
+          {
+            "id": "E12",
+            "kind": "test",
+            "claim": "Tests verify bounded failure and exclusions: the fourth cut propagates after three continuations, and a cut containing a function call is not continued.",
+            "source": "git show d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5:packages/core/src/core/geminiChat.test.ts lines 7996-8079"
+          },
+          {
+            "id": "E13",
+            "kind": "test",
+            "claim": "Tests verify recovery-path reconciliation: thought-only and blank initial output use clean replay; accumulated text remains in continuation mode when a later attempt yields only thought or nothing; fresh-restart invalid-stream recovery and reactive compression discard stale continuation state.",
+            "source": "git show d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5:packages/core/src/core/geminiChat.test.ts lines 7839-7889 and 8081-8347"
+          },
+          {
+            "id": "E14",
+            "kind": "validation",
+            "claim": "The commit record reports 277 geminiChat tests passing and TypeScript and ESLint checks clean after the final behavioral revisions.",
+            "source": "issue-bundle.json commit_show_stat for d7c0d4ca7706ede8d1c8877a20343aa3e1d40bf5"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "route transport failure by delivered semantic output",
+            "description": "Choose replay, continuation, or propagation using accumulated visible text, per-attempt output type, function-call presence, and bounded retry state rather than treating every emitted chunk equivalently.",
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E12",
+              "E13"
+            ],
+            "semantic_action": {
+              "intent": "Recover retryable stream cuts without duplicating visible output or creating invalid tool-call sequencing.",
+              "module_role": "stream recovery policy",
+              "operation": "route",
+              "pre_state": "A streaming attempt ended with a classified retryable transport error, with observed output and retry counters available.",
+              "post_state": "No visible accumulated text selects bounded clean replay; accumulated nonblank text without a function call selects bounded continuation; unsafe or exhausted cases propagate.",
+              "validation": "Branch tests distinguish visible text, thought-only output, blank text, later empty/thinking attempts, function calls, and exhausted budgets.",
+              "parameters": [
+                "transport error classification",
+                "accumulated visible text",
+                "current-attempt content flags",
+                "function-call presence",
+                "replay budget",
+                "continuation budget"
+              ],
+              "evidence_ids": [
+                "E2",
+                "E4",
+                "E12",
+                "E13"
+              ]
+            }
+          },
+          {
+            "name": "stage an isolated continuation request",
+            "description": "Construct the next request from the original contents plus request-only synthetic turns containing the delivered prefix and a resume instruction, while signaling consumers to retain displayed output.",
+            "evidence_ids": [
+              "E4",
+              "E5",
+              "E9",
+              "E10"
+            ],
+            "semantic_action": {
+              "intent": "Ask the model to continue after already delivered output without replaying the original answer or polluting the transcript.",
+              "module_role": "request adaptation and stream-event coordination",
+              "operation": "adapt",
+              "pre_state": "Continuation routing has selected recovery and a nonblank delivered prefix is available.",
+              "post_state": "The next attempt sees the delivered prefix and a fenced resume instruction; durable history remains unchanged by the synthetic turns; consumers receive a continuation-aware retry signal.",
+              "validation": "The continuation test inspects the second request, retry event, ordered caller output, and durable history for absence of the injected instruction.",
+              "parameters": [
+                "original request contents",
+                "delivered text prefix",
+                "recovery lead message",
+                "suffix fence",
+                "continuation retry event"
+              ],
+              "evidence_ids": [
+                "E4",
+                "E5",
+                "E9",
+                "E10",
+                "E11"
+              ]
+            }
+          },
+          {
+            "name": "fold attempt output without replayed overlap",
+            "description": "Accumulate output only at attempt boundaries and remove any suffix/prefix overlap replayed by an intermediate continuation attempt.",
+            "evidence_ids": [
+              "E3",
+              "E6",
+              "E11"
+            ],
+            "semantic_action": {
+              "intent": "Prevent repeated model tails from being embedded in later requests and durable history across multiple stream cuts.",
+              "module_role": "multi-attempt output accumulator",
+              "operation": "reconcile",
+              "pre_state": "A continuation attempt has ended after delivering zero or more text chunks, possibly repeating the prior attempt's tail.",
+              "post_state": "The accumulated continuation buffer contains every delivered fragment in order with cross-attempt overlap represented once.",
+              "validation": "Tests cover final-attempt overlap, overlap from an intermediate cut attempt, and accumulation across repeated cuts.",
+              "parameters": [
+                "accumulated prefix",
+                "current-attempt text",
+                "overlap suffix matcher"
+              ],
+              "evidence_ids": [
+                "E6",
+                "E11"
+              ]
+            }
+          },
+          {
+            "name": "restore complete durable response history",
+            "description": "Merge the caller-visible prefix into the successful continuation turn, deduplicating overlap and retaining the model turn's thought/text part ordering.",
+            "evidence_ids": [
+              "E7",
+              "E11"
+            ],
+            "semantic_action": {
+              "intent": "Keep durable conversation state consistent with the complete response already observed by the caller.",
+              "module_role": "conversation history reconciler",
+              "operation": "merge",
+              "pre_state": "A continuation attempt completed successfully, but durable history contains only that attempt's resumed portion while the earlier visible prefix is held separately.",
+              "post_state": "The trailing model turn contains the complete response exactly once, synthetic continuation turns are absent, and thought parts retain their relative placement.",
+              "validation": "History tests assert complete stitched text, overlap removal, no synthetic instruction leakage, merging after a leading thought, and insertion when no continuation text part exists.",
+              "parameters": [
+                "delivered prefix",
+                "trailing model turn",
+                "plain-text part selector",
+                "overlap suffix matcher"
+              ],
+              "evidence_ids": [
+                "E7",
+                "E11"
+              ]
+            }
+          },
+          {
+            "name": "clear continuation state when recovery strategy is superseded",
+            "description": "Discard staged prefix and counters before any non-continuation restart that rebuilds or replays the request and tells consumers to drop existing output.",
+            "evidence_ids": [
+              "E8",
+              "E13"
+            ],
+            "semantic_action": {
+              "intent": "Prevent caller-visible state and durable/request state from diverging when another recovery mechanism replaces an in-flight continuation.",
+              "module_role": "retry-state lifecycle controller",
+              "operation": "reset",
+              "pre_state": "A continuation is staged, but a fresh-restart retry or reactive compression takes ownership and emits a non-continuation retry event.",
+              "post_state": "The subsequent request contains no stale delivered prefix or continuation instruction, and successful history matches the clean restarted answer.",
+              "validation": "Tests exercise invalid-stream fresh restart and reactive compression superseding a pending continuation, asserting the discarded prefix is absent from the next request and final history.",
+              "parameters": [
+                "continuation counter",
+                "accumulated text",
+                "attempt text",
+                "staged prefix",
+                "replacement request contents"
+              ],
+              "evidence_ids": [
+                "E8",
+                "E13"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "recover a retryable mid-stream transport cut while preserving response continuity",
+            "description": "A partial-order recovery workflow for long-running streams: classify output semantics, continue from visible text when safe, deduplicate across repeated attempts, reconcile successful output into history, and reset staged state if another restart mechanism supersedes continuation.",
+            "atomic_names": [
+              "route transport failure by delivered semantic output",
+              "stage an isolated continuation request",
+              "fold attempt output without replayed overlap",
+              "restore complete durable response history",
+              "clear continuation state when recovery strategy is superseded"
+            ],
+            "evidence_ids": [
+              "E1",
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E10",
+              "E11",
+              "E12",
+              "E13",
+              "E14"
+            ],
+            "workflow_graph": {
+              "goal": "Complete a response interrupted by retryable stream transport failures without duplicating caller-visible text, corrupting tool sequencing, or leaving durable history inconsistent.",
+              "entry_state": "A streaming response has failed with a classified retryable socket-level transport error; the system knows what the current and prior attempts delivered and has bounded recovery budgets.",
+              "exit_state": "Either the response completes with caller output and durable history containing the same full text exactly once, or recovery stops and propagates the transport error when continuation is unsafe or exhausted.",
+              "steps": [
+                {
+                  "action_name": "route transport failure by delivered semantic output",
+                  "role": "diagnose",
+                  "optional": false
+                },
+                {
+                  "action_name": "fold attempt output without replayed overlap",
+                  "role": "reconcile",
+                  "optional": false
+                },
+                {
+                  "action_name": "stage an isolated continuation request",
+                  "role": "implement",
+                  "optional": true
+                },
+                {
+                  "action_name": "restore complete durable response history",
+                  "role": "reconcile",
+                  "optional": true
+                },
+                {
+                  "action_name": "clear continuation state when recovery strategy is superseded",
+                  "role": "repair",
+                  "optional": true
+                }
+              ],
+              "edges": [
+                {
+                  "from": "fold attempt output without replayed overlap",
+                  "to": "route transport failure by delivered semantic output",
+                  "type": "enables"
+                },
+                {
+                  "from": "route transport failure by delivered semantic output",
+                  "to": "stage an isolated continuation request",
+                  "type": "enables"
+                },
+                {
+                  "from": "stage an isolated continuation request",
+                  "to": "fold attempt output without replayed overlap",
+                  "type": "enables"
+                },
+                {
+                  "from": "stage an isolated continuation request",
+                  "to": "restore complete durable response history",
+                  "type": "enables"
+                },
+                {
+                  "from": "route transport failure by delivered semantic output",
+                  "to": "clear continuation state when recovery strategy is superseded",
+                  "type": "enables"
+                },
+                {
+                  "from": "clear continuation state when recovery strategy is superseded",
+                  "to": "restore complete durable response history",
+                  "type": "repairs"
+                }
+              ],
+              "unresolved_or_deferred": [
+                "Continuation is intentionally not applicable after a yielded function call because inserting a user recovery turn would break the required function-call/function-response adjacency.",
+                "Recovery is bounded: after three continuation attempts the transport error propagates.",
+                "The implementation uses model-generated continuation rather than byte-exact transport resumption, so semantic continuation quality remains model-dependent.",
+                "A cross-project resolution pattern is deferred because this single episode cannot satisfy the required multi-repository support and holdout gates."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "The GitHub bundle lacks the original issue body, comments, PR body, reviews, and status-check records; issue motivation and review rationale are therefore limited to the pinned commit message and checkout evidence.",
+          "The reported 277-test, TypeScript, and ESLint validation result comes from the commit record; this extraction did not independently execute the repository test suite.",
+          "No consumer-side file for isContinuation was available in the sparse checkout; call-site semantics are supported by the producer's pre-existing continuation event usage, implementation comments, and tests that assert plain versus continuation retries."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "route transport failure by delivered semantic output",
+          "description": "Choose replay, continuation, or propagation using accumulated visible text, per-attempt output type, function-call presence, and bounded retry state rather than treating every emitted chunk equivalently.",
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E12",
+            "E13"
+          ],
+          "semantic_action": {
+            "intent": "Recover retryable stream cuts without duplicating visible output or creating invalid tool-call sequencing.",
+            "module_role": "stream recovery policy",
+            "operation": "route",
+            "pre_state": "A streaming attempt ended with a classified retryable transport error, with observed output and retry counters available.",
+            "post_state": "No visible accumulated text selects bounded clean replay; accumulated nonblank text without a function call selects bounded continuation; unsafe or exhausted cases propagate.",
+            "validation": "Branch tests distinguish visible text, thought-only output, blank text, later empty/thinking attempts, function calls, and exhausted budgets.",
+            "parameters": [
+              "transport error classification",
+              "accumulated visible text",
+              "current-attempt content flags",
+              "function-call presence",
+              "replay budget",
+              "continuation budget"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E4",
+              "E12",
+              "E13"
+            ]
+          }
+        },
+        {
+          "name": "stage an isolated continuation request",
+          "description": "Construct the next request from the original contents plus request-only synthetic turns containing the delivered prefix and a resume instruction, while signaling consumers to retain displayed output.",
+          "evidence_ids": [
+            "E4",
+            "E5",
+            "E9",
+            "E10"
+          ],
+          "semantic_action": {
+            "intent": "Ask the model to continue after already delivered output without replaying the original answer or polluting the transcript.",
+            "module_role": "request adaptation and stream-event coordination",
+            "operation": "adapt",
+            "pre_state": "Continuation routing has selected recovery and a nonblank delivered prefix is available.",
+            "post_state": "The next attempt sees the delivered prefix and a fenced resume instruction; durable history remains unchanged by the synthetic turns; consumers receive a continuation-aware retry signal.",
+            "validation": "The continuation test inspects the second request, retry event, ordered caller output, and durable history for absence of the injected instruction.",
+            "parameters": [
+              "original request contents",
+              "delivered text prefix",
+              "recovery lead message",
+              "suffix fence",
+              "continuation retry event"
+            ],
+            "evidence_ids": [
+              "E4",
+              "E5",
+              "E9",
+              "E10",
+              "E11"
+            ]
+          }
+        },
+        {
+          "name": "fold attempt output without replayed overlap",
+          "description": "Accumulate output only at attempt boundaries and remove any suffix/prefix overlap replayed by an intermediate continuation attempt.",
+          "evidence_ids": [
+            "E3",
+            "E6",
+            "E11"
+          ],
+          "semantic_action": {
+            "intent": "Prevent repeated model tails from being embedded in later requests and durable history across multiple stream cuts.",
+            "module_role": "multi-attempt output accumulator",
+            "operation": "reconcile",
+            "pre_state": "A continuation attempt has ended after delivering zero or more text chunks, possibly repeating the prior attempt's tail.",
+            "post_state": "The accumulated continuation buffer contains every delivered fragment in order with cross-attempt overlap represented once.",
+            "validation": "Tests cover final-attempt overlap, overlap from an intermediate cut attempt, and accumulation across repeated cuts.",
+            "parameters": [
+              "accumulated prefix",
+              "current-attempt text",
+              "overlap suffix matcher"
+            ],
+            "evidence_ids": [
+              "E6",
+              "E11"
+            ]
+          }
+        },
+        {
+          "name": "restore complete durable response history",
+          "description": "Merge the caller-visible prefix into the successful continuation turn, deduplicating overlap and retaining the model turn's thought/text part ordering.",
+          "evidence_ids": [
+            "E7",
+            "E11"
+          ],
+          "semantic_action": {
+            "intent": "Keep durable conversation state consistent with the complete response already observed by the caller.",
+            "module_role": "conversation history reconciler",
+            "operation": "merge",
+            "pre_state": "A continuation attempt completed successfully, but durable history contains only that attempt's resumed portion while the earlier visible prefix is held separately.",
+            "post_state": "The trailing model turn contains the complete response exactly once, synthetic continuation turns are absent, and thought parts retain their relative placement.",
+            "validation": "History tests assert complete stitched text, overlap removal, no synthetic instruction leakage, merging after a leading thought, and insertion when no continuation text part exists.",
+            "parameters": [
+              "delivered prefix",
+              "trailing model turn",
+              "plain-text part selector",
+              "overlap suffix matcher"
+            ],
+            "evidence_ids": [
+              "E7",
+              "E11"
+            ]
+          }
+        },
+        {
+          "name": "clear continuation state when recovery strategy is superseded",
+          "description": "Discard staged prefix and counters before any non-continuation restart that rebuilds or replays the request and tells consumers to drop existing output.",
+          "evidence_ids": [
+            "E8",
+            "E13"
+          ],
+          "semantic_action": {
+            "intent": "Prevent caller-visible state and durable/request state from diverging when another recovery mechanism replaces an in-flight continuation.",
+            "module_role": "retry-state lifecycle controller",
+            "operation": "reset",
+            "pre_state": "A continuation is staged, but a fresh-restart retry or reactive compression takes ownership and emits a non-continuation retry event.",
+            "post_state": "The subsequent request contains no stale delivered prefix or continuation instruction, and successful history matches the clean restarted answer.",
+            "validation": "Tests exercise invalid-stream fresh restart and reactive compression superseding a pending continuation, asserting the discarded prefix is absent from the next request and final history.",
+            "parameters": [
+              "continuation counter",
+              "accumulated text",
+              "attempt text",
+              "staged prefix",
+              "replacement request contents"
+            ],
+            "evidence_ids": [
+              "E8",
+              "E13"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "recover a retryable mid-stream transport cut while preserving response continuity",
+          "description": "A partial-order recovery workflow for long-running streams: classify output semantics, continue from visible text when safe, deduplicate across repeated attempts, reconcile successful output into history, and reset staged state if another restart mechanism supersedes continuation.",
+          "atomic_names": [
+            "route transport failure by delivered semantic output",
+            "stage an isolated continuation request",
+            "fold attempt output without replayed overlap",
+            "restore complete durable response history",
+            "clear continuation state when recovery strategy is superseded"
+          ],
+          "evidence_ids": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10",
+            "E11",
+            "E12",
+            "E13",
+            "E14"
+          ],
+          "workflow_graph": {
+            "goal": "Complete a response interrupted by retryable stream transport failures without duplicating caller-visible text, corrupting tool sequencing, or leaving durable history inconsistent.",
+            "entry_state": "A streaming response has failed with a classified retryable socket-level transport error; the system knows what the current and prior attempts delivered and has bounded recovery budgets.",
+            "exit_state": "Either the response completes with caller output and durable history containing the same full text exactly once, or recovery stops and propagates the transport error when continuation is unsafe or exhausted.",
+            "steps": [
+              {
+                "action_name": "route transport failure by delivered semantic output",
+                "role": "diagnose",
+                "optional": false
+              },
+              {
+                "action_name": "fold attempt output without replayed overlap",
+                "role": "reconcile",
+                "optional": false
+              },
+              {
+                "action_name": "stage an isolated continuation request",
+                "role": "implement",
+                "optional": true
+              },
+              {
+                "action_name": "restore complete durable response history",
+                "role": "reconcile",
+                "optional": true
+              },
+              {
+                "action_name": "clear continuation state when recovery strategy is superseded",
+                "role": "repair",
+                "optional": true
+              }
+            ],
+            "edges": [
+              {
+                "from": "fold attempt output without replayed overlap",
+                "to": "route transport failure by delivered semantic output",
+                "type": "enables"
+              },
+              {
+                "from": "route transport failure by delivered semantic output",
+                "to": "stage an isolated continuation request",
+                "type": "enables"
+              },
+              {
+                "from": "stage an isolated continuation request",
+                "to": "fold attempt output without replayed overlap",
+                "type": "enables"
+              },
+              {
+                "from": "stage an isolated continuation request",
+                "to": "restore complete durable response history",
+                "type": "enables"
+              },
+              {
+                "from": "route transport failure by delivered semantic output",
+                "to": "clear continuation state when recovery strategy is superseded",
+                "type": "enables"
+              },
+              {
+                "from": "clear continuation state when recovery strategy is superseded",
+                "to": "restore complete durable response history",
+                "type": "repairs"
+              }
+            ],
+            "unresolved_or_deferred": [
+              "Continuation is intentionally not applicable after a yielded function call because inserting a user recovery turn would break the required function-call/function-response adjacency.",
+              "Recovery is bounded: after three continuation attempts the transport error propagates.",
+              "The implementation uses model-generated continuation rather than byte-exact transport resumption, so semantic continuation quality remains model-dependent.",
+              "A cross-project resolution pattern is deferred because this single episode cannot satisfy the required multi-repository support and holdout gates."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The GitHub bundle lacks the original issue body, comments, PR body, reviews, and status-check records; issue motivation and review rationale are therefore limited to the pinned commit message and checkout evidence.",
+        "The reported 277-test, TypeScript, and ESLint validation result comes from the commit record; this extraction did not independently execute the repository test suite.",
+        "No consumer-side file for isContinuation was available in the sparse checkout; call-site semantics are supported by the producer's pre-existing continuation event usage, implementation comments, and tests that assert plain versus continuation retries."
+      ]
+    },
+    "call_sites": [
+      "The stream producer uses the pre-existing continuation-aware retry event shape, emitting isContinuation=true when the consumer must preserve already displayed text and plain RETRY when a fresh restart discards it."
+    ],
+    "tests": [
+      "Tests verify that a visible prefix survives a socket cut, the next request carries the prefix and resume instruction, the retry is marked as a continuation, and caller output is delivered once in order.",
+      "Tests verify durable history reconstruction, absence of synthetic recovery instructions from history, overlap removal, repeated-cut accumulation, and correct placement around thought parts.",
+      "Tests verify bounded failure and exclusions: the fourth cut propagates after three continuations, and a cut containing a function call is not continued.",
+      "Tests verify recovery-path reconciliation: thought-only and blank initial output use clean replay; accumulated text remains in continuation mode when a later attempt yields only thought or nothing; fresh-restart invalid-stream recovery and reactive compression discard stale continuation state."
+    ]
+  },
+  {
+    "episode_id": "google-gemini__gemini-cli__26519__f5c0977e96",
+    "title": "Recover a streamed response after premature transport closure",
+    "before": "At parent e80d7cc08303c78813508a9ea028f06fd3121e06, the shared retry classifier's exact network-code allowlist did not include ERR_STREAM_PREMATURE_CLOSE. An error carrying that code therefore did not satisfy the network-code retry branch and was not reported under that code by retry telemetry; during streamed response iteration, this prevented the established retry path from recovering solely on the basis of the premature-close code.",
+    "after": "At f5c0977e96b05f973d664772a6d8962dd12577ba, ERR_STREAM_PREMATURE_CLOSE is an exact member of the transient network-code allowlist. The shared classifier consequently treats the error as retryable and preserves the code as its telemetry error type. A regression test demonstrates a stream yielding incomplete content and then throwing this error, followed by a retry event and a complete response from the next stream attempt.",
+    "diff": "The implementation adds one network error code to RETRYABLE_NETWORK_CODES in packages/core/src/utils/retry.ts. The accompanying 62-line regression test configures two stream attempts: the first yields an incomplete chunk and throws an Error whose code is ERR_STREAM_PREMATURE_CLOSE; the second yields a STOP-terminated response. It asserts emission of a retry event, delivery of the successful second-attempt chunk, and retry logging with error_type ERR_STREAM_PREMATURE_CLOSE.",
+    "repository": "google-gemini/gemini-cli",
+    "revision": "github-issue-26519",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 26519,
+      "checkout": "/home/chenyujia/tritonToLlvm/gemini-cli",
+      "manifest_metadata": {
+        "category": "failure-recovery-and-streaming",
+        "role": "train_candidate",
+        "case_id": "google-gemini__gemini-cli__26519__failure-recovery-and-streaming",
+        "sample_kind": "verified_substitute",
+        "seed_issue": 29264,
+        "seed_issue_url": "https://github.com/google-gemini/gemini-cli/issues/29264",
+        "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+        "resolution_url": "https://github.com/google-gemini/gemini-cli/pull/26519",
+        "provenance": {
+          "classification": "verified_substitute",
+          "seed": {
+            "repository": "google-gemini/gemini-cli",
+            "issue": 29264,
+            "url": "https://github.com/google-gemini/gemini-cli/issues/29264",
+            "table_note": "interrupted turn poisons context and enters an infinite loop"
+          },
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 26519,
+            "url": "https://github.com/google-gemini/gemini-cli/pull/26519",
+            "pull_request": 26519,
+            "pull_request_url": "https://github.com/google-gemini/gemini-cli/pull/26519"
+          },
+          "commit": {
+            "sha": "f5c0977e96b05f973d664772a6d8962dd12577ba",
+            "subject": "fix(core): retry on ERR_STREAM_PREMATURE_CLOSE errors (#26519)",
+            "parents": [
+              "e80d7cc08303c78813508a9ea028f06fd3121e06"
+            ],
+            "body_excerpt": ""
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "parent_and_changed_files_recorded",
+            "implementation_diff_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "google-gemini/gemini-cli",
+        "issue_number": 26519,
+        "issue": {
+          "number": 26519,
+          "title": "fix(core): retry on ERR_STREAM_PREMATURE_CLOSE errors (#26519)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 26519,
+              "title": "fix(core): retry on ERR_STREAM_PREMATURE_CLOSE errors (#26519)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tpackages/core/src/core/geminiChat_network_retry.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/core/src/utils/retry.ts"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "f5c0977e96b05f973d664772a6d8962dd12577ba",
+                "subject": "fix(core): retry on ERR_STREAM_PREMATURE_CLOSE errors (#26519)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/gemini-cli",
+        "pinned_ref": "f5c0977e96b05f973d664772a6d8962dd12577ba",
+        "resolved_commit": "f5c0977e96b05f973d664772a6d8962dd12577ba",
+        "parent_commit": "e80d7cc08303c78813508a9ea028f06fd3121e06",
+        "commit_show_stat": "commit f5c0977e96b05f973d664772a6d8962dd12577ba\nAuthor:     Coco Sheng <cocosheng@google.com>\nAuthorDate: Tue May 5 15:19:50 2026 -0400\nCommit:     GitHub <noreply@github.com>\nCommitDate: Tue May 5 19:19:50 2026 +0000\n\n    fix(core): retry on ERR_STREAM_PREMATURE_CLOSE errors (#26519)\n\n .../core/src/core/geminiChat_network_retry.test.ts | 62 ++++++++++++++++++++++\n packages/core/src/utils/retry.ts                   |  1 +\n 2 files changed, 63 insertions(+)\n",
+        "changed_files_name_status": "M\tpackages/core/src/core/geminiChat_network_retry.test.ts\nM\tpackages/core/src/utils/retry.ts\n",
+        "linked_issue_numbers": [
+          26519
+        ],
+        "manifest_metadata": {
+          "category": "failure-recovery-and-streaming",
+          "theme": "retry, timeout, streaming, and network recovery",
+          "file_sample": [
+            "packages/core/src/core/geminiChat_network_retry.test.ts",
+            "packages/core/src/utils/retry.ts"
+          ],
+          "case_id": "google-gemini__gemini-cli__26519__failure-recovery-and-streaming",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_substitute",
+          "seed_issue": 29264,
+          "seed_issue_url": "https://github.com/google-gemini/gemini-cli/issues/29264",
+          "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+          "resolution_url": "https://github.com/google-gemini/gemini-cli/pull/26519",
+          "source": "agent_core_seven_category_extraction_v2",
+          "provenance": {
+            "classification": "verified_substitute",
+            "seed": {
+              "repository": "google-gemini/gemini-cli",
+              "issue": 29264,
+              "url": "https://github.com/google-gemini/gemini-cli/issues/29264",
+              "table_note": "interrupted turn poisons context and enters an infinite loop"
+            },
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 26519,
+              "url": "https://github.com/google-gemini/gemini-cli/pull/26519",
+              "pull_request": 26519,
+              "pull_request_url": "https://github.com/google-gemini/gemini-cli/pull/26519"
+            },
+            "commit": {
+              "sha": "f5c0977e96b05f973d664772a6d8962dd12577ba",
+              "subject": "fix(core): retry on ERR_STREAM_PREMATURE_CLOSE errors (#26519)",
+              "parents": [
+                "e80d7cc08303c78813508a9ea028f06fd3121e06"
+              ],
+              "body_excerpt": ""
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "parent_and_changed_files_recorded",
+              "implementation_diff_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T09:06:07.548120+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "google-gemini__gemini-cli__26519__f5c0977e96",
+          "title": "Recover a streamed response after premature transport closure",
+          "before": "At parent e80d7cc08303c78813508a9ea028f06fd3121e06, the shared retry classifier's exact network-code allowlist did not include ERR_STREAM_PREMATURE_CLOSE. An error carrying that code therefore did not satisfy the network-code retry branch and was not reported under that code by retry telemetry; during streamed response iteration, this prevented the established retry path from recovering solely on the basis of the premature-close code.",
+          "after": "At f5c0977e96b05f973d664772a6d8962dd12577ba, ERR_STREAM_PREMATURE_CLOSE is an exact member of the transient network-code allowlist. The shared classifier consequently treats the error as retryable and preserves the code as its telemetry error type. A regression test demonstrates a stream yielding incomplete content and then throwing this error, followed by a retry event and a complete response from the next stream attempt.",
+          "diff": "The implementation adds one network error code to RETRYABLE_NETWORK_CODES in packages/core/src/utils/retry.ts. The accompanying 62-line regression test configures two stream attempts: the first yields an incomplete chunk and throws an Error whose code is ERR_STREAM_PREMATURE_CLOSE; the second yields a STOP-terminated response. It asserts emission of a retry event, delivery of the successful second-attempt chunk, and retry logging with error_type ERR_STREAM_PREMATURE_CLOSE."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "Commit f5c0977e96b05f973d664772a6d8962dd12577ba is the implementation-bearing resolution for PR/issue 26519, has parent e80d7cc08303c78813508a9ea028f06fd3121e06, and changes the retry utility and streamed-chat network retry test.",
+            "source": "issue-bundle.json fields resolved_commit, parent_commit, linked_pull_requests[0].files, linked_pull_requests[0].commits; git show --stat f5c0977e96b05f973d664772a6d8962dd12577ba"
+          },
+          {
+            "id": "E2",
+            "kind": "diff",
+            "claim": "The parent retryable network-code list contains connection, DNS, protocol, SSL, and transport-timeout codes but not ERR_STREAM_PREMATURE_CLOSE.",
+            "source": "git show e80d7cc08303c78813508a9ea028f06fd3121e06:packages/core/src/utils/retry.ts, RETRYABLE_NETWORK_CODES definition"
+          },
+          {
+            "id": "E3",
+            "kind": "implementation",
+            "claim": "The resolved implementation adds ERR_STREAM_PREMATURE_CLOSE to RETRYABLE_NETWORK_CODES; isRetryableSslErrorCode accepts exact members of this list, isRetryableError returns true when the extracted code satisfies that predicate, and getRetryErrorType returns the accepted code for telemetry.",
+            "source": "git show f5c0977e96b05f973d664772a6d8962dd12577ba:packages/core/src/utils/retry.ts, RETRYABLE_NETWORK_CODES, isRetryableSslErrorCode, isRetryableError, and getRetryErrorType"
+          },
+          {
+            "id": "E4",
+            "kind": "call_site",
+            "claim": "The streamed-chat regression invokes sendMessageStream and consumes its asynchronous events after the mocked content generator's first stream yields an incomplete chunk and throws ERR_STREAM_PREMATURE_CLOSE; a second generated stream supplies a complete STOP-terminated response.",
+            "source": "git show f5c0977e96b05f973d664772a6d8962dd12577ba -- packages/core/src/core/geminiChat_network_retry.test.ts, test 'should retry on premature stream closure (ERR_STREAM_PREMATURE_CLOSE)'"
+          },
+          {
+            "id": "E5",
+            "kind": "test",
+            "claim": "The regression oracle requires a RETRY event, a CHUNK containing 'Complete response after retry', and a network-retry log record whose error_type is ERR_STREAM_PREMATURE_CLOSE.",
+            "source": "packages/core/src/core/geminiChat_network_retry.test.ts added by f5c0977e96b05f973d664772a6d8962dd12577ba, test 'should retry on premature stream closure (ERR_STREAM_PREMATURE_CLOSE)'"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "Classify premature stream closure as a recoverable transport failure",
+            "description": "Extend the shared transient-network classification boundary so a prematurely closed response stream enters the existing retry and telemetry path instead of terminating recovery.",
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E5"
+            ],
+            "semantic_action": {
+              "intent": "Allow an interrupted response stream to be retried and completed by a subsequent attempt while retaining a specific, non-message-based failure classification for telemetry.",
+              "module_role": "shared transient-network failure classifier used by streamed request recovery",
+              "operation": "classify",
+              "pre_state": "A stream attempt can yield partial content and then throw an error carrying ERR_STREAM_PREMATURE_CLOSE, but that code is absent from the exact retryable network-code set.",
+              "post_state": "An error carrying ERR_STREAM_PREMATURE_CLOSE satisfies the transient network predicate, enters the established retry path, and is categorized under the same code for retry telemetry.",
+              "validation": "Simulate a first asynchronous stream that yields incomplete content and throws the coded error, then a second stream that completes; assert a retry event, the completed second-attempt chunk, and telemetry containing the exact error code.",
+              "parameters": [
+                "transport error code: ERR_STREAM_PREMATURE_CLOSE",
+                "stream attempt producer: generateContentStream",
+                "retry configuration: getRetryFetchErrors",
+                "stream event channel: sendMessageStream",
+                "telemetry sink: logNetworkRetryAttempt"
+              ],
+              "evidence_ids": [
+                "E2",
+                "E3",
+                "E4",
+                "E5"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "Restore streamed-response progress after a recognized premature closure",
+            "description": "When streamed iteration fails after partial output with a stable transport error code, admit that code into the existing transient-network classifier and verify end-to-end recovery through the stream event and telemetry boundaries.",
+            "atomic_names": [
+              "Classify premature stream closure as a recoverable transport failure"
+            ],
+            "evidence_ids": [
+              "E1",
+              "E2",
+              "E3",
+              "E4",
+              "E5"
+            ],
+            "workflow_graph": {
+              "goal": "Convert a premature transport closure during streamed response iteration from a terminal failure into an observable retry followed by successful response completion.",
+              "entry_state": "The streaming stack already has retry-event, subsequent-attempt, and retry-telemetry behavior, but its shared classifier does not recognize the premature-close error code.",
+              "exit_state": "The premature-close code is recognized as transient; a failed partial stream is followed by a retry event and a successful subsequent stream, with telemetry preserving the code.",
+              "steps": [
+                {
+                  "action_name": "Classify premature stream closure as a recoverable transport failure",
+                  "role": "repair",
+                  "optional": false
+                }
+              ],
+              "edges": [],
+              "unresolved_or_deferred": [
+                "No separate retry-loop implementation action is extracted because the commit reuses the existing streamed retry machinery and changes only its classification input.",
+                "Whether partially emitted content should be reconciled or suppressed across attempts is not asserted by the added test and is therefore deferred."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "The GitHub bundle does not contain the PR body, reviews, status checks, issue discussion, or author rationale.",
+          "No test-run result is present in the supplied bundle, and the repository worktree has its tracked files removed; validation is grounded in the committed regression-test oracle rather than a newly executed test run.",
+          "The regression sets getRetryFetchErrors to true, while the implementation's exact network-code check precedes the message-based retryFetchErrors gate; the commit does not explicitly document whether recognition of this code is intentionally independent of that flag."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "Classify premature stream closure as a recoverable transport failure",
+          "description": "Extend the shared transient-network classification boundary so a prematurely closed response stream enters the existing retry and telemetry path instead of terminating recovery.",
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E5"
+          ],
+          "semantic_action": {
+            "intent": "Allow an interrupted response stream to be retried and completed by a subsequent attempt while retaining a specific, non-message-based failure classification for telemetry.",
+            "module_role": "shared transient-network failure classifier used by streamed request recovery",
+            "operation": "classify",
+            "pre_state": "A stream attempt can yield partial content and then throw an error carrying ERR_STREAM_PREMATURE_CLOSE, but that code is absent from the exact retryable network-code set.",
+            "post_state": "An error carrying ERR_STREAM_PREMATURE_CLOSE satisfies the transient network predicate, enters the established retry path, and is categorized under the same code for retry telemetry.",
+            "validation": "Simulate a first asynchronous stream that yields incomplete content and throws the coded error, then a second stream that completes; assert a retry event, the completed second-attempt chunk, and telemetry containing the exact error code.",
+            "parameters": [
+              "transport error code: ERR_STREAM_PREMATURE_CLOSE",
+              "stream attempt producer: generateContentStream",
+              "retry configuration: getRetryFetchErrors",
+              "stream event channel: sendMessageStream",
+              "telemetry sink: logNetworkRetryAttempt"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E5"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "Restore streamed-response progress after a recognized premature closure",
+          "description": "When streamed iteration fails after partial output with a stable transport error code, admit that code into the existing transient-network classifier and verify end-to-end recovery through the stream event and telemetry boundaries.",
+          "atomic_names": [
+            "Classify premature stream closure as a recoverable transport failure"
+          ],
+          "evidence_ids": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5"
+          ],
+          "workflow_graph": {
+            "goal": "Convert a premature transport closure during streamed response iteration from a terminal failure into an observable retry followed by successful response completion.",
+            "entry_state": "The streaming stack already has retry-event, subsequent-attempt, and retry-telemetry behavior, but its shared classifier does not recognize the premature-close error code.",
+            "exit_state": "The premature-close code is recognized as transient; a failed partial stream is followed by a retry event and a successful subsequent stream, with telemetry preserving the code.",
+            "steps": [
+              {
+                "action_name": "Classify premature stream closure as a recoverable transport failure",
+                "role": "repair",
+                "optional": false
+              }
+            ],
+            "edges": [],
+            "unresolved_or_deferred": [
+              "No separate retry-loop implementation action is extracted because the commit reuses the existing streamed retry machinery and changes only its classification input.",
+              "Whether partially emitted content should be reconciled or suppressed across attempts is not asserted by the added test and is therefore deferred."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The GitHub bundle does not contain the PR body, reviews, status checks, issue discussion, or author rationale.",
+        "No test-run result is present in the supplied bundle, and the repository worktree has its tracked files removed; validation is grounded in the committed regression-test oracle rather than a newly executed test run.",
+        "The regression sets getRetryFetchErrors to true, while the implementation's exact network-code check precedes the message-based retryFetchErrors gate; the commit does not explicitly document whether recognition of this code is intentionally independent of that flag."
+      ]
+    },
+    "call_sites": [
+      "The streamed-chat regression invokes sendMessageStream and consumes its asynchronous events after the mocked content generator's first stream yields an incomplete chunk and throws ERR_STREAM_PREMATURE_CLOSE; a second generated stream supplies a complete STOP-terminated response."
+    ],
+    "tests": [
+      "The regression oracle requires a RETRY event, a CHUNK containing 'Complete response after retry', and a network-retry log record whose error_type is ERR_STREAM_PREMATURE_CLOSE."
+    ]
+  },
+  {
+    "episode_id": "openai__codex__47641__9d8de196",
+    "title": "Honor server retry advice without restarting its countdown",
+    "before": "At parent commit ab021e9f137c9daacf6ae06a495f3c7d6199fab2, the HTTP retry loop ignored Retry-After and always slept for locally computed backoff. Higher-level errors stored an optional relative Duration, so time spent transporting, mapping, reporting, or exhausting a retry could effectively restart the server-advised wait.",
+    "after": "At commit 9d8de196748b57d7f463a7757eaa447b6483a331, Retry-After delay-seconds and HTTP-date values are captured as a monotonic deadline when advice is received. That deadline is carried through transport, API, protocol, provider-specific, stream-retry, and exhausted-retry error paths. HTTP and stream retries sleep until the original deadline, use local backoff only when advice is absent, and retain expired advice as an explicit zero remaining delay.",
+    "diff": "Introduced the RetryAfter deadline value and header parser; attached it to HTTP transport errors; replaced relative retry-delay fields with deadline-bearing advice across API and protocol errors; preserved it during generic and provider-specific error mapping; changed HTTP and response-stream retry scheduling to sleep until the captured deadline; retained the deadline in exhausted response-retry state; and added unit and integration tests for parsing, countdown, expiry, propagation, delayed notification, ordinary response retries, and remote compaction retries.",
+    "repository": "openai/codex",
+    "revision": "github-issue-47641",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10",
+      "E11",
+      "E12",
+      "E13",
+      "E14",
+      "E15"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "openai/codex",
+      "issue": 47641,
+      "checkout": "/home/chenyujia/tritonToLlvm/codex-agent",
+      "manifest_metadata": {
+        "category": "failure-recovery-and-streaming",
+        "role": "train_candidate",
+        "case_id": "openai__codex__47641__failure-recovery-and-streaming",
+        "sample_kind": "verified_substitute",
+        "seed_issue": 39988,
+        "seed_issue_url": "https://github.com/openai/codex/issues/39988",
+        "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+        "resolution_url": "https://github.com/openai/codex/pull/47641",
+        "provenance": {
+          "classification": "verified_substitute",
+          "seed": {
+            "repository": "openai/codex",
+            "issue": 39988,
+            "url": "https://github.com/openai/codex/issues/39988",
+            "table_note": "CLI turn remains working after a tool call stops emitting events"
+          },
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 47641,
+            "url": "https://github.com/openai/codex/pull/47641",
+            "pull_request": 47641,
+            "pull_request_url": "https://github.com/openai/codex/pull/47641"
+          },
+          "commit": {
+            "sha": "9d8de196748b57d7f463a7757eaa447b6483a331",
+            "subject": "Honor Retry-After and preserve server retry deadlines (#47641)",
+            "parents": [
+              "ab021e9f137c9daacf6ae06a495f3c7d6199fab2"
+            ],
+            "body_excerpt": "## Why\n\nHTTP retries used local backoff even when the server supplied `Retry-After`. Relative retry delays also failed to account for time spent propagating errors or reporting retries.\n\n## What changed\n\n- Parse `Retry-After` delay seconds and HTTP dates into a monotonic deadline captured when response headers arrive.\n- Honor that deadline for HTTP retries, falling back to local backoff when valid advice is absent.\n- Preserve deadlines through API and Bedrock error mapping, stream retries, and exhausted retry state. Expired advice remains a zero delay instead of triggering local backoff.\n\n## Testing\n\nAdd coverage for header parsing, deadline countdown and expiry, error mapping after exhausted HTTP retries, and delayed stream retry notifications. Update Responses and remote compaction tests"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "parent_and_changed_files_recorded",
+            "implementation_diff_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "openai/codex",
+        "issue_number": 47641,
+        "issue": {
+          "number": 47641,
+          "title": "Honor Retry-After and preserve server retry deadlines (#47641)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 47641,
+              "title": "Honor Retry-After and preserve server retry deadlines (#47641)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tcodex-rs/Cargo.lock"
+              },
+              {
+                "status_line": "M\tcodex-rs/cli/src/doctor.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/codex-api/Cargo.toml"
+              },
+              {
+                "status_line": "M\tcodex-rs/codex-api/src/api_bridge.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/codex-api/src/api_bridge_tests.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/codex-api/src/endpoint/responses_websocket.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/codex-api/src/error.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/codex-api/src/sse/responses.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/codex-client/src/retry.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/core/src/client_tests.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/core/src/responses_retry.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/core/src/responses_retry_tests.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/core/tests/suite/retry_after.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/ext/guardian-v2/src/async_scorer/metrics.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/ext/guardian-v2/src/async_scorer/sampler/execution.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/http-client/Cargo.toml"
+              },
+              {
+                "status_line": "M\tcodex-rs/http-client/src/error.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/http-client/src/lib.rs"
+              },
+              {
+                "status_line": "A\tcodex-rs/http-client/src/retry_after.rs"
+              },
+              {
+                "status_line": "A\tcodex-rs/http-client/src/retry_after_tests.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/http-client/src/transport.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/model-provider/src/amazon_bedrock/error.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/model-provider/src/amazon_bedrock/error_tests.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/model-provider/src/provider.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/protocol/Cargo.toml"
+              },
+              {
+                "status_line": "M\tcodex-rs/protocol/src/error.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/protocol/src/error_tests.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/response-debug-context/src/lib.rs"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "9d8de196748b57d7f463a7757eaa447b6483a331",
+                "subject": "Honor Retry-After and preserve server retry deadlines (#47641)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/codex-agent",
+        "pinned_ref": "9d8de196748b57d7f463a7757eaa447b6483a331",
+        "resolved_commit": "9d8de196748b57d7f463a7757eaa447b6483a331",
+        "parent_commit": "ab021e9f137c9daacf6ae06a495f3c7d6199fab2",
+        "commit_show_stat": "commit 9d8de196748b57d7f463a7757eaa447b6483a331\nAuthor:     Adam Perry @ OpenAI <anp@openai.com>\nAuthorDate: Wed Sep 23 19:35:54 2026 +0000\nCommit:     copyberry <copyberry@app.openai.com>\nCommitDate: Wed Sep 23 19:53:11 2026 +0000\n\n    Honor Retry-After and preserve server retry deadlines (#47641)\n    \n    ## Why\n    \n    HTTP retries used local backoff even when the server supplied `Retry-After`. Relative retry delays also failed to account for time spent propagating errors or reporting retries.\n    \n    ## What changed\n    \n    - Parse `Retry-After` delay seconds and HTTP dates into a monotonic deadline captured when response headers arrive.\n    - Honor that deadline for HTTP retries, falling back to local backoff when valid advice is absent.\n    - Preserve deadlines through API and Bedrock error mapping, stream retries, and exhausted retry state. Expired advice remains a zero delay instead of triggering local backoff.\n    \n    ## Testing\n    \n    Add coverage for header parsing, deadline countdown and expiry, error mapping after exhausted HTTP retries, and delayed stream retry notifications. Update Responses and remote compaction tests to verify that HTTP retries honor `Retry-After`.\n    \n    GitOrigin-RevId: a2eff02946e5524f29e06f7ba1431e3d339261a4\n\n codex-rs/Cargo.lock                                |  1 +\n codex-rs/cli/src/doctor.rs                         |  2 +-\n codex-rs/codex-api/Cargo.toml                      |  1 +\n codex-rs/codex-api/src/api_bridge.rs               | 45 ++++++++----\n codex-rs/codex-api/src/api_bridge_tests.rs         | 30 ++++++--\n .../codex-api/src/endpoint/responses_websocket.rs  | 12 +++-\n codex-rs/codex-api/src/error.rs                    |  8 +--\n codex-rs/codex-api/src/sse/responses.rs            | 48 ++++++++-----\n codex-rs/codex-client/src/retry.rs                 | 13 +++-\n codex-rs/core/src/client_tests.rs                  |  3 +\n codex-rs/core/src/responses_retry.rs               | 13 ++--\n codex-rs/core/src/responses_retry_tests.rs         | 54 +++++++++++++++\n codex-rs/core/tests/suite/retry_after.rs           | 80 ++++++++++++++++++----\n .../ext/guardian-v2/src/async_scorer/metrics.rs    |  2 +-\n .../src/async_scorer/sampler/execution.rs          |  2 +-\n codex-rs/http-client/Cargo.toml                    |  2 +\n codex-rs/http-client/src/error.rs                  | 18 +++++\n codex-rs/http-client/src/lib.rs                    |  2 +\n codex-rs/http-client/src/retry_after.rs            | 54 +++++++++++++++\n codex-rs/http-client/src/retry_after_tests.rs      | 45 ++++++++++++\n codex-rs/http-client/src/transport.rs              |  7 ++\n .../model-provider/src/amazon_bedrock/error.rs     |  4 +-\n .../src/amazon_bedrock/error_tests.rs              | 18 +++++\n codex-rs/model-provider/src/provider.rs            |  1 +\n codex-rs/protocol/Cargo.toml                       |  1 +\n codex-rs/protocol/src/error.rs                     | 26 ++++---\n codex-rs/protocol/src/error_tests.rs               | 17 +++--\n codex-rs/response-debug-context/src/lib.rs         |  6 +-\n 28 files changed, 429 insertions(+), 86 deletions(-)\n",
+        "changed_files_name_status": "M\tcodex-rs/Cargo.lock\nM\tcodex-rs/cli/src/doctor.rs\nM\tcodex-rs/codex-api/Cargo.toml\nM\tcodex-rs/codex-api/src/api_bridge.rs\nM\tcodex-rs/codex-api/src/api_bridge_tests.rs\nM\tcodex-rs/codex-api/src/endpoint/responses_websocket.rs\nM\tcodex-rs/codex-api/src/error.rs\nM\tcodex-rs/codex-api/src/sse/responses.rs\nM\tcodex-rs/codex-client/src/retry.rs\nM\tcodex-rs/core/src/client_tests.rs\nM\tcodex-rs/core/src/responses_retry.rs\nM\tcodex-rs/core/src/responses_retry_tests.rs\nM\tcodex-rs/core/tests/suite/retry_after.rs\nM\tcodex-rs/ext/guardian-v2/src/async_scorer/metrics.rs\nM\tcodex-rs/ext/guardian-v2/src/async_scorer/sampler/execution.rs\nM\tcodex-rs/http-client/Cargo.toml\nM\tcodex-rs/http-client/src/error.rs\nM\tcodex-rs/http-client/src/lib.rs\nA\tcodex-rs/http-client/src/retry_after.rs\nA\tcodex-rs/http-client/src/retry_after_tests.rs\nM\tcodex-rs/http-client/src/transport.rs\nM\tcodex-rs/model-provider/src/amazon_bedrock/error.rs\nM\tcodex-rs/model-provider/src/amazon_bedrock/error_tests.rs\nM\tcodex-rs/model-provider/src/provider.rs\nM\tcodex-rs/protocol/Cargo.toml\nM\tcodex-rs/protocol/src/error.rs\nM\tcodex-rs/protocol/src/error_tests.rs\nM\tcodex-rs/response-debug-context/src/lib.rs\n",
+        "linked_issue_numbers": [
+          47641
+        ],
+        "manifest_metadata": {
+          "category": "failure-recovery-and-streaming",
+          "theme": "retry, timeout, streaming, and network recovery",
+          "file_sample": [
+            "codex-rs/Cargo.lock",
+            "codex-rs/cli/src/doctor.rs",
+            "codex-rs/codex-api/Cargo.toml",
+            "codex-rs/codex-api/src/api_bridge.rs",
+            "codex-rs/codex-api/src/api_bridge_tests.rs",
+            "codex-rs/codex-api/src/endpoint/responses_websocket.rs",
+            "codex-rs/codex-api/src/error.rs",
+            "codex-rs/codex-api/src/sse/responses.rs",
+            "codex-rs/codex-client/src/retry.rs",
+            "codex-rs/core/src/client_tests.rs",
+            "codex-rs/core/src/responses_retry.rs",
+            "codex-rs/core/src/responses_retry_tests.rs",
+            "codex-rs/core/tests/suite/retry_after.rs",
+            "codex-rs/ext/guardian-v2/src/async_scorer/metrics.rs",
+            "codex-rs/ext/guardian-v2/src/async_scorer/sampler/execution.rs",
+            "codex-rs/http-client/Cargo.toml",
+            "codex-rs/http-client/src/error.rs",
+            "codex-rs/http-client/src/lib.rs",
+            "codex-rs/http-client/src/retry_after.rs",
+            "codex-rs/http-client/src/retry_after_tests.rs",
+            "codex-rs/http-client/src/transport.rs",
+            "codex-rs/model-provider/src/amazon_bedrock/error.rs",
+            "codex-rs/model-provider/src/amazon_bedrock/error_tests.rs",
+            "codex-rs/model-provider/src/provider.rs",
+            "codex-rs/protocol/Cargo.toml",
+            "codex-rs/protocol/src/error.rs",
+            "codex-rs/protocol/src/error_tests.rs",
+            "codex-rs/response-debug-context/src/lib.rs"
+          ],
+          "case_id": "openai__codex__47641__failure-recovery-and-streaming",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_substitute",
+          "seed_issue": 39988,
+          "seed_issue_url": "https://github.com/openai/codex/issues/39988",
+          "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+          "resolution_url": "https://github.com/openai/codex/pull/47641",
+          "source": "agent_core_seven_category_extraction_v2",
+          "provenance": {
+            "classification": "verified_substitute",
+            "seed": {
+              "repository": "openai/codex",
+              "issue": 39988,
+              "url": "https://github.com/openai/codex/issues/39988",
+              "table_note": "CLI turn remains working after a tool call stops emitting events"
+            },
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 47641,
+              "url": "https://github.com/openai/codex/pull/47641",
+              "pull_request": 47641,
+              "pull_request_url": "https://github.com/openai/codex/pull/47641"
+            },
+            "commit": {
+              "sha": "9d8de196748b57d7f463a7757eaa447b6483a331",
+              "subject": "Honor Retry-After and preserve server retry deadlines (#47641)",
+              "parents": [
+                "ab021e9f137c9daacf6ae06a495f3c7d6199fab2"
+              ],
+              "body_excerpt": "## Why\n\nHTTP retries used local backoff even when the server supplied `Retry-After`. Relative retry delays also failed to account for time spent propagating errors or reporting retries.\n\n## What changed\n\n- Parse `Retry-After` delay seconds and HTTP dates into a monotonic deadline captured when response headers arrive.\n- Honor that deadline for HTTP retries, falling back to local backoff when valid advice is absent.\n- Preserve deadlines through API and Bedrock error mapping, stream retries, and exhausted retry state. Expired advice remains a zero delay instead of triggering local backoff.\n\n## Testing\n\nAdd coverage for header parsing, deadline countdown and expiry, error mapping after exhausted HTTP retries, and delayed stream retry notifications. Update Responses and remote compaction tests"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "parent_and_changed_files_recorded",
+              "implementation_diff_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T09:09:35.246175+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "openai__codex__47641__9d8de196",
+          "title": "Honor server retry advice without restarting its countdown",
+          "before": "At parent commit ab021e9f137c9daacf6ae06a495f3c7d6199fab2, the HTTP retry loop ignored Retry-After and always slept for locally computed backoff. Higher-level errors stored an optional relative Duration, so time spent transporting, mapping, reporting, or exhausting a retry could effectively restart the server-advised wait.",
+          "after": "At commit 9d8de196748b57d7f463a7757eaa447b6483a331, Retry-After delay-seconds and HTTP-date values are captured as a monotonic deadline when advice is received. That deadline is carried through transport, API, protocol, provider-specific, stream-retry, and exhausted-retry error paths. HTTP and stream retries sleep until the original deadline, use local backoff only when advice is absent, and retain expired advice as an explicit zero remaining delay.",
+          "diff": "Introduced the RetryAfter deadline value and header parser; attached it to HTTP transport errors; replaced relative retry-delay fields with deadline-bearing advice across API and protocol errors; preserved it during generic and provider-specific error mapping; changed HTTP and response-stream retry scheduling to sleep until the captured deadline; retained the deadline in exhausted response-retry state; and added unit and integration tests for parsing, countdown, expiry, propagation, delayed notification, ordinary response retries, and remote compaction retries."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "The pinned implementation commit identifies the defect as HTTP retries using local backoff despite Retry-After and relative delays failing to account for propagation or reporting time; it states that the fix parses advice into a monotonic deadline and preserves it through retry paths.",
+            "source": "issue-bundle.json commit_show_stat and commit 9d8de196748b57d7f463a7757eaa447b6483a331 message"
+          },
+          {
+            "id": "E2",
+            "kind": "implementation",
+            "claim": "RetryAfter represents the earliest advised follow-up time as a Tokio Instant, parses nonnegative delay seconds or HTTP dates, exposes the original deadline, and saturates expired remaining delay to zero.",
+            "source": "9d8de196748b57d7f463a7757eaa447b6483a331:codex-rs/http-client/src/retry_after.rs:1-49"
+          },
+          {
+            "id": "E3",
+            "kind": "diff",
+            "claim": "Before the change, the HTTP retry loop contained an explicit TODO to respect Retry-After, always computed local backoff, and slept for that relative duration.",
+            "source": "ab021e9f137c9daacf6ae06a495f3c7d6199fab2:codex-rs/codex-client/src/retry.rs:92-110"
+          },
+          {
+            "id": "E4",
+            "kind": "call_site",
+            "claim": "The HTTP transport captures Retry-After from response headers before consuming the body and stores the resulting advice on non-success TransportError::Http values.",
+            "source": "9d8de196748b57d7f463a7757eaa447b6483a331:codex-rs/http-client/src/transport.rs:179-205,221-251"
+          },
+          {
+            "id": "E5",
+            "kind": "implementation",
+            "claim": "The HTTP retry loop now uses the captured advice when present, records its remaining delay, and sleeps until its original deadline; local backoff remains the fallback only when advice is absent.",
+            "source": "9d8de196748b57d7f463a7757eaa447b6483a331:codex-rs/codex-client/src/retry.rs:84-114"
+          },
+          {
+            "id": "E6",
+            "kind": "diff",
+            "claim": "The protocol error representation changed from an optional relative Duration to an optional RetryAfter deadline; remaining server delay is derived at observation time, and expired advice remains Some(Duration::ZERO).",
+            "source": "ab021e9f137c9daacf6ae06a495f3c7d6199fab2:codex-rs/protocol/src/error.rs:72-75,420-436; 9d8de196748b57d7f463a7757eaa447b6483a331:codex-rs/protocol/src/error.rs:72-75,419-445"
+          },
+          {
+            "id": "E7",
+            "kind": "call_site",
+            "claim": "API-to-protocol error mapping extracts retry advice before changing error details and reapplies the same RetryAfter value to the mapped error, including retryable, rate-limit, overload, and HTTP transport errors.",
+            "source": "9d8de196748b57d7f463a7757eaa447b6483a331:codex-rs/codex-api/src/api_bridge.rs:21-44"
+          },
+          {
+            "id": "E8",
+            "kind": "call_site",
+            "claim": "Provider-specific expired-signature remapping preserves the original retry deadline while replacing the user-facing error details.",
+            "source": "9d8de196748b57d7f463a7757eaa447b6483a331:codex-rs/model-provider/src/amazon_bedrock/error.rs:24-34"
+          },
+          {
+            "id": "E9",
+            "kind": "call_site",
+            "claim": "Response-stream retry handling reads the preserved deadline, performs notification work, recomputes the remaining telemetry delay, sleeps until the original deadline, and stores that deadline when retries are exhausted.",
+            "source": "9d8de196748b57d7f463a7757eaa447b6483a331:codex-rs/core/src/responses_retry.rs:52-149"
+          },
+          {
+            "id": "E10",
+            "kind": "test",
+            "claim": "Parser tests verify delay-seconds countdown, HTTP-date handling, explicit zero and expired dates as valid zero-delay advice, and rejection of malformed or overflowing values.",
+            "source": "9d8de196748b57d7f463a7757eaa447b6483a331:codex-rs/http-client/src/retry_after_tests.rs:1-45"
+          },
+          {
+            "id": "E11",
+            "kind": "test",
+            "claim": "A paused-time stream test delays retry notification and verifies that the retry resumes at the original server deadline rather than waiting the full relative duration after notification completes.",
+            "source": "9d8de196748b57d7f463a7757eaa447b6483a331:codex-rs/core/src/responses_retry_tests.rs:51-96"
+          },
+          {
+            "id": "E12",
+            "kind": "test",
+            "claim": "An exhausted-HTTP-retry test verifies that the last captured deadline survives API error mapping, counts down across elapsed time, and remains present with zero remaining delay after expiry.",
+            "source": "9d8de196748b57d7f463a7757eaa447b6483a331:codex-rs/core/tests/suite/retry_after.rs:382-426"
+          },
+          {
+            "id": "E13",
+            "kind": "test",
+            "claim": "End-to-end response retry coverage returns a 503 with Retry-After: 1, verifies HTTP-layer retry telemetry, waits at least the advised interval, completes successfully, and observes exactly two requests.",
+            "source": "9d8de196748b57d7f463a7757eaa447b6483a331:codex-rs/core/tests/suite/retry_after.rs:278-325"
+          },
+          {
+            "id": "E14",
+            "kind": "test",
+            "claim": "Remote compaction coverage verifies that a 503 carrying Retry-After is retried at the HTTP layer after the advised interval and that compaction completes through the subsequent successful response.",
+            "source": "9d8de196748b57d7f463a7757eaa447b6483a7757eaa447b6483a331:codex-rs/core/tests/suite/retry_after.rs:499-555"
+          },
+          {
+            "id": "E15",
+            "kind": "test",
+            "claim": "A provider-specific test verifies that rewriting an expired-signature error retains the exact RetryAfter value.",
+            "source": "9d8de196748b57d7f463a7757eaa447b6483a331:codex-rs/model-provider/src/amazon_bedrock/error_tests.rs:56-70"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "capture-server-retry-deadline",
+            "description": "Normalize server retry advice into one monotonic deadline at the point where the advice is received.",
+            "evidence_ids": [
+              "E2",
+              "E4",
+              "E10"
+            ],
+            "semantic_action": {
+              "intent": "Prevent elapsed processing time or wall-clock changes from restarting or corrupting a server-advised retry interval.",
+              "module_role": "retry-advice normalization boundary",
+              "operation": "normalize",
+              "pre_state": "A failed response or streamed error supplies retry advice as delay seconds, an HTTP date, or a parsed relative delay.",
+              "post_state": "Valid advice is represented by one monotonic deadline captured at receipt; expired or explicit-zero advice remains valid with zero remaining delay, while invalid advice is absent.",
+              "validation": "Paused-time parser tests verify countdown and expiry; date and malformed-value cases verify accepted and rejected input forms.",
+              "parameters": [
+                "response headers",
+                "retry-advice string",
+                "parsed relative delay",
+                "receipt monotonic instant",
+                "wall-clock sample"
+              ],
+              "evidence_ids": [
+                "E2",
+                "E4",
+                "E10"
+              ]
+            }
+          },
+          {
+            "name": "preserve-retry-deadline-across-error-transforms",
+            "description": "Carry the original deadline through error classification, wrapping, provider adaptation, and exhausted-retry state without converting it back to a fresh duration.",
+            "evidence_ids": [
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E12",
+              "E15"
+            ],
+            "semantic_action": {
+              "intent": "Keep retry timing semantics intact while errors cross abstraction boundaries or receive new user-facing details.",
+              "module_role": "cross-layer error contract",
+              "operation": "propagate",
+              "pre_state": "An error contains a captured server retry deadline and must be mapped, wrapped, reclassified, or retained after retry exhaustion.",
+              "post_state": "The transformed error or recovery state contains the same original deadline; querying remaining delay reflects elapsed time and returns zero after expiry instead of losing the advice.",
+              "validation": "Exhausted-retry mapping and provider-specific remapping tests assert deadline identity, countdown, and post-expiry preservation.",
+              "parameters": [
+                "source error",
+                "mapped error details",
+                "server retry deadline",
+                "exhausted retry state",
+                "provider-specific error adapter"
+              ],
+              "evidence_ids": [
+                "E6",
+                "E7",
+                "E8",
+                "E9",
+                "E12",
+                "E15"
+              ]
+            }
+          },
+          {
+            "name": "schedule-http-retry-at-server-deadline",
+            "description": "Prefer the captured server deadline for retryable HTTP failures and use local backoff only when valid advice is absent.",
+            "evidence_ids": [
+              "E3",
+              "E5",
+              "E13",
+              "E14"
+            ],
+            "semantic_action": {
+              "intent": "Honor server load-control timing while retaining recovery for responses that provide no valid retry advice.",
+              "module_role": "HTTP request retry scheduler",
+              "operation": "reconcile",
+              "pre_state": "A retry policy admits another HTTP attempt after a retryable failure, with either captured server advice or no advice.",
+              "post_state": "With advice, the next request is delayed until the original server deadline; without advice, the configured local backoff determines the delay.",
+              "validation": "Response and remote-compaction integration tests inject Retry-After on an overload response, observe HTTP retry telemetry, verify the advised wait, and confirm successful subsequent requests.",
+              "parameters": [
+                "retry policy",
+                "attempt number",
+                "transport error",
+                "server retry deadline",
+                "local backoff base",
+                "HTTP request factory"
+              ],
+              "evidence_ids": [
+                "E3",
+                "E5",
+                "E13",
+                "E14"
+              ]
+            }
+          },
+          {
+            "name": "schedule-stream-retry-with-elapsed-work-accounted",
+            "description": "Use the original deadline after retry reporting or other asynchronous work, and retain it when stream retries are exhausted.",
+            "evidence_ids": [
+              "E9",
+              "E11",
+              "E12"
+            ],
+            "semantic_action": {
+              "intent": "Ensure notification, error propagation, and recovery bookkeeping consume part of the server-advised wait instead of postponing recovery by a new full interval.",
+              "module_role": "response-stream recovery coordinator",
+              "operation": "reconcile",
+              "pre_state": "A retryable stream error carries a server deadline, and recovery may perform asynchronous reporting or reach its retry limit before resuming or returning the error.",
+              "post_state": "An admitted retry sleeps only until the original deadline, while an exhausted retry records and returns that same deadline for later recovery decisions.",
+              "validation": "A virtual-time test blocks retry notification and proves resumption occurs at the original deadline; exhausted-retry coverage proves the deadline survives subsequent error mapping and expiry.",
+              "parameters": [
+                "stream error",
+                "retry count",
+                "maximum retries",
+                "retry notification path",
+                "server retry deadline",
+                "exhausted retry state"
+              ],
+              "evidence_ids": [
+                "E9",
+                "E11",
+                "E12"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "preserve-and-honor-server-retry-timing",
+            "description": "Resolve retry-timing drift by capturing server advice once, preserving its deadline across every error boundary, and making HTTP and stream recovery schedule against that deadline while retaining local fallback only for absent advice.",
+            "atomic_names": [
+              "capture-server-retry-deadline",
+              "preserve-retry-deadline-across-error-transforms",
+              "schedule-http-retry-at-server-deadline",
+              "schedule-stream-retry-with-elapsed-work-accounted"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E10",
+              "E11",
+              "E12",
+              "E13",
+              "E14",
+              "E15"
+            ],
+            "workflow_graph": {
+              "goal": "Make all relevant retry paths honor one server-defined earliest retry instant without restarting the countdown during error propagation or reporting.",
+              "entry_state": "Retryable HTTP or streaming failures may contain server advice, but HTTP retries use local backoff and higher layers represent advice as a relative duration that can be restarted after elapsed processing.",
+              "exit_state": "Valid advice is captured once as a monotonic deadline, survives all applicable error transformations and exhausted states, drives HTTP and stream retry timing, and remains distinguishable from absent advice after expiry.",
+              "steps": [
+                {
+                  "action_name": "capture-server-retry-deadline",
+                  "role": "establish-contract",
+                  "optional": false
+                },
+                {
+                  "action_name": "preserve-retry-deadline-across-error-transforms",
+                  "role": "implement",
+                  "optional": false
+                },
+                {
+                  "action_name": "schedule-http-retry-at-server-deadline",
+                  "role": "reconcile",
+                  "optional": false
+                },
+                {
+                  "action_name": "schedule-stream-retry-with-elapsed-work-accounted",
+                  "role": "reconcile",
+                  "optional": false
+                }
+              ],
+              "edges": [
+                {
+                  "from": "capture-server-retry-deadline",
+                  "to": "preserve-retry-deadline-across-error-transforms",
+                  "type": "enables"
+                },
+                {
+                  "from": "preserve-retry-deadline-across-error-transforms",
+                  "to": "schedule-http-retry-at-server-deadline",
+                  "type": "enables"
+                },
+                {
+                  "from": "preserve-retry-deadline-across-error-transforms",
+                  "to": "schedule-stream-retry-with-elapsed-work-accounted",
+                  "type": "enables"
+                },
+                {
+                  "from": "schedule-http-retry-at-server-deadline",
+                  "to": "schedule-stream-retry-with-elapsed-work-accounted",
+                  "type": "requires"
+                }
+              ],
+              "unresolved_or_deferred": [
+                "The implementation leaves a TODO for preserving retry advice when reading an unbounded error body itself fails without reclassifying that failure as an HTTP-status error.",
+                "The bundle does not include PR reviews or status-check results, so validation is grounded in committed test code rather than external CI evidence."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "The GitHub bundle lacks the issue/PR body, comments, reviews, timeline, and status checks.",
+          "The checkout was inspected statically at the pinned commit; no test execution result was supplied by the evidence bundle.",
+          "The workflow edge from HTTP scheduling to stream scheduling reflects the observed layered recovery path, but HTTP-only and stream-originated advice can exercise the two scheduler actions independently."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "capture-server-retry-deadline",
+          "description": "Normalize server retry advice into one monotonic deadline at the point where the advice is received.",
+          "evidence_ids": [
+            "E2",
+            "E4",
+            "E10"
+          ],
+          "semantic_action": {
+            "intent": "Prevent elapsed processing time or wall-clock changes from restarting or corrupting a server-advised retry interval.",
+            "module_role": "retry-advice normalization boundary",
+            "operation": "normalize",
+            "pre_state": "A failed response or streamed error supplies retry advice as delay seconds, an HTTP date, or a parsed relative delay.",
+            "post_state": "Valid advice is represented by one monotonic deadline captured at receipt; expired or explicit-zero advice remains valid with zero remaining delay, while invalid advice is absent.",
+            "validation": "Paused-time parser tests verify countdown and expiry; date and malformed-value cases verify accepted and rejected input forms.",
+            "parameters": [
+              "response headers",
+              "retry-advice string",
+              "parsed relative delay",
+              "receipt monotonic instant",
+              "wall-clock sample"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E4",
+              "E10"
+            ]
+          }
+        },
+        {
+          "name": "preserve-retry-deadline-across-error-transforms",
+          "description": "Carry the original deadline through error classification, wrapping, provider adaptation, and exhausted-retry state without converting it back to a fresh duration.",
+          "evidence_ids": [
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E12",
+            "E15"
+          ],
+          "semantic_action": {
+            "intent": "Keep retry timing semantics intact while errors cross abstraction boundaries or receive new user-facing details.",
+            "module_role": "cross-layer error contract",
+            "operation": "propagate",
+            "pre_state": "An error contains a captured server retry deadline and must be mapped, wrapped, reclassified, or retained after retry exhaustion.",
+            "post_state": "The transformed error or recovery state contains the same original deadline; querying remaining delay reflects elapsed time and returns zero after expiry instead of losing the advice.",
+            "validation": "Exhausted-retry mapping and provider-specific remapping tests assert deadline identity, countdown, and post-expiry preservation.",
+            "parameters": [
+              "source error",
+              "mapped error details",
+              "server retry deadline",
+              "exhausted retry state",
+              "provider-specific error adapter"
+            ],
+            "evidence_ids": [
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E12",
+              "E15"
+            ]
+          }
+        },
+        {
+          "name": "schedule-http-retry-at-server-deadline",
+          "description": "Prefer the captured server deadline for retryable HTTP failures and use local backoff only when valid advice is absent.",
+          "evidence_ids": [
+            "E3",
+            "E5",
+            "E13",
+            "E14"
+          ],
+          "semantic_action": {
+            "intent": "Honor server load-control timing while retaining recovery for responses that provide no valid retry advice.",
+            "module_role": "HTTP request retry scheduler",
+            "operation": "reconcile",
+            "pre_state": "A retry policy admits another HTTP attempt after a retryable failure, with either captured server advice or no advice.",
+            "post_state": "With advice, the next request is delayed until the original server deadline; without advice, the configured local backoff determines the delay.",
+            "validation": "Response and remote-compaction integration tests inject Retry-After on an overload response, observe HTTP retry telemetry, verify the advised wait, and confirm successful subsequent requests.",
+            "parameters": [
+              "retry policy",
+              "attempt number",
+              "transport error",
+              "server retry deadline",
+              "local backoff base",
+              "HTTP request factory"
+            ],
+            "evidence_ids": [
+              "E3",
+              "E5",
+              "E13",
+              "E14"
+            ]
+          }
+        },
+        {
+          "name": "schedule-stream-retry-with-elapsed-work-accounted",
+          "description": "Use the original deadline after retry reporting or other asynchronous work, and retain it when stream retries are exhausted.",
+          "evidence_ids": [
+            "E9",
+            "E11",
+            "E12"
+          ],
+          "semantic_action": {
+            "intent": "Ensure notification, error propagation, and recovery bookkeeping consume part of the server-advised wait instead of postponing recovery by a new full interval.",
+            "module_role": "response-stream recovery coordinator",
+            "operation": "reconcile",
+            "pre_state": "A retryable stream error carries a server deadline, and recovery may perform asynchronous reporting or reach its retry limit before resuming or returning the error.",
+            "post_state": "An admitted retry sleeps only until the original deadline, while an exhausted retry records and returns that same deadline for later recovery decisions.",
+            "validation": "A virtual-time test blocks retry notification and proves resumption occurs at the original deadline; exhausted-retry coverage proves the deadline survives subsequent error mapping and expiry.",
+            "parameters": [
+              "stream error",
+              "retry count",
+              "maximum retries",
+              "retry notification path",
+              "server retry deadline",
+              "exhausted retry state"
+            ],
+            "evidence_ids": [
+              "E9",
+              "E11",
+              "E12"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "preserve-and-honor-server-retry-timing",
+          "description": "Resolve retry-timing drift by capturing server advice once, preserving its deadline across every error boundary, and making HTTP and stream recovery schedule against that deadline while retaining local fallback only for absent advice.",
+          "atomic_names": [
+            "capture-server-retry-deadline",
+            "preserve-retry-deadline-across-error-transforms",
+            "schedule-http-retry-at-server-deadline",
+            "schedule-stream-retry-with-elapsed-work-accounted"
+          ],
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10",
+            "E11",
+            "E12",
+            "E13",
+            "E14",
+            "E15"
+          ],
+          "workflow_graph": {
+            "goal": "Make all relevant retry paths honor one server-defined earliest retry instant without restarting the countdown during error propagation or reporting.",
+            "entry_state": "Retryable HTTP or streaming failures may contain server advice, but HTTP retries use local backoff and higher layers represent advice as a relative duration that can be restarted after elapsed processing.",
+            "exit_state": "Valid advice is captured once as a monotonic deadline, survives all applicable error transformations and exhausted states, drives HTTP and stream retry timing, and remains distinguishable from absent advice after expiry.",
+            "steps": [
+              {
+                "action_name": "capture-server-retry-deadline",
+                "role": "establish-contract",
+                "optional": false
+              },
+              {
+                "action_name": "preserve-retry-deadline-across-error-transforms",
+                "role": "implement",
+                "optional": false
+              },
+              {
+                "action_name": "schedule-http-retry-at-server-deadline",
+                "role": "reconcile",
+                "optional": false
+              },
+              {
+                "action_name": "schedule-stream-retry-with-elapsed-work-accounted",
+                "role": "reconcile",
+                "optional": false
+              }
+            ],
+            "edges": [
+              {
+                "from": "capture-server-retry-deadline",
+                "to": "preserve-retry-deadline-across-error-transforms",
+                "type": "enables"
+              },
+              {
+                "from": "preserve-retry-deadline-across-error-transforms",
+                "to": "schedule-http-retry-at-server-deadline",
+                "type": "enables"
+              },
+              {
+                "from": "preserve-retry-deadline-across-error-transforms",
+                "to": "schedule-stream-retry-with-elapsed-work-accounted",
+                "type": "enables"
+              },
+              {
+                "from": "schedule-http-retry-at-server-deadline",
+                "to": "schedule-stream-retry-with-elapsed-work-accounted",
+                "type": "requires"
+              }
+            ],
+            "unresolved_or_deferred": [
+              "The implementation leaves a TODO for preserving retry advice when reading an unbounded error body itself fails without reclassifying that failure as an HTTP-status error.",
+              "The bundle does not include PR reviews or status-check results, so validation is grounded in committed test code rather than external CI evidence."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The GitHub bundle lacks the issue/PR body, comments, reviews, timeline, and status checks.",
+        "The checkout was inspected statically at the pinned commit; no test execution result was supplied by the evidence bundle.",
+        "The workflow edge from HTTP scheduling to stream scheduling reflects the observed layered recovery path, but HTTP-only and stream-originated advice can exercise the two scheduler actions independently."
+      ]
+    },
+    "call_sites": [
+      "The HTTP transport captures Retry-After from response headers before consuming the body and stores the resulting advice on non-success TransportError::Http values.",
+      "API-to-protocol error mapping extracts retry advice before changing error details and reapplies the same RetryAfter value to the mapped error, including retryable, rate-limit, overload, and HTTP transport errors.",
+      "Provider-specific expired-signature remapping preserves the original retry deadline while replacing the user-facing error details.",
+      "Response-stream retry handling reads the preserved deadline, performs notification work, recomputes the remaining telemetry delay, sleeps until the original deadline, and stores that deadline when retries are exhausted."
+    ],
+    "tests": [
+      "Parser tests verify delay-seconds countdown, HTTP-date handling, explicit zero and expired dates as valid zero-delay advice, and rejection of malformed or overflowing values.",
+      "A paused-time stream test delays retry notification and verifies that the retry resumes at the original server deadline rather than waiting the full relative duration after notification completes.",
+      "An exhausted-HTTP-retry test verifies that the last captured deadline survives API error mapping, counts down across elapsed time, and remains present with zero remaining delay after expiry.",
+      "End-to-end response retry coverage returns a 503 with Retry-After: 1, verifies HTTP-layer retry telemetry, waits at least the advised interval, completes successfully, and observes exactly two requests.",
+      "Remote compaction coverage verifies that a 503 carrying Retry-After is retried at the HTTP layer after the advised interval and that compaction completes through the subsequent successful response.",
+      "A provider-specific test verifies that rewriting an expired-signature error retains the exact RetryAfter value."
+    ]
+  }
+]

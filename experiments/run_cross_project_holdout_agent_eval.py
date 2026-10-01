@@ -17,20 +17,19 @@ clock time can be compared with the same model/provider settings.
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict, dataclass
-from datetime import UTC, datetime
 import json
 import os
-from pathlib import Path
 import shlex
 import shutil
 import statistics
 import subprocess
 import sys
-import tarfile
-import tempfile
 import time
-from typing import Any, Mapping, Sequence
+from collections.abc import Mapping, Sequence
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -66,6 +65,7 @@ class Case:
     test_commands: tuple[str, ...]
     setup_commands: tuple[str, ...]
     test_patch_path: Path
+    pre_patch_setup_commands: tuple[str, ...] = ()
     timeout_seconds: int = 900
     source: Mapping[str, Any] | None = None
 
@@ -80,7 +80,7 @@ class Case:
 def load_cases(path: Path, cases_root: Path) -> list[Case]:
     raw = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(raw, list):
-        raise ValueError("case manifest must be a JSON array")
+        raise TypeError("case manifest must be a JSON array")
     result: list[Case] = []
     for item in raw:
         case_id = str(item["id"])
@@ -100,6 +100,9 @@ def load_cases(path: Path, cases_root: Path) -> list[Case]:
                 test_commands=tuple(str(x) for x in item.get("test_commands", [])),
                 setup_commands=tuple(str(x) for x in item.get("setup_commands", [])),
                 test_patch_path=case_dir / "visible-tests.patch",
+                pre_patch_setup_commands=tuple(
+                    str(x) for x in item.get("pre_patch_setup_commands", [])
+                ),
                 timeout_seconds=int(item.get("timeout_seconds", 900)),
                 source=item.get("manifest_source") if isinstance(item.get("manifest_source"), Mapping) else item,
             )
@@ -147,6 +150,7 @@ def _run_command(
             encoding="utf-8",
             errors="replace",
             timeout=timeout_seconds,
+            check=False,
         )
         out, err, code = proc.stdout, proc.stderr, proc.returncode
     except subprocess.TimeoutExpired as exc:
@@ -168,7 +172,13 @@ def _git_archive(repo: Path, ref: str, destination: Path) -> None:
         stderr=subprocess.PIPE,
     )
     assert proc.stdout is not None
-    extract = subprocess.run(["tar", "-xf", "-", "-C", str(destination)], stdin=proc.stdout, capture_output=True, text=True)
+    extract = subprocess.run(
+        ["tar", "-xf", "-", "-C", str(destination)],
+        stdin=proc.stdout,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
     proc.stdout.close()
     stderr = proc.stderr.read().decode("utf-8", errors="replace") if proc.stderr else ""
     returncode = proc.wait()
@@ -202,18 +212,36 @@ def _apply_visible_tests(case: Case, workspace: Path, artifact_dir: Path) -> Com
     return result
 
 
-def _prepare_workspace(case: Case, workspace: Path, artifact_dir: Path) -> dict[str, Any]:
+def _prepare_workspace(
+    case: Case,
+    workspace: Path,
+    artifact_dir: Path,
+    env: Mapping[str, str],
+) -> dict[str, Any]:
     if workspace.exists():
         shutil.rmtree(workspace)
     workspace.mkdir(parents=True, exist_ok=True)
     started = time.perf_counter()
     _git_archive(case.repository_path, case.base_ref, workspace)
+    pre_patch_setup = [
+        _run_command(
+            command,
+            cwd=workspace,
+            env=env,
+            timeout_seconds=case.timeout_seconds,
+            stdout_path=artifact_dir / "pre-patch-setup" / f"{index:02d}.stdout",
+            stderr_path=artifact_dir / "pre-patch-setup" / f"{index:02d}.stderr",
+        )
+        for index, command in enumerate(case.pre_patch_setup_commands, start=1)
+    ]
     visible = _apply_visible_tests(case, workspace, artifact_dir)
     return {
         "workspace": str(workspace),
         "base_ref": case.base_ref,
         "solution_ref_hidden": True,
         "snapshot_seconds": time.perf_counter() - started,
+        "pre_patch_setup": [asdict(item) for item in pre_patch_setup],
+        "pre_patch_setup_success": all(item.returncode == 0 for item in pre_patch_setup),
         "visible_test_patch": asdict(visible),
         "git_head": subprocess.check_output(["git", "-C", str(workspace), "rev-parse", "HEAD"], text=True).strip(),
     }
@@ -240,6 +268,53 @@ def _render_hit(hit: SearchHit, index: int) -> str:
     if hit.trace:
         lines += ["", "retrieval trace:", *[f"- {item}" for item in hit.trace]]
     return "\n".join(lines)
+
+
+def _payload_relation_ids(payload: Mapping[str, Any]) -> set[str]:
+    related: set[str] = set()
+    for key in (
+        "workflow_ids",
+        "atomic_ids",
+        "action_ids",
+        "supporting_workflows",
+        "mandatory_actions",
+        "optional_actions",
+    ):
+        value = payload.get(key)
+        if isinstance(value, list):
+            related.update(str(item) for item in value if isinstance(item, str))
+    steps = payload.get("steps")
+    if isinstance(steps, list):
+        for step in steps:
+            if not isinstance(step, Mapping):
+                continue
+            for key in ("action_id", "atomic_id", "workflow_id", "skill_id"):
+                value = step.get(key)
+                if isinstance(value, str):
+                    related.add(value)
+    return related
+
+
+def _approved_guidance_hits(
+    hits: Sequence[SearchHit], judge: Mapping[str, Any]
+) -> list[SearchHit]:
+    """Keep only the LLM-approved Skill and its retrieved graph neighborhood."""
+    if judge.get("applicable") is not True:
+        return []
+    selected_id = judge.get("selected_skill_id")
+    if not isinstance(selected_id, str):
+        return []
+    by_id = {hit.node.id: hit for hit in hits}
+    selected = by_id.get(selected_id)
+    if selected is None:
+        return []
+
+    approved_ids = {selected_id}
+    payload = selected.node.payload if isinstance(selected.node.payload, Mapping) else {}
+    approved_ids.update(_payload_relation_ids(payload))
+
+    related = [hit for hit in hits if hit.node.id in approved_ids and hit is not selected]
+    return [selected, *related]
 
 
 def _parse_usage(path: Path) -> dict[str, Any]:
@@ -299,6 +374,17 @@ def _build_guidance(
     transport: OpenAICompatibleTransport | None = None
     if api_key:
         try:
+            visible_test_patch = (
+                case.test_patch_path.read_text(encoding="utf-8", errors="replace")
+                if case.test_patch_path.is_file()
+                else ""
+            )
+            if len(visible_test_patch) > 50_000:
+                visible_test_patch = (
+                    visible_test_patch[:25_000]
+                    + "\n...<visible test patch truncated>...\n"
+                    + visible_test_patch[-25_000:]
+                )
             transport = OpenAICompatibleTransport(OpenAICompatibleConfig(api_key=api_key, base_url=base_url, model=model, timeout_seconds=180, max_output_tokens=2500, retries=2))
             governance = LLMGovernanceAdapter(
                 transport,
@@ -311,15 +397,43 @@ def _build_guidance(
                         "issue_title": case.issue_title,
                         "issue_body": case.issue_body,
                         "visible_test_paths": list(case.visible_test_paths),
-                        "task_context_only": True,
+                        "visible_test_patch": visible_test_patch,
+                        "validation_commands": list(case.test_commands),
+                        "solution_implementation_hidden": True,
                     },
                 ),
             )
             judge = dict(governance.judge_retrieval_use(case.query, response.hits))
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001 - judge failure must degrade to no guidance
             judge_error = f"{type(exc).__name__}: {exc}"
     hits = response.hits
-    rendered = "\n\n".join(_render_hit(hit, index) for index, hit in enumerate(hits, start=1))
+    approved_hits = _approved_guidance_hits(hits, judge)
+    if approved_hits:
+        selected = approved_hits[0]
+        selected_payload = (
+            selected.node.payload if isinstance(selected.node.payload, Mapping) else {}
+        )
+        materialized = {hit.node.id for hit in approved_hits}
+        for related_id in sorted(_payload_relation_ids(selected_payload)):
+            if related_id in materialized:
+                continue
+            related_node = store.get_node(related_id)
+            if related_node is None:
+                continue
+            approved_hits.append(
+                SearchHit(
+                    node=related_node,
+                    score=selected.score * 0.75,
+                    sources={"selected_payload_relation": selected.score * 0.75},
+                    trace=[f"{selected.node.id} --payload-reference--> {related_id}"],
+                )
+            )
+            materialized.add(related_id)
+    rendered = "\n\n".join(
+        _render_hit(hit, index) for index, hit in enumerate(approved_hits, start=1)
+    )
+    if not rendered:
+        rendered = "(The retrieval judge did not approve any retrieved Skill for use.)"
     return {
         "query": case.query,
         "retrieval_latency_ms": latency_ms,
@@ -332,6 +446,8 @@ def _build_guidance(
         ],
         "judge": judge,
         "judge_error": judge_error,
+        "guidance_applicable": bool(approved_hits),
+        "approved_hit_ids": [hit.node.id for hit in approved_hits],
         "transport_calls": list(transport.calls) if transport else [],
         "transport_transcripts": list(transport.transcripts) if transport else [],
         "rendered": rendered,
@@ -341,11 +457,13 @@ def _build_guidance(
 def _prompt(case: Case, arm: str, guidance: Mapping[str, Any] | None) -> str:
     common = f"""You are solving a held-out implementation task in repository {case.repository}.\nThe workspace is a synthetic snapshot based on the pre-change parent and has no future Git history. The original solution commit is not available. Work only in this workspace; do not search external services or other repositories. Do not edit the visible regression tests. Inspect the current code, implement the behavior, and run focused tests before finishing.\n\n# Problem family\n{case.category.replace('-', ' ')}\n\n# Issue/task\n{case.issue_title}\n\n{case.issue_body}\n\n# Visible regression tests retained for this evaluation\n"""
     tests = "\n".join(f"- {path}" for path in case.visible_test_paths) or "- No target test path was available; use existing tests and a focused validation."
+    validation = "\n".join(f"- `{command}`" for command in case.test_commands) or "- Run the narrowest relevant repository tests."
+    task_context = common + tests + "\n\n# Validation commands\n" + validation
     if arm == "no_skill":
-        return common + tests + "\n\n# Arm\nno_skill\n\nSolve the task from the repository and visible tests without any retrieved Skill context."
+        return task_context + "\n\n# Arm\nno_skill\n\nSolve the task from the repository and visible tests without any retrieved Skill context."
     context = (guidance or {}).get("rendered") or "(Retrieval returned no usable context.)"
     judge = json.dumps((guidance or {}).get("judge", {}), ensure_ascii=False, indent=2)
-    return common + tests + f"""\n\n# Arm\nguided\n\n# Retrieved Skill Graph guidance\nThe following are hypotheses retrieved only from the training repositories using lexical/vector retrieval, optional HNSW, and typed graph expansion. Verify every step against the current code and tests; do not copy repository-specific names blindly.\n\n{context}\n\n# Applicability judgment\n{judge}\n\nUse the guidance to localize the problem and choose a safe implementation, but rely on the visible tests and current code as the oracle."""
+    return task_context + f"""\n\n# Arm\nguided\n\n# Retrieved Skill Graph guidance\nThe following are hypotheses retrieved only from the training repositories using lexical/vector retrieval, optional HNSW, and typed graph expansion. Verify every step against the current code and tests; do not copy repository-specific names blindly.\n\n{context}\n\n# Applicability judgment\n{judge}\n\nUse the guidance to localize the problem and choose a safe implementation, but rely on the visible tests and current code as the oracle."""
 
 
 def _path_for_executable(path: Path, executable: str) -> str:
@@ -388,14 +506,21 @@ def _run_arm(
     (run_dir / "prompt.md").write_text(prompt, encoding="utf-8")
     if guidance is not None:
         _write_json(run_dir / "guidance.json", dict(guidance))
-    snapshot = _prepare_workspace(case, workspace, run_dir / "snapshot")
     env = os.environ.copy()
     codex_home_value = _path_for_executable(codex_home, codex_executable)
     env.update({"CODEX_HOME": codex_home_value, "AREX_CASE_ID": case.case_id, "AREX_ARM": arm})
     if api_key:
         env["OPENAI_API_KEY"] = api_key
+    snapshot = _prepare_workspace(case, workspace, run_dir / "snapshot", env)
     setup_results = [_run_command(command, cwd=workspace, env=env, timeout_seconds=case.timeout_seconds, stdout_path=run_dir / "setup" / f"{index:02d}.stdout", stderr_path=run_dir / "setup" / f"{index:02d}.stderr") for index, command in enumerate(case.setup_commands, start=1)]
-    setup_ok = all(item.returncode == 0 for item in setup_results)
+    setup_blockers: list[str] = []
+    if not bool(snapshot["pre_patch_setup_success"]):
+        setup_blockers.append("pre-patch setup failed")
+    if int(snapshot["visible_test_patch"]["returncode"]) != 0:
+        setup_blockers.append("visible test patch failed")
+    if not all(item.returncode == 0 for item in setup_results):
+        setup_blockers.append("post-patch setup failed")
+    setup_ok = not setup_blockers
     command = _agent_command(model, codex_executable).format(last=shlex.quote(_path_for_executable(run_dir / "agent-last.txt", codex_executable)), worktree=shlex.quote(_path_for_executable(workspace, codex_executable)))
     started = time.perf_counter()
     # Dependency setup is measured separately and must not silently turn the
@@ -403,9 +528,24 @@ def _run_arm(
     # workspace when setup is unavailable; the subsequent test result records
     # the missing-runtime failure explicitly.
     agent = _run_command(command, cwd=workspace, env=env, timeout_seconds=case.timeout_seconds, stdout_path=run_dir / "agent-events.jsonl", stderr_path=run_dir / "agent.stderr", stdin_text=prompt)
-    patch = subprocess.run(["git", "-C", str(workspace), "diff", "--binary", "HEAD"], capture_output=True, text=True).stdout
-    changed_paths = subprocess.run(["git", "-C", str(workspace), "diff", "--name-only", "HEAD"], capture_output=True, text=True).stdout.splitlines()
-    untracked = subprocess.run(["git", "-C", str(workspace), "ls-files", "--others", "--exclude-standard"], capture_output=True, text=True).stdout.splitlines()
+    patch = subprocess.run(
+        ["git", "-C", str(workspace), "diff", "--binary", "HEAD"],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout
+    changed_paths = subprocess.run(
+        ["git", "-C", str(workspace), "diff", "--name-only", "HEAD"],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.splitlines()
+    untracked = subprocess.run(
+        ["git", "-C", str(workspace), "ls-files", "--others", "--exclude-standard"],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.splitlines()
     edited_visible_tests = sorted(set(changed_paths) & set(case.visible_test_paths))
     (run_dir / "model.patch").write_text(patch, encoding="utf-8")
     tests = []
@@ -425,6 +565,7 @@ def _run_arm(
         "arm": arm,
         "status": "passed" if effective_test_success else "failed",
         "setup_success": setup_ok,
+        "setup_blockers": setup_blockers,
         "agent_success": agent.returncode == 0,
         "patch_nonempty": bool(patch.strip()) or bool(untracked),
         "visible_tests_present": bool(case.visible_test_paths),
@@ -454,20 +595,29 @@ def _aggregate(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for arm in sorted({str(row["arm"]) for row in rows}):
         items = [row for row in rows if row["arm"] == arm]
-        mean = lambda key: statistics.mean(float(item.get(key, 0.0)) for item in items) if items else 0.0
+        mean_wall_seconds = (
+            statistics.mean(float(item.get("total_wall_seconds", 0.0)) for item in items)
+            if items
+            else 0.0
+        )
+        mean_prompt_estimated_tokens = (
+            statistics.mean(float(item.get("prompt_estimated_tokens", 0.0)) for item in items)
+            if items
+            else 0.0
+        )
         result[arm] = {
             "cases": len(items),
             "test_successes": sum(bool(item.get("test_success")) for item in items),
             "test_success_rate": (sum(bool(item.get("test_success")) for item in items) / len(items)) if items else 0.0,
             "agent_success_rate": (sum(bool(item.get("agent_success")) for item in items) / len(items)) if items else 0.0,
-            "mean_wall_seconds": mean("total_wall_seconds"),
+            "mean_wall_seconds": mean_wall_seconds,
             "mean_input_tokens": statistics.mean(int(item.get("usage", {}).get("input_tokens", 0)) for item in items) if items else 0.0,
             "mean_cached_input_tokens": statistics.mean(int(item.get("usage", {}).get("cached_input_tokens", 0)) for item in items) if items else 0.0,
             "mean_output_tokens": statistics.mean(int(item.get("usage", {}).get("output_tokens", 0)) for item in items) if items else 0.0,
             "mean_reasoning_output_tokens": statistics.mean(int(item.get("usage", {}).get("reasoning_output_tokens", 0)) for item in items) if items else 0.0,
             "total_input_tokens": sum(int(item.get("usage", {}).get("input_tokens", 0)) for item in items),
             "total_output_tokens": sum(int(item.get("usage", {}).get("output_tokens", 0)) for item in items),
-            "mean_prompt_estimated_tokens": mean("prompt_estimated_tokens"),
+            "mean_prompt_estimated_tokens": mean_prompt_estimated_tokens,
         }
     return result
 
@@ -503,7 +653,13 @@ def main() -> int:
             guidance = _build_guidance(case, store, hnsw_path=args.hnsw, api_key=args.api_key, base_url=args.base_url, model=args.model, top_k=args.top_k, seed_k=args.seed_k, expand_hops=args.expand_hops)
             _write_json(args.output_dir / "retrieval" / f"{_safe_name(case.case_id)}.json", guidance)
             if args.skip_setup:
-                case = Case(**{**asdict(case), "setup_commands": ()})
+                case = Case(
+                    **{
+                        **asdict(case),
+                        "setup_commands": (),
+                        "pre_patch_setup_commands": (),
+                    }
+                )
             # Each arm receives its own synthetic snapshot and its own fresh
             # ephemeral Codex session; there is no resume/fork relationship.
             rows.append(_run_arm(case, "no_skill", output_dir=args.output_dir, workspace_root=args.workspace_root, guidance=None, model=args.model, codex_executable=args.codex, codex_home=args.codex_home, api_key=args.api_key))

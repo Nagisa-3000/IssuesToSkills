@@ -1,0 +1,143 @@
+diff --git a/packages/core/src/core/anthropicContentGenerator/converter.ts b/packages/core/src/core/anthropicContentGenerator/converter.ts
+index c4d3837..f871382 100644
+--- a/packages/core/src/core/anthropicContentGenerator/converter.ts
++++ b/packages/core/src/core/anthropicContentGenerator/converter.ts
+@@ -27,6 +27,7 @@ import {
+ } from '../../utils/schemaConverter.js';
+ import { createDebugLogger } from '../../utils/debugLogger.js';
+ import { normalizeMcpToolName } from '../../utils/tool-name-utils.js';
++import { isResponsesReasoningSignature } from '../../utils/thoughtUtils.js';
+ 
+ type AnthropicMessageParam = Anthropic.MessageParam;
+ // `scope: 'global'` is sent under the `prompt-caching-scope-2026-01-05` beta
+@@ -264,7 +265,11 @@ export class AnthropicContentConverter {
+       request.config?.systemInstruction,
+     );
+ 
+-    this.processContents(request.contents, messages);
++    this.processContents(
++      request.contents,
++      messages,
++      options.dropUnsignedAssistantThinking ?? false,
++    );
+ 
+     if (options.stripAssistantThinking) {
+       this.stripThinkingFromAssistantMessages(messages);
+@@ -567,19 +572,21 @@ export class AnthropicContentConverter {
+   private processContents(
+     contents: ContentListUnion,
+     messages: AnthropicMessageParam[],
++    demoteResponsesReasoning: boolean,
+   ): void {
+     if (Array.isArray(contents)) {
+       for (const content of contents) {
+-        this.processContent(content, messages);
++        this.processContent(content, messages, demoteResponsesReasoning);
+       }
+     } else if (contents) {
+-      this.processContent(contents, messages);
++      this.processContent(contents, messages, demoteResponsesReasoning);
+     }
+   }
+ 
+   private processContent(
+     content: ContentUnion | PartUnion,
+     messages: AnthropicMessageParam[],
++    demoteResponsesReasoning: boolean,
+   ): void {
+     if (typeof content === 'string') {
+       messages.push({
+@@ -602,18 +609,28 @@ export class AnthropicContentConverter {
+ 
+       if ('text' in part && 'thought' in part && part.thought) {
+         if (role === 'assistant') {
+-          const thinkingBlock: unknown = {
+-            type: 'thinking',
+-            thinking: part.text || '',
+-          };
+-          if (
+-            'thoughtSignature' in part &&
+-            typeof part.thoughtSignature === 'string'
+-          ) {
+-            (thinkingBlock as { signature?: string }).signature =
+-              part.thoughtSignature;
++          const isResponsesReasoning = isResponsesReasoningSignature(
++            part.thoughtSignature,
++          );
++          if (isResponsesReasoning && demoteResponsesReasoning) {
++            if (part.text) {
++              contentBlocks.push({ type: 'text', text: part.text });
++            }
++          } else {
++            const thinkingBlock: unknown = {
++              type: 'thinking',
++              thinking: part.text || '',
++            };
++            if (
++              'thoughtSignature' in part &&
++              typeof part.thoughtSignature === 'string' &&
++              !isResponsesReasoning
++            ) {
++              (thinkingBlock as { signature?: string }).signature =
++                part.thoughtSignature;
++            }
++            contentBlocks.push(thinkingBlock as AnthropicContentBlockParam);
+           }
+-          contentBlocks.push(thinkingBlock as AnthropicContentBlockParam);
+         }
+       }
+ 
+diff --git a/packages/core/src/core/llm-content-generator/llm-content-generator.ts b/packages/core/src/core/llm-content-generator/llm-content-generator.ts
+index b811296..d6ca3fa 100644
+--- a/packages/core/src/core/llm-content-generator/llm-content-generator.ts
++++ b/packages/core/src/core/llm-content-generator/llm-content-generator.ts
+@@ -34,6 +34,7 @@ import {
+   hasDynamicPlaceholder,
+   warnIfDynamicHeadersDisabled,
+ } from '../outbound-dynamic-headers.js';
++import { isResponsesReasoningSignature } from '../../utils/thoughtUtils.js';
+ 
+ const debugLogger = createDebugLogger('GEMINI');
+ 
+@@ -352,6 +353,10 @@ export class LlmContentGenerator implements ContentGenerator {
+ 
+     const result = { ...part };
+ 
++    if (isResponsesReasoningSignature(result.thoughtSignature)) {
++      delete result.thoughtSignature;
++    }
++
+     // Strip displayName from inlineData
+     if (result.inlineData) {
+       const { displayName: _, ...inlineDataWithoutDisplayName } =
+diff --git a/packages/core/src/utils/thoughtUtils.ts b/packages/core/src/utils/thoughtUtils.ts
+index 523d455..37079a0 100644
+--- a/packages/core/src/utils/thoughtUtils.ts
++++ b/packages/core/src/utils/thoughtUtils.ts
+@@ -37,6 +37,26 @@ export function isOpenAIReasoningThoughtPart(part: Part): boolean {
+   );
+ }
+ 
++export function isResponsesReasoningSignature(signature: unknown): boolean {
++  if (typeof signature !== 'string' || !signature.trimStart().startsWith('{')) {
++    return false;
++  }
++
++  try {
++    const payload: unknown = JSON.parse(signature);
++    return (
++      payload !== null &&
++      typeof payload === 'object' &&
++      'id' in payload &&
++      typeof payload.id === 'string' &&
++      'encrypted_content' in payload &&
++      typeof payload.encrypted_content === 'string'
++    );
++  } catch {
++    return false;
++  }
++}
++
+ /**
+  * Parses a raw thought string into a structured ThoughtSummary object.
+  *

@@ -1,0 +1,133 @@
+{
+  "source": "local_git_pinned_ref",
+  "repository": "openai/codex",
+  "issue_number": 48155,
+  "issue": {
+    "number": 48155,
+    "title": "Preserve filesystem denials when preparing approved commands (#48155)",
+    "body": null,
+    "metadata_unavailable": [
+      "issue body",
+      "comments",
+      "timeline",
+      "author/review discussion"
+    ]
+  },
+  "comments": [],
+  "timeline": [],
+  "linked_pull_requests": [
+    {
+      "pull_request": {
+        "number": 48155,
+        "title": "Preserve filesystem denials when preparing approved commands (#48155)",
+        "metadata_unavailable": [
+          "PR body",
+          "reviews",
+          "status checks"
+        ]
+      },
+      "files": [
+        {
+          "status_line": "M\tcodex-rs/exec-server-protocol/src/protocol.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/linux-sandbox/src/bwrap.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/linux-sandbox/tests/suite/landlock.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/linux-sandbox/tests/suite/managed_proxy.rs"
+        },
+        {
+          "status_line": "A\tcodex-rs/linux-sandbox/tests/suite/root_metadata_tests.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/mxc-sandbox/src/policy_tests.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/protocol/src/permissions.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/protocol/src/permissions/target.rs"
+        },
+        {
+          "status_line": "A\tcodex-rs/protocol/src/permissions/target_approved_materialization_tests.rs"
+        }
+      ],
+      "commits": [
+        {
+          "sha": "645b683a9e712ae6d90a364e3cf597466e4146d0",
+          "subject": "Preserve filesystem denials when preparing approved commands (#48155)"
+        }
+      ]
+    }
+  ],
+  "checkout": "/home/chenyujia/tritonToLlvm/codex-agent",
+  "pinned_ref": "645b683a9e712ae6d90a364e3cf597466e4146d0",
+  "resolved_commit": "645b683a9e712ae6d90a364e3cf597466e4146d0",
+  "parent_commit": "de9e78e3e7caed0fdd75d20ae617faa646dfef3c",
+  "commit_show_stat": "commit 645b683a9e712ae6d90a364e3cf597466e4146d0\nAuthor:     viyatb-oai <viyatb@openai.com>\nAuthorDate: Fri Sep 25 17:48:54 2026 +0000\nCommit:     copyberry <copyberry@app.openai.com>\nCommitDate: Fri Sep 25 18:06:57 2026 +0000\n\n    Preserve filesystem denials when preparing approved commands (#48155)\n    \n    ## Why\n    \n    Approved commands need broader write access while retaining explicit read denials. On Linux, binding the filesystem root writable can shadow standard devices, and additional root-metadata mounts can reopen denied symlink targets.\n    \n    ## What changed\n    \n    - Add `FileSystemSandboxPolicy::for_approved_command` to grant root and root-metadata writes while retaining path and glob denials. Keep the original policy when denials cannot be resolved or deny the root.\n    - Restore standard devices after Linux writable root binds, then apply explicit deny masks. Avoid redundant root-alias binds and inherit root-metadata writes from the root mount so denied targets stay masked.\n    - Preserve literal deny paths alongside resolved targets so Linux can reject denials that cross writable symlinks.\n    - Advertise Linux device and approved-root restriction support through two opt-in exec-server capabilities, omitted from serialization when false.\n    \n    ## Testing\n    \n    Add regression coverage for approval policy materialization across Unix, Windows drive, and UNC paths; Windows volume expansion; Linux device access and metadata symlink restrictions; and capability serialization compatibility.\n    \n    GitOrigin-RevId: 40584473da98a15e606bb1a8934308f69528850f\n\n codex-rs/exec-server-protocol/src/protocol.rs      |  44 ++++\n codex-rs/linux-sandbox/src/bwrap.rs                |  86 ++++++-\n codex-rs/linux-sandbox/tests/suite/landlock.rs     |   3 +\n .../linux-sandbox/tests/suite/managed_proxy.rs     |  57 +++++\n .../tests/suite/root_metadata_tests.rs             | 170 ++++++++++++++\n codex-rs/mxc-sandbox/src/policy_tests.rs           |  52 +++++\n codex-rs/protocol/src/permissions.rs               |  63 +++++-\n codex-rs/protocol/src/permissions/target.rs        |  71 ++++++\n .../target_approved_materialization_tests.rs       | 246 +++++++++++++++++++++\n 9 files changed, 780 insertions(+), 12 deletions(-)\n",
+  "changed_files_name_status": "M\tcodex-rs/exec-server-protocol/src/protocol.rs\nM\tcodex-rs/linux-sandbox/src/bwrap.rs\nM\tcodex-rs/linux-sandbox/tests/suite/landlock.rs\nM\tcodex-rs/linux-sandbox/tests/suite/managed_proxy.rs\nA\tcodex-rs/linux-sandbox/tests/suite/root_metadata_tests.rs\nM\tcodex-rs/mxc-sandbox/src/policy_tests.rs\nM\tcodex-rs/protocol/src/permissions.rs\nM\tcodex-rs/protocol/src/permissions/target.rs\nA\tcodex-rs/protocol/src/permissions/target_approved_materialization_tests.rs\n",
+  "linked_issue_numbers": [
+    48155
+  ],
+  "manifest_metadata": {
+    "category": "effect-control-and-isolation",
+    "theme": "approval, sandbox, and effect isolation",
+    "file_sample": [
+      "codex-rs/exec-server-protocol/src/protocol.rs",
+      "codex-rs/linux-sandbox/src/bwrap.rs",
+      "codex-rs/linux-sandbox/tests/suite/landlock.rs",
+      "codex-rs/linux-sandbox/tests/suite/managed_proxy.rs",
+      "codex-rs/linux-sandbox/tests/suite/root_metadata_tests.rs",
+      "codex-rs/mxc-sandbox/src/policy_tests.rs",
+      "codex-rs/protocol/src/permissions.rs",
+      "codex-rs/protocol/src/permissions/target.rs",
+      "codex-rs/protocol/src/permissions/target_approved_materialization_tests.rs"
+    ],
+    "case_id": "openai__codex__48155__effect-control-and-isolation",
+    "role": "train_candidate",
+    "split": "train_candidate",
+    "sample_kind": "verified_substitute",
+    "seed_issue": 42184,
+    "seed_issue_url": "https://github.com/openai/codex/issues/42184",
+    "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+    "resolution_url": "https://github.com/openai/codex/pull/48155",
+    "source": "agent_core_seven_category_extraction_v2",
+    "provenance": {
+      "classification": "verified_substitute",
+      "seed": {
+        "repository": "openai/codex",
+        "issue": 42184,
+        "url": "https://github.com/openai/codex/issues/42184",
+        "table_note": "Windows sandbox root deny still permits reads outside reopened roots"
+      },
+      "resolution_artifact": {
+        "type": "pull_request",
+        "number": 48155,
+        "url": "https://github.com/openai/codex/pull/48155",
+        "pull_request": 48155,
+        "pull_request_url": "https://github.com/openai/codex/pull/48155"
+      },
+      "commit": {
+        "sha": "645b683a9e712ae6d90a364e3cf597466e4146d0",
+        "subject": "Preserve filesystem denials when preparing approved commands (#48155)",
+        "parents": [
+          "de9e78e3e7caed0fdd75d20ae617faa646dfef3c"
+        ],
+        "body_excerpt": "## Why\n\nApproved commands need broader write access while retaining explicit read denials. On Linux, binding the filesystem root writable can shadow standard devices, and additional root-metadata mounts can reopen denied symlink targets.\n\n## What changed\n\n- Add `FileSystemSandboxPolicy::for_approved_command` to grant root and root-metadata writes while retaining path and glob denials. Keep the original policy when denials cannot be resolved or deny the root.\n- Restore standard devices after Linux writable root binds, then apply explicit deny masks. Avoid redundant root-alias binds and inherit root-metadata writes from the root mount so denied targets stay masked.\n- Preserve literal deny paths alongside resolved targets so Linux can reject denials that cross writable symlinks.\n- Advertise L"
+      },
+      "verification": [
+        "local_git_commit_resolved",
+        "parent_and_changed_files_recorded",
+        "implementation_diff_present",
+        "test_or_spec_change_present"
+      ]
+    }
+  },
+  "fetched_at": "2026-10-01T09:08:43.518820+00:00",
+  "limitations": [
+    "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+  ]
+}

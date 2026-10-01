@@ -1,0 +1,209 @@
+{
+  "source": "local_git_pinned_ref",
+  "repository": "openai/codex",
+  "issue_number": 47641,
+  "issue": {
+    "number": 47641,
+    "title": "Honor Retry-After and preserve server retry deadlines (#47641)",
+    "body": null,
+    "metadata_unavailable": [
+      "issue body",
+      "comments",
+      "timeline",
+      "author/review discussion"
+    ]
+  },
+  "comments": [],
+  "timeline": [],
+  "linked_pull_requests": [
+    {
+      "pull_request": {
+        "number": 47641,
+        "title": "Honor Retry-After and preserve server retry deadlines (#47641)",
+        "metadata_unavailable": [
+          "PR body",
+          "reviews",
+          "status checks"
+        ]
+      },
+      "files": [
+        {
+          "status_line": "M\tcodex-rs/Cargo.lock"
+        },
+        {
+          "status_line": "M\tcodex-rs/cli/src/doctor.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/codex-api/Cargo.toml"
+        },
+        {
+          "status_line": "M\tcodex-rs/codex-api/src/api_bridge.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/codex-api/src/api_bridge_tests.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/codex-api/src/endpoint/responses_websocket.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/codex-api/src/error.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/codex-api/src/sse/responses.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/codex-client/src/retry.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/src/client_tests.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/src/responses_retry.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/src/responses_retry_tests.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/tests/suite/retry_after.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/ext/guardian-v2/src/async_scorer/metrics.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/ext/guardian-v2/src/async_scorer/sampler/execution.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/http-client/Cargo.toml"
+        },
+        {
+          "status_line": "M\tcodex-rs/http-client/src/error.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/http-client/src/lib.rs"
+        },
+        {
+          "status_line": "A\tcodex-rs/http-client/src/retry_after.rs"
+        },
+        {
+          "status_line": "A\tcodex-rs/http-client/src/retry_after_tests.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/http-client/src/transport.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/model-provider/src/amazon_bedrock/error.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/model-provider/src/amazon_bedrock/error_tests.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/model-provider/src/provider.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/protocol/Cargo.toml"
+        },
+        {
+          "status_line": "M\tcodex-rs/protocol/src/error.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/protocol/src/error_tests.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/response-debug-context/src/lib.rs"
+        }
+      ],
+      "commits": [
+        {
+          "sha": "9d8de196748b57d7f463a7757eaa447b6483a331",
+          "subject": "Honor Retry-After and preserve server retry deadlines (#47641)"
+        }
+      ]
+    }
+  ],
+  "checkout": "/home/chenyujia/tritonToLlvm/codex-agent",
+  "pinned_ref": "9d8de196748b57d7f463a7757eaa447b6483a331",
+  "resolved_commit": "9d8de196748b57d7f463a7757eaa447b6483a331",
+  "parent_commit": "ab021e9f137c9daacf6ae06a495f3c7d6199fab2",
+  "commit_show_stat": "commit 9d8de196748b57d7f463a7757eaa447b6483a331\nAuthor:     Adam Perry @ OpenAI <anp@openai.com>\nAuthorDate: Wed Sep 23 19:35:54 2026 +0000\nCommit:     copyberry <copyberry@app.openai.com>\nCommitDate: Wed Sep 23 19:53:11 2026 +0000\n\n    Honor Retry-After and preserve server retry deadlines (#47641)\n    \n    ## Why\n    \n    HTTP retries used local backoff even when the server supplied `Retry-After`. Relative retry delays also failed to account for time spent propagating errors or reporting retries.\n    \n    ## What changed\n    \n    - Parse `Retry-After` delay seconds and HTTP dates into a monotonic deadline captured when response headers arrive.\n    - Honor that deadline for HTTP retries, falling back to local backoff when valid advice is absent.\n    - Preserve deadlines through API and Bedrock error mapping, stream retries, and exhausted retry state. Expired advice remains a zero delay instead of triggering local backoff.\n    \n    ## Testing\n    \n    Add coverage for header parsing, deadline countdown and expiry, error mapping after exhausted HTTP retries, and delayed stream retry notifications. Update Responses and remote compaction tests to verify that HTTP retries honor `Retry-After`.\n    \n    GitOrigin-RevId: a2eff02946e5524f29e06f7ba1431e3d339261a4\n\n codex-rs/Cargo.lock                                |  1 +\n codex-rs/cli/src/doctor.rs                         |  2 +-\n codex-rs/codex-api/Cargo.toml                      |  1 +\n codex-rs/codex-api/src/api_bridge.rs               | 45 ++++++++----\n codex-rs/codex-api/src/api_bridge_tests.rs         | 30 ++++++--\n .../codex-api/src/endpoint/responses_websocket.rs  | 12 +++-\n codex-rs/codex-api/src/error.rs                    |  8 +--\n codex-rs/codex-api/src/sse/responses.rs            | 48 ++++++++-----\n codex-rs/codex-client/src/retry.rs                 | 13 +++-\n codex-rs/core/src/client_tests.rs                  |  3 +\n codex-rs/core/src/responses_retry.rs               | 13 ++--\n codex-rs/core/src/responses_retry_tests.rs         | 54 +++++++++++++++\n codex-rs/core/tests/suite/retry_after.rs           | 80 ++++++++++++++++++----\n .../ext/guardian-v2/src/async_scorer/metrics.rs    |  2 +-\n .../src/async_scorer/sampler/execution.rs          |  2 +-\n codex-rs/http-client/Cargo.toml                    |  2 +\n codex-rs/http-client/src/error.rs                  | 18 +++++\n codex-rs/http-client/src/lib.rs                    |  2 +\n codex-rs/http-client/src/retry_after.rs            | 54 +++++++++++++++\n codex-rs/http-client/src/retry_after_tests.rs      | 45 ++++++++++++\n codex-rs/http-client/src/transport.rs              |  7 ++\n .../model-provider/src/amazon_bedrock/error.rs     |  4 +-\n .../src/amazon_bedrock/error_tests.rs              | 18 +++++\n codex-rs/model-provider/src/provider.rs            |  1 +\n codex-rs/protocol/Cargo.toml                       |  1 +\n codex-rs/protocol/src/error.rs                     | 26 ++++---\n codex-rs/protocol/src/error_tests.rs               | 17 +++--\n codex-rs/response-debug-context/src/lib.rs         |  6 +-\n 28 files changed, 429 insertions(+), 86 deletions(-)\n",
+  "changed_files_name_status": "M\tcodex-rs/Cargo.lock\nM\tcodex-rs/cli/src/doctor.rs\nM\tcodex-rs/codex-api/Cargo.toml\nM\tcodex-rs/codex-api/src/api_bridge.rs\nM\tcodex-rs/codex-api/src/api_bridge_tests.rs\nM\tcodex-rs/codex-api/src/endpoint/responses_websocket.rs\nM\tcodex-rs/codex-api/src/error.rs\nM\tcodex-rs/codex-api/src/sse/responses.rs\nM\tcodex-rs/codex-client/src/retry.rs\nM\tcodex-rs/core/src/client_tests.rs\nM\tcodex-rs/core/src/responses_retry.rs\nM\tcodex-rs/core/src/responses_retry_tests.rs\nM\tcodex-rs/core/tests/suite/retry_after.rs\nM\tcodex-rs/ext/guardian-v2/src/async_scorer/metrics.rs\nM\tcodex-rs/ext/guardian-v2/src/async_scorer/sampler/execution.rs\nM\tcodex-rs/http-client/Cargo.toml\nM\tcodex-rs/http-client/src/error.rs\nM\tcodex-rs/http-client/src/lib.rs\nA\tcodex-rs/http-client/src/retry_after.rs\nA\tcodex-rs/http-client/src/retry_after_tests.rs\nM\tcodex-rs/http-client/src/transport.rs\nM\tcodex-rs/model-provider/src/amazon_bedrock/error.rs\nM\tcodex-rs/model-provider/src/amazon_bedrock/error_tests.rs\nM\tcodex-rs/model-provider/src/provider.rs\nM\tcodex-rs/protocol/Cargo.toml\nM\tcodex-rs/protocol/src/error.rs\nM\tcodex-rs/protocol/src/error_tests.rs\nM\tcodex-rs/response-debug-context/src/lib.rs\n",
+  "linked_issue_numbers": [
+    47641
+  ],
+  "manifest_metadata": {
+    "category": "failure-recovery-and-streaming",
+    "theme": "retry, timeout, streaming, and network recovery",
+    "file_sample": [
+      "codex-rs/Cargo.lock",
+      "codex-rs/cli/src/doctor.rs",
+      "codex-rs/codex-api/Cargo.toml",
+      "codex-rs/codex-api/src/api_bridge.rs",
+      "codex-rs/codex-api/src/api_bridge_tests.rs",
+      "codex-rs/codex-api/src/endpoint/responses_websocket.rs",
+      "codex-rs/codex-api/src/error.rs",
+      "codex-rs/codex-api/src/sse/responses.rs",
+      "codex-rs/codex-client/src/retry.rs",
+      "codex-rs/core/src/client_tests.rs",
+      "codex-rs/core/src/responses_retry.rs",
+      "codex-rs/core/src/responses_retry_tests.rs",
+      "codex-rs/core/tests/suite/retry_after.rs",
+      "codex-rs/ext/guardian-v2/src/async_scorer/metrics.rs",
+      "codex-rs/ext/guardian-v2/src/async_scorer/sampler/execution.rs",
+      "codex-rs/http-client/Cargo.toml",
+      "codex-rs/http-client/src/error.rs",
+      "codex-rs/http-client/src/lib.rs",
+      "codex-rs/http-client/src/retry_after.rs",
+      "codex-rs/http-client/src/retry_after_tests.rs",
+      "codex-rs/http-client/src/transport.rs",
+      "codex-rs/model-provider/src/amazon_bedrock/error.rs",
+      "codex-rs/model-provider/src/amazon_bedrock/error_tests.rs",
+      "codex-rs/model-provider/src/provider.rs",
+      "codex-rs/protocol/Cargo.toml",
+      "codex-rs/protocol/src/error.rs",
+      "codex-rs/protocol/src/error_tests.rs",
+      "codex-rs/response-debug-context/src/lib.rs"
+    ],
+    "case_id": "openai__codex__47641__failure-recovery-and-streaming",
+    "role": "train_candidate",
+    "split": "train_candidate",
+    "sample_kind": "verified_substitute",
+    "seed_issue": 39988,
+    "seed_issue_url": "https://github.com/openai/codex/issues/39988",
+    "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+    "resolution_url": "https://github.com/openai/codex/pull/47641",
+    "source": "agent_core_seven_category_extraction_v2",
+    "provenance": {
+      "classification": "verified_substitute",
+      "seed": {
+        "repository": "openai/codex",
+        "issue": 39988,
+        "url": "https://github.com/openai/codex/issues/39988",
+        "table_note": "CLI turn remains working after a tool call stops emitting events"
+      },
+      "resolution_artifact": {
+        "type": "pull_request",
+        "number": 47641,
+        "url": "https://github.com/openai/codex/pull/47641",
+        "pull_request": 47641,
+        "pull_request_url": "https://github.com/openai/codex/pull/47641"
+      },
+      "commit": {
+        "sha": "9d8de196748b57d7f463a7757eaa447b6483a331",
+        "subject": "Honor Retry-After and preserve server retry deadlines (#47641)",
+        "parents": [
+          "ab021e9f137c9daacf6ae06a495f3c7d6199fab2"
+        ],
+        "body_excerpt": "## Why\n\nHTTP retries used local backoff even when the server supplied `Retry-After`. Relative retry delays also failed to account for time spent propagating errors or reporting retries.\n\n## What changed\n\n- Parse `Retry-After` delay seconds and HTTP dates into a monotonic deadline captured when response headers arrive.\n- Honor that deadline for HTTP retries, falling back to local backoff when valid advice is absent.\n- Preserve deadlines through API and Bedrock error mapping, stream retries, and exhausted retry state. Expired advice remains a zero delay instead of triggering local backoff.\n\n## Testing\n\nAdd coverage for header parsing, deadline countdown and expiry, error mapping after exhausted HTTP retries, and delayed stream retry notifications. Update Responses and remote compaction tests"
+      },
+      "verification": [
+        "local_git_commit_resolved",
+        "parent_and_changed_files_recorded",
+        "implementation_diff_present",
+        "test_or_spec_change_present"
+      ]
+    }
+  },
+  "fetched_at": "2026-10-01T09:09:35.246175+00:00",
+  "limitations": [
+    "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+  ]
+}

@@ -6,9 +6,10 @@ This module deliberately contains no keyword, similarity, or threshold-based
 semantic classification. Retrieval supplies peers; the provider reads the
 before/after code, call sites, tests, and evidence and returns constrained JSON.
 """
-from dataclasses import dataclass, field
 import json
-from typing import Any, Mapping, Protocol, Sequence
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field
+from typing import Any, Protocol
 
 from .episodes import ChangeEpisode
 from .lifecycle import DedupDecision, DedupProposal, SkillLevel, SkillRecord, parse_llm_dedup_result
@@ -97,18 +98,45 @@ class LLMGovernanceAdapter:
         decide applicability and may return ``selected_skill_id = null`` when
         none of the candidates is safe to use.
         """
-        candidates = [
-            {
-                "skill_id": hit.node.id,
-                "node_type": hit.node.node_type.value,
-                "title": hit.node.title,
-                "summary": hit.node.summary,
-                "score": hit.score,
-                "sources": dict(hit.sources),
-                "trace": list(hit.trace),
-            }
-            for hit in hits
-        ]
+        applicability_keys = {
+            "goal",
+            "intent",
+            "entry_state",
+            "exit_state",
+            "pre_state",
+            "post_state",
+            "steps",
+            "validation",
+            "invariants",
+            "known_failure_modes",
+            "counterexamples",
+            "promotion_status",
+            "supporting_repositories",
+            "supporting_workflows",
+            "unresolved_or_deferred",
+            "when_to_use",
+            "anti_goals",
+        }
+        candidates = []
+        for hit in hits:
+            payload = hit.node.payload if isinstance(hit.node.payload, Mapping) else {}
+            candidates.append(
+                {
+                    "skill_id": hit.node.id,
+                    "node_type": hit.node.node_type.value,
+                    "title": hit.node.title,
+                    "summary": hit.node.summary,
+                    "repository": hit.node.repository,
+                    "lifecycle": hit.node.lifecycle,
+                    "facets": dict(hit.node.facets),
+                    "applicability_contract": {
+                        key: payload[key] for key in applicability_keys if key in payload
+                    },
+                    "score": hit.score,
+                    "sources": dict(hit.sources),
+                    "trace": list(hit.trace),
+                }
+            )
         result = self.transport.complete(
             system=self.SYSTEM,
             user=self._prompt(
@@ -132,9 +160,14 @@ class LLMGovernanceAdapter:
             },
         )
         selected = result.get("selected_skill_id")
+        applicable = result.get("applicable")
         candidate_ids = {str(item.get("skill_id")) for item in candidates}
         if selected is not None and str(selected) not in candidate_ids:
             raise ValueError(f"retrieval judge selected a non-candidate skill: {selected}")
+        if applicable is True and selected is None:
+            raise ValueError("retrieval judge marked candidates applicable without selecting one")
+        if applicable is False and selected is not None:
+            raise ValueError("retrieval judge selected a skill while marking it inapplicable")
         if not isinstance(result.get("rationale"), str) or not result["rationale"].strip():
             raise ValueError("retrieval judge rationale cannot be empty")
         return dict(result)
@@ -330,7 +363,7 @@ class LLMGovernanceAdapter:
     ) -> tuple[SkillRecord, ...]:
         values = result.get("skills")
         if not isinstance(values, Sequence) or isinstance(values, (str, bytes)):
-            raise ValueError("LLM extraction response must contain a skills array")
+            raise TypeError("LLM extraction response must contain a skills array")
         return tuple(
             self._record(
                 level,
@@ -352,7 +385,7 @@ class LLMGovernanceAdapter:
         default_relation_ids: Sequence[str] = (),
     ) -> SkillRecord:
         if not isinstance(value, Mapping):
-            raise ValueError("each extracted skill must be an object")
+            raise TypeError("each extracted skill must be an object")
         skill_id = str(value.get("skill_id") or value.get("id") or "")
         title = str(value.get("title") or "")
         summary = str(value.get("summary") or "")
@@ -377,7 +410,7 @@ class LLMGovernanceAdapter:
             level=level,
             title=title,
             summary=summary,
-            evidence_ids=set(str(x) for x in value.get("evidence_ids", source.evidence_ids)),
+            evidence_ids={str(x) for x in value.get("evidence_ids", source.evidence_ids)},
             preconditions=tuple(str(x) for x in value.get("preconditions", ())),
             exclusions=tuple(str(x) for x in value.get("exclusions", ())),
             failure_modes=tuple(str(x) for x in value.get("failure_modes", ())),

@@ -1,0 +1,145 @@
+{
+  "source": "local_git_pinned_ref",
+  "repository": "openai/codex",
+  "issue_number": 44472,
+  "issue": {
+    "number": 44472,
+    "title": "Harden Code Mode tool-call completeness tracking (#44472)",
+    "body": null,
+    "metadata_unavailable": [
+      "issue body",
+      "comments",
+      "timeline",
+      "author/review discussion"
+    ]
+  },
+  "comments": [],
+  "timeline": [],
+  "linked_pull_requests": [
+    {
+      "pull_request": {
+        "number": 44472,
+        "title": "Harden Code Mode tool-call completeness tracking (#44472)",
+        "metadata_unavailable": [
+          "PR body",
+          "reviews",
+          "status checks"
+        ]
+      },
+      "files": [
+        {
+          "status_line": "M\tcodex-rs/core/src/session/mod.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/src/session/session.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/src/session/tests.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/src/tools/executed_tool_calls.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/src/tools/executed_tool_calls/request_metadata.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/src/tools/executed_tool_calls/request_metadata_tests.rs"
+        },
+        {
+          "status_line": "A\tcodex-rs/core/src/tools/executed_tool_calls/seen_ids.rs"
+        },
+        {
+          "status_line": "A\tcodex-rs/core/src/tools/executed_tool_calls/seen_ids_tests.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/src/tools/handlers/mcp.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/tests/suite/code_mode.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/protocol/src/models/executed_tool_calls.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/protocol/src/models/executed_tool_calls_tests.rs"
+        }
+      ],
+      "commits": [
+        {
+          "sha": "03f014564deef528c25e80fe67ec51871cb6ee51",
+          "subject": "Harden Code Mode tool-call completeness tracking (#44472)"
+        }
+      ]
+    }
+  ],
+  "checkout": "/home/chenyujia/tritonToLlvm/codex-agent",
+  "pinned_ref": "03f014564deef528c25e80fe67ec51871cb6ee51",
+  "resolved_commit": "03f014564deef528c25e80fe67ec51871cb6ee51",
+  "parent_commit": "b348fc26674189f758d5941cdab3f78f258b2aa7",
+  "commit_show_stat": "commit 03f014564deef528c25e80fe67ec51871cb6ee51\nAuthor:     ningyi-oai <ningyi@openai.com>\nAuthorDate: Thu Sep 10 08:48:42 2026 +0000\nCommit:     copyberry <copyberry@app.openai.com>\nCommitDate: Thu Sep 10 08:57:35 2026 +0000\n\n    Harden Code Mode tool-call completeness tracking (#44472)\n    \n    ## Why\n    \n    Reused call IDs, ambiguous exec/wait associations, and missing history can make tool-call completeness claims unreliable. Truncating one cell's recorded calls should also preserve completeness for unrelated cells.\n    \n    ## What changed\n    \n    - Track observed call and runtime cell IDs with bounded memory, including call IDs from initial history, and withhold completeness when evidence is missing or ambiguous.\n    - Validate exec/wait input-output associations and keep invalidated completeness from returning on retries. Withhold wait completeness after resume or fork, where runtime cell IDs can be reused.\n    - Keep truncation markers and omission counts local to each output, clearing completeness across the affected cell while preserving unrelated cells within the metadata budget.\n    - Refresh recording enablement from runtime configuration without changing execution features, and preserve the live recorder during legacy configuration reloads.\n    \n    ## Testing\n    \n    Add regression coverage for reused IDs, compaction, resumed waits, mismatched wrappers, runtime recording changes, and metadata budgeting that preserves unrelated complete calls.\n    \n    GitOrigin-RevId: 0bc85964bee079879620ec0664eea530a13b61fb\n\n codex-rs/core/src/session/mod.rs                   |  17 +-\n codex-rs/core/src/session/session.rs               |   5 +-\n codex-rs/core/src/session/tests.rs                 |   6 +-\n codex-rs/core/src/tools/executed_tool_calls.rs     | 199 ++++--\n .../tools/executed_tool_calls/request_metadata.rs  | 269 ++++++--\n .../executed_tool_calls/request_metadata_tests.rs  | 683 +++++++++++++++------\n .../core/src/tools/executed_tool_calls/seen_ids.rs | 133 ++++\n .../tools/executed_tool_calls/seen_ids_tests.rs    |  14 +\n codex-rs/core/src/tools/handlers/mcp.rs            |   6 +-\n codex-rs/core/tests/suite/code_mode.rs             | 449 ++++++++++++++\n .../protocol/src/models/executed_tool_calls.rs     | 387 ++++--------\n .../src/models/executed_tool_calls_tests.rs        | 242 +++++---\n 12 files changed, 1772 insertions(+), 638 deletions(-)\n",
+  "changed_files_name_status": "M\tcodex-rs/core/src/session/mod.rs\nM\tcodex-rs/core/src/session/session.rs\nM\tcodex-rs/core/src/session/tests.rs\nM\tcodex-rs/core/src/tools/executed_tool_calls.rs\nM\tcodex-rs/core/src/tools/executed_tool_calls/request_metadata.rs\nM\tcodex-rs/core/src/tools/executed_tool_calls/request_metadata_tests.rs\nA\tcodex-rs/core/src/tools/executed_tool_calls/seen_ids.rs\nA\tcodex-rs/core/src/tools/executed_tool_calls/seen_ids_tests.rs\nM\tcodex-rs/core/src/tools/handlers/mcp.rs\nM\tcodex-rs/core/tests/suite/code_mode.rs\nM\tcodex-rs/protocol/src/models/executed_tool_calls.rs\nM\tcodex-rs/protocol/src/models/executed_tool_calls_tests.rs\n",
+  "linked_issue_numbers": [
+    44472
+  ],
+  "manifest_metadata": {
+    "category": "structured-tool-contract-integrity",
+    "theme": "structured tool contract integrity",
+    "file_sample": [
+      "codex-rs/core/src/session/mod.rs",
+      "codex-rs/core/src/session/session.rs",
+      "codex-rs/core/src/session/tests.rs",
+      "codex-rs/core/src/tools/executed_tool_calls.rs",
+      "codex-rs/core/src/tools/executed_tool_calls/request_metadata.rs",
+      "codex-rs/core/src/tools/executed_tool_calls/request_metadata_tests.rs",
+      "codex-rs/core/src/tools/executed_tool_calls/seen_ids.rs",
+      "codex-rs/core/src/tools/executed_tool_calls/seen_ids_tests.rs",
+      "codex-rs/core/src/tools/handlers/mcp.rs",
+      "codex-rs/core/tests/suite/code_mode.rs",
+      "codex-rs/protocol/src/models/executed_tool_calls.rs",
+      "codex-rs/protocol/src/models/executed_tool_calls_tests.rs"
+    ],
+    "case_id": "openai__codex__44472__structured-tool-contract-integrity",
+    "role": "train_candidate",
+    "split": "train_candidate",
+    "sample_kind": "verified_substitute",
+    "seed_issue": 46195,
+    "seed_issue_url": "https://github.com/openai/codex/issues/46195",
+    "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+    "resolution_url": "https://github.com/openai/codex/pull/44472",
+    "source": "agent_core_seven_category_extraction_v2",
+    "provenance": {
+      "classification": "verified_substitute",
+      "seed": {
+        "repository": "openai/codex",
+        "issue": 46195,
+        "url": "https://github.com/openai/codex/issues/46195",
+        "table_note": "tool call reaches the provider without output and the thread stalls"
+      },
+      "resolution_artifact": {
+        "type": "pull_request",
+        "number": 44472,
+        "url": "https://github.com/openai/codex/pull/44472",
+        "pull_request": 44472,
+        "pull_request_url": "https://github.com/openai/codex/pull/44472"
+      },
+      "commit": {
+        "sha": "03f014564deef528c25e80fe67ec51871cb6ee51",
+        "subject": "Harden Code Mode tool-call completeness tracking (#44472)",
+        "parents": [
+          "b348fc26674189f758d5941cdab3f78f258b2aa7"
+        ],
+        "body_excerpt": "## Why\n\nReused call IDs, ambiguous exec/wait associations, and missing history can make tool-call completeness claims unreliable. Truncating one cell's recorded calls should also preserve completeness for unrelated cells.\n\n## What changed\n\n- Track observed call and runtime cell IDs with bounded memory, including call IDs from initial history, and withhold completeness when evidence is missing or ambiguous.\n- Validate exec/wait input-output associations and keep invalidated completeness from returning on retries. Withhold wait completeness after resume or fork, where runtime cell IDs can be reused.\n- Keep truncation markers and omission counts local to each output, clearing completeness across the affected cell while preserving unrelated cells within the metadata budget.\n- Refresh recording"
+      },
+      "verification": [
+        "local_git_commit_resolved",
+        "parent_and_changed_files_recorded",
+        "implementation_diff_present",
+        "test_or_spec_change_present"
+      ]
+    }
+  },
+  "fetched_at": "2026-10-01T08:58:38.756947+00:00",
+  "limitations": [
+    "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+  ]
+}
