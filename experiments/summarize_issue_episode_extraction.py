@@ -267,10 +267,10 @@ def render_markdown(inventory: dict[str, Any]) -> str:
         holdout = item.get("holdout") or {}
         holdout_text = f"{holdout.get('repository', '')} #{holdout.get('issue', '')}".strip()
         lines.append(
-            "| {category} | {admitted_episodes} | {atomic_count} | {workflow_count} | "
-            "{exact_table_rows} | {verified_substitutes} | {holdout} |".format(
-                holdout=holdout_text, **item
-            )
+            f"| {item['category']} | {item['admitted_episodes']} | "
+            f"{item['atomic_count']} | {item['workflow_count']} | "
+            f"{item['exact_table_rows']} | {item['verified_substitutes']} | "
+            f"{holdout_text} |"
         )
     lines.extend(["", "## Cases", ""])
     for record in inventory["records"]:

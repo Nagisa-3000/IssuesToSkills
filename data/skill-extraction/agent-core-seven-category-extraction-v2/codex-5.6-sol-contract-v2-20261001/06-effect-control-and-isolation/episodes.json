@@ -1,0 +1,2928 @@
+[
+  {
+    "episode_id": "earendil-works__pi__5549__d041b5c",
+    "title": "Centralize hierarchical project trust before loading effect-bearing resources",
+    "before": "At parent 3d02d1da11ea4402f1a80c3df4df9fe57d53fe84, trust decisions were exact-directory lookups. The main runtime had its own trust resolver, while package commands used a separate simpler resolver that honored only an explicit override, absence of trust inputs, or an exact saved true decision; the config command defaulted to trusted. AGENTS.md and CLAUDE.md counted as trust-triggering inputs and were omitted when a project was untrusted. There was no global defaultProjectTrust policy, no parent-directory inheritance, and package/config commands did not run project_trust extension hooks.",
+    "after": "At d041b5cc354f9361207708395033e87cc78576cd, one resolver applies ordered trust sources across runtime, package, and config paths: explicit command override; automatic trust when no effect-bearing project inputs exist; a project_trust extension result loaded during an untrusted bootstrap pass; the nearest persisted directory decision; the global-only defaultProjectTrust policy; then an interactive prompt or fail-closed denial without UI. Persisted decisions can apply to a parent directory and be inherited by descendants, with child overrides removable. The resolved decision is installed into SettingsManager before project packages, extensions, skills, prompts, themes, system prompts, or local package-setting writes are processed. Passive AGENTS.md and CLAUDE.md context remains readable regardless of trust and no longer triggers a trust prompt.",
+    "diff": "The merge adds core/project-trust.ts and reusable CLI trust/startup UI modules; extends the trust store with nearest-ancestor lookup, multi-path updates, parent-scope options, and inherited-decision metadata; adds a global-only defaultProjectTrust setting; extracts an untrusted extension bootstrap operation from ResourceLoader; routes normal runtime, package commands, and config commands through the same asynchronous trust resolver; preserves denial of trust-gated resources and local writes while removing context files from that gated set; and adds tests for precedence, extension hooks, inherited scopes, boundary classification, and non-interactive isolation.",
+    "repository": "earendil-works/pi",
+    "revision": "github-issue-5549",
+    "evidence_ids": [
+      "ev-commit-1",
+      "ev-diff-1",
+      "ev-before-1",
+      "ev-impl-policy-1",
+      "ev-impl-scope-1",
+      "ev-impl-boundary-1",
+      "ev-impl-bootstrap-1",
+      "ev-callsite-1",
+      "ev-callsite-2",
+      "ev-test-scope-1",
+      "ev-test-policy-1",
+      "ev-test-settings-1",
+      "ev-test-boundary-1",
+      "ev-test-noninteractive-1",
+      "ev-test-ui-1"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "earendil-works/pi",
+      "issue": 5549,
+      "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+      "manifest_metadata": {
+        "category": "effect-control-and-isolation",
+        "role": "train_candidate",
+        "case_id": "earendil-works__pi__5549__effect-control-and-isolation",
+        "sample_kind": "verified_substitute",
+        "seed_issue": 9936,
+        "seed_issue_url": "https://github.com/earendil-works/pi/issues/9936",
+        "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+        "resolution_url": "https://github.com/earendil-works/pi/pull/5549",
+        "provenance": {
+          "classification": "verified_substitute",
+          "seed": {
+            "repository": "earendil-works/pi",
+            "issue": 9936,
+            "url": "https://github.com/earendil-works/pi/issues/9936",
+            "table_note": "bash child inherits /dev/tty and hangs the agent session"
+          },
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 5549,
+            "url": "https://github.com/earendil-works/pi/pull/5549",
+            "pull_request": 5549,
+            "pull_request_url": "https://github.com/earendil-works/pi/pull/5549"
+          },
+          "commit": {
+            "sha": "d041b5cc354f9361207708395033e87cc78576cd",
+            "subject": "Merge pull request #5549 from earendil-works/approval-settings",
+            "parents": [
+              "3d02d1da11ea4402f1a80c3df4df9fe57d53fe84",
+              "c20ea06d4a823b7e20f6fb5469494d4682549dac"
+            ],
+            "body_excerpt": "feat(ui): Improved project approval settings"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "parent_and_changed_files_recorded",
+            "implementation_diff_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "earendil-works/pi",
+        "issue_number": 5549,
+        "issue": {
+          "number": 5549,
+          "title": "Merge pull request #5549 from earendil-works/approval-settings",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 5549,
+              "title": "Merge pull request #5549 from earendil-works/approval-settings",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tpackages/coding-agent/CHANGELOG.md"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/README.md"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/docs/extensions.md"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/docs/packages.md"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/docs/security.md"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/docs/settings.md"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/docs/usage.md"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/cli/args.ts"
+              },
+              {
+                "status_line": "A\tpackages/coding-agent/src/cli/project-trust.ts"
+              },
+              {
+                "status_line": "A\tpackages/coding-agent/src/cli/startup-ui.ts"
+              },
+              {
+                "status_line": "A\tpackages/coding-agent/src/core/project-trust.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/core/resource-loader.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/core/settings-manager.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/core/trust-manager.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/index.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/main.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/modes/interactive/components/settings-selector.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/modes/interactive/components/trust-selector.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/modes/interactive/interactive-mode.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/package-manager-cli.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/test/package-command-paths.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/test/resource-loader.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/test/settings-manager.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/test/stdout-cleanliness.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/test/trust-manager.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/test/trust-selector.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/CHANGELOG.md"
+              },
+              {
+                "status_line": "M\tpackages/ai/scripts/generate-models.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/models.generated.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/providers/openai-completions.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/types.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/test/openai-completions-tool-choice.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/CHANGELOG.md"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/modes/interactive/components/login-dialog.ts"
+              },
+              {
+                "status_line": "A\tpackages/coding-agent/test/suite/regressions/5433-extension-oauth-prompt-input.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/vitest.config.ts"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "d041b5cc354f9361207708395033e87cc78576cd",
+                "subject": "Merge pull request #5549 from earendil-works/approval-settings"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+        "pinned_ref": "d041b5cc354f9361207708395033e87cc78576cd",
+        "resolved_commit": "d041b5cc354f9361207708395033e87cc78576cd",
+        "parent_commit": "3d02d1da11ea4402f1a80c3df4df9fe57d53fe84",
+        "commit_show_stat": "commit d041b5cc354f9361207708395033e87cc78576cd\nMerge: 3d02d1da c20ea06d\nAuthor:     Mario Zechner <badlogicgames@gmail.com>\nAuthorDate: Tue Jun 9 13:47:29 2026 +0200\nCommit:     GitHub <noreply@github.com>\nCommitDate: Tue Jun 9 13:47:29 2026 +0200\n\n    Merge pull request #5549 from earendil-works/approval-settings\n    \n    feat(ui): Improved project approval settings\n\n packages/coding-agent/CHANGELOG.md                 |   4 +\n packages/coding-agent/README.md                    |  18 +-\n packages/coding-agent/docs/extensions.md           |   4 +-\n packages/coding-agent/docs/packages.md             |   2 -\n packages/coding-agent/docs/security.md             |  14 +-\n packages/coding-agent/docs/settings.md             |  11 +-\n packages/coding-agent/docs/usage.md                |  19 +-\n packages/coding-agent/src/cli/args.ts              |   6 +-\n packages/coding-agent/src/cli/project-trust.ts     |  62 +++++\n packages/coding-agent/src/cli/startup-ui.ts        |  87 +++++++\n packages/coding-agent/src/core/project-trust.ts    |  95 +++++++\n packages/coding-agent/src/core/resource-loader.ts  |  48 ++--\n packages/coding-agent/src/core/settings-manager.ts |  14 ++\n packages/coding-agent/src/core/trust-manager.ts    | 105 ++++++--\n packages/coding-agent/src/index.ts                 |   9 +-\n packages/coding-agent/src/main.ts                  | 273 ++-------------------\n .../interactive/components/settings-selector.ts    |  28 ++-\n .../modes/interactive/components/trust-selector.ts |  66 ++---\n .../src/modes/interactive/interactive-mode.ts      |  14 +-\n packages/coding-agent/src/package-manager-cli.ts   |  94 ++++++-\n .../test/package-command-paths.test.ts             |  64 +++++\n packages/coding-agent/test/resource-loader.test.ts |   4 +-\n .../coding-agent/test/settings-manager.test.ts     |  17 ++\n .../coding-agent/test/stdout-cleanliness.test.ts   |  16 ++\n packages/coding-agent/test/trust-manager.test.ts   |  53 +++-\n packages/coding-agent/test/trust-selector.test.ts  |  45 +++-\n 26 files changed, 792 insertions(+), 380 deletions(-)\n",
+        "changed_files_name_status": "M\tpackages/coding-agent/CHANGELOG.md\nM\tpackages/coding-agent/README.md\nM\tpackages/coding-agent/docs/extensions.md\nM\tpackages/coding-agent/docs/packages.md\nM\tpackages/coding-agent/docs/security.md\nM\tpackages/coding-agent/docs/settings.md\nM\tpackages/coding-agent/docs/usage.md\nM\tpackages/coding-agent/src/cli/args.ts\nA\tpackages/coding-agent/src/cli/project-trust.ts\nA\tpackages/coding-agent/src/cli/startup-ui.ts\nA\tpackages/coding-agent/src/core/project-trust.ts\nM\tpackages/coding-agent/src/core/resource-loader.ts\nM\tpackages/coding-agent/src/core/settings-manager.ts\nM\tpackages/coding-agent/src/core/trust-manager.ts\nM\tpackages/coding-agent/src/index.ts\nM\tpackages/coding-agent/src/main.ts\nM\tpackages/coding-agent/src/modes/interactive/components/settings-selector.ts\nM\tpackages/coding-agent/src/modes/interactive/components/trust-selector.ts\nM\tpackages/coding-agent/src/modes/interactive/interactive-mode.ts\nM\tpackages/coding-agent/src/package-manager-cli.ts\nM\tpackages/coding-agent/test/package-command-paths.test.ts\nM\tpackages/coding-agent/test/resource-loader.test.ts\nM\tpackages/coding-agent/test/settings-manager.test.ts\nM\tpackages/coding-agent/test/stdout-cleanliness.test.ts\nM\tpackages/coding-agent/test/trust-manager.test.ts\nM\tpackages/coding-agent/test/trust-selector.test.ts\nM\tpackages/ai/CHANGELOG.md\nM\tpackages/ai/scripts/generate-models.ts\nM\tpackages/ai/src/models.generated.ts\nM\tpackages/ai/src/providers/openai-completions.ts\nM\tpackages/ai/src/types.ts\nM\tpackages/ai/test/openai-completions-tool-choice.test.ts\nM\tpackages/coding-agent/CHANGELOG.md\nM\tpackages/coding-agent/src/modes/interactive/components/login-dialog.ts\nA\tpackages/coding-agent/test/suite/regressions/5433-extension-oauth-prompt-input.test.ts\nM\tpackages/coding-agent/vitest.config.ts\n",
+        "linked_issue_numbers": [
+          5549
+        ],
+        "manifest_metadata": {
+          "category": "effect-control-and-isolation",
+          "theme": "approval, sandbox, and effect isolation",
+          "file_sample": [
+            "packages/coding-agent/CHANGELOG.md",
+            "packages/coding-agent/README.md",
+            "packages/coding-agent/docs/extensions.md",
+            "packages/coding-agent/docs/packages.md",
+            "packages/coding-agent/docs/security.md",
+            "packages/coding-agent/docs/settings.md",
+            "packages/coding-agent/docs/usage.md",
+            "packages/coding-agent/src/cli/args.ts",
+            "packages/coding-agent/src/cli/project-trust.ts",
+            "packages/coding-agent/src/cli/startup-ui.ts",
+            "packages/coding-agent/src/core/project-trust.ts",
+            "packages/coding-agent/src/core/resource-loader.ts",
+            "packages/coding-agent/src/core/settings-manager.ts",
+            "packages/coding-agent/src/core/trust-manager.ts",
+            "packages/coding-agent/src/index.ts",
+            "packages/coding-agent/src/main.ts",
+            "packages/coding-agent/src/modes/interactive/components/settings-selector.ts",
+            "packages/coding-agent/src/modes/interactive/components/trust-selector.ts",
+            "packages/coding-agent/src/modes/interactive/interactive-mode.ts",
+            "packages/coding-agent/src/package-manager-cli.ts",
+            "packages/coding-agent/test/package-command-paths.test.ts",
+            "packages/coding-agent/test/resource-loader.test.ts",
+            "packages/coding-agent/test/settings-manager.test.ts",
+            "packages/coding-agent/test/stdout-cleanliness.test.ts",
+            "packages/coding-agent/test/trust-manager.test.ts",
+            "packages/coding-agent/test/trust-selector.test.ts"
+          ],
+          "case_id": "earendil-works__pi__5549__effect-control-and-isolation",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_substitute",
+          "seed_issue": 9936,
+          "seed_issue_url": "https://github.com/earendil-works/pi/issues/9936",
+          "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+          "resolution_url": "https://github.com/earendil-works/pi/pull/5549",
+          "source": "agent_core_seven_category_extraction_v2",
+          "provenance": {
+            "classification": "verified_substitute",
+            "seed": {
+              "repository": "earendil-works/pi",
+              "issue": 9936,
+              "url": "https://github.com/earendil-works/pi/issues/9936",
+              "table_note": "bash child inherits /dev/tty and hangs the agent session"
+            },
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 5549,
+              "url": "https://github.com/earendil-works/pi/pull/5549",
+              "pull_request": 5549,
+              "pull_request_url": "https://github.com/earendil-works/pi/pull/5549"
+            },
+            "commit": {
+              "sha": "d041b5cc354f9361207708395033e87cc78576cd",
+              "subject": "Merge pull request #5549 from earendil-works/approval-settings",
+              "parents": [
+                "3d02d1da11ea4402f1a80c3df4df9fe57d53fe84",
+                "c20ea06d4a823b7e20f6fb5469494d4682549dac"
+              ],
+              "body_excerpt": "feat(ui): Improved project approval settings"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "parent_and_changed_files_recorded",
+              "implementation_diff_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T09:56:51.036329+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "earendil-works__pi__5549__d041b5c",
+          "title": "Centralize hierarchical project trust before loading effect-bearing resources",
+          "before": "At parent 3d02d1da11ea4402f1a80c3df4df9fe57d53fe84, trust decisions were exact-directory lookups. The main runtime had its own trust resolver, while package commands used a separate simpler resolver that honored only an explicit override, absence of trust inputs, or an exact saved true decision; the config command defaulted to trusted. AGENTS.md and CLAUDE.md counted as trust-triggering inputs and were omitted when a project was untrusted. There was no global defaultProjectTrust policy, no parent-directory inheritance, and package/config commands did not run project_trust extension hooks.",
+          "after": "At d041b5cc354f9361207708395033e87cc78576cd, one resolver applies ordered trust sources across runtime, package, and config paths: explicit command override; automatic trust when no effect-bearing project inputs exist; a project_trust extension result loaded during an untrusted bootstrap pass; the nearest persisted directory decision; the global-only defaultProjectTrust policy; then an interactive prompt or fail-closed denial without UI. Persisted decisions can apply to a parent directory and be inherited by descendants, with child overrides removable. The resolved decision is installed into SettingsManager before project packages, extensions, skills, prompts, themes, system prompts, or local package-setting writes are processed. Passive AGENTS.md and CLAUDE.md context remains readable regardless of trust and no longer triggers a trust prompt.",
+          "diff": "The merge adds core/project-trust.ts and reusable CLI trust/startup UI modules; extends the trust store with nearest-ancestor lookup, multi-path updates, parent-scope options, and inherited-decision metadata; adds a global-only defaultProjectTrust setting; extracts an untrusted extension bootstrap operation from ResourceLoader; routes normal runtime, package commands, and config commands through the same asynchronous trust resolver; preserves denial of trust-gated resources and local writes while removing context files from that gated set; and adds tests for precedence, extension hooks, inherited scopes, boundary classification, and non-interactive isolation."
+        },
+        "evidence_units": [
+          {
+            "id": "ev-commit-1",
+            "kind": "commit",
+            "claim": "Pinned merge commit d041b5cc354f9361207708395033e87cc78576cd merged PR #5549 with subject 'feat(ui): Improved project approval settings' and first parent 3d02d1da11ea4402f1a80c3df4df9fe57d53fe84.",
+            "source": "git show --format=fuller --stat d041b5cc354f9361207708395033e87cc78576cd; issue-bundle.json resolved_commit and parent_commit"
+          },
+          {
+            "id": "ev-diff-1",
+            "kind": "diff",
+            "claim": "The first-parent change adds project-trust policy and startup UI modules and modifies trust storage, resource loading, settings, package/config commands, interactive trust selection, and focused tests.",
+            "source": "git diff --name-status 3d02d1da11ea4402f1a80c3df4df9fe57d53fe84 d041b5cc354f9361207708395033e87cc78576cd"
+          },
+          {
+            "id": "ev-before-1",
+            "kind": "diff",
+            "claim": "Before the change, ProjectTrustStore.get read only the normalized current-directory key, trust inputs included AGENTS.md and CLAUDE.md, package commands used an independent synchronous resolver, and config commands defaulted projectTrusted to true.",
+            "source": "git diff 3d02d1da11ea4402f1a80c3df4df9fe57d53fe84 d041b5cc354f9361207708395033e87cc78576cd -- packages/coding-agent/src/core/trust-manager.ts packages/coding-agent/src/package-manager-cli.ts packages/coding-agent/src/main.ts"
+          },
+          {
+            "id": "ev-impl-policy-1",
+            "kind": "implementation",
+            "claim": "The centralized resolver evaluates explicit override first, returns trusted when no trust inputs exist, then consults project_trust extensions, persisted trust, global defaultProjectTrust, and finally UI; absence or cancellation of UI resolves to false.",
+            "source": "d041b5cc354f9361207708395033e87cc78576cd:packages/coding-agent/src/core/project-trust.ts lines 45-94"
+          },
+          {
+            "id": "ev-impl-scope-1",
+            "kind": "implementation",
+            "claim": "Trust lookup walks from the normalized working directory toward the filesystem root and returns the nearest boolean decision; batched updates can set parent decisions and delete child overrides.",
+            "source": "d041b5cc354f9361207708395033e87cc78576cd:packages/coding-agent/src/core/trust-manager.ts lines 32-50, 58-87, 200-225"
+          },
+          {
+            "id": "ev-impl-boundary-1",
+            "kind": "implementation",
+            "claim": "Trust-triggering inputs are limited to a local .pi directory or an ancestor .agents/skills directory; AGENTS.md and CLAUDE.md are not classified as trust inputs.",
+            "source": "d041b5cc354f9361207708395033e87cc78576cd:packages/coding-agent/src/core/trust-manager.ts lines 170-193"
+          },
+          {
+            "id": "ev-impl-bootstrap-1",
+            "kind": "implementation",
+            "claim": "ResourceLoader performs a bootstrap pass with project trust forced false, reloads settings, and loads only the current non-project extension set before resolving trust; it then installs the decision, reloads settings, and resolves normal resources.",
+            "source": "d041b5cc354f9361207708395033e87cc78576cd:packages/coding-agent/src/core/resource-loader.ts lines 325-343"
+          },
+          {
+            "id": "ev-callsite-1",
+            "kind": "call_site",
+            "claim": "Package and config commands create SettingsManager as untrusted, optionally bootstrap project_trust extensions, call the centralized resolver with the global default, install the result, and reject local package-setting writes when untrusted.",
+            "source": "d041b5cc354f9361207708395033e87cc78576cd:packages/coding-agent/src/package-manager-cli.ts lines 451-488, 493-514, 568-588"
+          },
+          {
+            "id": "ev-callsite-2",
+            "kind": "call_site",
+            "claim": "The main runtime calls the centralized resolver from ResourceLoader.reload and supplies the command override, global default policy, bootstrap extension result, and a UI context whose availability depends on the active mode.",
+            "source": "d041b5cc354f9361207708395033e87cc78576cd:packages/coding-agent/src/main.ts lines 594-619"
+          },
+          {
+            "id": "ev-test-scope-1",
+            "kind": "test",
+            "claim": "Trust-store tests prove nearest-parent inheritance, closest-child override precedence, removal of a child override to restore parent inheritance, and rejection of AGENTS.md and CLAUDE.md as trust-triggering inputs.",
+            "source": "d041b5cc354f9361207708395033e87cc78576cd:packages/coding-agent/test/trust-manager.test.ts lines 45-78, 90-110"
+          },
+          {
+            "id": "ev-test-policy-1",
+            "kind": "test",
+            "claim": "Package-command tests prove that the global default can trust project packages, project_trust extensions can authorize package commands, and an explicit persisted false decision overrides a global always default.",
+            "source": "d041b5cc354f9361207708395033e87cc78576cd:packages/coding-agent/test/package-command-paths.test.ts lines 160-229"
+          },
+          {
+            "id": "ev-test-settings-1",
+            "kind": "test",
+            "claim": "Settings tests prove defaultProjectTrust is read only from global settings and invalid values fail safely to ask.",
+            "source": "d041b5cc354f9361207708395033e87cc78576cd:packages/coding-agent/test/settings-manager.test.ts lines 254-270"
+          },
+          {
+            "id": "ev-test-boundary-1",
+            "kind": "test",
+            "claim": "Resource-loader tests prove that an untrusted project still contributes AGENTS.md context while project system prompts, extensions, skills, prompts, and themes remain excluded.",
+            "source": "d041b5cc354f9361207708395033e87cc78576cd:packages/coding-agent/test/resource-loader.test.ts lines 379-430"
+          },
+          {
+            "id": "ev-test-noninteractive-1",
+            "kind": "validation",
+            "claim": "A spawned-CLI test proves an untrusted non-interactive help invocation does not install project packages or emit their installation output.",
+            "source": "d041b5cc354f9361207708395033e87cc78576cd:packages/coding-agent/test/stdout-cleanliness.test.ts lines 119-128"
+          },
+          {
+            "id": "ev-test-ui-1",
+            "kind": "test",
+            "claim": "Trust-selector tests prove inherited decisions are labeled with their source path and selecting parent trust produces a parent true update plus deletion of the current-directory override.",
+            "source": "d041b5cc354f9361207708395033e87cc78576cd:packages/coding-agent/test/trust-selector.test.ts lines 49-86"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "classify-trust-gated-project-effects",
+            "title": "Separate passive project context from effect-bearing project resources",
+            "description": "Define trust inputs around resources that can install packages, execute extensions, or alter runtime behavior, while allowing passive instruction files to remain available without forcing a trust decision.",
+            "evidence_ids": [
+              "ev-before-1",
+              "ev-impl-boundary-1",
+              "ev-test-scope-1",
+              "ev-test-boundary-1"
+            ],
+            "semantic_action": {
+              "intent": "Avoid prompting for or denying trust merely because passive context exists, without exposing executable or configuration-driven project effects.",
+              "module_role": "project effect-boundary classifier",
+              "operation": "classify",
+              "pre_state": "Passive instruction files and effect-bearing project resources share one trust-triggering classification and are both suppressed when untrusted.",
+              "post_state": "Only effect-bearing configuration and resource locations trigger trust resolution; passive context can load independently while executable and configuration resources remain gated.",
+              "validation": "Create an untrusted project containing both instruction files and effect-bearing resources; assert instruction context loads, effect-bearing resources do not, and instruction files alone do not satisfy the trust-input predicate.",
+              "parameters": [
+                "working directory",
+                "project configuration directory marker",
+                "ancestor skill directory marker",
+                "passive context filenames",
+                "effect-bearing resource categories"
+              ],
+              "evidence_ids": [
+                "ev-impl-boundary-1",
+                "ev-test-scope-1",
+                "ev-test-boundary-1"
+              ]
+            }
+          },
+          {
+            "name": "bootstrap-policy-hooks-under-denied-project-trust",
+            "title": "Load policy hooks without activating project effects",
+            "description": "Run a restricted bootstrap pass with project trust disabled so globally supplied or explicit hooks may decide trust before project-local packages and extensions become eligible.",
+            "evidence_ids": [
+              "ev-impl-bootstrap-1",
+              "ev-callsite-1",
+              "ev-callsite-2",
+              "ev-test-policy-1"
+            ],
+            "semantic_action": {
+              "intent": "Allow extensible trust decisions without executing the untrusted project's own code during the decision process.",
+              "module_role": "pre-authorization resource bootstrapper",
+              "operation": "isolate",
+              "pre_state": "Trust has not been resolved, but extension hooks may participate in the decision and normal loading could include project-local effects.",
+              "post_state": "Decision hooks from non-project sources are available while project settings, packages, and extensions remain excluded until authorization completes.",
+              "validation": "Provide a non-project project_trust hook and project package settings; verify the hook can authorize access and that the bootstrap loader begins with projectTrusted false.",
+              "parameters": [
+                "settings state",
+                "global extension sources",
+                "temporary command-line extension sources",
+                "inline extension factories",
+                "project-local extension sources",
+                "trust callback"
+              ],
+              "evidence_ids": [
+                "ev-impl-bootstrap-1",
+                "ev-callsite-1",
+                "ev-test-policy-1"
+              ]
+            }
+          },
+          {
+            "name": "resolve-layered-project-trust",
+            "title": "Resolve authorization through one ordered fail-closed policy",
+            "description": "Centralize trust resolution with explicit precedence across command overrides, absence of gated inputs, policy hooks, persisted decisions, global defaults, and interactive confirmation.",
+            "evidence_ids": [
+              "ev-before-1",
+              "ev-impl-policy-1",
+              "ev-callsite-1",
+              "ev-callsite-2",
+              "ev-test-policy-1",
+              "ev-test-settings-1"
+            ],
+            "semantic_action": {
+              "intent": "Produce one consistent authorization result for every execution surface and deny unresolved effect-bearing projects in non-interactive contexts.",
+              "module_role": "project authorization policy resolver",
+              "operation": "reconcile",
+              "pre_state": "Runtime and administrative commands may apply different trust rules, and no single precedence contract covers overrides, hooks, stored decisions, defaults, and UI availability.",
+              "post_state": "All callers receive a boolean decision from the same precedence order, with persisted decisions overriding defaults and missing UI or cancelled prompts resolving to denial.",
+              "validation": "Exercise explicit overrides, no-input projects, extension results, stored false over default always, valid and invalid global defaults, interactive selection, and headless fallback.",
+              "parameters": [
+                "working directory",
+                "explicit trust override",
+                "trust-input predicate",
+                "policy-hook result",
+                "persisted trust store",
+                "global default policy",
+                "UI availability"
+              ],
+              "evidence_ids": [
+                "ev-impl-policy-1",
+                "ev-callsite-1",
+                "ev-callsite-2",
+                "ev-test-policy-1",
+                "ev-test-settings-1"
+              ]
+            }
+          },
+          {
+            "name": "inherit-nearest-directory-authorization",
+            "title": "Apply the closest saved authorization across directory scopes",
+            "description": "Resolve persisted decisions hierarchically and update parent and child entries atomically so a parent policy can cover descendants without masking a closer exception.",
+            "evidence_ids": [
+              "ev-impl-scope-1",
+              "ev-test-scope-1",
+              "ev-test-ui-1"
+            ],
+            "semantic_action": {
+              "intent": "Support reusable authorization for a directory tree while retaining explicit, closer overrides and a way to resume inheritance.",
+              "module_role": "hierarchical authorization state store",
+              "operation": "map",
+              "pre_state": "Persisted decisions apply only to an exact working directory, requiring duplicate entries and providing no inherited source metadata.",
+              "post_state": "The nearest saved ancestor decision governs each descendant unless a closer decision exists; deleting the closer entry restores inheritance, and the effective source path is observable.",
+              "validation": "Store a parent true decision, add a child false decision, query descendants, delete the child decision, and assert each effective value and source path.",
+              "parameters": [
+                "normalized working directory",
+                "ancestor directory paths",
+                "boolean decision",
+                "nullable update used to delete an override",
+                "persistent trust file"
+              ],
+              "evidence_ids": [
+                "ev-impl-scope-1",
+                "ev-test-scope-1",
+                "ev-test-ui-1"
+              ]
+            }
+          },
+          {
+            "name": "enforce-authorization-at-effect-boundaries",
+            "title": "Install the decision before project effects and writes",
+            "description": "Apply the resolved trust state to settings and resource resolution before loading project packages or resources, and reject project-local configuration writes when authorization is false.",
+            "evidence_ids": [
+              "ev-impl-bootstrap-1",
+              "ev-callsite-1",
+              "ev-test-boundary-1",
+              "ev-test-noninteractive-1"
+            ],
+            "semantic_action": {
+              "intent": "Prevent denied project configuration from causing package installation, code execution, runtime resource injection, or local settings mutation.",
+              "module_role": "effect-bearing resource and mutation gate",
+              "operation": "guard",
+              "pre_state": "A command is about to resolve project settings, install packages, load executable resources, or write project-local package configuration without a uniformly installed authorization result.",
+              "post_state": "Denied projects contribute no gated resources or package-install effects and cannot receive local package-setting writes; authorized projects are reloaded and processed normally.",
+              "validation": "For an untrusted project, assert project extensions, skills, prompts, themes, system prompt, and package installation output are absent and local configuration mutation is rejected; separately verify authorized package listing succeeds.",
+              "parameters": [
+                "resolved authorization boolean",
+                "settings manager",
+                "package resolver",
+                "extension loader",
+                "skill loader",
+                "prompt loader",
+                "theme loader",
+                "project settings writer"
+              ],
+              "evidence_ids": [
+                "ev-callsite-1",
+                "ev-test-boundary-1",
+                "ev-test-noninteractive-1",
+                "ev-test-policy-1"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "isolate-project-effects-behind-layered-authorization",
+            "title": "Resolve project authorization before activating local effects",
+            "description": "A partial-order workflow for separating passive context from effect-bearing project inputs, safely loading non-project policy hooks, resolving one hierarchical authorization decision, and enforcing it across runtime and administrative command paths.",
+            "atomic_names": [
+              "classify-trust-gated-project-effects",
+              "bootstrap-policy-hooks-under-denied-project-trust",
+              "resolve-layered-project-trust",
+              "inherit-nearest-directory-authorization",
+              "enforce-authorization-at-effect-boundaries"
+            ],
+            "evidence_ids": [
+              "ev-diff-1",
+              "ev-before-1",
+              "ev-impl-policy-1",
+              "ev-impl-scope-1",
+              "ev-impl-boundary-1",
+              "ev-impl-bootstrap-1",
+              "ev-callsite-1",
+              "ev-callsite-2",
+              "ev-test-scope-1",
+              "ev-test-policy-1",
+              "ev-test-settings-1",
+              "ev-test-boundary-1",
+              "ev-test-noninteractive-1",
+              "ev-test-ui-1"
+            ],
+            "workflow_graph": {
+              "goal": "Ensure project-local effects execute or mutate state only after one consistently resolved authorization decision, while passive context remains available and headless ambiguity fails closed.",
+              "when_to_use": [
+                "A tool discovers project-local configuration, packages, plugins, scripts, skills, prompts, themes, or similar resources that can execute code or change runtime behavior.",
+                "Multiple entry points such as the main runtime, package commands, and configuration commands must share the same project authorization semantics.",
+                "Authorization may be supplied by explicit overrides, extension hooks, persisted directory policy, global defaults, or an interactive user decision."
+              ],
+              "anti_goals": [
+                "Do not execute project-local hooks or install project packages to determine whether that same project is trusted.",
+                "Do not treat passive instruction files as equivalent to executable or configuration-driven effects unless repository evidence establishes that they execute effects.",
+                "Do not let a permissive default override an explicit persisted denial.",
+                "Do not silently authorize unresolved effect-bearing projects merely because the caller is non-interactive.",
+                "Do not require exact-directory duplication when an explicit parent-scope authorization is intended."
+              ],
+              "not_applicable_when": [
+                "The project exposes no local input capable of executing code, installing dependencies, mutating configuration, or injecting runtime resources.",
+                "The caller has no project-local resource loading or mutation boundary to protect.",
+                "Authorization must not be inherited across directory ancestry for the target security model."
+              ],
+              "inputs": [
+                "Canonical working directory and its ancestor chain",
+                "Inventory of passive context and effect-bearing project inputs",
+                "Explicit per-invocation authorization override, if present",
+                "Non-project policy-hook sources and hook result, if any",
+                "Persisted directory-scoped authorization entries",
+                "Global default authorization policy",
+                "Interactive UI availability",
+                "Resource loaders and project-local mutation operations to gate"
+              ],
+              "entry_state": "Project trust is unresolved; project-local effect-bearing resources and settings must be considered unavailable, while non-project configuration is readable.",
+              "exit_state": "Exactly one authorization result has been installed before effect-bearing resolution: denied projects cannot load or mutate gated project state, authorized projects can be reloaded normally, passive context follows its separate classification, and any remembered scope is queryable with its source path.",
+              "steps": [
+                {
+                  "action_name": "classify-trust-gated-project-effects",
+                  "role": "establish-contract",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "Always, before deciding whether authorization is required.",
+                  "validation": "The trust-input predicate is false for passive instruction files alone and true for the configured effect-bearing project markers."
+                },
+                {
+                  "action_name": "bootstrap-policy-hooks-under-denied-project-trust",
+                  "role": "implement",
+                  "required": false,
+                  "depends_on": [
+                    "classify-trust-gated-project-effects"
+                  ],
+                  "condition": "Run only when no explicit override was supplied, gated inputs exist, and non-project policy hooks are supported.",
+                  "validation": "Bootstrap settings report untrusted state and the loaded hook set excludes project-local packages and extensions."
+                },
+                {
+                  "action_name": "inherit-nearest-directory-authorization",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [
+                    "classify-trust-gated-project-effects"
+                  ],
+                  "condition": "Use when consulting or updating persisted authorization state.",
+                  "validation": "Lookup returns the closest ancestor entry and deletion of a child entry restores the parent's effective decision."
+                },
+                {
+                  "action_name": "resolve-layered-project-trust",
+                  "role": "reconcile",
+                  "required": true,
+                  "depends_on": [
+                    "classify-trust-gated-project-effects",
+                    "inherit-nearest-directory-authorization"
+                  ],
+                  "condition": "Always when effect-bearing trust inputs exist; consume the bootstrap hook result when that optional step ran.",
+                  "validation": "Precedence is override, hook, nearest persisted decision, global default, interactive decision, then denial; a stored false decision beats a global always default."
+                },
+                {
+                  "action_name": "enforce-authorization-at-effect-boundaries",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [
+                    "resolve-layered-project-trust"
+                  ],
+                  "condition": "Before resolving project packages/resources or mutating project-local settings.",
+                  "validation": "Denied execution exposes no gated project resources or install effects and refuses local writes; authorized execution reloads and exposes configured project resources."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "classify-trust-gated-project-effects",
+                  "to": "bootstrap-policy-hooks-under-denied-project-trust",
+                  "type": "enables"
+                },
+                {
+                  "from": "classify-trust-gated-project-effects",
+                  "to": "inherit-nearest-directory-authorization",
+                  "type": "enables"
+                },
+                {
+                  "from": "bootstrap-policy-hooks-under-denied-project-trust",
+                  "to": "resolve-layered-project-trust",
+                  "type": "enables"
+                },
+                {
+                  "from": "inherit-nearest-directory-authorization",
+                  "to": "resolve-layered-project-trust",
+                  "type": "requires"
+                },
+                {
+                  "from": "resolve-layered-project-trust",
+                  "to": "enforce-authorization-at-effect-boundaries",
+                  "type": "enables"
+                },
+                {
+                  "from": "enforce-authorization-at-effect-boundaries",
+                  "to": "resolve-layered-project-trust",
+                  "type": "validates"
+                }
+              ],
+              "validation_ladder": [
+                "Unit-test the trust-input classifier, including passive-only and effect-bearing fixtures.",
+                "Unit-test hierarchical storage with parent inheritance, closer overrides, override deletion, malformed-store preservation, and source-path reporting.",
+                "Unit-test global default parsing and confirm project-local settings cannot set the default policy.",
+                "Integration-test decision precedence through package or resource call sites, including hook authorization and persisted denial over a permissive default.",
+                "Integration-test resource isolation so denied projects cannot supply executable/configuration resources while separately classified passive context remains available.",
+                "Spawn a non-interactive command and verify unresolved trust produces no project package-install side effects or structured-output contamination."
+              ],
+              "stop_conditions": [
+                "Stop and deny project effects if trust remains unresolved and no interactive UI is available.",
+                "Stop and surface an error if the persisted trust store is malformed; do not overwrite it with a guessed decision.",
+                "Stop before project-local package installation, extension execution, or settings mutation if the resolved decision is false.",
+                "Defer hierarchical authorization if canonical ancestry or the intended inheritance boundary cannot be established safely."
+              ],
+              "unresolved_or_deferred": [
+                "The available bundle contains no PR body, review discussion, or status-check results, so design intent beyond code, tests, and commit metadata is unavailable.",
+                "No test command was executed during this extraction; validation claims describe the checked-in test oracles at the pinned commit.",
+                "The change deliberately leaves passive project instructions outside the trust gate; whether instruction content itself should be treated as an effect in other systems is a project-specific policy decision, not established universally by this episode."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "The issue bundle is a verified same-repository substitute for unresolved seed issue #9936, so this episode supports PR #5549 only and does not claim to resolve the seed issue's terminal-inheritance behavior.",
+          "Because GitHub discussion and CI metadata are unavailable, the evidence cannot establish which precedence choices were explicitly reviewed versus inferred from the merged implementation and tests."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "classify-trust-gated-project-effects",
+          "title": "Separate passive project context from effect-bearing project resources",
+          "description": "Define trust inputs around resources that can install packages, execute extensions, or alter runtime behavior, while allowing passive instruction files to remain available without forcing a trust decision.",
+          "evidence_ids": [
+            "ev-before-1",
+            "ev-impl-boundary-1",
+            "ev-test-scope-1",
+            "ev-test-boundary-1"
+          ],
+          "semantic_action": {
+            "intent": "Avoid prompting for or denying trust merely because passive context exists, without exposing executable or configuration-driven project effects.",
+            "module_role": "project effect-boundary classifier",
+            "operation": "classify",
+            "pre_state": "Passive instruction files and effect-bearing project resources share one trust-triggering classification and are both suppressed when untrusted.",
+            "post_state": "Only effect-bearing configuration and resource locations trigger trust resolution; passive context can load independently while executable and configuration resources remain gated.",
+            "validation": "Create an untrusted project containing both instruction files and effect-bearing resources; assert instruction context loads, effect-bearing resources do not, and instruction files alone do not satisfy the trust-input predicate.",
+            "parameters": [
+              "working directory",
+              "project configuration directory marker",
+              "ancestor skill directory marker",
+              "passive context filenames",
+              "effect-bearing resource categories"
+            ],
+            "evidence_ids": [
+              "ev-impl-boundary-1",
+              "ev-test-scope-1",
+              "ev-test-boundary-1"
+            ]
+          }
+        },
+        {
+          "name": "bootstrap-policy-hooks-under-denied-project-trust",
+          "title": "Load policy hooks without activating project effects",
+          "description": "Run a restricted bootstrap pass with project trust disabled so globally supplied or explicit hooks may decide trust before project-local packages and extensions become eligible.",
+          "evidence_ids": [
+            "ev-impl-bootstrap-1",
+            "ev-callsite-1",
+            "ev-callsite-2",
+            "ev-test-policy-1"
+          ],
+          "semantic_action": {
+            "intent": "Allow extensible trust decisions without executing the untrusted project's own code during the decision process.",
+            "module_role": "pre-authorization resource bootstrapper",
+            "operation": "isolate",
+            "pre_state": "Trust has not been resolved, but extension hooks may participate in the decision and normal loading could include project-local effects.",
+            "post_state": "Decision hooks from non-project sources are available while project settings, packages, and extensions remain excluded until authorization completes.",
+            "validation": "Provide a non-project project_trust hook and project package settings; verify the hook can authorize access and that the bootstrap loader begins with projectTrusted false.",
+            "parameters": [
+              "settings state",
+              "global extension sources",
+              "temporary command-line extension sources",
+              "inline extension factories",
+              "project-local extension sources",
+              "trust callback"
+            ],
+            "evidence_ids": [
+              "ev-impl-bootstrap-1",
+              "ev-callsite-1",
+              "ev-test-policy-1"
+            ]
+          }
+        },
+        {
+          "name": "resolve-layered-project-trust",
+          "title": "Resolve authorization through one ordered fail-closed policy",
+          "description": "Centralize trust resolution with explicit precedence across command overrides, absence of gated inputs, policy hooks, persisted decisions, global defaults, and interactive confirmation.",
+          "evidence_ids": [
+            "ev-before-1",
+            "ev-impl-policy-1",
+            "ev-callsite-1",
+            "ev-callsite-2",
+            "ev-test-policy-1",
+            "ev-test-settings-1"
+          ],
+          "semantic_action": {
+            "intent": "Produce one consistent authorization result for every execution surface and deny unresolved effect-bearing projects in non-interactive contexts.",
+            "module_role": "project authorization policy resolver",
+            "operation": "reconcile",
+            "pre_state": "Runtime and administrative commands may apply different trust rules, and no single precedence contract covers overrides, hooks, stored decisions, defaults, and UI availability.",
+            "post_state": "All callers receive a boolean decision from the same precedence order, with persisted decisions overriding defaults and missing UI or cancelled prompts resolving to denial.",
+            "validation": "Exercise explicit overrides, no-input projects, extension results, stored false over default always, valid and invalid global defaults, interactive selection, and headless fallback.",
+            "parameters": [
+              "working directory",
+              "explicit trust override",
+              "trust-input predicate",
+              "policy-hook result",
+              "persisted trust store",
+              "global default policy",
+              "UI availability"
+            ],
+            "evidence_ids": [
+              "ev-impl-policy-1",
+              "ev-callsite-1",
+              "ev-callsite-2",
+              "ev-test-policy-1",
+              "ev-test-settings-1"
+            ]
+          }
+        },
+        {
+          "name": "inherit-nearest-directory-authorization",
+          "title": "Apply the closest saved authorization across directory scopes",
+          "description": "Resolve persisted decisions hierarchically and update parent and child entries atomically so a parent policy can cover descendants without masking a closer exception.",
+          "evidence_ids": [
+            "ev-impl-scope-1",
+            "ev-test-scope-1",
+            "ev-test-ui-1"
+          ],
+          "semantic_action": {
+            "intent": "Support reusable authorization for a directory tree while retaining explicit, closer overrides and a way to resume inheritance.",
+            "module_role": "hierarchical authorization state store",
+            "operation": "map",
+            "pre_state": "Persisted decisions apply only to an exact working directory, requiring duplicate entries and providing no inherited source metadata.",
+            "post_state": "The nearest saved ancestor decision governs each descendant unless a closer decision exists; deleting the closer entry restores inheritance, and the effective source path is observable.",
+            "validation": "Store a parent true decision, add a child false decision, query descendants, delete the child decision, and assert each effective value and source path.",
+            "parameters": [
+              "normalized working directory",
+              "ancestor directory paths",
+              "boolean decision",
+              "nullable update used to delete an override",
+              "persistent trust file"
+            ],
+            "evidence_ids": [
+              "ev-impl-scope-1",
+              "ev-test-scope-1",
+              "ev-test-ui-1"
+            ]
+          }
+        },
+        {
+          "name": "enforce-authorization-at-effect-boundaries",
+          "title": "Install the decision before project effects and writes",
+          "description": "Apply the resolved trust state to settings and resource resolution before loading project packages or resources, and reject project-local configuration writes when authorization is false.",
+          "evidence_ids": [
+            "ev-impl-bootstrap-1",
+            "ev-callsite-1",
+            "ev-test-boundary-1",
+            "ev-test-noninteractive-1"
+          ],
+          "semantic_action": {
+            "intent": "Prevent denied project configuration from causing package installation, code execution, runtime resource injection, or local settings mutation.",
+            "module_role": "effect-bearing resource and mutation gate",
+            "operation": "guard",
+            "pre_state": "A command is about to resolve project settings, install packages, load executable resources, or write project-local package configuration without a uniformly installed authorization result.",
+            "post_state": "Denied projects contribute no gated resources or package-install effects and cannot receive local package-setting writes; authorized projects are reloaded and processed normally.",
+            "validation": "For an untrusted project, assert project extensions, skills, prompts, themes, system prompt, and package installation output are absent and local configuration mutation is rejected; separately verify authorized package listing succeeds.",
+            "parameters": [
+              "resolved authorization boolean",
+              "settings manager",
+              "package resolver",
+              "extension loader",
+              "skill loader",
+              "prompt loader",
+              "theme loader",
+              "project settings writer"
+            ],
+            "evidence_ids": [
+              "ev-callsite-1",
+              "ev-test-boundary-1",
+              "ev-test-noninteractive-1",
+              "ev-test-policy-1"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "isolate-project-effects-behind-layered-authorization",
+          "title": "Resolve project authorization before activating local effects",
+          "description": "A partial-order workflow for separating passive context from effect-bearing project inputs, safely loading non-project policy hooks, resolving one hierarchical authorization decision, and enforcing it across runtime and administrative command paths.",
+          "atomic_names": [
+            "classify-trust-gated-project-effects",
+            "bootstrap-policy-hooks-under-denied-project-trust",
+            "resolve-layered-project-trust",
+            "inherit-nearest-directory-authorization",
+            "enforce-authorization-at-effect-boundaries"
+          ],
+          "evidence_ids": [
+            "ev-diff-1",
+            "ev-before-1",
+            "ev-impl-policy-1",
+            "ev-impl-scope-1",
+            "ev-impl-boundary-1",
+            "ev-impl-bootstrap-1",
+            "ev-callsite-1",
+            "ev-callsite-2",
+            "ev-test-scope-1",
+            "ev-test-policy-1",
+            "ev-test-settings-1",
+            "ev-test-boundary-1",
+            "ev-test-noninteractive-1",
+            "ev-test-ui-1"
+          ],
+          "workflow_graph": {
+            "goal": "Ensure project-local effects execute or mutate state only after one consistently resolved authorization decision, while passive context remains available and headless ambiguity fails closed.",
+            "when_to_use": [
+              "A tool discovers project-local configuration, packages, plugins, scripts, skills, prompts, themes, or similar resources that can execute code or change runtime behavior.",
+              "Multiple entry points such as the main runtime, package commands, and configuration commands must share the same project authorization semantics.",
+              "Authorization may be supplied by explicit overrides, extension hooks, persisted directory policy, global defaults, or an interactive user decision."
+            ],
+            "anti_goals": [
+              "Do not execute project-local hooks or install project packages to determine whether that same project is trusted.",
+              "Do not treat passive instruction files as equivalent to executable or configuration-driven effects unless repository evidence establishes that they execute effects.",
+              "Do not let a permissive default override an explicit persisted denial.",
+              "Do not silently authorize unresolved effect-bearing projects merely because the caller is non-interactive.",
+              "Do not require exact-directory duplication when an explicit parent-scope authorization is intended."
+            ],
+            "not_applicable_when": [
+              "The project exposes no local input capable of executing code, installing dependencies, mutating configuration, or injecting runtime resources.",
+              "The caller has no project-local resource loading or mutation boundary to protect.",
+              "Authorization must not be inherited across directory ancestry for the target security model."
+            ],
+            "inputs": [
+              "Canonical working directory and its ancestor chain",
+              "Inventory of passive context and effect-bearing project inputs",
+              "Explicit per-invocation authorization override, if present",
+              "Non-project policy-hook sources and hook result, if any",
+              "Persisted directory-scoped authorization entries",
+              "Global default authorization policy",
+              "Interactive UI availability",
+              "Resource loaders and project-local mutation operations to gate"
+            ],
+            "entry_state": "Project trust is unresolved; project-local effect-bearing resources and settings must be considered unavailable, while non-project configuration is readable.",
+            "exit_state": "Exactly one authorization result has been installed before effect-bearing resolution: denied projects cannot load or mutate gated project state, authorized projects can be reloaded normally, passive context follows its separate classification, and any remembered scope is queryable with its source path.",
+            "steps": [
+              {
+                "action_name": "classify-trust-gated-project-effects",
+                "role": "establish-contract",
+                "required": true,
+                "depends_on": [],
+                "condition": "Always, before deciding whether authorization is required.",
+                "validation": "The trust-input predicate is false for passive instruction files alone and true for the configured effect-bearing project markers."
+              },
+              {
+                "action_name": "bootstrap-policy-hooks-under-denied-project-trust",
+                "role": "implement",
+                "required": false,
+                "depends_on": [
+                  "classify-trust-gated-project-effects"
+                ],
+                "condition": "Run only when no explicit override was supplied, gated inputs exist, and non-project policy hooks are supported.",
+                "validation": "Bootstrap settings report untrusted state and the loaded hook set excludes project-local packages and extensions."
+              },
+              {
+                "action_name": "inherit-nearest-directory-authorization",
+                "role": "implement",
+                "required": true,
+                "depends_on": [
+                  "classify-trust-gated-project-effects"
+                ],
+                "condition": "Use when consulting or updating persisted authorization state.",
+                "validation": "Lookup returns the closest ancestor entry and deletion of a child entry restores the parent's effective decision."
+              },
+              {
+                "action_name": "resolve-layered-project-trust",
+                "role": "reconcile",
+                "required": true,
+                "depends_on": [
+                  "classify-trust-gated-project-effects",
+                  "inherit-nearest-directory-authorization"
+                ],
+                "condition": "Always when effect-bearing trust inputs exist; consume the bootstrap hook result when that optional step ran.",
+                "validation": "Precedence is override, hook, nearest persisted decision, global default, interactive decision, then denial; a stored false decision beats a global always default."
+              },
+              {
+                "action_name": "enforce-authorization-at-effect-boundaries",
+                "role": "implement",
+                "required": true,
+                "depends_on": [
+                  "resolve-layered-project-trust"
+                ],
+                "condition": "Before resolving project packages/resources or mutating project-local settings.",
+                "validation": "Denied execution exposes no gated project resources or install effects and refuses local writes; authorized execution reloads and exposes configured project resources."
+              }
+            ],
+            "edges": [
+              {
+                "from": "classify-trust-gated-project-effects",
+                "to": "bootstrap-policy-hooks-under-denied-project-trust",
+                "type": "enables"
+              },
+              {
+                "from": "classify-trust-gated-project-effects",
+                "to": "inherit-nearest-directory-authorization",
+                "type": "enables"
+              },
+              {
+                "from": "bootstrap-policy-hooks-under-denied-project-trust",
+                "to": "resolve-layered-project-trust",
+                "type": "enables"
+              },
+              {
+                "from": "inherit-nearest-directory-authorization",
+                "to": "resolve-layered-project-trust",
+                "type": "requires"
+              },
+              {
+                "from": "resolve-layered-project-trust",
+                "to": "enforce-authorization-at-effect-boundaries",
+                "type": "enables"
+              },
+              {
+                "from": "enforce-authorization-at-effect-boundaries",
+                "to": "resolve-layered-project-trust",
+                "type": "validates"
+              }
+            ],
+            "validation_ladder": [
+              "Unit-test the trust-input classifier, including passive-only and effect-bearing fixtures.",
+              "Unit-test hierarchical storage with parent inheritance, closer overrides, override deletion, malformed-store preservation, and source-path reporting.",
+              "Unit-test global default parsing and confirm project-local settings cannot set the default policy.",
+              "Integration-test decision precedence through package or resource call sites, including hook authorization and persisted denial over a permissive default.",
+              "Integration-test resource isolation so denied projects cannot supply executable/configuration resources while separately classified passive context remains available.",
+              "Spawn a non-interactive command and verify unresolved trust produces no project package-install side effects or structured-output contamination."
+            ],
+            "stop_conditions": [
+              "Stop and deny project effects if trust remains unresolved and no interactive UI is available.",
+              "Stop and surface an error if the persisted trust store is malformed; do not overwrite it with a guessed decision.",
+              "Stop before project-local package installation, extension execution, or settings mutation if the resolved decision is false.",
+              "Defer hierarchical authorization if canonical ancestry or the intended inheritance boundary cannot be established safely."
+            ],
+            "unresolved_or_deferred": [
+              "The available bundle contains no PR body, review discussion, or status-check results, so design intent beyond code, tests, and commit metadata is unavailable.",
+              "No test command was executed during this extraction; validation claims describe the checked-in test oracles at the pinned commit.",
+              "The change deliberately leaves passive project instructions outside the trust gate; whether instruction content itself should be treated as an effect in other systems is a project-specific policy decision, not established universally by this episode."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The issue bundle is a verified same-repository substitute for unresolved seed issue #9936, so this episode supports PR #5549 only and does not claim to resolve the seed issue's terminal-inheritance behavior.",
+        "Because GitHub discussion and CI metadata are unavailable, the evidence cannot establish which precedence choices were explicitly reviewed versus inferred from the merged implementation and tests."
+      ]
+    },
+    "call_sites": [
+      "Package and config commands create SettingsManager as untrusted, optionally bootstrap project_trust extensions, call the centralized resolver with the global default, install the result, and reject local package-setting writes when untrusted.",
+      "The main runtime calls the centralized resolver from ResourceLoader.reload and supplies the command override, global default policy, bootstrap extension result, and a UI context whose availability depends on the active mode."
+    ],
+    "tests": [
+      "Trust-store tests prove nearest-parent inheritance, closest-child override precedence, removal of a child override to restore parent inheritance, and rejection of AGENTS.md and CLAUDE.md as trust-triggering inputs.",
+      "Package-command tests prove that the global default can trust project packages, project_trust extensions can authorize package commands, and an explicit persisted false decision overrides a global always default.",
+      "Settings tests prove defaultProjectTrust is read only from global settings and invalid values fail safely to ask.",
+      "Resource-loader tests prove that an untrusted project still contributes AGENTS.md context while project system prompts, extensions, skills, prompts, and themes remain excluded.",
+      "Trust-selector tests prove inherited decisions are labeled with their source path and selecting parent trust produces a parent true update plus deletion of the current-directory override."
+    ]
+  },
+  {
+    "episode_id": "NousResearch__hermes-agent__232__7166647ca1",
+    "title": "Preserve dangerous-command detection across embedded newlines",
+    "before": "At parent commit 7b23dbfe6841002328f96e8d97980e1d11410db5, dangerous-command patterns were evaluated with re.IGNORECASE only. Patterns using `.*` therefore could not span newline characters, allowing multiline forms of remote-content piping, disk-copy, and recursive-permission commands to avoid detection and proceed without the intended approval boundary.",
+    "after": "At commit 7166647ca132d54149af35dfd21312a1e3c19625, the detector evaluates every dangerous-command pattern with re.IGNORECASE | re.DOTALL, so `.` also matches newlines. Four regression cases require multiline curl-to-shell, wget-to-shell, dd, and recursive chmod commands to be classified as dangerous.",
+    "diff": "The implementation changes the shared regular-expression search flags in tools/approval.py from re.IGNORECASE to re.IGNORECASE | re.DOTALL without changing the pattern catalog or approval policy. The test suite adds a TestMultilineBypass group with four adversarial commands containing line continuations/newlines. The shared detector remains upstream of terminal execution: terminal_tool delegates to check_dangerous_command before executing non-forced commands, and that orchestration invokes detect_dangerous_command before approval-state handling.",
+    "repository": "NousResearch/hermes-agent",
+    "revision": "github-issue-232",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 232,
+      "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+      "manifest_metadata": {
+        "category": "effect-control-and-isolation",
+        "role": "train_candidate",
+        "case_id": "NousResearch__hermes-agent__232__effect-control-and-isolation",
+        "sample_kind": "exact_table_row",
+        "seed_issue": 232,
+        "seed_issue_url": "https://github.com/NousResearch/hermes-agent/issues/232",
+        "seed_relation": "exact_table_row_with_verified_resolution",
+        "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/233",
+        "provenance": {
+          "classification": "exact_table_row",
+          "seed": {
+            "repository": "NousResearch/hermes-agent",
+            "issue": 232,
+            "url": "https://github.com/NousResearch/hermes-agent/issues/232",
+            "table_note": "dangerous-command check can be bypassed with a newline"
+          },
+          "resolution_artifact": {
+            "type": "issue",
+            "number": 232,
+            "url": "https://github.com/NousResearch/hermes-agent/issues/232",
+            "pull_request": 233,
+            "pull_request_url": "https://github.com/NousResearch/hermes-agent/pull/233"
+          },
+          "commit": {
+            "sha": "7166647ca132d54149af35dfd21312a1e3c19625",
+            "subject": "fix(security): add re.DOTALL to prevent multiline bypass of dangerous command detection",
+            "parents": [
+              "7b23dbfe6841002328f96e8d97980e1d11410db5"
+            ],
+            "body_excerpt": ""
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "parent_and_changed_files_recorded",
+            "implementation_diff_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "NousResearch/hermes-agent",
+        "issue_number": 232,
+        "issue": {
+          "number": 232,
+          "title": "fix(security): add re.DOTALL to prevent multiline bypass of dangerous command detection",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 233,
+              "title": "fix(security): add re.DOTALL to prevent multiline bypass of dangerous command detection",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\ttests/tools/test_approval.py"
+              },
+              {
+                "status_line": "M\ttools/approval.py"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "7166647ca132d54149af35dfd21312a1e3c19625",
+                "subject": "fix(security): add re.DOTALL to prevent multiline bypass of dangerous command detection"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+        "pinned_ref": "7166647ca132d54149af35dfd21312a1e3c19625",
+        "resolved_commit": "7166647ca132d54149af35dfd21312a1e3c19625",
+        "parent_commit": "7b23dbfe6841002328f96e8d97980e1d11410db5",
+        "commit_show_stat": "commit 7166647ca132d54149af35dfd21312a1e3c19625\nAuthor:     Farukest <abdullahfarukozden@gmail.com>\nAuthorDate: Sun Mar 1 03:23:29 2026 +0300\nCommit:     Farukest <abdullahfarukozden@gmail.com>\nCommitDate: Sun Mar 1 03:23:29 2026 +0300\n\n    fix(security): add re.DOTALL to prevent multiline bypass of dangerous command detection\n\n tests/tools/test_approval.py | 24 ++++++++++++++++++++++++\n tools/approval.py            |  2 +-\n 2 files changed, 25 insertions(+), 1 deletion(-)\n",
+        "changed_files_name_status": "M\ttests/tools/test_approval.py\nM\ttools/approval.py\n",
+        "linked_issue_numbers": [
+          232
+        ],
+        "manifest_metadata": {
+          "category": "effect-control-and-isolation",
+          "theme": "approval, sandbox, and effect isolation",
+          "file_sample": [
+            "tests/tools/test_approval.py",
+            "tools/approval.py"
+          ],
+          "case_id": "NousResearch__hermes-agent__232__effect-control-and-isolation",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "exact_table_row",
+          "seed_issue": 232,
+          "seed_issue_url": "https://github.com/NousResearch/hermes-agent/issues/232",
+          "seed_relation": "exact_table_row_with_verified_resolution",
+          "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/233",
+          "source": "agent_core_seven_category_extraction_v2",
+          "provenance": {
+            "classification": "exact_table_row",
+            "seed": {
+              "repository": "NousResearch/hermes-agent",
+              "issue": 232,
+              "url": "https://github.com/NousResearch/hermes-agent/issues/232",
+              "table_note": "dangerous-command check can be bypassed with a newline"
+            },
+            "resolution_artifact": {
+              "type": "issue",
+              "number": 232,
+              "url": "https://github.com/NousResearch/hermes-agent/issues/232",
+              "pull_request": 233,
+              "pull_request_url": "https://github.com/NousResearch/hermes-agent/pull/233"
+            },
+            "commit": {
+              "sha": "7166647ca132d54149af35dfd21312a1e3c19625",
+              "subject": "fix(security): add re.DOTALL to prevent multiline bypass of dangerous command detection",
+              "parents": [
+                "7b23dbfe6841002328f96e8d97980e1d11410db5"
+              ],
+              "body_excerpt": ""
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "parent_and_changed_files_recorded",
+              "implementation_diff_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T10:00:48.418556+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "NousResearch__hermes-agent__232__7166647ca1",
+          "title": "Preserve dangerous-command detection across embedded newlines",
+          "before": "At parent commit 7b23dbfe6841002328f96e8d97980e1d11410db5, dangerous-command patterns were evaluated with re.IGNORECASE only. Patterns using `.*` therefore could not span newline characters, allowing multiline forms of remote-content piping, disk-copy, and recursive-permission commands to avoid detection and proceed without the intended approval boundary.",
+          "after": "At commit 7166647ca132d54149af35dfd21312a1e3c19625, the detector evaluates every dangerous-command pattern with re.IGNORECASE | re.DOTALL, so `.` also matches newlines. Four regression cases require multiline curl-to-shell, wget-to-shell, dd, and recursive chmod commands to be classified as dangerous.",
+          "diff": "The implementation changes the shared regular-expression search flags in tools/approval.py from re.IGNORECASE to re.IGNORECASE | re.DOTALL without changing the pattern catalog or approval policy. The test suite adds a TestMultilineBypass group with four adversarial commands containing line continuations/newlines. The shared detector remains upstream of terminal execution: terminal_tool delegates to check_dangerous_command before executing non-forced commands, and that orchestration invokes detect_dangerous_command before approval-state handling."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "Commit 7166647ca132d54149af35dfd21312a1e3c19625 is the single-parent implementation commit for issue 232/PR 233; its parent is 7b23dbfe6841002328f96e8d97980e1d11410db5 and it changes tools/approval.py plus tests/tools/test_approval.py.",
+            "source": "git show --format=fuller --stat 7166647ca132d54149af35dfd21312a1e3c19625; issue-bundle.json linked_pull_requests[0]"
+          },
+          {
+            "id": "E2",
+            "kind": "implementation",
+            "claim": "In the parent state, detect_dangerous_command lowercased the command and searched each dangerous pattern using re.IGNORECASE alone.",
+            "source": "git show 7b23dbfe6841002328f96e8d97980e1d11410db5:tools/approval.py, detect_dangerous_command lines 55-67"
+          },
+          {
+            "id": "E3",
+            "kind": "diff",
+            "claim": "The implementation adds re.DOTALL to the flags passed to re.search, causing dot expressions in the existing pattern catalog to span newline characters.",
+            "source": "git diff 7b23dbfe6841002328f96e8d97980e1d11410db5 7166647ca132d54149af35dfd21312a1e3c19625 -- tools/approval.py"
+          },
+          {
+            "id": "E4",
+            "kind": "implementation",
+            "claim": "The dangerous-pattern catalog includes dot-based expressions for remote-content piping, disk copying, recursive chmod, recursive chown, SQL DELETE qualification, xargs, and find operations, so the shared flag controls whether these expressions can match across lines.",
+            "source": "git show 7166647ca132d54149af35dfd21312a1e3c19625:tools/approval.py, DANGEROUS_PATTERNS lines 23-48"
+          },
+          {
+            "id": "E5",
+            "kind": "call_site",
+            "claim": "check_dangerous_command invokes detect_dangerous_command before consulting approval state or prompting; commands classified as non-dangerous are immediately approved by this orchestration path.",
+            "source": "git show 7166647ca132d54149af35dfd21312a1e3c19625:tools/approval.py, check_dangerous_command lines 233-253"
+          },
+          {
+            "id": "E6",
+            "kind": "call_site",
+            "claim": "The terminal execution path delegates to the consolidated approval module and checks a command before execution when force is false; an unapproved result returns without executing the command.",
+            "source": "git show 7166647ca132d54149af35dfd21312a1e3c19625:tools/terminal_tool.py, approval imports and wrapper lines 128-140; execution guard lines 885-896"
+          },
+          {
+            "id": "E7",
+            "kind": "test",
+            "claim": "Four regression tests exercise newline-separated curl-to-sh, wget-to-bash, dd with if=, and recursive chmod with 777, and each asserts that detect_dangerous_command returns is_dangerous=True.",
+            "source": "git show 7166647ca132d54149af35dfd21312a1e3c19625:tests/tools/test_approval.py, TestMultilineBypass lines 159-181"
+          },
+          {
+            "id": "E8",
+            "kind": "test",
+            "claim": "The existing approval tests already cover corresponding single-line dangerous forms and benign commands, preserving the detector's broader classification contract while the new cases extend it to multiline input.",
+            "source": "git show 7166647ca132d54149af35dfd21312a1e3c19625:tests/tools/test_approval.py, existing detector tests lines 1-158"
+          },
+          {
+            "id": "E9",
+            "kind": "validation",
+            "claim": "The targeted pytest suite could not be executed in the inspection environment because the available Python 3 installation does not include pytest; validation is therefore grounded in the committed regression oracle rather than a fresh test run.",
+            "source": "python3 -m pytest -q tests/tools/test_approval.py at detached commit 7166647ca132d54149af35dfd21312a1e3c19625 returned `/usr/bin/python3: No module named pytest`"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "enable-multiline-policy-matching",
+            "title": "Make policy patterns span embedded newlines",
+            "description": "Adjust the shared pattern-matching semantics so dangerous constructs remain recognizable when their relevant tokens are separated by newline characters.",
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6"
+            ],
+            "semantic_action": {
+              "intent": "Prevent newline insertion from bypassing the command classification that gates potentially dangerous effects.",
+              "module_role": "Shared pre-execution command policy classifier",
+              "operation": "adapt",
+              "pre_state": "The classifier applies dot-based dangerous-command patterns with case-insensitive matching, but dot expressions stop at newlines and may return a non-dangerous classification for split commands.",
+              "post_state": "The same pattern catalog is evaluated with dot matching extended across newlines, so covered dangerous constructs retain their classification when split across lines.",
+              "validation": "Exercise representative dot-based patterns with relevant tokens separated by newlines and require a dangerous result while retaining the existing single-line and benign-command test contract.",
+              "parameters": [
+                "command text",
+                "dangerous-pattern catalog",
+                "regular-expression matching flags"
+              ],
+              "evidence_ids": [
+                "E2",
+                "E3",
+                "E4",
+                "E7",
+                "E8"
+              ]
+            }
+          },
+          {
+            "name": "lock-multiline-bypass-regressions",
+            "title": "Add adversarial multiline classification cases",
+            "description": "Encode representative newline-based bypasses as regression tests for the shared classifier.",
+            "evidence_ids": [
+              "E3",
+              "E7",
+              "E8"
+            ],
+            "semantic_action": {
+              "intent": "Make future changes detect regressions that reopen newline-based bypasses of the approval boundary.",
+              "module_role": "Command policy regression oracle",
+              "operation": "validate",
+              "pre_state": "The test suite covers dangerous command detection but has no explicit oracle for tokens separated by embedded newlines.",
+              "post_state": "The regression suite explicitly requires remote-content piping, disk-copy, and recursive-permission examples containing newlines to be classified as dangerous.",
+              "validation": "Run the detector test module and require all four multiline cases, together with the pre-existing classification tests, to pass.",
+              "parameters": [
+                "multiline remote-content pipeline cases",
+                "multiline disk-copy case",
+                "multiline recursive-permission case",
+                "expected dangerous classification"
+              ],
+              "evidence_ids": [
+                "E7",
+                "E8",
+                "E9"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "close-multiline-policy-bypass",
+            "title": "Close newline-based bypasses in a pre-execution command policy",
+            "description": "A bounded workflow for repairing a regex-driven effect gate when dangerous constructs are recognized on one line but evade classification after newline insertion.",
+            "atomic_names": [
+              "enable-multiline-policy-matching",
+              "lock-multiline-bypass-regressions"
+            ],
+            "evidence_ids": [
+              "E1",
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9"
+            ],
+            "workflow_graph": {
+              "goal": "Ensure commands covered by an existing dangerous-pattern policy cannot bypass its pre-execution approval path merely by inserting newlines.",
+              "when_to_use": [
+                "A pre-execution policy classifier uses regular expressions containing dot expressions over complete command text.",
+                "A known dangerous construct is detected in single-line form but is not detected when semantically connected tokens are separated by a newline."
+              ],
+              "anti_goals": [
+                "Do not broaden or replace the dangerous-command pattern catalog when changing match traversal alone is sufficient.",
+                "Do not alter approval scopes, prompting behavior, environment exemptions, force semantics, or command execution behavior.",
+                "Do not normalize away arbitrary whitespace or rewrite the command that will actually be executed."
+              ],
+              "not_applicable_when": [
+                "The policy intentionally evaluates each line as an independent command with no cross-line constructs.",
+                "The bypass is caused by missing dangerous-operation coverage rather than newline-sensitive matching.",
+                "The matcher already spans newlines and the failure originates in parsing, canonicalization, shell semantics, or a downstream approval-state defect."
+              ],
+              "inputs": [
+                "The exact command text reaching the classifier",
+                "The existing dangerous-pattern catalog and matching flags",
+                "The pre-execution call path that consumes the classifier result",
+                "Representative single-line and newline-separated dangerous commands",
+                "Existing benign-command and classification regression cases"
+              ],
+              "entry_state": "A dangerous effect is gated by a shared classifier, but at least one covered construct can receive a non-dangerous result after newline insertion and consequently avoid the intended approval decision.",
+              "exit_state": "Existing policy patterns retain their intended single-line behavior and representative covered constructs split across newlines are classified as dangerous before terminal execution.",
+              "steps": [
+                {
+                  "action_name": "enable-multiline-policy-matching",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "Use when inspection confirms the affected patterns rely on dot expressions over whole-command input and the current flags do not allow dot to cross newlines.",
+                  "validation": "Confirm the shared search operation enables newline-spanning dot semantics without modifying the pattern catalog or approval orchestration."
+                },
+                {
+                  "action_name": "lock-multiline-bypass-regressions",
+                  "role": "validate",
+                  "required": true,
+                  "depends_on": [
+                    "enable-multiline-policy-matching"
+                  ],
+                  "condition": "Add cases for each evidenced bypass family fixed by the matching change.",
+                  "validation": "Require newline-separated remote-content pipelines, disk-copy syntax, and recursive-permission syntax to return a dangerous classification; also run the existing detector cases."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "enable-multiline-policy-matching",
+                  "to": "lock-multiline-bypass-regressions",
+                  "type": "enables"
+                },
+                {
+                  "from": "lock-multiline-bypass-regressions",
+                  "to": "enable-multiline-policy-matching",
+                  "type": "validates"
+                }
+              ],
+              "validation_ladder": [
+                "Inspect the classifier and prove that the failing patterns contain dot expressions whose behavior differs at newline boundaries.",
+                "Confirm the production call path passes the complete command to the shared classifier before execution and consumes a dangerous result through the approval boundary.",
+                "Run focused multiline regression cases for multiple pattern families.",
+                "Run the complete command-approval test module to check existing dangerous and benign classifications.",
+                "If dependencies permit, run the broader terminal-tool test suite to detect integration regressions."
+              ],
+              "stop_conditions": [
+                "Stop if the reported command cannot be reproduced as a newline-sensitive mismatch in the shared classifier.",
+                "Stop and select a parsing or pattern-coverage repair if the failure persists when dot already spans newlines.",
+                "Do not complete the workflow if multiline dangerous cases pass but established benign or single-line classification tests regress.",
+                "Defer execution-based validation when the repository's test runner or dependencies are unavailable, and report that limitation explicitly."
+              ],
+              "unresolved_or_deferred": [
+                "Fresh execution of tests/tools/test_approval.py is deferred because pytest is unavailable in the inspection environment.",
+                "The GitHub evidence bundle contains no issue body, review discussion, or status-check results, so the exact upstream reproduction transcript and CI outcome are unavailable."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Did PR 233 pass its upstream CI checks? The supplied GitHub bundle omits status-check metadata, and the local environment lacks pytest.",
+          "Were additional newline-sensitive patterns beyond the four committed regression families manually assessed? The implementation affects the entire shared pattern catalog, but the commit records only four new multiline examples."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "enable-multiline-policy-matching",
+          "title": "Make policy patterns span embedded newlines",
+          "description": "Adjust the shared pattern-matching semantics so dangerous constructs remain recognizable when their relevant tokens are separated by newline characters.",
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6"
+          ],
+          "semantic_action": {
+            "intent": "Prevent newline insertion from bypassing the command classification that gates potentially dangerous effects.",
+            "module_role": "Shared pre-execution command policy classifier",
+            "operation": "adapt",
+            "pre_state": "The classifier applies dot-based dangerous-command patterns with case-insensitive matching, but dot expressions stop at newlines and may return a non-dangerous classification for split commands.",
+            "post_state": "The same pattern catalog is evaluated with dot matching extended across newlines, so covered dangerous constructs retain their classification when split across lines.",
+            "validation": "Exercise representative dot-based patterns with relevant tokens separated by newlines and require a dangerous result while retaining the existing single-line and benign-command test contract.",
+            "parameters": [
+              "command text",
+              "dangerous-pattern catalog",
+              "regular-expression matching flags"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E7",
+              "E8"
+            ]
+          }
+        },
+        {
+          "name": "lock-multiline-bypass-regressions",
+          "title": "Add adversarial multiline classification cases",
+          "description": "Encode representative newline-based bypasses as regression tests for the shared classifier.",
+          "evidence_ids": [
+            "E3",
+            "E7",
+            "E8"
+          ],
+          "semantic_action": {
+            "intent": "Make future changes detect regressions that reopen newline-based bypasses of the approval boundary.",
+            "module_role": "Command policy regression oracle",
+            "operation": "validate",
+            "pre_state": "The test suite covers dangerous command detection but has no explicit oracle for tokens separated by embedded newlines.",
+            "post_state": "The regression suite explicitly requires remote-content piping, disk-copy, and recursive-permission examples containing newlines to be classified as dangerous.",
+            "validation": "Run the detector test module and require all four multiline cases, together with the pre-existing classification tests, to pass.",
+            "parameters": [
+              "multiline remote-content pipeline cases",
+              "multiline disk-copy case",
+              "multiline recursive-permission case",
+              "expected dangerous classification"
+            ],
+            "evidence_ids": [
+              "E7",
+              "E8",
+              "E9"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "close-multiline-policy-bypass",
+          "title": "Close newline-based bypasses in a pre-execution command policy",
+          "description": "A bounded workflow for repairing a regex-driven effect gate when dangerous constructs are recognized on one line but evade classification after newline insertion.",
+          "atomic_names": [
+            "enable-multiline-policy-matching",
+            "lock-multiline-bypass-regressions"
+          ],
+          "evidence_ids": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9"
+          ],
+          "workflow_graph": {
+            "goal": "Ensure commands covered by an existing dangerous-pattern policy cannot bypass its pre-execution approval path merely by inserting newlines.",
+            "when_to_use": [
+              "A pre-execution policy classifier uses regular expressions containing dot expressions over complete command text.",
+              "A known dangerous construct is detected in single-line form but is not detected when semantically connected tokens are separated by a newline."
+            ],
+            "anti_goals": [
+              "Do not broaden or replace the dangerous-command pattern catalog when changing match traversal alone is sufficient.",
+              "Do not alter approval scopes, prompting behavior, environment exemptions, force semantics, or command execution behavior.",
+              "Do not normalize away arbitrary whitespace or rewrite the command that will actually be executed."
+            ],
+            "not_applicable_when": [
+              "The policy intentionally evaluates each line as an independent command with no cross-line constructs.",
+              "The bypass is caused by missing dangerous-operation coverage rather than newline-sensitive matching.",
+              "The matcher already spans newlines and the failure originates in parsing, canonicalization, shell semantics, or a downstream approval-state defect."
+            ],
+            "inputs": [
+              "The exact command text reaching the classifier",
+              "The existing dangerous-pattern catalog and matching flags",
+              "The pre-execution call path that consumes the classifier result",
+              "Representative single-line and newline-separated dangerous commands",
+              "Existing benign-command and classification regression cases"
+            ],
+            "entry_state": "A dangerous effect is gated by a shared classifier, but at least one covered construct can receive a non-dangerous result after newline insertion and consequently avoid the intended approval decision.",
+            "exit_state": "Existing policy patterns retain their intended single-line behavior and representative covered constructs split across newlines are classified as dangerous before terminal execution.",
+            "steps": [
+              {
+                "action_name": "enable-multiline-policy-matching",
+                "role": "implement",
+                "required": true,
+                "depends_on": [],
+                "condition": "Use when inspection confirms the affected patterns rely on dot expressions over whole-command input and the current flags do not allow dot to cross newlines.",
+                "validation": "Confirm the shared search operation enables newline-spanning dot semantics without modifying the pattern catalog or approval orchestration."
+              },
+              {
+                "action_name": "lock-multiline-bypass-regressions",
+                "role": "validate",
+                "required": true,
+                "depends_on": [
+                  "enable-multiline-policy-matching"
+                ],
+                "condition": "Add cases for each evidenced bypass family fixed by the matching change.",
+                "validation": "Require newline-separated remote-content pipelines, disk-copy syntax, and recursive-permission syntax to return a dangerous classification; also run the existing detector cases."
+              }
+            ],
+            "edges": [
+              {
+                "from": "enable-multiline-policy-matching",
+                "to": "lock-multiline-bypass-regressions",
+                "type": "enables"
+              },
+              {
+                "from": "lock-multiline-bypass-regressions",
+                "to": "enable-multiline-policy-matching",
+                "type": "validates"
+              }
+            ],
+            "validation_ladder": [
+              "Inspect the classifier and prove that the failing patterns contain dot expressions whose behavior differs at newline boundaries.",
+              "Confirm the production call path passes the complete command to the shared classifier before execution and consumes a dangerous result through the approval boundary.",
+              "Run focused multiline regression cases for multiple pattern families.",
+              "Run the complete command-approval test module to check existing dangerous and benign classifications.",
+              "If dependencies permit, run the broader terminal-tool test suite to detect integration regressions."
+            ],
+            "stop_conditions": [
+              "Stop if the reported command cannot be reproduced as a newline-sensitive mismatch in the shared classifier.",
+              "Stop and select a parsing or pattern-coverage repair if the failure persists when dot already spans newlines.",
+              "Do not complete the workflow if multiline dangerous cases pass but established benign or single-line classification tests regress.",
+              "Defer execution-based validation when the repository's test runner or dependencies are unavailable, and report that limitation explicitly."
+            ],
+            "unresolved_or_deferred": [
+              "Fresh execution of tests/tools/test_approval.py is deferred because pytest is unavailable in the inspection environment.",
+              "The GitHub evidence bundle contains no issue body, review discussion, or status-check results, so the exact upstream reproduction transcript and CI outcome are unavailable."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Did PR 233 pass its upstream CI checks? The supplied GitHub bundle omits status-check metadata, and the local environment lacks pytest.",
+        "Were additional newline-sensitive patterns beyond the four committed regression families manually assessed? The implementation affects the entire shared pattern catalog, but the commit records only four new multiline examples."
+      ]
+    },
+    "call_sites": [
+      "check_dangerous_command invokes detect_dangerous_command before consulting approval state or prompting; commands classified as non-dangerous are immediately approved by this orchestration path.",
+      "The terminal execution path delegates to the consolidated approval module and checks a command before execution when force is false; an unapproved result returns without executing the command."
+    ],
+    "tests": [
+      "Four regression tests exercise newline-separated curl-to-sh, wget-to-bash, dd with if=, and recursive chmod with 777, and each asserts that detect_dangerous_command returns is_dangerous=True.",
+      "The existing approval tests already cover corresponding single-line dangerous forms and benign commands, preserving the detector's broader classification contract while the new cases extend it to multiline input."
+    ]
+  },
+  {
+    "episode_id": "google-gemini__gemini-cli__25935__ed469e492b",
+    "title": "Deny argument-restricted shell commands when parsing is unreliable in automatic-approval mode",
+    "before": "At parent cfd7541ad45b25109744c988ac5fc8128accb0ec, shell-command checking treated only an empty parsed-command list as a parsing failure. When approval mode was YOLO, that failure path returned ALLOW after preserving an explicit DENY, even when the matched ALLOW rule had an argsPattern whose argument restrictions could not be validated. A parser result with nonempty details and hasError=true did not enter the failure path.",
+    "after": "At ed469e492b4190ce8983b9dd1c5fb5b9f1b140d0, either an empty parsed-command list or parsed.hasError enters the parsing-failure path. In YOLO mode, a matched rule carrying argsPattern now forces DENY because its argument restriction cannot be validated; rules without argument restrictions retain the existing YOLO ALLOW behavior, explicit DENY remains DENY, and non-YOLO failures still fall back to the configured default decision.",
+    "diff": "The policy engine broadened the unreliable-parse predicate from subCommands.length === 0 to subCommands.length === 0 || parsed?.hasError, then inserted a YOLO-mode guard that returns DENY when the matched rule has argsPattern before retaining ALLOW for unrestricted rules. Two unit tests mock parseCommandDetails for (1) empty details with hasError=true and (2) nonempty details with hasError=true, and assert DENY for a matching argument-restricted ALLOW rule.",
+    "repository": "google-gemini/gemini-cli",
+    "revision": "github-issue-25935",
+    "evidence_ids": [
+      "E-COMMIT-25935",
+      "E-BEFORE-EMPTY-PARSE",
+      "E-BEFORE-HASERROR",
+      "E-DIFF-FAIL-CLOSED",
+      "E-CALL-MATCHED-RULE",
+      "E-CALL-NO-RULE",
+      "E-TEST-EMPTY",
+      "E-TEST-PARTIAL",
+      "E-TEST-PRESERVED-YOLO",
+      "E-VALIDATION-ORACLE"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 25935,
+      "checkout": "/home/chenyujia/tritonToLlvm/gemini-cli",
+      "manifest_metadata": {
+        "category": "effect-control-and-isolation",
+        "role": "train_candidate",
+        "case_id": "google-gemini__gemini-cli__25935__effect-control-and-isolation",
+        "sample_kind": "verified_substitute",
+        "seed_issue": 26004,
+        "seed_issue_url": "https://github.com/google-gemini/gemini-cli/issues/26004",
+        "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+        "resolution_url": "https://github.com/google-gemini/gemini-cli/pull/25935",
+        "provenance": {
+          "classification": "verified_substitute",
+          "seed": {
+            "repository": "google-gemini/gemini-cli",
+            "issue": 26004,
+            "url": "https://github.com/google-gemini/gemini-cli/issues/26004",
+            "table_note": "YOLO/non-interactive mode waits for approval and silently stops plan execution"
+          },
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 25935,
+            "url": "https://github.com/google-gemini/gemini-cli/pull/25935",
+            "pull_request": 25935,
+            "pull_request_url": "https://github.com/google-gemini/gemini-cli/pull/25935"
+          },
+          "commit": {
+            "sha": "ed469e492b4190ce8983b9dd1c5fb5b9f1b140d0",
+            "subject": "fix(core): fail closed in YOLO mode when shell parsing fails for restricted rules (#25935)",
+            "parents": [
+              "cfd7541ad45b25109744c988ac5fc8128accb0ec"
+            ],
+            "body_excerpt": ""
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "parent_and_changed_files_recorded",
+            "implementation_diff_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "google-gemini/gemini-cli",
+        "issue_number": 25935,
+        "issue": {
+          "number": 25935,
+          "title": "fix(core): fail closed in YOLO mode when shell parsing fails for restricted rules (#25935)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 25935,
+              "title": "fix(core): fail closed in YOLO mode when shell parsing fails for restricted rules (#25935)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tpackages/core/src/policy/policy-engine.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/core/src/policy/policy-engine.ts"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "ed469e492b4190ce8983b9dd1c5fb5b9f1b140d0",
+                "subject": "fix(core): fail closed in YOLO mode when shell parsing fails for restricted rules (#25935)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/gemini-cli",
+        "pinned_ref": "ed469e492b4190ce8983b9dd1c5fb5b9f1b140d0",
+        "resolved_commit": "ed469e492b4190ce8983b9dd1c5fb5b9f1b140d0",
+        "parent_commit": "cfd7541ad45b25109744c988ac5fc8128accb0ec",
+        "commit_show_stat": "commit ed469e492b4190ce8983b9dd1c5fb5b9f1b140d0\nAuthor:     Emily Hedlund <ehedlund@google.com>\nAuthorDate: Fri Apr 24 12:26:59 2026 -0700\nCommit:     GitHub <noreply@github.com>\nCommitDate: Fri Apr 24 19:26:59 2026 +0000\n\n    fix(core): fail closed in YOLO mode when shell parsing fails for restricted rules (#25935)\n\n packages/core/src/policy/policy-engine.test.ts | 76 +++++++++++++++++++++++++-\n packages/core/src/policy/policy-engine.ts      | 12 +++-\n 2 files changed, 85 insertions(+), 3 deletions(-)\n",
+        "changed_files_name_status": "M\tpackages/core/src/policy/policy-engine.test.ts\nM\tpackages/core/src/policy/policy-engine.ts\n",
+        "linked_issue_numbers": [
+          25935
+        ],
+        "manifest_metadata": {
+          "category": "effect-control-and-isolation",
+          "theme": "approval, sandbox, and effect isolation",
+          "file_sample": [
+            "packages/core/src/policy/policy-engine.test.ts",
+            "packages/core/src/policy/policy-engine.ts"
+          ],
+          "case_id": "google-gemini__gemini-cli__25935__effect-control-and-isolation",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_substitute",
+          "seed_issue": 26004,
+          "seed_issue_url": "https://github.com/google-gemini/gemini-cli/issues/26004",
+          "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+          "resolution_url": "https://github.com/google-gemini/gemini-cli/pull/25935",
+          "source": "agent_core_seven_category_extraction_v2",
+          "provenance": {
+            "classification": "verified_substitute",
+            "seed": {
+              "repository": "google-gemini/gemini-cli",
+              "issue": 26004,
+              "url": "https://github.com/google-gemini/gemini-cli/issues/26004",
+              "table_note": "YOLO/non-interactive mode waits for approval and silently stops plan execution"
+            },
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 25935,
+              "url": "https://github.com/google-gemini/gemini-cli/pull/25935",
+              "pull_request": 25935,
+              "pull_request_url": "https://github.com/google-gemini/gemini-cli/pull/25935"
+            },
+            "commit": {
+              "sha": "ed469e492b4190ce8983b9dd1c5fb5b9f1b140d0",
+              "subject": "fix(core): fail closed in YOLO mode when shell parsing fails for restricted rules (#25935)",
+              "parents": [
+                "cfd7541ad45b25109744c988ac5fc8128accb0ec"
+              ],
+              "body_excerpt": ""
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "parent_and_changed_files_recorded",
+              "implementation_diff_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T10:09:08.462789+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "google-gemini__gemini-cli__25935__ed469e492b",
+          "title": "Deny argument-restricted shell commands when parsing is unreliable in automatic-approval mode",
+          "before": "At parent cfd7541ad45b25109744c988ac5fc8128accb0ec, shell-command checking treated only an empty parsed-command list as a parsing failure. When approval mode was YOLO, that failure path returned ALLOW after preserving an explicit DENY, even when the matched ALLOW rule had an argsPattern whose argument restrictions could not be validated. A parser result with nonempty details and hasError=true did not enter the failure path.",
+          "after": "At ed469e492b4190ce8983b9dd1c5fb5b9f1b140d0, either an empty parsed-command list or parsed.hasError enters the parsing-failure path. In YOLO mode, a matched rule carrying argsPattern now forces DENY because its argument restriction cannot be validated; rules without argument restrictions retain the existing YOLO ALLOW behavior, explicit DENY remains DENY, and non-YOLO failures still fall back to the configured default decision.",
+          "diff": "The policy engine broadened the unreliable-parse predicate from subCommands.length === 0 to subCommands.length === 0 || parsed?.hasError, then inserted a YOLO-mode guard that returns DENY when the matched rule has argsPattern before retaining ALLOW for unrestricted rules. Two unit tests mock parseCommandDetails for (1) empty details with hasError=true and (2) nonempty details with hasError=true, and assert DENY for a matching argument-restricted ALLOW rule."
+        },
+        "evidence_units": [
+          {
+            "id": "E-COMMIT-25935",
+            "kind": "commit",
+            "claim": "Commit ed469e492b4190ce8983b9dd1c5fb5b9f1b140d0 resolves PR/issue 25935 with the subject 'fix(core): fail closed in YOLO mode when shell parsing fails for restricted rules' and has parent cfd7541ad45b25109744c988ac5fc8128accb0ec.",
+            "source": "git show --format=fuller ed469e492b4190ce8983b9dd1c5fb5b9f1b140d0; issue-bundle.json linked_pull_requests[0].commits[0] and parent_commit"
+          },
+          {
+            "id": "E-BEFORE-EMPTY-PARSE",
+            "kind": "implementation",
+            "claim": "In the parent implementation, an empty parse result preserved explicit DENY but returned ALLOW in YOLO mode without checking whether the matched rule had an argument pattern.",
+            "source": "git show cfd7541ad45b25109744c988ac5fc8128accb0ec:packages/core/src/policy/policy-engine.ts, checkShellCommand empty-subCommands branch"
+          },
+          {
+            "id": "E-BEFORE-HASERROR",
+            "kind": "implementation",
+            "claim": "The parent failure predicate checked only subCommands.length === 0, so a parser result with nonempty details and hasError=true continued through ordinary subcommand validation.",
+            "source": "git show cfd7541ad45b25109744c988ac5fc8128accb0ec:packages/core/src/policy/policy-engine.ts, checkShellCommand immediately after parseCommandDetails"
+          },
+          {
+            "id": "E-DIFF-FAIL-CLOSED",
+            "kind": "diff",
+            "claim": "The change treats empty details or parsed.hasError as unreliable parsing and, in YOLO mode, returns DENY when the matched rule has argsPattern while retaining ALLOW when no argument restriction applies.",
+            "source": "git diff cfd7541ad45b25109744c988ac5fc8128accb0ec ed469e492b4190ce8983b9dd1c5fb5b9f1b140d0 -- packages/core/src/policy/policy-engine.ts"
+          },
+          {
+            "id": "E-CALL-MATCHED-RULE",
+            "kind": "call_site",
+            "claim": "When a shell tool call matches a policy rule, PolicyEngine.check passes the command, derived rule decision, and the matched rule into checkShellCommand, making the rule's argsPattern available to the new guard.",
+            "source": "git show ed469e492b4190ce8983b9dd1c5fb5b9f1b140d0:packages/core/src/policy/policy-engine.ts lines 578-626"
+          },
+          {
+            "id": "E-CALL-NO-RULE",
+            "kind": "call_site",
+            "claim": "When no policy rule matches, PolicyEngine.check invokes checkShellCommand with rule undefined; the new argsPattern guard therefore does not alter YOLO's unrestricted no-match ALLOW behavior.",
+            "source": "git show ed469e492b4190ce8983b9dd1c5fb5b9f1b140d0:packages/core/src/policy/policy-engine.ts lines 635-670"
+          },
+          {
+            "id": "E-TEST-EMPTY",
+            "kind": "test",
+            "claim": "A unit test mocks parsing of 'echo bypass' to return empty details with hasError=true and verifies that a matching argument-restricted ALLOW rule produces DENY in YOLO mode.",
+            "source": "git show ed469e492b4190ce8983b9dd1c5fb5b9f1b140d0:packages/core/src/policy/policy-engine.test.ts, test 'should fail closed in YOLO mode when shell parsing fails for restricted rule'"
+          },
+          {
+            "id": "E-TEST-PARTIAL",
+            "kind": "test",
+            "claim": "A unit test mocks parsing of 'echo bypass' to return an echo detail together with hasError=true and verifies that the same argument-restricted ALLOW rule produces DENY in YOLO mode.",
+            "source": "git show ed469e492b4190ce8983b9dd1c5fb5b9f1b140d0:packages/core/src/policy/policy-engine.test.ts, test 'should fail closed in YOLO mode when shell parsing has errors for restricted rule'"
+          },
+          {
+            "id": "E-TEST-PRESERVED-YOLO",
+            "kind": "test",
+            "claim": "Existing adjacent tests establish that YOLO mode still allows by default when no rule matches and does not override an explicit DENY rule.",
+            "source": "git show ed469e492b4190ce8983b9dd1c5fb5b9f1b140d0:packages/core/src/policy/policy-engine.test.ts, tests 'should return ALLOW by default in YOLO mode when no rules match' and 'should NOT override explicit DENY rules in YOLO mode'"
+          },
+          {
+            "id": "E-VALIDATION-ORACLE",
+            "kind": "validation",
+            "claim": "The committed regression oracle covers both representations of unreliable parsing relevant to the implementation predicate: no parsed command details and parsed details accompanied by a parser error flag; both must return DENY for an argument-restricted rule in YOLO mode.",
+            "source": "packages/core/src/policy/policy-engine.test.ts at ed469e492b4190ce8983b9dd1c5fb5b9f1b140d0; two added regression tests"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "deny_restricted_effect_when_validation_parse_is_unreliable",
+            "title": "Deny a restricted effect when its arguments cannot be reliably parsed",
+            "description": "At an automatic-approval boundary, classify empty or error-bearing parser output as unreliable and deny an otherwise allowed effect when the matched policy depends on argument-level restrictions that can no longer be validated, while preserving behavior for explicit denials and unrestricted approvals.",
+            "evidence_ids": [
+              "E-BEFORE-EMPTY-PARSE",
+              "E-BEFORE-HASERROR",
+              "E-DIFF-FAIL-CLOSED",
+              "E-CALL-MATCHED-RULE",
+              "E-CALL-NO-RULE",
+              "E-TEST-EMPTY",
+              "E-TEST-PARTIAL",
+              "E-TEST-PRESERVED-YOLO"
+            ],
+            "semantic_action": {
+              "intent": "Prevent an automatic-approval mode from bypassing argument-level policy constraints when effect arguments cannot be parsed reliably.",
+              "module_role": "effect authorization boundary that reconciles parser confidence with matched policy restrictions",
+              "operation": "guard",
+              "pre_state": "An effect request is being evaluated in automatic-approval mode; a matched rule would allow it but carries an argument restriction, and parsing yields either no usable command details or an error-bearing result.",
+              "post_state": "The request is denied whenever argument-restricted authorization cannot be validated from reliable parse output; explicit denials remain denied, while unrestricted automatic approvals remain eligible for ALLOW.",
+              "validation": "Mock both empty/error and nonempty/error parser results for a request matching an argument-restricted ALLOW rule and assert DENY; retain adjacent tests proving default unrestricted YOLO ALLOW and explicit DENY behavior.",
+              "parameters": [
+                "effect request and raw argument string",
+                "automatic-approval mode",
+                "matched policy decision",
+                "optional argument restriction",
+                "parser details",
+                "parser error indicator",
+                "fallback/default decision"
+              ],
+              "evidence_ids": [
+                "E-DIFF-FAIL-CLOSED",
+                "E-CALL-MATCHED-RULE",
+                "E-CALL-NO-RULE",
+                "E-TEST-EMPTY",
+                "E-TEST-PARTIAL",
+                "E-TEST-PRESERVED-YOLO",
+                "E-VALIDATION-ORACLE"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "fail_closed_when_restricted_effect_arguments_cannot_be_validated",
+            "title": "Fail closed when restricted effect arguments cannot be validated",
+            "description": "Harden an automatic effect-approval path by coupling parser reliability to argument-restricted authorization: unreliable parsing blocks only approvals whose safety depends on inspecting parsed arguments, with focused regression coverage for each failure representation and preserved behavior for unrelated policy branches.",
+            "atomic_names": [
+              "deny_restricted_effect_when_validation_parse_is_unreliable"
+            ],
+            "evidence_ids": [
+              "E-COMMIT-25935",
+              "E-BEFORE-EMPTY-PARSE",
+              "E-BEFORE-HASERROR",
+              "E-DIFF-FAIL-CLOSED",
+              "E-CALL-MATCHED-RULE",
+              "E-CALL-NO-RULE",
+              "E-TEST-EMPTY",
+              "E-TEST-PARTIAL",
+              "E-TEST-PRESERVED-YOLO",
+              "E-VALIDATION-ORACLE"
+            ],
+            "workflow_graph": {
+              "goal": "Ensure automatic approval cannot execute an effect under an argument-restricted rule when parser output is insufficient or internally marked erroneous.",
+              "when_to_use": [
+                "An automatic or non-interactive approval path authorizes effects using constraints on parsed arguments.",
+                "The parser can return no details or can return partial details together with an error indicator.",
+                "Proceeding after parse failure would prevent the policy engine from validating the restriction that justified approval."
+              ],
+              "anti_goals": [
+                "Do not convert every parser failure into a blanket denial when no argument-level restriction must be validated.",
+                "Do not override an explicit DENY decision.",
+                "Do not change normal successful-parse evaluation, redirection handling, rule priority, or unrelated heuristic behavior."
+              ],
+              "not_applicable_when": [
+                "Authorization does not depend on parsed argument structure or values.",
+                "Parser output is reliable and ordinary policy validation can complete.",
+                "The desired contract explicitly permits unrestricted execution despite parse failure and no restrictive rule matched."
+              ],
+              "inputs": [
+                "effect request containing the raw command or argument string",
+                "current approval mode",
+                "matched policy rule and decision, if any",
+                "parser result containing details and an error indicator",
+                "configured fallback/default decision"
+              ],
+              "entry_state": "Automatic approval can return ALLOW after unreliable parsing even though the matched approval rule contains an argument restriction that cannot be validated.",
+              "exit_state": "Unreliable parser output causes DENY for matched argument-restricted approvals, while explicit denials, unrestricted automatic approvals, non-automatic fallback behavior, and successful parsing retain their established semantics.",
+              "steps": [
+                {
+                  "action_name": "deny_restricted_effect_when_validation_parse_is_unreliable",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "Apply when automatic approval is active, parsing yields zero usable details or reports an error, and the matched rule contains an argument restriction.",
+                  "validation": "The empty-details/error and nonempty-details/error regression cases both return DENY; existing default-ALLOW and explicit-DENY YOLO cases remain intact."
+                }
+              ],
+              "edges": [],
+              "validation_ladder": [
+                "Inspect the parent implementation to confirm the bypass: empty parse output returns ALLOW in automatic-approval mode without considering argument restrictions, and nonempty error-bearing output is not classified as failure.",
+                "Verify the implementation predicate recognizes both absent details and the parser error flag, and that the restrictive-rule guard precedes the unrestricted automatic-ALLOW return.",
+                "Run or inspect focused unit cases for empty/error and partial/error parse results under a matched argument-restricted ALLOW rule; each oracle is DENY.",
+                "Run or inspect adjacent policy-engine tests confirming no-match automatic approval remains ALLOW and explicit DENY remains DENY."
+              ],
+              "stop_conditions": [
+                "Stop if the matched policy has no argument restriction; this episode does not justify denying that unrestricted automatic-approval branch.",
+                "Stop if parsing is reliable; continue through the existing detailed policy evaluation instead of applying the failure guard.",
+                "Defer extraction if the parser has no observable reliability signal and no test can force the relevant failure states."
+              ],
+              "unresolved_or_deferred": [
+                "The GitHub bundle does not include PR discussion, reviews, or status-check results.",
+                "No test execution result was available from the inspected checkout state; validation is grounded in the committed unit-test oracles rather than a recorded local test run.",
+                "Behavior for parser failures under other approval modes was intentionally preserved and is not newly characterized beyond the implementation fallback path."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Was the focused policy-engine test suite executed successfully in CI for this commit? The evidence bundle omits status checks and the extraction found no recorded execution result.",
+          "Are there additional parser failure representations beyond empty details and hasError=true that should be treated as unreliable? The inspected change and tests establish only these two representations."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "deny_restricted_effect_when_validation_parse_is_unreliable",
+          "title": "Deny a restricted effect when its arguments cannot be reliably parsed",
+          "description": "At an automatic-approval boundary, classify empty or error-bearing parser output as unreliable and deny an otherwise allowed effect when the matched policy depends on argument-level restrictions that can no longer be validated, while preserving behavior for explicit denials and unrestricted approvals.",
+          "evidence_ids": [
+            "E-BEFORE-EMPTY-PARSE",
+            "E-BEFORE-HASERROR",
+            "E-DIFF-FAIL-CLOSED",
+            "E-CALL-MATCHED-RULE",
+            "E-CALL-NO-RULE",
+            "E-TEST-EMPTY",
+            "E-TEST-PARTIAL",
+            "E-TEST-PRESERVED-YOLO"
+          ],
+          "semantic_action": {
+            "intent": "Prevent an automatic-approval mode from bypassing argument-level policy constraints when effect arguments cannot be parsed reliably.",
+            "module_role": "effect authorization boundary that reconciles parser confidence with matched policy restrictions",
+            "operation": "guard",
+            "pre_state": "An effect request is being evaluated in automatic-approval mode; a matched rule would allow it but carries an argument restriction, and parsing yields either no usable command details or an error-bearing result.",
+            "post_state": "The request is denied whenever argument-restricted authorization cannot be validated from reliable parse output; explicit denials remain denied, while unrestricted automatic approvals remain eligible for ALLOW.",
+            "validation": "Mock both empty/error and nonempty/error parser results for a request matching an argument-restricted ALLOW rule and assert DENY; retain adjacent tests proving default unrestricted YOLO ALLOW and explicit DENY behavior.",
+            "parameters": [
+              "effect request and raw argument string",
+              "automatic-approval mode",
+              "matched policy decision",
+              "optional argument restriction",
+              "parser details",
+              "parser error indicator",
+              "fallback/default decision"
+            ],
+            "evidence_ids": [
+              "E-DIFF-FAIL-CLOSED",
+              "E-CALL-MATCHED-RULE",
+              "E-CALL-NO-RULE",
+              "E-TEST-EMPTY",
+              "E-TEST-PARTIAL",
+              "E-TEST-PRESERVED-YOLO",
+              "E-VALIDATION-ORACLE"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "fail_closed_when_restricted_effect_arguments_cannot_be_validated",
+          "title": "Fail closed when restricted effect arguments cannot be validated",
+          "description": "Harden an automatic effect-approval path by coupling parser reliability to argument-restricted authorization: unreliable parsing blocks only approvals whose safety depends on inspecting parsed arguments, with focused regression coverage for each failure representation and preserved behavior for unrelated policy branches.",
+          "atomic_names": [
+            "deny_restricted_effect_when_validation_parse_is_unreliable"
+          ],
+          "evidence_ids": [
+            "E-COMMIT-25935",
+            "E-BEFORE-EMPTY-PARSE",
+            "E-BEFORE-HASERROR",
+            "E-DIFF-FAIL-CLOSED",
+            "E-CALL-MATCHED-RULE",
+            "E-CALL-NO-RULE",
+            "E-TEST-EMPTY",
+            "E-TEST-PARTIAL",
+            "E-TEST-PRESERVED-YOLO",
+            "E-VALIDATION-ORACLE"
+          ],
+          "workflow_graph": {
+            "goal": "Ensure automatic approval cannot execute an effect under an argument-restricted rule when parser output is insufficient or internally marked erroneous.",
+            "when_to_use": [
+              "An automatic or non-interactive approval path authorizes effects using constraints on parsed arguments.",
+              "The parser can return no details or can return partial details together with an error indicator.",
+              "Proceeding after parse failure would prevent the policy engine from validating the restriction that justified approval."
+            ],
+            "anti_goals": [
+              "Do not convert every parser failure into a blanket denial when no argument-level restriction must be validated.",
+              "Do not override an explicit DENY decision.",
+              "Do not change normal successful-parse evaluation, redirection handling, rule priority, or unrelated heuristic behavior."
+            ],
+            "not_applicable_when": [
+              "Authorization does not depend on parsed argument structure or values.",
+              "Parser output is reliable and ordinary policy validation can complete.",
+              "The desired contract explicitly permits unrestricted execution despite parse failure and no restrictive rule matched."
+            ],
+            "inputs": [
+              "effect request containing the raw command or argument string",
+              "current approval mode",
+              "matched policy rule and decision, if any",
+              "parser result containing details and an error indicator",
+              "configured fallback/default decision"
+            ],
+            "entry_state": "Automatic approval can return ALLOW after unreliable parsing even though the matched approval rule contains an argument restriction that cannot be validated.",
+            "exit_state": "Unreliable parser output causes DENY for matched argument-restricted approvals, while explicit denials, unrestricted automatic approvals, non-automatic fallback behavior, and successful parsing retain their established semantics.",
+            "steps": [
+              {
+                "action_name": "deny_restricted_effect_when_validation_parse_is_unreliable",
+                "role": "implement",
+                "required": true,
+                "depends_on": [],
+                "condition": "Apply when automatic approval is active, parsing yields zero usable details or reports an error, and the matched rule contains an argument restriction.",
+                "validation": "The empty-details/error and nonempty-details/error regression cases both return DENY; existing default-ALLOW and explicit-DENY YOLO cases remain intact."
+              }
+            ],
+            "edges": [],
+            "validation_ladder": [
+              "Inspect the parent implementation to confirm the bypass: empty parse output returns ALLOW in automatic-approval mode without considering argument restrictions, and nonempty error-bearing output is not classified as failure.",
+              "Verify the implementation predicate recognizes both absent details and the parser error flag, and that the restrictive-rule guard precedes the unrestricted automatic-ALLOW return.",
+              "Run or inspect focused unit cases for empty/error and partial/error parse results under a matched argument-restricted ALLOW rule; each oracle is DENY.",
+              "Run or inspect adjacent policy-engine tests confirming no-match automatic approval remains ALLOW and explicit DENY remains DENY."
+            ],
+            "stop_conditions": [
+              "Stop if the matched policy has no argument restriction; this episode does not justify denying that unrestricted automatic-approval branch.",
+              "Stop if parsing is reliable; continue through the existing detailed policy evaluation instead of applying the failure guard.",
+              "Defer extraction if the parser has no observable reliability signal and no test can force the relevant failure states."
+            ],
+            "unresolved_or_deferred": [
+              "The GitHub bundle does not include PR discussion, reviews, or status-check results.",
+              "No test execution result was available from the inspected checkout state; validation is grounded in the committed unit-test oracles rather than a recorded local test run.",
+              "Behavior for parser failures under other approval modes was intentionally preserved and is not newly characterized beyond the implementation fallback path."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Was the focused policy-engine test suite executed successfully in CI for this commit? The evidence bundle omits status checks and the extraction found no recorded execution result.",
+        "Are there additional parser failure representations beyond empty details and hasError=true that should be treated as unreliable? The inspected change and tests establish only these two representations."
+      ]
+    },
+    "call_sites": [
+      "When a shell tool call matches a policy rule, PolicyEngine.check passes the command, derived rule decision, and the matched rule into checkShellCommand, making the rule's argsPattern available to the new guard.",
+      "When no policy rule matches, PolicyEngine.check invokes checkShellCommand with rule undefined; the new argsPattern guard therefore does not alter YOLO's unrestricted no-match ALLOW behavior."
+    ],
+    "tests": [
+      "A unit test mocks parsing of 'echo bypass' to return empty details with hasError=true and verifies that a matching argument-restricted ALLOW rule produces DENY in YOLO mode.",
+      "A unit test mocks parsing of 'echo bypass' to return an echo detail together with hasError=true and verifies that the same argument-restricted ALLOW rule produces DENY in YOLO mode.",
+      "Existing adjacent tests establish that YOLO mode still allows by default when no rule matches and does not override an explicit DENY rule."
+    ]
+  },
+  {
+    "episode_id": "openai__codex__48155__645b683",
+    "title": "Broaden approved-command writes without weakening explicit filesystem denials",
+    "before": "At parent de9e78e3e7caed0fdd75d20ae617faa646dfef3c, the policy layer had no operation for deriving an approved-command policy that granted filesystem-root writes while retaining only explicit denial restrictions. Linux sandbox translation used ordinary writable and unreadable root resolution, rebound every resolved writable root or root alias, and did not recreate the minimal device tree after binding `/`; consequently a broad root bind could shadow standard devices, while extra metadata or alias binds could undo masks or reopen denied symlink targets. Executor capabilities did not describe support for preserving devices or restrictions during Linux root writes.",
+    "after": "At 645b683a9e712ae6d90a364e3cf597466e4146d0, approved commands can derive a restricted policy that writes the filesystem root and non-denied root metadata while preserving explicit path and glob read denials. Unsafe or unresolvable denials cause conservative fallback to the original policy. Linux mount planning inherits metadata writes from a writable root, retains literal denial paths alongside resolved targets, avoids redundant root-alias binds, recreates standard devices after binding `/`, and applies explicit deny masks afterward. Two opt-in capability fields advertise the Linux guarantees without changing legacy false-valued serialization.",
+    "diff": "The commit changes nine Rust files with 780 insertions and 12 deletions. It adds approved-policy derivation and cross-platform materialization tests; adds Linux-specific writable-root and unreadable-root resolution modes; changes bubblewrap mount ordering and root-alias behavior; adds end-to-end tests for standard devices, denied metadata symlink targets, and Windows volume expansion; and adds backward-compatible executor capability fields and serialization tests.",
+    "repository": "openai/codex",
+    "revision": "github-issue-48155",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10",
+      "E11",
+      "E12",
+      "E13",
+      "E14"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "openai/codex",
+      "issue": 48155,
+      "checkout": "/home/chenyujia/tritonToLlvm/codex-agent",
+      "manifest_metadata": {
+        "category": "effect-control-and-isolation",
+        "role": "train_candidate",
+        "case_id": "openai__codex__48155__effect-control-and-isolation",
+        "sample_kind": "verified_substitute",
+        "seed_issue": 42184,
+        "seed_issue_url": "https://github.com/openai/codex/issues/42184",
+        "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+        "resolution_url": "https://github.com/openai/codex/pull/48155",
+        "provenance": {
+          "classification": "verified_substitute",
+          "seed": {
+            "repository": "openai/codex",
+            "issue": 42184,
+            "url": "https://github.com/openai/codex/issues/42184",
+            "table_note": "Windows sandbox root deny still permits reads outside reopened roots"
+          },
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 48155,
+            "url": "https://github.com/openai/codex/pull/48155",
+            "pull_request": 48155,
+            "pull_request_url": "https://github.com/openai/codex/pull/48155"
+          },
+          "commit": {
+            "sha": "645b683a9e712ae6d90a364e3cf597466e4146d0",
+            "subject": "Preserve filesystem denials when preparing approved commands (#48155)",
+            "parents": [
+              "de9e78e3e7caed0fdd75d20ae617faa646dfef3c"
+            ],
+            "body_excerpt": "## Why\n\nApproved commands need broader write access while retaining explicit read denials. On Linux, binding the filesystem root writable can shadow standard devices, and additional root-metadata mounts can reopen denied symlink targets.\n\n## What changed\n\n- Add `FileSystemSandboxPolicy::for_approved_command` to grant root and root-metadata writes while retaining path and glob denials. Keep the original policy when denials cannot be resolved or deny the root.\n- Restore standard devices after Linux writable root binds, then apply explicit deny masks. Avoid redundant root-alias binds and inherit root-metadata writes from the root mount so denied targets stay masked.\n- Preserve literal deny paths alongside resolved targets so Linux can reject denials that cross writable symlinks.\n- Advertise L"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "parent_and_changed_files_recorded",
+            "implementation_diff_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "openai/codex",
+        "issue_number": 48155,
+        "issue": {
+          "number": 48155,
+          "title": "Preserve filesystem denials when preparing approved commands (#48155)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 48155,
+              "title": "Preserve filesystem denials when preparing approved commands (#48155)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tcodex-rs/exec-server-protocol/src/protocol.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/linux-sandbox/src/bwrap.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/linux-sandbox/tests/suite/landlock.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/linux-sandbox/tests/suite/managed_proxy.rs"
+              },
+              {
+                "status_line": "A\tcodex-rs/linux-sandbox/tests/suite/root_metadata_tests.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/mxc-sandbox/src/policy_tests.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/protocol/src/permissions.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/protocol/src/permissions/target.rs"
+              },
+              {
+                "status_line": "A\tcodex-rs/protocol/src/permissions/target_approved_materialization_tests.rs"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "645b683a9e712ae6d90a364e3cf597466e4146d0",
+                "subject": "Preserve filesystem denials when preparing approved commands (#48155)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/codex-agent",
+        "pinned_ref": "645b683a9e712ae6d90a364e3cf597466e4146d0",
+        "resolved_commit": "645b683a9e712ae6d90a364e3cf597466e4146d0",
+        "parent_commit": "de9e78e3e7caed0fdd75d20ae617faa646dfef3c",
+        "commit_show_stat": "commit 645b683a9e712ae6d90a364e3cf597466e4146d0\nAuthor:     viyatb-oai <viyatb@openai.com>\nAuthorDate: Fri Sep 25 17:48:54 2026 +0000\nCommit:     copyberry <copyberry@app.openai.com>\nCommitDate: Fri Sep 25 18:06:57 2026 +0000\n\n    Preserve filesystem denials when preparing approved commands (#48155)\n    \n    ## Why\n    \n    Approved commands need broader write access while retaining explicit read denials. On Linux, binding the filesystem root writable can shadow standard devices, and additional root-metadata mounts can reopen denied symlink targets.\n    \n    ## What changed\n    \n    - Add `FileSystemSandboxPolicy::for_approved_command` to grant root and root-metadata writes while retaining path and glob denials. Keep the original policy when denials cannot be resolved or deny the root.\n    - Restore standard devices after Linux writable root binds, then apply explicit deny masks. Avoid redundant root-alias binds and inherit root-metadata writes from the root mount so denied targets stay masked.\n    - Preserve literal deny paths alongside resolved targets so Linux can reject denials that cross writable symlinks.\n    - Advertise Linux device and approved-root restriction support through two opt-in exec-server capabilities, omitted from serialization when false.\n    \n    ## Testing\n    \n    Add regression coverage for approval policy materialization across Unix, Windows drive, and UNC paths; Windows volume expansion; Linux device access and metadata symlink restrictions; and capability serialization compatibility.\n    \n    GitOrigin-RevId: 40584473da98a15e606bb1a8934308f69528850f\n\n codex-rs/exec-server-protocol/src/protocol.rs      |  44 ++++\n codex-rs/linux-sandbox/src/bwrap.rs                |  86 ++++++-\n codex-rs/linux-sandbox/tests/suite/landlock.rs     |   3 +\n .../linux-sandbox/tests/suite/managed_proxy.rs     |  57 +++++\n .../tests/suite/root_metadata_tests.rs             | 170 ++++++++++++++\n codex-rs/mxc-sandbox/src/policy_tests.rs           |  52 +++++\n codex-rs/protocol/src/permissions.rs               |  63 +++++-\n codex-rs/protocol/src/permissions/target.rs        |  71 ++++++\n .../target_approved_materialization_tests.rs       | 246 +++++++++++++++++++++\n 9 files changed, 780 insertions(+), 12 deletions(-)\n",
+        "changed_files_name_status": "M\tcodex-rs/exec-server-protocol/src/protocol.rs\nM\tcodex-rs/linux-sandbox/src/bwrap.rs\nM\tcodex-rs/linux-sandbox/tests/suite/landlock.rs\nM\tcodex-rs/linux-sandbox/tests/suite/managed_proxy.rs\nA\tcodex-rs/linux-sandbox/tests/suite/root_metadata_tests.rs\nM\tcodex-rs/mxc-sandbox/src/policy_tests.rs\nM\tcodex-rs/protocol/src/permissions.rs\nM\tcodex-rs/protocol/src/permissions/target.rs\nA\tcodex-rs/protocol/src/permissions/target_approved_materialization_tests.rs\n",
+        "linked_issue_numbers": [
+          48155
+        ],
+        "manifest_metadata": {
+          "category": "effect-control-and-isolation",
+          "theme": "approval, sandbox, and effect isolation",
+          "file_sample": [
+            "codex-rs/exec-server-protocol/src/protocol.rs",
+            "codex-rs/linux-sandbox/src/bwrap.rs",
+            "codex-rs/linux-sandbox/tests/suite/landlock.rs",
+            "codex-rs/linux-sandbox/tests/suite/managed_proxy.rs",
+            "codex-rs/linux-sandbox/tests/suite/root_metadata_tests.rs",
+            "codex-rs/mxc-sandbox/src/policy_tests.rs",
+            "codex-rs/protocol/src/permissions.rs",
+            "codex-rs/protocol/src/permissions/target.rs",
+            "codex-rs/protocol/src/permissions/target_approved_materialization_tests.rs"
+          ],
+          "case_id": "openai__codex__48155__effect-control-and-isolation",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_substitute",
+          "seed_issue": 42184,
+          "seed_issue_url": "https://github.com/openai/codex/issues/42184",
+          "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+          "resolution_url": "https://github.com/openai/codex/pull/48155",
+          "source": "agent_core_seven_category_extraction_v2",
+          "provenance": {
+            "classification": "verified_substitute",
+            "seed": {
+              "repository": "openai/codex",
+              "issue": 42184,
+              "url": "https://github.com/openai/codex/issues/42184",
+              "table_note": "Windows sandbox root deny still permits reads outside reopened roots"
+            },
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 48155,
+              "url": "https://github.com/openai/codex/pull/48155",
+              "pull_request": 48155,
+              "pull_request_url": "https://github.com/openai/codex/pull/48155"
+            },
+            "commit": {
+              "sha": "645b683a9e712ae6d90a364e3cf597466e4146d0",
+              "subject": "Preserve filesystem denials when preparing approved commands (#48155)",
+              "parents": [
+                "de9e78e3e7caed0fdd75d20ae617faa646dfef3c"
+              ],
+              "body_excerpt": "## Why\n\nApproved commands need broader write access while retaining explicit read denials. On Linux, binding the filesystem root writable can shadow standard devices, and additional root-metadata mounts can reopen denied symlink targets.\n\n## What changed\n\n- Add `FileSystemSandboxPolicy::for_approved_command` to grant root and root-metadata writes while retaining path and glob denials. Keep the original policy when denials cannot be resolved or deny the root.\n- Restore standard devices after Linux writable root binds, then apply explicit deny masks. Avoid redundant root-alias binds and inherit root-metadata writes from the root mount so denied targets stay masked.\n- Preserve literal deny paths alongside resolved targets so Linux can reject denials that cross writable symlinks.\n- Advertise L"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "parent_and_changed_files_recorded",
+              "implementation_diff_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T10:12:02.358037+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "openai__codex__48155__645b683",
+          "title": "Broaden approved-command writes without weakening explicit filesystem denials",
+          "before": "At parent de9e78e3e7caed0fdd75d20ae617faa646dfef3c, the policy layer had no operation for deriving an approved-command policy that granted filesystem-root writes while retaining only explicit denial restrictions. Linux sandbox translation used ordinary writable and unreadable root resolution, rebound every resolved writable root or root alias, and did not recreate the minimal device tree after binding `/`; consequently a broad root bind could shadow standard devices, while extra metadata or alias binds could undo masks or reopen denied symlink targets. Executor capabilities did not describe support for preserving devices or restrictions during Linux root writes.",
+          "after": "At 645b683a9e712ae6d90a364e3cf597466e4146d0, approved commands can derive a restricted policy that writes the filesystem root and non-denied root metadata while preserving explicit path and glob read denials. Unsafe or unresolvable denials cause conservative fallback to the original policy. Linux mount planning inherits metadata writes from a writable root, retains literal denial paths alongside resolved targets, avoids redundant root-alias binds, recreates standard devices after binding `/`, and applies explicit deny masks afterward. Two opt-in capability fields advertise the Linux guarantees without changing legacy false-valued serialization.",
+          "diff": "The commit changes nine Rust files with 780 insertions and 12 deletions. It adds approved-policy derivation and cross-platform materialization tests; adds Linux-specific writable-root and unreadable-root resolution modes; changes bubblewrap mount ordering and root-alias behavior; adds end-to-end tests for standard devices, denied metadata symlink targets, and Windows volume expansion; and adds backward-compatible executor capability fields and serialization tests."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "The pinned commit has parent de9e78e3e7caed0fdd75d20ae617faa646dfef3c and states that approved commands require broader write access while retaining explicit read denials; it reports 780 insertions and 12 deletions across nine files.",
+            "source": "git show --format=fuller --stat 645b683a9e712ae6d90a364e3cf597466e4146d0"
+          },
+          {
+            "id": "E2",
+            "kind": "implementation",
+            "claim": "The new approved-command transformation starts from a restricted root-write policy, copies deny-read restrictions, materializes project-root references, and adds writes for non-denied protected root metadata.",
+            "source": "git show 645b683a9e712ae6d90a364e3cf597466e4146d0:codex-rs/protocol/src/permissions/target.rs; FileSystemSandboxPolicy::for_approved_command"
+          },
+          {
+            "id": "E3",
+            "kind": "implementation",
+            "claim": "The transformation returns the original policy for non-restricted policies and conservatively falls back when workspace-dependent denials lack roots, materialization or matcher construction fails, the filesystem root cannot be determined, or the root itself is denied or not writable.",
+            "source": "git show 645b683a9e712ae6d90a364e3cf597466e4146d0:codex-rs/protocol/src/permissions/target.rs; FileSystemSandboxPolicy::for_approved_command guard branches"
+          },
+          {
+            "id": "E4",
+            "kind": "diff",
+            "claim": "The parent Linux translator used get_writable_roots_with_cwd and get_unreadable_roots_with_cwd, then unconditionally emitted a bind for every resolved writable mount root.",
+            "source": "git show de9e78e3e7caed0fdd75d20ae617faa646dfef3c:codex-rs/linux-sandbox/src/bwrap.rs; create_filesystem_args around writable/unreadable root collection and writable bind emission"
+          },
+          {
+            "id": "E5",
+            "kind": "implementation",
+            "claim": "Linux writable-root resolution can now omit separate protected-metadata mounts when the filesystem root is writable, preventing a metadata symlink mount from reopening a target beneath an explicit denial.",
+            "source": "git show 645b683a9e712ae6d90a364e3cf597466e4146d0:codex-rs/protocol/src/permissions.rs; RootMetadataWriteMounts and get_writable_roots_with_cwd_inheriting_root_metadata"
+          },
+          {
+            "id": "E6",
+            "kind": "implementation",
+            "claim": "Linux unreadable-root resolution now includes qualifying literal deny paths as well as resolved targets, allowing enforcement to reject traversal through a writable symlink.",
+            "source": "git show 645b683a9e712ae6d90a364e3cf597466e4146d0:codex-rs/protocol/src/permissions.rs; get_unreadable_roots_with_cwd_preserving_symlinks"
+          },
+          {
+            "id": "E7",
+            "kind": "call_site",
+            "claim": "The bubblewrap argument builder consumes the new Linux-specific writable and unreadable root projections, suppresses redundant aliases resolving to `/`, recreates `/dev` and `/dev/shm` after a root bind, and then applies explicit masks.",
+            "source": "git show 645b683a9e712ae6d90a364e3cf597466e4146d0:codex-rs/linux-sandbox/src/bwrap.rs; create_filesystem_args"
+          },
+          {
+            "id": "E8",
+            "kind": "test",
+            "claim": "Policy tests cover Unix, Windows-drive, and UNC contexts; verify root and allowed metadata writes; verify retained path and glob denials; discard unrelated prior grants; and require unchanged-policy fallback for root or unresolvable denials.",
+            "source": "git show 645b683a9e712ae6d90a364e3cf597466e4146d0:codex-rs/protocol/src/permissions/target_approved_materialization_tests.rs"
+          },
+          {
+            "id": "E9",
+            "kind": "test",
+            "claim": "A Linux integration test derives an approved policy, verifies standard device reads and ordinary output writes still work, and verifies reading an explicitly denied file fails with permission denied.",
+            "source": "git show 645b683a9e712ae6d90a364e3cf597466e4146d0:codex-rs/linux-sandbox/tests/suite/managed_proxy.rs; approved_command_with_denied_reads_preserves_standard_devices"
+          },
+          {
+            "id": "E10",
+            "kind": "test",
+            "claim": "A Linux integration test verifies root-metadata symlinks cannot reopen denied targets, allowed metadata writes still work, writable-symlink crossings are rejected, and an explicit nested writable carveout does not expose denied siblings.",
+            "source": "git show 645b683a9e712ae6d90a364e3cf597466e4146d0:codex-rs/linux-sandbox/tests/suite/root_metadata_tests.rs; root_metadata_symlinks_cannot_reopen_approved_denials"
+          },
+          {
+            "id": "E11",
+            "kind": "test",
+            "claim": "A Windows-oriented policy test verifies approved-command volume-root expansion removes former grants, preserves denials, permits volume roots, and retains the intended distinction between denied root metadata and workspace metadata.",
+            "source": "git show 645b683a9e712ae6d90a364e3cf597466e4146d0:codex-rs/mxc-sandbox/src/policy_tests.rs; approved_command_expands_volume_roots_without_retaining_original_grants"
+          },
+          {
+            "id": "E12",
+            "kind": "implementation",
+            "claim": "The executor protocol adds two default-false, false-omitting capability flags and reports both as supported only on Linux.",
+            "source": "git show 645b683a9e712ae6d90a364e3cf597466e4146d0:codex-rs/exec-server-protocol/src/protocol.rs; EnvironmentCapabilities and EnvironmentInfo::local"
+          },
+          {
+            "id": "E13",
+            "kind": "test",
+            "claim": "Capability tests verify false fields are absent from legacy serialization, partial support defaults the other field to false, true-valued fields round-trip, and local values match the target operating system.",
+            "source": "git show 645b683a9e712ae6d90a364e3cf597466e4146d0:codex-rs/exec-server-protocol/src/protocol.rs; linux_approved_root_write_support_is_opt_in_on_the_wire"
+          },
+          {
+            "id": "E14",
+            "kind": "validation",
+            "claim": "The commit supplies unit and integration regression oracles, but the available evidence bundle contains no CI status or recorded test execution result.",
+            "source": "issue-bundle.json limitations and pull_request.metadata_unavailable; pinned commit test changes"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "derive-broadened-policy-with-denial-retention",
+            "title": "Derive a broader approved policy while retaining explicit denials",
+            "description": "Construct the least restrictive approved-command policy needed for broad writes, retain explicit read-denial invariants, discard unrelated old grants, and fail closed to the original policy when denials cannot be safely resolved.",
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E8",
+              "E11"
+            ],
+            "semantic_action": {
+              "intent": "Permit an explicitly approved command to write broadly without allowing it to read paths or globs that the original policy explicitly denied.",
+              "module_role": "filesystem authorization policy transformer",
+              "operation": "reconcile",
+              "pre_state": "A command has a filesystem policy and execution context; approval requires broader writes, while explicit denial entries may contain concrete, workspace-relative, or glob paths.",
+              "post_state": "A restricted root-write policy retains materializable explicit read denials and grants only non-denied protected metadata writes; unsafe or unresolved cases retain the original policy unchanged.",
+              "validation": "Compare resolved access and deny matching across Unix, drive-letter, UNC, project-root, glob, metadata, and multi-volume cases; assert conservative identity fallback for root-level or unresolved denials.",
+              "parameters": [
+                "original filesystem policy",
+                "working directory",
+                "workspace roots",
+                "filesystem root",
+                "protected metadata names",
+                "explicit path denials",
+                "explicit glob denials"
+              ],
+              "evidence_ids": [
+                "E2",
+                "E3",
+                "E8",
+                "E11"
+              ]
+            }
+          },
+          {
+            "name": "compile-root-write-policy-with-isolated-denials",
+            "title": "Compile broad root writes without reopening denied effects",
+            "description": "Translate the broadened policy into mount operations whose ordering preserves standard devices and prevents aliases, metadata symlinks, or resolved-path handling from bypassing explicit denial masks.",
+            "evidence_ids": [
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E9",
+              "E10"
+            ],
+            "semantic_action": {
+              "intent": "Execute a broad-write policy while keeping standard operating-system devices usable and explicit denial boundaries effective through symlinks and mount aliases.",
+              "module_role": "platform sandbox mount-plan compiler",
+              "operation": "isolate",
+              "pre_state": "The sandbox receives a policy containing a writable filesystem root plus explicit denied carveouts; aliases or protected metadata entries may resolve into the root or denied subtrees.",
+              "post_state": "The root is writable, the minimal device tree is restored, redundant root aliases and metadata remounts do not undo masks, literal and resolved denial paths are enforced, and only explicit nested writable carveouts reopen access.",
+              "validation": "Inspect mount-plan ordering and run sandboxed commands that access standard devices, write allowed outputs and metadata, fail on denied reads, reject writable-symlink crossings, and keep denied sibling paths inaccessible.",
+              "parameters": [
+                "approved filesystem policy",
+                "writable roots",
+                "literal denial paths",
+                "resolved denial targets",
+                "root aliases",
+                "protected metadata paths",
+                "standard device mounts"
+              ],
+              "evidence_ids": [
+                "E4",
+                "E5",
+                "E6",
+                "E7",
+                "E9",
+                "E10"
+              ]
+            }
+          },
+          {
+            "name": "advertise-opt-in-isolation-guarantees",
+            "title": "Advertise isolation guarantees without breaking legacy peers",
+            "description": "Expose independently detectable support for root-write device preservation and approved-root restriction preservation, with false values omitted for wire compatibility.",
+            "evidence_ids": [
+              "E12",
+              "E13"
+            ],
+            "semantic_action": {
+              "intent": "Let clients select broad-root behavior only when the executor declares the required safety guarantees.",
+              "module_role": "execution capability contract",
+              "operation": "adapt",
+              "pre_state": "Clients cannot distinguish executors that safely preserve devices and denial restrictions during Linux root writes from executors lacking those guarantees.",
+              "post_state": "Executors expose two independent opt-in guarantees; absent fields deserialize as false and false values remain absent from legacy-compatible serialization.",
+              "validation": "Serialize default, partial, and full capability values; deserialize each supported form; and compare locally advertised values with the target platform.",
+              "parameters": [
+                "device-preservation support",
+                "approved-root restriction-preservation support",
+                "executor platform",
+                "serialized capability document"
+              ],
+              "evidence_ids": [
+                "E12",
+                "E13"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "broaden-approved-effects-with-explicit-denial-isolation",
+            "title": "Broaden approved filesystem effects while preserving denial boundaries",
+            "description": "A partial-order workflow for granting broad write effects to an approved command without inheriting unrelated grants or allowing mount translation, devices, aliases, or metadata symlinks to weaken explicit read denials.",
+            "atomic_names": [
+              "derive-broadened-policy-with-denial-retention",
+              "compile-root-write-policy-with-isolated-denials",
+              "advertise-opt-in-isolation-guarantees"
+            ],
+            "evidence_ids": [
+              "E1",
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E10",
+              "E11",
+              "E12",
+              "E13",
+              "E14"
+            ],
+            "workflow_graph": {
+              "goal": "Run an approved command with broad filesystem write authority while preserving every enforceable explicit read denial and making the platform guarantee discoverable to clients.",
+              "when_to_use": [
+                "An approval transition must broaden a restricted command from scoped writes to filesystem-root or volume-root writes.",
+                "The sandbox represents explicit denied paths or globs that must survive the approval transition.",
+                "The platform implements broad access through bind mounts, volume expansion, or comparable remapping that can shadow devices or reopen aliased targets."
+              ],
+              "anti_goals": [
+                "Do not retain unrelated read or write grants from the pre-approval policy.",
+                "Do not silently drop, weaken, or reinterpret an explicit denial to make broad approval succeed.",
+                "Do not bind aliases or protected metadata paths redundantly when doing so can undo an already-applied denial mask.",
+                "Do not advertise a safety guarantee on platforms or executors that do not implement it."
+              ],
+              "not_applicable_when": [
+                "Approval does not broaden filesystem effects.",
+                "The policy has no restricted-mode transformation or no explicit denial semantics to preserve.",
+                "The execution backend does not remap roots, volumes, aliases, or device trees and cannot exhibit the documented reopening or shadowing failure modes.",
+                "Required denials are intentionally revoked by a separately authorized policy decision rather than preserved through approval."
+              ],
+              "inputs": [
+                "original restricted filesystem policy",
+                "approval decision",
+                "working directory and workspace roots",
+                "platform root or volume model",
+                "explicit path and glob denials",
+                "sandbox mount or remapping backend",
+                "executor capability document"
+              ],
+              "entry_state": "The command's current policy limits writes and may explicitly deny reads; approval requires broader writes, but no safe broadened policy or advertised execution guarantee has yet been established.",
+              "exit_state": "The approved command can perform intended broad writes and use required standard devices, explicit denials remain effective through aliases and metadata symlinks, unsafe transformations fall back instead of widening access, and compatible clients can detect the implemented guarantee.",
+              "steps": [
+                {
+                  "action_name": "derive-broadened-policy-with-denial-retention",
+                  "role": "establish-contract",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "Run when approval requires broader filesystem writes under a restricted policy.",
+                  "validation": "Policy-level tests prove retained path and glob denials, removed unrelated grants, allowed root and metadata writes, cross-platform root materialization, and unchanged-policy fallback for unsafe inputs."
+                },
+                {
+                  "action_name": "compile-root-write-policy-with-isolated-denials",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [
+                    "derive-broadened-policy-with-denial-retention"
+                  ],
+                  "condition": "Run for a backend whose root, volume, alias, metadata, or device remapping can change the effective policy.",
+                  "validation": "Mount-plan and integration tests prove device restoration occurs after the root bind and before explicit masks, aliases do not rebind the root, metadata symlinks cannot reopen denied targets, and explicit carveouts behave narrowly."
+                },
+                {
+                  "action_name": "advertise-opt-in-isolation-guarantees",
+                  "role": "reconcile",
+                  "required": true,
+                  "depends_on": [
+                    "compile-root-write-policy-with-isolated-denials"
+                  ],
+                  "condition": "Run when clients or remote peers choose behavior based on executor support.",
+                  "validation": "Wire tests prove default omission, false-on-absence compatibility, independent partial support, full round-trip behavior, and platform-correct local advertisement."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "derive-broadened-policy-with-denial-retention",
+                  "to": "compile-root-write-policy-with-isolated-denials",
+                  "type": "enables"
+                },
+                {
+                  "from": "compile-root-write-policy-with-isolated-denials",
+                  "to": "advertise-opt-in-isolation-guarantees",
+                  "type": "enables"
+                },
+                {
+                  "from": "advertise-opt-in-isolation-guarantees",
+                  "to": "compile-root-write-policy-with-isolated-denials",
+                  "type": "validates"
+                }
+              ],
+              "validation_ladder": [
+                "Policy transformation: assert exact approved entries, resolved access, deny matching, removal of prior grants, and fail-closed fallback.",
+                "Platform projection: assert writable roots, protected-metadata handling, literal denial retention, volume expansion, alias suppression, and mount ordering.",
+                "Sandbox integration: execute device reads, allowed writes, denied reads, metadata-symlink attempts, writable-symlink crossings, and narrow nested carveouts.",
+                "Protocol compatibility: verify absent, partial, and full capability serialization and platform-specific advertisement.",
+                "Run the relevant Rust unit and Linux integration test targets in an environment with bubblewrap/user-namespace support; the bundle does not provide an execution result."
+              ],
+              "stop_conditions": [
+                "Stop and keep the original policy if a workspace-relative denial lacks workspace roots, denial materialization or matching fails, the filesystem root cannot be identified, or the root is explicitly denied.",
+                "Stop promotion if broad root writes can shadow required devices or any alias or metadata mount can reopen a denied target.",
+                "Stop capability advertisement unless the corresponding device and denial-preservation behaviors are implemented and validated.",
+                "Defer execution-level confirmation when the host cannot run bubblewrap or create the required user namespace."
+              ],
+              "unresolved_or_deferred": [
+                "The evidence bundle has no CI status, review record, or recorded test-run result; validation is grounded in added test oracles rather than observed execution.",
+                "The pinned change introduces and directly tests approved-policy derivation, but the inspected evidence does not establish a non-test production caller that invokes the new transformation.",
+                "Client-side consumption of the two new capability fields is outside this commit and remains deferred."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Were the added Rust unit and Linux bubblewrap integration tests executed successfully for the pinned commit? The supplied GitHub bundle omits status checks.",
+          "Which production approval path is intended to invoke the new approved-command policy transformation? The pinned change demonstrates direct test call sites but does not establish that integration.",
+          "Which clients consume the new executor capability flags, and what fallback behavior do they use when the fields are absent?"
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "derive-broadened-policy-with-denial-retention",
+          "title": "Derive a broader approved policy while retaining explicit denials",
+          "description": "Construct the least restrictive approved-command policy needed for broad writes, retain explicit read-denial invariants, discard unrelated old grants, and fail closed to the original policy when denials cannot be safely resolved.",
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E8",
+            "E11"
+          ],
+          "semantic_action": {
+            "intent": "Permit an explicitly approved command to write broadly without allowing it to read paths or globs that the original policy explicitly denied.",
+            "module_role": "filesystem authorization policy transformer",
+            "operation": "reconcile",
+            "pre_state": "A command has a filesystem policy and execution context; approval requires broader writes, while explicit denial entries may contain concrete, workspace-relative, or glob paths.",
+            "post_state": "A restricted root-write policy retains materializable explicit read denials and grants only non-denied protected metadata writes; unsafe or unresolved cases retain the original policy unchanged.",
+            "validation": "Compare resolved access and deny matching across Unix, drive-letter, UNC, project-root, glob, metadata, and multi-volume cases; assert conservative identity fallback for root-level or unresolved denials.",
+            "parameters": [
+              "original filesystem policy",
+              "working directory",
+              "workspace roots",
+              "filesystem root",
+              "protected metadata names",
+              "explicit path denials",
+              "explicit glob denials"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E8",
+              "E11"
+            ]
+          }
+        },
+        {
+          "name": "compile-root-write-policy-with-isolated-denials",
+          "title": "Compile broad root writes without reopening denied effects",
+          "description": "Translate the broadened policy into mount operations whose ordering preserves standard devices and prevents aliases, metadata symlinks, or resolved-path handling from bypassing explicit denial masks.",
+          "evidence_ids": [
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E9",
+            "E10"
+          ],
+          "semantic_action": {
+            "intent": "Execute a broad-write policy while keeping standard operating-system devices usable and explicit denial boundaries effective through symlinks and mount aliases.",
+            "module_role": "platform sandbox mount-plan compiler",
+            "operation": "isolate",
+            "pre_state": "The sandbox receives a policy containing a writable filesystem root plus explicit denied carveouts; aliases or protected metadata entries may resolve into the root or denied subtrees.",
+            "post_state": "The root is writable, the minimal device tree is restored, redundant root aliases and metadata remounts do not undo masks, literal and resolved denial paths are enforced, and only explicit nested writable carveouts reopen access.",
+            "validation": "Inspect mount-plan ordering and run sandboxed commands that access standard devices, write allowed outputs and metadata, fail on denied reads, reject writable-symlink crossings, and keep denied sibling paths inaccessible.",
+            "parameters": [
+              "approved filesystem policy",
+              "writable roots",
+              "literal denial paths",
+              "resolved denial targets",
+              "root aliases",
+              "protected metadata paths",
+              "standard device mounts"
+            ],
+            "evidence_ids": [
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E9",
+              "E10"
+            ]
+          }
+        },
+        {
+          "name": "advertise-opt-in-isolation-guarantees",
+          "title": "Advertise isolation guarantees without breaking legacy peers",
+          "description": "Expose independently detectable support for root-write device preservation and approved-root restriction preservation, with false values omitted for wire compatibility.",
+          "evidence_ids": [
+            "E12",
+            "E13"
+          ],
+          "semantic_action": {
+            "intent": "Let clients select broad-root behavior only when the executor declares the required safety guarantees.",
+            "module_role": "execution capability contract",
+            "operation": "adapt",
+            "pre_state": "Clients cannot distinguish executors that safely preserve devices and denial restrictions during Linux root writes from executors lacking those guarantees.",
+            "post_state": "Executors expose two independent opt-in guarantees; absent fields deserialize as false and false values remain absent from legacy-compatible serialization.",
+            "validation": "Serialize default, partial, and full capability values; deserialize each supported form; and compare locally advertised values with the target platform.",
+            "parameters": [
+              "device-preservation support",
+              "approved-root restriction-preservation support",
+              "executor platform",
+              "serialized capability document"
+            ],
+            "evidence_ids": [
+              "E12",
+              "E13"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "broaden-approved-effects-with-explicit-denial-isolation",
+          "title": "Broaden approved filesystem effects while preserving denial boundaries",
+          "description": "A partial-order workflow for granting broad write effects to an approved command without inheriting unrelated grants or allowing mount translation, devices, aliases, or metadata symlinks to weaken explicit read denials.",
+          "atomic_names": [
+            "derive-broadened-policy-with-denial-retention",
+            "compile-root-write-policy-with-isolated-denials",
+            "advertise-opt-in-isolation-guarantees"
+          ],
+          "evidence_ids": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10",
+            "E11",
+            "E12",
+            "E13",
+            "E14"
+          ],
+          "workflow_graph": {
+            "goal": "Run an approved command with broad filesystem write authority while preserving every enforceable explicit read denial and making the platform guarantee discoverable to clients.",
+            "when_to_use": [
+              "An approval transition must broaden a restricted command from scoped writes to filesystem-root or volume-root writes.",
+              "The sandbox represents explicit denied paths or globs that must survive the approval transition.",
+              "The platform implements broad access through bind mounts, volume expansion, or comparable remapping that can shadow devices or reopen aliased targets."
+            ],
+            "anti_goals": [
+              "Do not retain unrelated read or write grants from the pre-approval policy.",
+              "Do not silently drop, weaken, or reinterpret an explicit denial to make broad approval succeed.",
+              "Do not bind aliases or protected metadata paths redundantly when doing so can undo an already-applied denial mask.",
+              "Do not advertise a safety guarantee on platforms or executors that do not implement it."
+            ],
+            "not_applicable_when": [
+              "Approval does not broaden filesystem effects.",
+              "The policy has no restricted-mode transformation or no explicit denial semantics to preserve.",
+              "The execution backend does not remap roots, volumes, aliases, or device trees and cannot exhibit the documented reopening or shadowing failure modes.",
+              "Required denials are intentionally revoked by a separately authorized policy decision rather than preserved through approval."
+            ],
+            "inputs": [
+              "original restricted filesystem policy",
+              "approval decision",
+              "working directory and workspace roots",
+              "platform root or volume model",
+              "explicit path and glob denials",
+              "sandbox mount or remapping backend",
+              "executor capability document"
+            ],
+            "entry_state": "The command's current policy limits writes and may explicitly deny reads; approval requires broader writes, but no safe broadened policy or advertised execution guarantee has yet been established.",
+            "exit_state": "The approved command can perform intended broad writes and use required standard devices, explicit denials remain effective through aliases and metadata symlinks, unsafe transformations fall back instead of widening access, and compatible clients can detect the implemented guarantee.",
+            "steps": [
+              {
+                "action_name": "derive-broadened-policy-with-denial-retention",
+                "role": "establish-contract",
+                "required": true,
+                "depends_on": [],
+                "condition": "Run when approval requires broader filesystem writes under a restricted policy.",
+                "validation": "Policy-level tests prove retained path and glob denials, removed unrelated grants, allowed root and metadata writes, cross-platform root materialization, and unchanged-policy fallback for unsafe inputs."
+              },
+              {
+                "action_name": "compile-root-write-policy-with-isolated-denials",
+                "role": "implement",
+                "required": true,
+                "depends_on": [
+                  "derive-broadened-policy-with-denial-retention"
+                ],
+                "condition": "Run for a backend whose root, volume, alias, metadata, or device remapping can change the effective policy.",
+                "validation": "Mount-plan and integration tests prove device restoration occurs after the root bind and before explicit masks, aliases do not rebind the root, metadata symlinks cannot reopen denied targets, and explicit carveouts behave narrowly."
+              },
+              {
+                "action_name": "advertise-opt-in-isolation-guarantees",
+                "role": "reconcile",
+                "required": true,
+                "depends_on": [
+                  "compile-root-write-policy-with-isolated-denials"
+                ],
+                "condition": "Run when clients or remote peers choose behavior based on executor support.",
+                "validation": "Wire tests prove default omission, false-on-absence compatibility, independent partial support, full round-trip behavior, and platform-correct local advertisement."
+              }
+            ],
+            "edges": [
+              {
+                "from": "derive-broadened-policy-with-denial-retention",
+                "to": "compile-root-write-policy-with-isolated-denials",
+                "type": "enables"
+              },
+              {
+                "from": "compile-root-write-policy-with-isolated-denials",
+                "to": "advertise-opt-in-isolation-guarantees",
+                "type": "enables"
+              },
+              {
+                "from": "advertise-opt-in-isolation-guarantees",
+                "to": "compile-root-write-policy-with-isolated-denials",
+                "type": "validates"
+              }
+            ],
+            "validation_ladder": [
+              "Policy transformation: assert exact approved entries, resolved access, deny matching, removal of prior grants, and fail-closed fallback.",
+              "Platform projection: assert writable roots, protected-metadata handling, literal denial retention, volume expansion, alias suppression, and mount ordering.",
+              "Sandbox integration: execute device reads, allowed writes, denied reads, metadata-symlink attempts, writable-symlink crossings, and narrow nested carveouts.",
+              "Protocol compatibility: verify absent, partial, and full capability serialization and platform-specific advertisement.",
+              "Run the relevant Rust unit and Linux integration test targets in an environment with bubblewrap/user-namespace support; the bundle does not provide an execution result."
+            ],
+            "stop_conditions": [
+              "Stop and keep the original policy if a workspace-relative denial lacks workspace roots, denial materialization or matching fails, the filesystem root cannot be identified, or the root is explicitly denied.",
+              "Stop promotion if broad root writes can shadow required devices or any alias or metadata mount can reopen a denied target.",
+              "Stop capability advertisement unless the corresponding device and denial-preservation behaviors are implemented and validated.",
+              "Defer execution-level confirmation when the host cannot run bubblewrap or create the required user namespace."
+            ],
+            "unresolved_or_deferred": [
+              "The evidence bundle has no CI status, review record, or recorded test-run result; validation is grounded in added test oracles rather than observed execution.",
+              "The pinned change introduces and directly tests approved-policy derivation, but the inspected evidence does not establish a non-test production caller that invokes the new transformation.",
+              "Client-side consumption of the two new capability fields is outside this commit and remains deferred."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Were the added Rust unit and Linux bubblewrap integration tests executed successfully for the pinned commit? The supplied GitHub bundle omits status checks.",
+        "Which production approval path is intended to invoke the new approved-command policy transformation? The pinned change demonstrates direct test call sites but does not establish that integration.",
+        "Which clients consume the new executor capability flags, and what fallback behavior do they use when the fields are absent?"
+      ]
+    },
+    "call_sites": [
+      "The bubblewrap argument builder consumes the new Linux-specific writable and unreadable root projections, suppresses redundant aliases resolving to `/`, recreates `/dev` and `/dev/shm` after a root bind, and then applies explicit masks."
+    ],
+    "tests": [
+      "Policy tests cover Unix, Windows-drive, and UNC contexts; verify root and allowed metadata writes; verify retained path and glob denials; discard unrelated prior grants; and require unchanged-policy fallback for root or unresolvable denials.",
+      "A Linux integration test derives an approved policy, verifies standard device reads and ordinary output writes still work, and verifies reading an explicitly denied file fails with permission denied.",
+      "A Linux integration test verifies root-metadata symlinks cannot reopen denied targets, allowed metadata writes still work, writable-symlink crossings are rejected, and an explicit nested writable carveout does not expose denied siblings.",
+      "A Windows-oriented policy test verifies approved-command volume-root expansion removes former grants, preserves denials, permits volume roots, and retains the intended distinction between denied root metadata and workspace metadata.",
+      "Capability tests verify false fields are absent from legacy serialization, partial support defaults the other field to false, true-valued fields round-trip, and local values match the target operating system."
+    ]
+  }
+]

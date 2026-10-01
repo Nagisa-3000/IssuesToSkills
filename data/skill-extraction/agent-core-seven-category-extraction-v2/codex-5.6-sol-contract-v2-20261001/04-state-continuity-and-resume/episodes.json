@@ -1,0 +1,3144 @@
+[
+  {
+    "episode_id": "Aider-AI__aider__591__45b2ba8a",
+    "title": "Restore persisted conversation state when starting a new session",
+    "before": "At parent 1098b428e6e118be2e4ebb49a3dd2b14ae79e50e, the application appended conversations to a Markdown history file, but Coder initialization always began with an empty done_messages list unless messages were explicitly supplied by a caller. The persisted history was therefore not reloaded on launch. ChatSummary always used the model's fixed history-token setting, and summarization sent the entire selected head to the weak model without first constraining it to that model's input context.",
+    "after": "At merge commit 45b2ba8a1056bb27f197b01d08f3ea0d4d92b668, startup can read the configured Markdown history file when no completed-message state was supplied, reconstruct user and assistant messages while excluding session headings, tool output, commands, and blank prompts, and start background compaction when the restored state exceeds its token budget. The budget may be overridden through a command-line option and otherwise inherits the model setting. Head summarization is additionally limited to the most recent messages that fit within the summarizer model's input context, and startup announcements report successful restoration.",
+    "diff": "Relative to first parent 1098b428e6e118be2e4ebb49a3dd2b14ae79e50e, the implementation changes four files with 68 insertions and 29 deletions: it extracts Markdown-to-message reconstruction into ChatSummary; loads and conditionally compacts persisted history during Coder initialization; adds and propagates a maximum-history-token override; reports restored state in announcements; and bounds the input selected for a summarization request. No automated test file was changed or added.",
+    "repository": "Aider-AI/aider",
+    "revision": "github-issue-591",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10",
+      "E11",
+      "E12",
+      "E13"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "Aider-AI/aider",
+      "issue": 591,
+      "checkout": "/home/chenyujia/tritonToLlvm/aider-agent",
+      "manifest_metadata": {
+        "category": "state-continuity-and-resume",
+        "role": "train_candidate",
+        "case_id": "Aider-AI__aider__591__state-continuity-and-resume",
+        "sample_kind": "verified_substitute",
+        "seed_issue": 2979,
+        "seed_issue_url": "https://github.com/Aider-AI/aider/issues/2979",
+        "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+        "resolution_url": "https://github.com/Aider-AI/aider/pull/591",
+        "provenance": {
+          "classification": "verified_substitute",
+          "seed": {
+            "repository": "Aider-AI/aider",
+            "issue": 2979,
+            "url": "https://github.com/Aider-AI/aider/issues/2979",
+            "table_note": "restoring chat history fails during history summarization"
+          },
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 591,
+            "url": "https://github.com/Aider-AI/aider/pull/591",
+            "pull_request": 591,
+            "pull_request_url": "https://github.com/Aider-AI/aider/pull/591"
+          },
+          "commit": {
+            "sha": "45b2ba8a1056bb27f197b01d08f3ea0d4d92b668",
+            "subject": "Merge pull request #591 from paul-gauthier/restore-chat-history",
+            "parents": [
+              "1098b428e6e118be2e4ebb49a3dd2b14ae79e50e",
+              "e61857ef09db263ee8de89ac2cb16e1bb3ffa36e"
+            ],
+            "body_excerpt": "Restore prior chat history on launch"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "parent_and_changed_files_recorded",
+            "implementation_diff_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "Aider-AI/aider",
+        "issue_number": 591,
+        "issue": {
+          "number": 591,
+          "title": "Merge pull request #591 from paul-gauthier/restore-chat-history",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 591,
+              "title": "Merge pull request #591 from paul-gauthier/restore-chat-history",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\taider/args.py"
+              },
+              {
+                "status_line": "M\taider/coders/base_coder.py"
+              },
+              {
+                "status_line": "M\taider/history.py"
+              },
+              {
+                "status_line": "M\taider/main.py"
+              },
+              {
+                "status_line": "M\tHISTORY.md"
+              },
+              {
+                "status_line": "M\tREADME.md"
+              },
+              {
+                "status_line": "D\t_data/edit_leaderboard.csv"
+              },
+              {
+                "status_line": "A\t_data/edit_leaderboard.yml"
+              },
+              {
+                "status_line": "D\t_data/refactor_leaderboard.csv"
+              },
+              {
+                "status_line": "A\t_data/refactor_leaderboard.yml"
+              },
+              {
+                "status_line": "M\t_layouts/default.html"
+              },
+              {
+                "status_line": "M\t_posts/2024-03-08-claude-3.md"
+              },
+              {
+                "status_line": "M\t_posts/2024-04-09-gpt-4-turbo.md"
+              },
+              {
+                "status_line": "M\taider/__init__.py"
+              },
+              {
+                "status_line": "M\taider/args.py"
+              },
+              {
+                "status_line": "M\taider/coders/base_coder.py"
+              },
+              {
+                "status_line": "M\taider/coders/base_prompts.py"
+              },
+              {
+                "status_line": "M\taider/coders/editblock_prompts.py"
+              },
+              {
+                "status_line": "M\taider/coders/udiff_prompts.py"
+              },
+              {
+                "status_line": "M\taider/coders/wholefile_prompts.py"
+              },
+              {
+                "status_line": "M\taider/commands.py"
+              },
+              {
+                "status_line": "A\taider/litellm.py"
+              },
+              {
+                "status_line": "M\taider/main.py"
+              },
+              {
+                "status_line": "M\taider/models.py"
+              },
+              {
+                "status_line": "M\taider/prompts.py"
+              },
+              {
+                "status_line": "M\taider/repomap.py"
+              },
+              {
+                "status_line": "M\taider/sendchat.py"
+              },
+              {
+                "status_line": "M\taider/versioncheck.py"
+              },
+              {
+                "status_line": "M\taider/voice.py"
+              },
+              {
+                "status_line": "A\tassets/2024-03-07-claude-3.jpg"
+              },
+              {
+                "status_line": "A\tassets/2024-04-09-gpt-4-turbo-laziness.jpg"
+              },
+              {
+                "status_line": "A\tassets/2024-04-09-gpt-4-turbo.jpg"
+              },
+              {
+                "status_line": "A\tassets/benchmarks-0125.jpg"
+              },
+              {
+                "status_line": "A\tassets/benchmarks-1106.jpg"
+              },
+              {
+                "status_line": "A\tassets/benchmarks-speed-1106.jpg"
+              },
+              {
+                "status_line": "A\tassets/benchmarks-udiff.jpg"
+              },
+              {
+                "status_line": "A\tassets/benchmarks.jpg"
+              },
+              {
+                "status_line": "A\tassets/leaderboard.jpg"
+              },
+              {
+                "status_line": "M\tbenchmark/benchmark.py"
+              },
+              {
+                "status_line": "A\tbenchmark/plots.py"
+              },
+              {
+                "status_line": "M\tdocs/benchmarks-0125.md"
+              },
+              {
+                "status_line": "M\tdocs/benchmarks-1106.md"
+              },
+              {
+                "status_line": "M\tdocs/benchmarks-speed-1106.md"
+              },
+              {
+                "status_line": "M\tdocs/benchmarks.md"
+              },
+              {
+                "status_line": "M\tdocs/leaderboards/index.md"
+              },
+              {
+                "status_line": "M\tdocs/llms.md"
+              },
+              {
+                "status_line": "M\tdocs/unified-diffs.md"
+              },
+              {
+                "status_line": "M\trequirements.txt"
+              },
+              {
+                "status_line": "M\ttests/test_sendchat.py"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "45b2ba8a1056bb27f197b01d08f3ea0d4d92b668",
+                "subject": "Merge pull request #591 from paul-gauthier/restore-chat-history"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/aider-agent",
+        "pinned_ref": "45b2ba8a1056bb27f197b01d08f3ea0d4d92b668",
+        "resolved_commit": "45b2ba8a1056bb27f197b01d08f3ea0d4d92b668",
+        "parent_commit": "1098b428e6e118be2e4ebb49a3dd2b14ae79e50e",
+        "commit_show_stat": "commit 45b2ba8a1056bb27f197b01d08f3ea0d4d92b668\nMerge: 1098b428 e61857ef\nAuthor:     paul-gauthier <69695708+paul-gauthier@users.noreply.github.com>\nAuthorDate: Sat May 11 07:49:43 2024 -0700\nCommit:     GitHub <noreply@github.com>\nCommitDate: Sat May 11 07:49:43 2024 -0700\n\n    Merge pull request #591 from paul-gauthier/restore-chat-history\n    \n    Restore prior chat history on launch\n\n aider/args.py              |  6 ++++\n aider/coders/base_coder.py | 14 ++++++++-\n aider/history.py           | 76 +++++++++++++++++++++++++++++-----------------\n aider/main.py              |  1 +\n 4 files changed, 68 insertions(+), 29 deletions(-)\n",
+        "changed_files_name_status": "M\taider/args.py\nM\taider/coders/base_coder.py\nM\taider/history.py\nM\taider/main.py\nM\tHISTORY.md\nM\tREADME.md\nD\t_data/edit_leaderboard.csv\nA\t_data/edit_leaderboard.yml\nD\t_data/refactor_leaderboard.csv\nA\t_data/refactor_leaderboard.yml\nM\t_layouts/default.html\nM\t_posts/2024-03-08-claude-3.md\nM\t_posts/2024-04-09-gpt-4-turbo.md\nM\taider/__init__.py\nM\taider/args.py\nM\taider/coders/base_coder.py\nM\taider/coders/base_prompts.py\nM\taider/coders/editblock_prompts.py\nM\taider/coders/udiff_prompts.py\nM\taider/coders/wholefile_prompts.py\nM\taider/commands.py\nA\taider/litellm.py\nM\taider/main.py\nM\taider/models.py\nM\taider/prompts.py\nM\taider/repomap.py\nM\taider/sendchat.py\nM\taider/versioncheck.py\nM\taider/voice.py\nA\tassets/2024-03-07-claude-3.jpg\nA\tassets/2024-04-09-gpt-4-turbo-laziness.jpg\nA\tassets/2024-04-09-gpt-4-turbo.jpg\nA\tassets/benchmarks-0125.jpg\nA\tassets/benchmarks-1106.jpg\nA\tassets/benchmarks-speed-1106.jpg\nA\tassets/benchmarks-udiff.jpg\nA\tassets/benchmarks.jpg\nA\tassets/leaderboard.jpg\nM\tbenchmark/benchmark.py\nA\tbenchmark/plots.py\nM\tdocs/benchmarks-0125.md\nM\tdocs/benchmarks-1106.md\nM\tdocs/benchmarks-speed-1106.md\nM\tdocs/benchmarks.md\nM\tdocs/leaderboards/index.md\nM\tdocs/llms.md\nM\tdocs/unified-diffs.md\nM\trequirements.txt\nM\ttests/test_sendchat.py\n",
+        "linked_issue_numbers": [
+          591
+        ],
+        "manifest_metadata": {
+          "category": "state-continuity-and-resume",
+          "theme": "state continuity and resume",
+          "file_sample": [
+            "aider/args.py",
+            "aider/coders/base_coder.py",
+            "aider/history.py",
+            "aider/main.py"
+          ],
+          "case_id": "Aider-AI__aider__591__state-continuity-and-resume",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_substitute",
+          "seed_issue": 2979,
+          "seed_issue_url": "https://github.com/Aider-AI/aider/issues/2979",
+          "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+          "resolution_url": "https://github.com/Aider-AI/aider/pull/591",
+          "source": "agent_core_seven_category_extraction_v2",
+          "provenance": {
+            "classification": "verified_substitute",
+            "seed": {
+              "repository": "Aider-AI/aider",
+              "issue": 2979,
+              "url": "https://github.com/Aider-AI/aider/issues/2979",
+              "table_note": "restoring chat history fails during history summarization"
+            },
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 591,
+              "url": "https://github.com/Aider-AI/aider/pull/591",
+              "pull_request": 591,
+              "pull_request_url": "https://github.com/Aider-AI/aider/pull/591"
+            },
+            "commit": {
+              "sha": "45b2ba8a1056bb27f197b01d08f3ea0d4d92b668",
+              "subject": "Merge pull request #591 from paul-gauthier/restore-chat-history",
+              "parents": [
+                "1098b428e6e118be2e4ebb49a3dd2b14ae79e50e",
+                "e61857ef09db263ee8de89ac2cb16e1bb3ffa36e"
+              ],
+              "body_excerpt": "Restore prior chat history on launch"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "parent_and_changed_files_recorded",
+              "implementation_diff_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T09:56:51.002708+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "Aider-AI__aider__591__45b2ba8a",
+          "title": "Restore persisted conversation state when starting a new session",
+          "before": "At parent 1098b428e6e118be2e4ebb49a3dd2b14ae79e50e, the application appended conversations to a Markdown history file, but Coder initialization always began with an empty done_messages list unless messages were explicitly supplied by a caller. The persisted history was therefore not reloaded on launch. ChatSummary always used the model's fixed history-token setting, and summarization sent the entire selected head to the weak model without first constraining it to that model's input context.",
+          "after": "At merge commit 45b2ba8a1056bb27f197b01d08f3ea0d4d92b668, startup can read the configured Markdown history file when no completed-message state was supplied, reconstruct user and assistant messages while excluding session headings, tool output, commands, and blank prompts, and start background compaction when the restored state exceeds its token budget. The budget may be overridden through a command-line option and otherwise inherits the model setting. Head summarization is additionally limited to the most recent messages that fit within the summarizer model's input context, and startup announcements report successful restoration.",
+          "diff": "Relative to first parent 1098b428e6e118be2e4ebb49a3dd2b14ae79e50e, the implementation changes four files with 68 insertions and 29 deletions: it extracts Markdown-to-message reconstruction into ChatSummary; loads and conditionally compacts persisted history during Coder initialization; adds and propagates a maximum-history-token override; reports restored state in announcements; and bounds the input selected for a summarization request. No automated test file was changed or added."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "Pinned ref 45b2ba8a1056bb27f197b01d08f3ea0d4d92b668 is a merge commit for pull request 591, titled \"Restore prior chat history on launch\", with first parent 1098b428e6e118be2e4ebb49a3dd2b14ae79e50e.",
+            "source": "git show --format=fuller --stat 45b2ba8a1056bb27f197b01d08f3ea0d4d92b668; issue-bundle.json resolved_commit and parent_commit"
+          },
+          {
+            "id": "E2",
+            "kind": "diff",
+            "claim": "The first-parent implementation diff changes aider/args.py, aider/coders/base_coder.py, aider/history.py, and aider/main.py with 68 insertions and 29 deletions.",
+            "source": "git diff --stat 45b2ba8a1056bb27f197b01d08f3ea0d4d92b668^1 45b2ba8a1056bb27f197b01d08f3ea0d4d92b668; issue-bundle.json commit_show_stat"
+          },
+          {
+            "id": "E3",
+            "kind": "implementation",
+            "claim": "Before the change, Coder initialized done_messages from an explicit argument or an empty list and created ChatSummary from the model's fixed max_chat_history_tokens; it did not read persisted chat history during initialization.",
+            "source": "git show 1098b428e6e118be2e4ebb49a3dd2b14ae79e50e:aider/coders/base_coder.py, constructor around lines 175-300"
+          },
+          {
+            "id": "E4",
+            "kind": "implementation",
+            "claim": "The new Markdown reconstruction operation skips session headings, blockquoted tool/status output, slash-command prompts, and blank prompts; it emits user messages from remaining level-four headings and assistant messages from intervening text.",
+            "source": "git show 45b2ba8a1056bb27f197b01d08f3ea0d4d92b668:aider/history.py, lines 107-133"
+          },
+          {
+            "id": "E5",
+            "kind": "call_site",
+            "claim": "When no completed messages were supplied, Coder initialization reads io.chat_history_file, reconstructs persisted messages when text exists, assigns them to done_messages, and invokes summarize_start.",
+            "source": "git show 45b2ba8a1056bb27f197b01d08f3ea0d4d92b668:aider/coders/base_coder.py, lines 289-303"
+          },
+          {
+            "id": "E6",
+            "kind": "call_site",
+            "claim": "The history file consumed at startup is the same configured file to which InputOutput appends session headings, user prompts, assistant output, and blockquoted tool output.",
+            "source": "git show 45b2ba8a1056bb27f197b01d08f3ea0d4d92b668:aider/io.py, constructor around lines 95-142 and append_chat_history around lines 351-362"
+          },
+          {
+            "id": "E7",
+            "kind": "implementation",
+            "claim": "The restoration path preserves explicitly supplied completed-message state because it reads the persisted file only when done_messages is empty.",
+            "source": "git show 45b2ba8a1056bb27f197b01d08f3ea0d4d92b668:aider/coders/base_coder.py, lines 209-217 and 299-303"
+          },
+          {
+            "id": "E8",
+            "kind": "implementation",
+            "claim": "summarize_start is a conditional compaction gate: it returns when restored messages fit the budget, otherwise starts a background worker whose result later replaces done_messages.",
+            "source": "git show 45b2ba8a1056bb27f197b01d08f3ea0d4d92b668:aider/coders/base_coder.py, lines 539-568"
+          },
+          {
+            "id": "E9",
+            "kind": "implementation",
+            "claim": "Before calling the summarizer, the changed algorithm walks backward through the selected head and retains only the newest messages fitting within the summarizer model's max_input_tokens minus a 512-token reserve.",
+            "source": "git show 45b2ba8a1056bb27f197b01d08f3ea0d4d92b668:aider/history.py, lines 56-73"
+          },
+          {
+            "id": "E10",
+            "kind": "call_site",
+            "claim": "A new --max-chat-history-tokens integer option defaults to None, is passed by main into Coder creation, and Coder falls back to the main model's max_chat_history_tokens when no override is supplied.",
+            "source": "git show 45b2ba8a1056bb27f197b01d08f3ea0d4d92b668:aider/args.py, lines 154-159; aider/main.py, lines 312-334; aider/coders/base_coder.py, lines 289-294"
+          },
+          {
+            "id": "E11",
+            "kind": "implementation",
+            "claim": "Startup announcements include \"Restored previous conversation history.\" whenever done_messages is nonempty.",
+            "source": "git show 45b2ba8a1056bb27f197b01d08f3ea0d4d92b668:aider/coders/base_coder.py, lines 164-171"
+          },
+          {
+            "id": "E12",
+            "kind": "validation",
+            "claim": "No automated test file was changed by the first-parent diff, and no test at the pinned ref references split_chat_history_markdown, max_chat_history_tokens, or the new restoration path.",
+            "source": "git diff --name-status 45b2ba8a1056bb27f197b01d08f3ea0d4d92b668^1 45b2ba8a1056bb27f197b01d08f3ea0d4d92b668; git grep at the pinned ref under tests"
+          },
+          {
+            "id": "E13",
+            "kind": "implementation",
+            "claim": "The refactored history module's standalone main function calls summarize_chat_history_markdown, but ChatSummary at the pinned ref defines split_chat_history_markdown and does not define that called method.",
+            "source": "git show 45b2ba8a1056bb27f197b01d08f3ea0d4d92b668:aider/history.py, lines 107-148"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "reconstruct-persisted-conversation",
+            "title": "Reconstruct conversational messages from the persisted transcript",
+            "description": "Convert the application's append-only Markdown transcript into model-facing user and assistant messages while excluding session metadata, tool output, commands, and empty prompts.",
+            "evidence_ids": [
+              "E4",
+              "E6"
+            ],
+            "semantic_action": {
+              "intent": "Recover reusable conversational state from a human-readable persisted transcript without replaying operational noise as dialogue.",
+              "module_role": "persisted-conversation adapter",
+              "operation": "normalize",
+              "pre_state": "A configured transcript contains interleaved session headings, user headings, assistant text, commands, and blockquoted operational output.",
+              "post_state": "The transcript is represented as an ordered list of user and assistant message objects, with recognized non-conversational records excluded.",
+              "validation": "Use a transcript containing each supported record type and verify that ordinary user headings and intervening assistant text are emitted in order while session headings, blockquotes, slash commands, and <blank> prompts are absent. The pinned implementation directly establishes these parsing rules, but the change supplies no automated test oracle.",
+              "parameters": [
+                "persisted transcript text",
+                "user-message heading marker",
+                "ignored session-heading marker",
+                "ignored tool-output marker",
+                "ignored command marker"
+              ],
+              "evidence_ids": [
+                "E4",
+                "E6",
+                "E12"
+              ]
+            }
+          },
+          {
+            "name": "restore-state-with-precedence",
+            "title": "Restore persisted state only when no explicit state was supplied",
+            "description": "At lifecycle initialization, preserve caller-provided completed messages; otherwise load and reconstruct the configured transcript and expose restoration to the user.",
+            "evidence_ids": [
+              "E3",
+              "E5",
+              "E7",
+              "E11"
+            ],
+            "semantic_action": {
+              "intent": "Resume a prior conversation automatically without overwriting authoritative in-memory state supplied by the current caller.",
+              "module_role": "session lifecycle owner",
+              "operation": "reconcile",
+              "pre_state": "A new session has either explicit completed-message state, or an empty completed-message state plus an optional configured persisted transcript.",
+              "post_state": "Explicit state remains authoritative; otherwise a nonempty persisted transcript becomes the session's completed-message state, and restored state is announced when present.",
+              "validation": "Initialize once with explicit completed messages and once with an empty state plus a populated transcript; verify the first state is unchanged, the second contains reconstructed history, and the restoration announcement appears only for nonempty completed state. These branches are present in the pinned code but lack an automated regression test.",
+              "parameters": [
+                "explicit completed messages",
+                "configured history file",
+                "input/output adapter",
+                "reconstructed messages"
+              ],
+              "evidence_ids": [
+                "E3",
+                "E5",
+                "E7",
+                "E11",
+                "E12"
+              ]
+            }
+          },
+          {
+            "name": "compact-restored-state-within-budgets",
+            "title": "Compact restored history within session and model context budgets",
+            "description": "Apply a configurable retained-history budget and bound each summarizer request to the summarizer model's input capacity before background compaction.",
+            "evidence_ids": [
+              "E8",
+              "E9",
+              "E10"
+            ],
+            "semantic_action": {
+              "intent": "Keep resumed state usable when persisted history is larger than either the desired conversation budget or the summarizer model's request context.",
+              "module_role": "conversation compaction controller",
+              "operation": "guard",
+              "pre_state": "Reconstructed completed messages may exceed the configured history budget, and the portion selected for summarization may exceed the summarizer model's maximum input context.",
+              "post_state": "History within the configured budget is left intact; oversized history starts compaction, and the summarizer receives the newest portion of the selected head that fits its input limit with a reserve.",
+              "validation": "Exercise histories below and above the configured budget and use a model with a known max_input_tokens value; verify no worker starts below the threshold, a worker starts above it, and the messages passed to summarization do not exceed max_input_tokens minus 512 according to the implementation's token counter. No such automated test was included in the change.",
+              "parameters": [
+                "completed messages",
+                "history token budget",
+                "summarizer model",
+                "summarizer maximum input tokens",
+                "reserved input tokens"
+              ],
+              "evidence_ids": [
+                "E8",
+                "E9",
+                "E10",
+                "E12"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "resume-persisted-conversation-safely",
+            "title": "Resume a persisted conversation without displacing live state or overflowing context",
+            "description": "A partial-order startup workflow that reconstructs a persisted transcript only when authoritative live state is absent, then conditionally compacts oversized restored state under both session and model context limits.",
+            "atomic_names": [
+              "reconstruct-persisted-conversation",
+              "restore-state-with-precedence",
+              "compact-restored-state-within-budgets"
+            ],
+            "evidence_ids": [
+              "E1",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E10",
+              "E11",
+              "E12"
+            ],
+            "workflow_graph": {
+              "goal": "Start a session with usable prior conversational context while preserving explicit caller state and keeping restored history within configured and model-imposed token limits.",
+              "when_to_use": [
+                "A stateful interactive application persists a transcript across process lifetimes and a new session should continue the prior conversation.",
+                "The persisted representation contains both conversational content and operational metadata that must not be replayed as model dialogue.",
+                "Restored state can be large enough to require compaction before continued use."
+              ],
+              "anti_goals": [
+                "Do not replace explicitly supplied in-memory conversation state with disk contents.",
+                "Do not replay tool output, session metadata, commands, or blank prompts as conversational messages.",
+                "Do not summarize history that already fits the configured retained-history budget.",
+                "Do not send an unbounded restored transcript to the summarizer model."
+              ],
+              "not_applicable_when": [
+                "The application has no persisted conversation artifact to resume.",
+                "The persisted artifact cannot be deterministically mapped to ordered conversational roles.",
+                "A caller requires explicit supplied state and persisted state to be merged rather than using explicit state as authoritative.",
+                "No reliable token counter or summarizer input limit is available for safe compaction."
+              ],
+              "inputs": [
+                "optional explicit completed-message state",
+                "configured persisted transcript location",
+                "transcript-format markers",
+                "history token budget or model default",
+                "summarizer model and token counter"
+              ],
+              "entry_state": "Session initialization has begun; completed-message state is either explicitly supplied or empty, and a configured transcript may contain earlier conversation plus operational records.",
+              "exit_state": "Explicit completed-message state has been preserved, or persisted conversational messages have been restored; any restored state exceeding its budget has entered bounded compaction, and nonempty restored state is visible through the startup announcement.",
+              "steps": [
+                {
+                  "action_name": "reconstruct-persisted-conversation",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "Run when completed-message state is empty and the configured transcript contains text.",
+                  "validation": "Verify ordered user/assistant reconstruction and exclusion of recognized metadata, tool output, commands, and blank prompts."
+                },
+                {
+                  "action_name": "restore-state-with-precedence",
+                  "role": "reconcile",
+                  "required": true,
+                  "depends_on": [
+                    "reconstruct-persisted-conversation"
+                  ],
+                  "condition": "Always enforce precedence; file loading and reconstruction are conditional on the absence of explicit completed-message state.",
+                  "validation": "Verify explicit state is unchanged, while empty state with a populated transcript becomes restored state and produces the restoration announcement."
+                },
+                {
+                  "action_name": "compact-restored-state-within-budgets",
+                  "role": "validate",
+                  "required": true,
+                  "depends_on": [
+                    "restore-state-with-precedence"
+                  ],
+                  "condition": "Evaluate every restored state; start compaction only when its token count exceeds the selected history budget.",
+                  "validation": "Verify threshold behavior and confirm that any summarizer request is restricted to content fitting within the summarizer input limit minus its reserve."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "reconstruct-persisted-conversation",
+                  "to": "restore-state-with-precedence",
+                  "type": "enables"
+                },
+                {
+                  "from": "restore-state-with-precedence",
+                  "to": "compact-restored-state-within-budgets",
+                  "type": "enables"
+                },
+                {
+                  "from": "compact-restored-state-within-budgets",
+                  "to": "restore-state-with-precedence",
+                  "type": "validates"
+                }
+              ],
+              "validation_ladder": [
+                "Unit-check transcript reconstruction with representative user, assistant, session-heading, blockquote, command, and blank-prompt records.",
+                "Lifecycle-check precedence using both explicit completed messages and an empty state backed by a populated transcript.",
+                "Boundary-check compaction immediately below and above the configured history-token threshold.",
+                "Capacity-check that a large selected head is trimmed to the summarizer model's input capacity minus the reserved tokens.",
+                "Integration-check that a restarted session reports restoration and can continue using the restored completed-message state."
+              ],
+              "stop_conditions": [
+                "Stop restoration and retain explicit state when completed messages were supplied by the caller.",
+                "Stop file-based restoration when the configured transcript is absent, unreadable through the input adapter, or empty.",
+                "Stop promotion as a fully validated resolution until automated parser, precedence, and compaction tests exist.",
+                "Stop or repair if transcript reconstruction cannot preserve conversational ordering or if bounded summarization fails."
+              ],
+              "unresolved_or_deferred": [
+                "The pinned change includes no automated tests for transcript parsing, state precedence, startup restoration, token override propagation, or bounded compaction.",
+                "The parser does not flush a final accumulated assistant segment at end-of-file, so preservation of a transcript ending directly in assistant content is unresolved.",
+                "The standalone aider/history.py entry point calls an undefined summarize_chat_history_markdown method at the pinned ref and therefore is not a usable validation path.",
+                "The changed compaction calculation reverses and truncates the sized head before later slicing it with split_index; the exact tail-token accounting should be covered by focused boundary tests before treating it as a proven invariant."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Was omission of the final assistant segment from split_chat_history_markdown intentional because a subsequent user/session heading is expected to flush it, or is it a restoration defect?",
+          "Was the undefined summarize_chat_history_markdown call in the standalone history entry point expected to be renamed to the new split operation plus summarize, or was that entry point obsolete?",
+          "No CI or PR status-check evidence is available in the issue bundle, and the implementation commit adds no automated regression tests, so runtime validation beyond direct code inspection remains unavailable."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "reconstruct-persisted-conversation",
+          "title": "Reconstruct conversational messages from the persisted transcript",
+          "description": "Convert the application's append-only Markdown transcript into model-facing user and assistant messages while excluding session metadata, tool output, commands, and empty prompts.",
+          "evidence_ids": [
+            "E4",
+            "E6"
+          ],
+          "semantic_action": {
+            "intent": "Recover reusable conversational state from a human-readable persisted transcript without replaying operational noise as dialogue.",
+            "module_role": "persisted-conversation adapter",
+            "operation": "normalize",
+            "pre_state": "A configured transcript contains interleaved session headings, user headings, assistant text, commands, and blockquoted operational output.",
+            "post_state": "The transcript is represented as an ordered list of user and assistant message objects, with recognized non-conversational records excluded.",
+            "validation": "Use a transcript containing each supported record type and verify that ordinary user headings and intervening assistant text are emitted in order while session headings, blockquotes, slash commands, and <blank> prompts are absent. The pinned implementation directly establishes these parsing rules, but the change supplies no automated test oracle.",
+            "parameters": [
+              "persisted transcript text",
+              "user-message heading marker",
+              "ignored session-heading marker",
+              "ignored tool-output marker",
+              "ignored command marker"
+            ],
+            "evidence_ids": [
+              "E4",
+              "E6",
+              "E12"
+            ]
+          }
+        },
+        {
+          "name": "restore-state-with-precedence",
+          "title": "Restore persisted state only when no explicit state was supplied",
+          "description": "At lifecycle initialization, preserve caller-provided completed messages; otherwise load and reconstruct the configured transcript and expose restoration to the user.",
+          "evidence_ids": [
+            "E3",
+            "E5",
+            "E7",
+            "E11"
+          ],
+          "semantic_action": {
+            "intent": "Resume a prior conversation automatically without overwriting authoritative in-memory state supplied by the current caller.",
+            "module_role": "session lifecycle owner",
+            "operation": "reconcile",
+            "pre_state": "A new session has either explicit completed-message state, or an empty completed-message state plus an optional configured persisted transcript.",
+            "post_state": "Explicit state remains authoritative; otherwise a nonempty persisted transcript becomes the session's completed-message state, and restored state is announced when present.",
+            "validation": "Initialize once with explicit completed messages and once with an empty state plus a populated transcript; verify the first state is unchanged, the second contains reconstructed history, and the restoration announcement appears only for nonempty completed state. These branches are present in the pinned code but lack an automated regression test.",
+            "parameters": [
+              "explicit completed messages",
+              "configured history file",
+              "input/output adapter",
+              "reconstructed messages"
+            ],
+            "evidence_ids": [
+              "E3",
+              "E5",
+              "E7",
+              "E11",
+              "E12"
+            ]
+          }
+        },
+        {
+          "name": "compact-restored-state-within-budgets",
+          "title": "Compact restored history within session and model context budgets",
+          "description": "Apply a configurable retained-history budget and bound each summarizer request to the summarizer model's input capacity before background compaction.",
+          "evidence_ids": [
+            "E8",
+            "E9",
+            "E10"
+          ],
+          "semantic_action": {
+            "intent": "Keep resumed state usable when persisted history is larger than either the desired conversation budget or the summarizer model's request context.",
+            "module_role": "conversation compaction controller",
+            "operation": "guard",
+            "pre_state": "Reconstructed completed messages may exceed the configured history budget, and the portion selected for summarization may exceed the summarizer model's maximum input context.",
+            "post_state": "History within the configured budget is left intact; oversized history starts compaction, and the summarizer receives the newest portion of the selected head that fits its input limit with a reserve.",
+            "validation": "Exercise histories below and above the configured budget and use a model with a known max_input_tokens value; verify no worker starts below the threshold, a worker starts above it, and the messages passed to summarization do not exceed max_input_tokens minus 512 according to the implementation's token counter. No such automated test was included in the change.",
+            "parameters": [
+              "completed messages",
+              "history token budget",
+              "summarizer model",
+              "summarizer maximum input tokens",
+              "reserved input tokens"
+            ],
+            "evidence_ids": [
+              "E8",
+              "E9",
+              "E10",
+              "E12"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "resume-persisted-conversation-safely",
+          "title": "Resume a persisted conversation without displacing live state or overflowing context",
+          "description": "A partial-order startup workflow that reconstructs a persisted transcript only when authoritative live state is absent, then conditionally compacts oversized restored state under both session and model context limits.",
+          "atomic_names": [
+            "reconstruct-persisted-conversation",
+            "restore-state-with-precedence",
+            "compact-restored-state-within-budgets"
+          ],
+          "evidence_ids": [
+            "E1",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10",
+            "E11",
+            "E12"
+          ],
+          "workflow_graph": {
+            "goal": "Start a session with usable prior conversational context while preserving explicit caller state and keeping restored history within configured and model-imposed token limits.",
+            "when_to_use": [
+              "A stateful interactive application persists a transcript across process lifetimes and a new session should continue the prior conversation.",
+              "The persisted representation contains both conversational content and operational metadata that must not be replayed as model dialogue.",
+              "Restored state can be large enough to require compaction before continued use."
+            ],
+            "anti_goals": [
+              "Do not replace explicitly supplied in-memory conversation state with disk contents.",
+              "Do not replay tool output, session metadata, commands, or blank prompts as conversational messages.",
+              "Do not summarize history that already fits the configured retained-history budget.",
+              "Do not send an unbounded restored transcript to the summarizer model."
+            ],
+            "not_applicable_when": [
+              "The application has no persisted conversation artifact to resume.",
+              "The persisted artifact cannot be deterministically mapped to ordered conversational roles.",
+              "A caller requires explicit supplied state and persisted state to be merged rather than using explicit state as authoritative.",
+              "No reliable token counter or summarizer input limit is available for safe compaction."
+            ],
+            "inputs": [
+              "optional explicit completed-message state",
+              "configured persisted transcript location",
+              "transcript-format markers",
+              "history token budget or model default",
+              "summarizer model and token counter"
+            ],
+            "entry_state": "Session initialization has begun; completed-message state is either explicitly supplied or empty, and a configured transcript may contain earlier conversation plus operational records.",
+            "exit_state": "Explicit completed-message state has been preserved, or persisted conversational messages have been restored; any restored state exceeding its budget has entered bounded compaction, and nonempty restored state is visible through the startup announcement.",
+            "steps": [
+              {
+                "action_name": "reconstruct-persisted-conversation",
+                "role": "implement",
+                "required": true,
+                "depends_on": [],
+                "condition": "Run when completed-message state is empty and the configured transcript contains text.",
+                "validation": "Verify ordered user/assistant reconstruction and exclusion of recognized metadata, tool output, commands, and blank prompts."
+              },
+              {
+                "action_name": "restore-state-with-precedence",
+                "role": "reconcile",
+                "required": true,
+                "depends_on": [
+                  "reconstruct-persisted-conversation"
+                ],
+                "condition": "Always enforce precedence; file loading and reconstruction are conditional on the absence of explicit completed-message state.",
+                "validation": "Verify explicit state is unchanged, while empty state with a populated transcript becomes restored state and produces the restoration announcement."
+              },
+              {
+                "action_name": "compact-restored-state-within-budgets",
+                "role": "validate",
+                "required": true,
+                "depends_on": [
+                  "restore-state-with-precedence"
+                ],
+                "condition": "Evaluate every restored state; start compaction only when its token count exceeds the selected history budget.",
+                "validation": "Verify threshold behavior and confirm that any summarizer request is restricted to content fitting within the summarizer input limit minus its reserve."
+              }
+            ],
+            "edges": [
+              {
+                "from": "reconstruct-persisted-conversation",
+                "to": "restore-state-with-precedence",
+                "type": "enables"
+              },
+              {
+                "from": "restore-state-with-precedence",
+                "to": "compact-restored-state-within-budgets",
+                "type": "enables"
+              },
+              {
+                "from": "compact-restored-state-within-budgets",
+                "to": "restore-state-with-precedence",
+                "type": "validates"
+              }
+            ],
+            "validation_ladder": [
+              "Unit-check transcript reconstruction with representative user, assistant, session-heading, blockquote, command, and blank-prompt records.",
+              "Lifecycle-check precedence using both explicit completed messages and an empty state backed by a populated transcript.",
+              "Boundary-check compaction immediately below and above the configured history-token threshold.",
+              "Capacity-check that a large selected head is trimmed to the summarizer model's input capacity minus the reserved tokens.",
+              "Integration-check that a restarted session reports restoration and can continue using the restored completed-message state."
+            ],
+            "stop_conditions": [
+              "Stop restoration and retain explicit state when completed messages were supplied by the caller.",
+              "Stop file-based restoration when the configured transcript is absent, unreadable through the input adapter, or empty.",
+              "Stop promotion as a fully validated resolution until automated parser, precedence, and compaction tests exist.",
+              "Stop or repair if transcript reconstruction cannot preserve conversational ordering or if bounded summarization fails."
+            ],
+            "unresolved_or_deferred": [
+              "The pinned change includes no automated tests for transcript parsing, state precedence, startup restoration, token override propagation, or bounded compaction.",
+              "The parser does not flush a final accumulated assistant segment at end-of-file, so preservation of a transcript ending directly in assistant content is unresolved.",
+              "The standalone aider/history.py entry point calls an undefined summarize_chat_history_markdown method at the pinned ref and therefore is not a usable validation path.",
+              "The changed compaction calculation reverses and truncates the sized head before later slicing it with split_index; the exact tail-token accounting should be covered by focused boundary tests before treating it as a proven invariant."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Was omission of the final assistant segment from split_chat_history_markdown intentional because a subsequent user/session heading is expected to flush it, or is it a restoration defect?",
+        "Was the undefined summarize_chat_history_markdown call in the standalone history entry point expected to be renamed to the new split operation plus summarize, or was that entry point obsolete?",
+        "No CI or PR status-check evidence is available in the issue bundle, and the implementation commit adds no automated regression tests, so runtime validation beyond direct code inspection remains unavailable."
+      ]
+    },
+    "call_sites": [
+      "When no completed messages were supplied, Coder initialization reads io.chat_history_file, reconstructs persisted messages when text exists, assigns them to done_messages, and invokes summarize_start.",
+      "The history file consumed at startup is the same configured file to which InputOutput appends session headings, user prompts, assistant output, and blockquoted tool output.",
+      "A new --max-chat-history-tokens integer option defaults to None, is passed by main into Coder creation, and Coder falls back to the main model's max_chat_history_tokens when no override is supplied."
+    ],
+    "tests": []
+  },
+  {
+    "episode_id": "NousResearch__hermes-agent#228@56b53bff6e42a534c7b9558b09aa28a6876e37d3",
+    "title": "Preserve caller-owned conversation history while producing an extended result",
+    "before": "At parent c4ea996612b23c6824089eb929caef43b0d4e880, run_conversation initialized its working message sequence with `messages = conversation_history or []`. A non-empty caller-supplied list was therefore reused by identity. The method subsequently appended the new user message and generated assistant messages to that same list, so resuming a conversation modified the caller's historical-state container in place.",
+    "after": "At 56b53bff6e42a534c7b9558b09aa28a6876e37d3, run_conversation initializes its working sequence with `list(conversation_history)` when history is present, otherwise a new empty list. It can append the current turn to and return the working sequence while leaving the caller-owned outer history list unchanged. A regression test supplies two historical messages, runs one new turn, asserts that the input list retains its original length, and asserts that the returned message sequence is longer.",
+    "diff": "The merge changes the conversation initialization in run_agent.py from directly aliasing a supplied history list to making a shallow list copy. It also adds TestConversationHistoryNotMutated.test_caller_list_unchanged_after_run in tests/test_run_agent.py, using a mocked completion and patched persistence/resource side effects to verify that the input history length is unchanged while the returned history includes additional messages. The first-parent diff is 35 insertions and 2 deletions across run_agent.py and tests/test_run_agent.py.",
+    "repository": "NousResearch/hermes-agent",
+    "revision": "github-issue-228",
+    "evidence_ids": [
+      "ev-commit-merge-resolution",
+      "ev-before-alias",
+      "ev-after-copy",
+      "ev-working-list-mutations",
+      "ev-diff-focused",
+      "ev-regression-test",
+      "ev-test-isolation",
+      "ev-validation-unavailable"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 228,
+      "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+      "manifest_metadata": {
+        "category": "state-continuity-and-resume",
+        "role": "train_candidate",
+        "case_id": "NousResearch__hermes-agent__228__state-continuity-and-resume",
+        "sample_kind": "exact_table_row",
+        "seed_issue": 228,
+        "seed_issue_url": "https://github.com/NousResearch/hermes-agent/issues/228",
+        "seed_relation": "exact_table_row_with_verified_resolution",
+        "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/229",
+        "provenance": {
+          "classification": "exact_table_row",
+          "seed": {
+            "repository": "NousResearch/hermes-agent",
+            "issue": 228,
+            "url": "https://github.com/NousResearch/hermes-agent/issues/228",
+            "table_note": "conversation_history is mutated in place and corrupts historical state"
+          },
+          "resolution_artifact": {
+            "type": "issue",
+            "number": 228,
+            "url": "https://github.com/NousResearch/hermes-agent/issues/228",
+            "pull_request": 229,
+            "pull_request_url": "https://github.com/NousResearch/hermes-agent/pull/229"
+          },
+          "commit": {
+            "sha": "56b53bff6e42a534c7b9558b09aa28a6876e37d3",
+            "subject": "Merge PR #229: fix(agent): copy conversation_history to avoid mutating caller's list",
+            "parents": [
+              "c4ea996612b23c6824089eb929caef43b0d4e880",
+              "e87859e82c3c45b7ece64d8ba215174f1b33089c"
+            ],
+            "body_excerpt": "Authored by Farukest. Fixes #228.\n\n# Conflicts:\n#\ttests/test_run_agent.py"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "parent_and_changed_files_recorded",
+            "implementation_diff_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "NousResearch/hermes-agent",
+        "issue_number": 228,
+        "issue": {
+          "number": 228,
+          "title": "Merge PR #229: fix(agent): copy conversation_history to avoid mutating caller's list",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 229,
+              "title": "Merge PR #229: fix(agent): copy conversation_history to avoid mutating caller's list",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\trun_agent.py"
+              },
+              {
+                "status_line": "M\ttests/test_run_agent.py"
+              },
+              {
+                "status_line": "M\tCONTRIBUTING.md"
+              },
+              {
+                "status_line": "M\tREADME.md"
+              },
+              {
+                "status_line": "M\tagent/auxiliary_client.py"
+              },
+              {
+                "status_line": "M\tagent/context_compressor.py"
+              },
+              {
+                "status_line": "M\tagent/display.py"
+              },
+              {
+                "status_line": "A\tagent/redact.py"
+              },
+              {
+                "status_line": "M\tbatch_runner.py"
+              },
+              {
+                "status_line": "M\tcli-config.yaml.example"
+              },
+              {
+                "status_line": "M\tcli.py"
+              },
+              {
+                "status_line": "M\tcron/scheduler.py"
+              },
+              {
+                "status_line": "M\tdocs/cli.md"
+              },
+              {
+                "status_line": "A\tdocs/hooks.md"
+              },
+              {
+                "status_line": "M\tdocs/messaging.md"
+              },
+              {
+                "status_line": "M\tgateway/platforms/base.py"
+              },
+              {
+                "status_line": "M\tgateway/platforms/discord.py"
+              },
+              {
+                "status_line": "M\tgateway/run.py"
+              },
+              {
+                "status_line": "M\tgateway/session.py"
+              },
+              {
+                "status_line": "M\thermes_cli/auth.py"
+              },
+              {
+                "status_line": "A\thermes_cli/codex_models.py"
+              },
+              {
+                "status_line": "M\thermes_cli/commands.py"
+              },
+              {
+                "status_line": "M\thermes_cli/doctor.py"
+              },
+              {
+                "status_line": "M\thermes_cli/main.py"
+              },
+              {
+                "status_line": "A\thermes_cli/runtime_provider.py"
+              },
+              {
+                "status_line": "M\thermes_cli/setup.py"
+              },
+              {
+                "status_line": "M\thermes_cli/status.py"
+              },
+              {
+                "status_line": "M\thermes_state.py"
+              },
+              {
+                "status_line": "M\thoncho_integration/session.py"
+              },
+              {
+                "status_line": "M\trun_agent.py"
+              },
+              {
+                "status_line": "M\tscripts/install.sh"
+              },
+              {
+                "status_line": "A\ttests/agent/test_auxiliary_client.py"
+              },
+              {
+                "status_line": "M\ttests/agent/test_context_compressor.py"
+              },
+              {
+                "status_line": "A\ttests/agent/test_redact.py"
+              },
+              {
+                "status_line": "A\ttests/agent/test_subagent_progress.py"
+              },
+              {
+                "status_line": "A\ttests/gateway/test_channel_directory.py"
+              },
+              {
+                "status_line": "A\ttests/gateway/test_hooks.py"
+              },
+              {
+                "status_line": "A\ttests/gateway/test_media_extraction.py"
+              },
+              {
+                "status_line": "A\ttests/gateway/test_mirror.py"
+              },
+              {
+                "status_line": "M\ttests/gateway/test_session.py"
+              },
+              {
+                "status_line": "A\ttests/gateway/test_sticker_cache.py"
+              },
+              {
+                "status_line": "A\ttests/honcho_integration/__init__.py"
+              },
+              {
+                "status_line": "A\ttests/honcho_integration/test_client.py"
+              },
+              {
+                "status_line": "A\ttests/test_auth_codex_provider.py"
+              },
+              {
+                "status_line": "A\ttests/test_cli_init.py"
+              },
+              {
+                "status_line": "A\ttests/test_cli_provider_resolution.py"
+              },
+              {
+                "status_line": "A\ttests/test_codex_execution_paths.py"
+              },
+              {
+                "status_line": "A\ttests/test_codex_models.py"
+              },
+              {
+                "status_line": "A\ttests/test_external_credential_detection.py"
+              },
+              {
+                "status_line": "A\ttests/test_flush_memories_codex.py"
+              },
+              {
+                "status_line": "A\ttests/test_provider_parity.py"
+              },
+              {
+                "status_line": "M\ttests/test_run_agent.py"
+              },
+              {
+                "status_line": "A\ttests/test_run_agent_codex_responses.py"
+              },
+              {
+                "status_line": "A\ttests/test_runtime_provider_resolution.py"
+              },
+              {
+                "status_line": "A\ttests/tools/test_debug_helpers.py"
+              },
+              {
+                "status_line": "M\ttests/tools/test_delegate.py"
+              },
+              {
+                "status_line": "M\ttests/tools/test_file_operations.py"
+              },
+              {
+                "status_line": "A\ttests/tools/test_file_tools_live.py"
+              },
+              {
+                "status_line": "A\ttests/tools/test_skill_view_traversal.py"
+              },
+              {
+                "status_line": "A\ttests/tools/test_skills_guard.py"
+              },
+              {
+                "status_line": "A\ttests/tools/test_skills_sync.py"
+              },
+              {
+                "status_line": "M\ttools/delegate_tool.py"
+              },
+              {
+                "status_line": "M\ttools/environments/docker.py"
+              },
+              {
+                "status_line": "M\ttools/environments/local.py"
+              },
+              {
+                "status_line": "M\ttools/file_operations.py"
+              },
+              {
+                "status_line": "M\ttools/process_registry.py"
+              },
+              {
+                "status_line": "M\ttools/session_search_tool.py"
+              },
+              {
+                "status_line": "M\ttools/skills_tool.py"
+              },
+              {
+                "status_line": "M\ttools/terminal_tool.py"
+              },
+              {
+                "status_line": "M\ttools/web_tools.py"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "56b53bff6e42a534c7b9558b09aa28a6876e37d3",
+                "subject": "Merge PR #229: fix(agent): copy conversation_history to avoid mutating caller's list"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+        "pinned_ref": "56b53bff6e42a534c7b9558b09aa28a6876e37d3",
+        "resolved_commit": "56b53bff6e42a534c7b9558b09aa28a6876e37d3",
+        "parent_commit": "c4ea996612b23c6824089eb929caef43b0d4e880",
+        "commit_show_stat": "commit 56b53bff6e42a534c7b9558b09aa28a6876e37d3\nMerge: c4ea996612 e87859e82c\nAuthor:     teknium1 <teknium1@gmail.com>\nAuthorDate: Mon Mar 2 04:21:39 2026 -0800\nCommit:     teknium1 <teknium1@gmail.com>\nCommitDate: Mon Mar 2 04:21:39 2026 -0800\n\n    Merge PR #229: fix(agent): copy conversation_history to avoid mutating caller's list\n    \n    Authored by Farukest. Fixes #228.\n    \n    # Conflicts:\n    #       tests/test_run_agent.py\n\n run_agent.py            |  4 ++--\n tests/test_run_agent.py | 33 +++++++++++++++++++++++++++++++++\n 2 files changed, 35 insertions(+), 2 deletions(-)\n",
+        "changed_files_name_status": "M\trun_agent.py\nM\ttests/test_run_agent.py\nM\tCONTRIBUTING.md\nM\tREADME.md\nM\tagent/auxiliary_client.py\nM\tagent/context_compressor.py\nM\tagent/display.py\nA\tagent/redact.py\nM\tbatch_runner.py\nM\tcli-config.yaml.example\nM\tcli.py\nM\tcron/scheduler.py\nM\tdocs/cli.md\nA\tdocs/hooks.md\nM\tdocs/messaging.md\nM\tgateway/platforms/base.py\nM\tgateway/platforms/discord.py\nM\tgateway/run.py\nM\tgateway/session.py\nM\thermes_cli/auth.py\nA\thermes_cli/codex_models.py\nM\thermes_cli/commands.py\nM\thermes_cli/doctor.py\nM\thermes_cli/main.py\nA\thermes_cli/runtime_provider.py\nM\thermes_cli/setup.py\nM\thermes_cli/status.py\nM\thermes_state.py\nM\thoncho_integration/session.py\nM\trun_agent.py\nM\tscripts/install.sh\nA\ttests/agent/test_auxiliary_client.py\nM\ttests/agent/test_context_compressor.py\nA\ttests/agent/test_redact.py\nA\ttests/agent/test_subagent_progress.py\nA\ttests/gateway/test_channel_directory.py\nA\ttests/gateway/test_hooks.py\nA\ttests/gateway/test_media_extraction.py\nA\ttests/gateway/test_mirror.py\nM\ttests/gateway/test_session.py\nA\ttests/gateway/test_sticker_cache.py\nA\ttests/honcho_integration/__init__.py\nA\ttests/honcho_integration/test_client.py\nA\ttests/test_auth_codex_provider.py\nA\ttests/test_cli_init.py\nA\ttests/test_cli_provider_resolution.py\nA\ttests/test_codex_execution_paths.py\nA\ttests/test_codex_models.py\nA\ttests/test_external_credential_detection.py\nA\ttests/test_flush_memories_codex.py\nA\ttests/test_provider_parity.py\nM\ttests/test_run_agent.py\nA\ttests/test_run_agent_codex_responses.py\nA\ttests/test_runtime_provider_resolution.py\nA\ttests/tools/test_debug_helpers.py\nM\ttests/tools/test_delegate.py\nM\ttests/tools/test_file_operations.py\nA\ttests/tools/test_file_tools_live.py\nA\ttests/tools/test_skill_view_traversal.py\nA\ttests/tools/test_skills_guard.py\nA\ttests/tools/test_skills_sync.py\nM\ttools/delegate_tool.py\nM\ttools/environments/docker.py\nM\ttools/environments/local.py\nM\ttools/file_operations.py\nM\ttools/process_registry.py\nM\ttools/session_search_tool.py\nM\ttools/skills_tool.py\nM\ttools/terminal_tool.py\nM\ttools/web_tools.py\n",
+        "linked_issue_numbers": [
+          228
+        ],
+        "manifest_metadata": {
+          "category": "state-continuity-and-resume",
+          "theme": "state continuity and resume",
+          "file_sample": [
+            "run_agent.py",
+            "tests/test_run_agent.py"
+          ],
+          "case_id": "NousResearch__hermes-agent__228__state-continuity-and-resume",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "exact_table_row",
+          "seed_issue": 228,
+          "seed_issue_url": "https://github.com/NousResearch/hermes-agent/issues/228",
+          "seed_relation": "exact_table_row_with_verified_resolution",
+          "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/229",
+          "source": "agent_core_seven_category_extraction_v2",
+          "provenance": {
+            "classification": "exact_table_row",
+            "seed": {
+              "repository": "NousResearch/hermes-agent",
+              "issue": 228,
+              "url": "https://github.com/NousResearch/hermes-agent/issues/228",
+              "table_note": "conversation_history is mutated in place and corrupts historical state"
+            },
+            "resolution_artifact": {
+              "type": "issue",
+              "number": 228,
+              "url": "https://github.com/NousResearch/hermes-agent/issues/228",
+              "pull_request": 229,
+              "pull_request_url": "https://github.com/NousResearch/hermes-agent/pull/229"
+            },
+            "commit": {
+              "sha": "56b53bff6e42a534c7b9558b09aa28a6876e37d3",
+              "subject": "Merge PR #229: fix(agent): copy conversation_history to avoid mutating caller's list",
+              "parents": [
+                "c4ea996612b23c6824089eb929caef43b0d4e880",
+                "e87859e82c3c45b7ece64d8ba215174f1b33089c"
+              ],
+              "body_excerpt": "Authored by Farukest. Fixes #228.\n\n# Conflicts:\n#\ttests/test_run_agent.py"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "parent_and_changed_files_recorded",
+              "implementation_diff_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T10:01:29.826642+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "NousResearch__hermes-agent#228@56b53bff6e42a534c7b9558b09aa28a6876e37d3",
+          "title": "Preserve caller-owned conversation history while producing an extended result",
+          "before": "At parent c4ea996612b23c6824089eb929caef43b0d4e880, run_conversation initialized its working message sequence with `messages = conversation_history or []`. A non-empty caller-supplied list was therefore reused by identity. The method subsequently appended the new user message and generated assistant messages to that same list, so resuming a conversation modified the caller's historical-state container in place.",
+          "after": "At 56b53bff6e42a534c7b9558b09aa28a6876e37d3, run_conversation initializes its working sequence with `list(conversation_history)` when history is present, otherwise a new empty list. It can append the current turn to and return the working sequence while leaving the caller-owned outer history list unchanged. A regression test supplies two historical messages, runs one new turn, asserts that the input list retains its original length, and asserts that the returned message sequence is longer.",
+          "diff": "The merge changes the conversation initialization in run_agent.py from directly aliasing a supplied history list to making a shallow list copy. It also adds TestConversationHistoryNotMutated.test_caller_list_unchanged_after_run in tests/test_run_agent.py, using a mocked completion and patched persistence/resource side effects to verify that the input history length is unchanged while the returned history includes additional messages. The first-parent diff is 35 insertions and 2 deletions across run_agent.py and tests/test_run_agent.py."
+        },
+        "evidence_units": [
+          {
+            "id": "ev-commit-merge-resolution",
+            "kind": "commit",
+            "claim": "Pinned commit 56b53bff6e42a534c7b9558b09aa28a6876e37d3 is a merge titled `fix(agent): copy conversation_history to avoid mutating caller's list`; its message says it fixes issue #228, and its first parent is c4ea996612b23c6824089eb929caef43b0d4e880.",
+            "source": "git show --format=fuller --stat 56b53bff6e42a534c7b9558b09aa28a6876e37d3; issue-bundle.json resolved_commit, parent_commit, and provenance.commit"
+          },
+          {
+            "id": "ev-before-alias",
+            "kind": "implementation",
+            "claim": "Before the change, run_conversation assigned `messages = conversation_history or []`, causing a non-empty supplied list to become the mutable working message list.",
+            "source": "git show c4ea996612b23c6824089eb929caef43b0d4e880:run_agent.py, lines 2780-2781"
+          },
+          {
+            "id": "ev-after-copy",
+            "kind": "implementation",
+            "claim": "After the change, run_conversation assigns `messages = list(conversation_history) if conversation_history else []`, creating a distinct outer list for its working state.",
+            "source": "git show 56b53bff6e42a534c7b9558b09aa28a6876e37d3:run_agent.py, lines 2780-2781"
+          },
+          {
+            "id": "ev-working-list-mutations",
+            "kind": "call_site",
+            "claim": "run_conversation appends the current user message and final assistant message to `messages`, persists that sequence, and returns it in result[`messages`]; these operations explain why aliasing the caller's list caused mutation and why copying the list isolates the additions.",
+            "source": "git show 56b53bff6e42a534c7b9558b09aa28a6876e37d3:run_agent.py, user-message append following line 2820; final-message append at lines 3714-3717; persistence and result construction at lines 3786-3800"
+          },
+          {
+            "id": "ev-diff-focused",
+            "kind": "diff",
+            "claim": "Relative to the first parent, the implementation replaces direct history-list reuse with a shallow copy and adds a 33-line regression-test section; the merge stat reports 35 insertions and 2 deletions in two files.",
+            "source": "git diff c4ea996612b23c6824089eb929caef43b0d4e880 56b53bff6e42a534c7b9558b09aa28a6876e37d3 -- run_agent.py tests/test_run_agent.py; git show --stat 56b53bff6e42a534c7b9558b09aa28a6876e37d3"
+          },
+          {
+            "id": "ev-regression-test",
+            "kind": "test",
+            "claim": "The added regression test passes a two-item history to run_conversation, records its original length, mocks a successful new answer, and asserts both that the caller's list length remains unchanged and that the returned message list has grown.",
+            "source": "git show 56b53bff6e42a534c7b9558b09aa28a6876e37d3:tests/test_run_agent.py, lines 871-897"
+          },
+          {
+            "id": "ev-test-isolation",
+            "kind": "test",
+            "claim": "The regression test mocks the model response and patches session persistence, trajectory saving, and task-resource cleanup, isolating the list-ownership behavior from network and durable side effects.",
+            "source": "git show 56b53bff6e42a534c7b9558b09aa28a6876e37d3:tests/test_run_agent.py, lines 882-890"
+          },
+          {
+            "id": "ev-validation-unavailable",
+            "kind": "validation",
+            "claim": "The focused regression test could not be executed in the provided environment because the `pytest` executable is unavailable; validation is therefore based on direct inspection of the committed test rather than a fresh passing run.",
+            "source": "Command `pytest -q tests/test_run_agent.py::TestConversationHistoryNotMutated::test_caller_list_unchanged_after_run` exited 127 with `/bin/bash: pytest: command not found`"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "isolate-caller-owned-sequence-before-extension",
+            "title": "Copy caller-owned history before extending it",
+            "description": "Create a distinct working sequence at the continuation boundary so additions for the new turn do not alter the caller's historical-state container.",
+            "evidence_ids": [
+              "ev-before-alias",
+              "ev-after-copy",
+              "ev-working-list-mutations",
+              "ev-diff-focused"
+            ],
+            "semantic_action": {
+              "intent": "Allow a resumed operation to extend prior state and return the extended state without changing the caller-owned input sequence.",
+              "module_role": "conversation continuation state owner",
+              "operation": "isolate",
+              "pre_state": "A caller may supply a non-empty mutable sequence of prior messages, and the continuation routine will append new-turn messages to its working sequence.",
+              "post_state": "The continuation routine's outer working sequence is distinct from the supplied sequence; new-turn appends appear in the returned sequence but not in the caller's input list.",
+              "validation": "Provide a non-empty history, execute a completed new turn, then verify that the input sequence retains its original length while the returned sequence contains additional messages.",
+              "parameters": [
+                "caller_owned_history_sequence",
+                "new_turn_input",
+                "working_history_sequence",
+                "returned_extended_history"
+              ],
+              "evidence_ids": [
+                "ev-before-alias",
+                "ev-after-copy",
+                "ev-working-list-mutations",
+                "ev-regression-test"
+              ]
+            }
+          },
+          {
+            "name": "verify-input-preservation-and-output-extension",
+            "title": "Verify preserved input and extended output",
+            "description": "Exercise the continuation boundary with controlled side effects and check both halves of the ownership contract: unchanged caller state and an independently extended result.",
+            "evidence_ids": [
+              "ev-regression-test",
+              "ev-test-isolation"
+            ],
+            "semantic_action": {
+              "intent": "Prevent regression to input-list aliasing while confirming that conversation continuation still records the new turn.",
+              "module_role": "state-ownership regression oracle",
+              "operation": "validate",
+              "pre_state": "A continuation API accepts an existing mutable history and returns a message history after processing another turn.",
+              "post_state": "The regression oracle demonstrates that the supplied history's outer length is unchanged and the returned history is longer than the original.",
+              "validation": "Use a deterministic mocked completion, suppress persistence and cleanup side effects, call the continuation API, assert input length equality with the saved baseline, and assert returned length exceeds that baseline.",
+              "parameters": [
+                "continuation_entry_point",
+                "seed_history",
+                "mock_completion",
+                "input_length_baseline",
+                "returned_history"
+              ],
+              "evidence_ids": [
+                "ev-regression-test",
+                "ev-test-isolation"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "preserve-caller-state-during-resume",
+            "title": "Resume from history without corrupting caller-owned state",
+            "description": "Establish an ownership boundary for a mutable history passed into a continuation routine, extend only a copied working sequence, and validate both preservation of the input and growth of the returned state.",
+            "atomic_names": [
+              "isolate-caller-owned-sequence-before-extension",
+              "verify-input-preservation-and-output-extension"
+            ],
+            "evidence_ids": [
+              "ev-before-alias",
+              "ev-after-copy",
+              "ev-working-list-mutations",
+              "ev-diff-focused",
+              "ev-regression-test",
+              "ev-test-isolation"
+            ],
+            "workflow_graph": {
+              "goal": "Continue an operation from existing history while returning the newly extended history and preserving the caller's original history container.",
+              "when_to_use": [
+                "A continuation or resume API accepts a caller-supplied mutable sequence and appends new state during processing.",
+                "Inspection or regression behavior shows that the routine aliases and mutates the caller's non-empty sequence."
+              ],
+              "anti_goals": [
+                "Do not remove prior history from the working continuation state.",
+                "Do not suppress recording of the new user or assistant messages in the returned state.",
+                "Do not deep-copy or transform individual history entries unless nested-entry mutation is separately demonstrated and specified."
+              ],
+              "not_applicable_when": [
+                "The API explicitly documents in-place mutation as part of its contract.",
+                "The supplied history is immutable or the routine never mutates the sequence structure.",
+                "The defect concerns mutation of nested message objects rather than append operations on the outer sequence."
+              ],
+              "inputs": [
+                "continuation entry point that accepts prior history",
+                "caller-owned mutable history sequence",
+                "new turn input",
+                "deterministic completion or equivalent response fixture"
+              ],
+              "entry_state": "A non-empty caller-owned history can be bound directly to the routine's working sequence, and later append operations can therefore corrupt the caller's preserved state.",
+              "exit_state": "The routine operates on a distinct outer sequence, preserves all supplied history entries for continuation, appends the new turn to the working result, and leaves the caller's input sequence structurally unchanged.",
+              "steps": [
+                {
+                  "action_name": "isolate-caller-owned-sequence-before-extension",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "Apply when the continuation routine performs structural mutations such as append on a caller-supplied mutable sequence.",
+                  "validation": "Inspect the initialization boundary and confirm that supplied history is copied into a distinct working sequence before any new-turn append occurs."
+                },
+                {
+                  "action_name": "verify-input-preservation-and-output-extension",
+                  "role": "validate",
+                  "required": true,
+                  "depends_on": [
+                    "isolate-caller-owned-sequence-before-extension"
+                  ],
+                  "condition": "Run after the ownership boundary is changed and a deterministic completed-turn fixture is available.",
+                  "validation": "Confirm that the caller's sequence length equals its pre-call baseline and that the returned sequence length exceeds that baseline."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "isolate-caller-owned-sequence-before-extension",
+                  "to": "verify-input-preservation-and-output-extension",
+                  "type": "enables"
+                },
+                {
+                  "from": "verify-input-preservation-and-output-extension",
+                  "to": "isolate-caller-owned-sequence-before-extension",
+                  "type": "validates"
+                }
+              ],
+              "validation_ladder": [
+                "Static boundary check: the working outer sequence is constructed separately from a supplied mutable history.",
+                "Behavioral preservation check: after a completed new turn, the caller's history retains its original length.",
+                "Behavioral continuity check: the returned history is longer than the original, proving that isolation did not discard the new turn.",
+                "Focused automated regression test when the test runner and dependencies are available."
+              ],
+              "stop_conditions": [
+                "Stop if the API contract intentionally transfers ownership and permits in-place mutation.",
+                "Stop and broaden the investigation if individual pre-existing message objects are mutated, because a shallow sequence copy does not isolate nested objects.",
+                "Defer runtime confirmation if the repository's test runner or required dependencies are unavailable."
+              ],
+              "unresolved_or_deferred": [
+                "The committed test checks outer-list length, not object identity, exact preserved contents, or mutation of nested message dictionaries.",
+                "A fresh test execution is deferred because pytest is not installed in the supplied environment."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "The GitHub bundle lacks issue body, comments, PR body, reviews, and status checks, so motivation and acceptance details beyond the commit, implementation, and test cannot be independently recovered.",
+          "The implementation deliberately performs a shallow list copy; evidence does not establish whether nested message objects must also be isolated.",
+          "The focused regression test was not freshly executed because pytest is unavailable in the environment."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "isolate-caller-owned-sequence-before-extension",
+          "title": "Copy caller-owned history before extending it",
+          "description": "Create a distinct working sequence at the continuation boundary so additions for the new turn do not alter the caller's historical-state container.",
+          "evidence_ids": [
+            "ev-before-alias",
+            "ev-after-copy",
+            "ev-working-list-mutations",
+            "ev-diff-focused"
+          ],
+          "semantic_action": {
+            "intent": "Allow a resumed operation to extend prior state and return the extended state without changing the caller-owned input sequence.",
+            "module_role": "conversation continuation state owner",
+            "operation": "isolate",
+            "pre_state": "A caller may supply a non-empty mutable sequence of prior messages, and the continuation routine will append new-turn messages to its working sequence.",
+            "post_state": "The continuation routine's outer working sequence is distinct from the supplied sequence; new-turn appends appear in the returned sequence but not in the caller's input list.",
+            "validation": "Provide a non-empty history, execute a completed new turn, then verify that the input sequence retains its original length while the returned sequence contains additional messages.",
+            "parameters": [
+              "caller_owned_history_sequence",
+              "new_turn_input",
+              "working_history_sequence",
+              "returned_extended_history"
+            ],
+            "evidence_ids": [
+              "ev-before-alias",
+              "ev-after-copy",
+              "ev-working-list-mutations",
+              "ev-regression-test"
+            ]
+          }
+        },
+        {
+          "name": "verify-input-preservation-and-output-extension",
+          "title": "Verify preserved input and extended output",
+          "description": "Exercise the continuation boundary with controlled side effects and check both halves of the ownership contract: unchanged caller state and an independently extended result.",
+          "evidence_ids": [
+            "ev-regression-test",
+            "ev-test-isolation"
+          ],
+          "semantic_action": {
+            "intent": "Prevent regression to input-list aliasing while confirming that conversation continuation still records the new turn.",
+            "module_role": "state-ownership regression oracle",
+            "operation": "validate",
+            "pre_state": "A continuation API accepts an existing mutable history and returns a message history after processing another turn.",
+            "post_state": "The regression oracle demonstrates that the supplied history's outer length is unchanged and the returned history is longer than the original.",
+            "validation": "Use a deterministic mocked completion, suppress persistence and cleanup side effects, call the continuation API, assert input length equality with the saved baseline, and assert returned length exceeds that baseline.",
+            "parameters": [
+              "continuation_entry_point",
+              "seed_history",
+              "mock_completion",
+              "input_length_baseline",
+              "returned_history"
+            ],
+            "evidence_ids": [
+              "ev-regression-test",
+              "ev-test-isolation"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "preserve-caller-state-during-resume",
+          "title": "Resume from history without corrupting caller-owned state",
+          "description": "Establish an ownership boundary for a mutable history passed into a continuation routine, extend only a copied working sequence, and validate both preservation of the input and growth of the returned state.",
+          "atomic_names": [
+            "isolate-caller-owned-sequence-before-extension",
+            "verify-input-preservation-and-output-extension"
+          ],
+          "evidence_ids": [
+            "ev-before-alias",
+            "ev-after-copy",
+            "ev-working-list-mutations",
+            "ev-diff-focused",
+            "ev-regression-test",
+            "ev-test-isolation"
+          ],
+          "workflow_graph": {
+            "goal": "Continue an operation from existing history while returning the newly extended history and preserving the caller's original history container.",
+            "when_to_use": [
+              "A continuation or resume API accepts a caller-supplied mutable sequence and appends new state during processing.",
+              "Inspection or regression behavior shows that the routine aliases and mutates the caller's non-empty sequence."
+            ],
+            "anti_goals": [
+              "Do not remove prior history from the working continuation state.",
+              "Do not suppress recording of the new user or assistant messages in the returned state.",
+              "Do not deep-copy or transform individual history entries unless nested-entry mutation is separately demonstrated and specified."
+            ],
+            "not_applicable_when": [
+              "The API explicitly documents in-place mutation as part of its contract.",
+              "The supplied history is immutable or the routine never mutates the sequence structure.",
+              "The defect concerns mutation of nested message objects rather than append operations on the outer sequence."
+            ],
+            "inputs": [
+              "continuation entry point that accepts prior history",
+              "caller-owned mutable history sequence",
+              "new turn input",
+              "deterministic completion or equivalent response fixture"
+            ],
+            "entry_state": "A non-empty caller-owned history can be bound directly to the routine's working sequence, and later append operations can therefore corrupt the caller's preserved state.",
+            "exit_state": "The routine operates on a distinct outer sequence, preserves all supplied history entries for continuation, appends the new turn to the working result, and leaves the caller's input sequence structurally unchanged.",
+            "steps": [
+              {
+                "action_name": "isolate-caller-owned-sequence-before-extension",
+                "role": "implement",
+                "required": true,
+                "depends_on": [],
+                "condition": "Apply when the continuation routine performs structural mutations such as append on a caller-supplied mutable sequence.",
+                "validation": "Inspect the initialization boundary and confirm that supplied history is copied into a distinct working sequence before any new-turn append occurs."
+              },
+              {
+                "action_name": "verify-input-preservation-and-output-extension",
+                "role": "validate",
+                "required": true,
+                "depends_on": [
+                  "isolate-caller-owned-sequence-before-extension"
+                ],
+                "condition": "Run after the ownership boundary is changed and a deterministic completed-turn fixture is available.",
+                "validation": "Confirm that the caller's sequence length equals its pre-call baseline and that the returned sequence length exceeds that baseline."
+              }
+            ],
+            "edges": [
+              {
+                "from": "isolate-caller-owned-sequence-before-extension",
+                "to": "verify-input-preservation-and-output-extension",
+                "type": "enables"
+              },
+              {
+                "from": "verify-input-preservation-and-output-extension",
+                "to": "isolate-caller-owned-sequence-before-extension",
+                "type": "validates"
+              }
+            ],
+            "validation_ladder": [
+              "Static boundary check: the working outer sequence is constructed separately from a supplied mutable history.",
+              "Behavioral preservation check: after a completed new turn, the caller's history retains its original length.",
+              "Behavioral continuity check: the returned history is longer than the original, proving that isolation did not discard the new turn.",
+              "Focused automated regression test when the test runner and dependencies are available."
+            ],
+            "stop_conditions": [
+              "Stop if the API contract intentionally transfers ownership and permits in-place mutation.",
+              "Stop and broaden the investigation if individual pre-existing message objects are mutated, because a shallow sequence copy does not isolate nested objects.",
+              "Defer runtime confirmation if the repository's test runner or required dependencies are unavailable."
+            ],
+            "unresolved_or_deferred": [
+              "The committed test checks outer-list length, not object identity, exact preserved contents, or mutation of nested message dictionaries.",
+              "A fresh test execution is deferred because pytest is not installed in the supplied environment."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The GitHub bundle lacks issue body, comments, PR body, reviews, and status checks, so motivation and acceptance details beyond the commit, implementation, and test cannot be independently recovered.",
+        "The implementation deliberately performs a shallow list copy; evidence does not establish whether nested message objects must also be isolated.",
+        "The focused regression test was not freshly executed because pytest is unavailable in the environment."
+      ]
+    },
+    "call_sites": [
+      "run_conversation appends the current user message and final assistant message to `messages`, persists that sequence, and returns it in result[`messages`]; these operations explain why aliasing the caller's list caused mutation and why copying the list isolates the additions."
+    ],
+    "tests": [
+      "The added regression test passes a two-item history to run_conversation, records its original length, mocks a successful new answer, and asserts both that the caller's list length remains unchanged and that the returned message list has grown.",
+      "The regression test mocks the model response and patches session persistence, trajectory saving, and task-resource cleanup, isolating the list-ownership behavior from network and durable side effects."
+    ]
+  },
+  {
+    "episode_id": "earendil-works__pi__7707__a838c069",
+    "title": "Publish session forks and torn-tail repairs without exposing partial state",
+    "before": "At parent fadb74f684aaa7755463593e0564b58f9ed081e2, fork creation wrote the destination header directly to its final JSONL path and then appended copied entries, lane pointers, name, and labels one mutation at a time. A failure during that sequence could leave a discoverable partial fork. Torn-tail recovery similarly overwrote the original session file directly with its valid prefix, so an interrupted repair could damage the only persisted copy.",
+    "after": "At a838c069e6318edee8317eff759b74c3934745f0, the filesystem contract provides atomic rename-with-replacement. Fork semantics are first converted into a complete ordered mutation plan, and both fork creation and torn-tail repair build a sibling temporary file before atomically renaming it into place. Population or rename failures remove the temporary file and leave the destination absent or unchanged.",
+    "diff": "The change adds an atomic rename capability to the filesystem abstraction and Node implementation; introduces a shared stage-then-rename publication helper with best-effort temporary cleanup; moves fork mutation derivation into session state for reuse by memory and JSONL backends; delegates JSONL fork publication to storage so the entire header and mutation sequence is staged before visibility; and changes torn-tail truncation to publish a staged valid prefix. Failure-injection tests cover staging failure, rename failure, preservation of the original during failed repair, temporary-file cleanup, and successful reopening with fork state intact.",
+    "repository": "earendil-works/pi",
+    "revision": "github-issue-7707",
+    "evidence_ids": [
+      "E-COMMIT-001",
+      "E-BEFORE-FORK-001",
+      "E-BEFORE-REPAIR-001",
+      "E-RENAME-001",
+      "E-RENAME-TEST-001",
+      "E-PUBLISH-001",
+      "E-FORK-PLAN-001",
+      "E-FORK-CALL-001",
+      "E-FORK-PARITY-001",
+      "E-FORK-SUCCESS-TEST-001",
+      "E-FORK-FAILURE-TEST-001",
+      "E-REPAIR-CALL-001",
+      "E-REPAIR-FAILURE-TEST-001"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "earendil-works/pi",
+      "issue": 7707,
+      "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+      "manifest_metadata": {
+        "category": "state-continuity-and-resume",
+        "role": "train_candidate",
+        "case_id": "earendil-works__pi__7707__state-continuity-and-resume",
+        "sample_kind": "verified_substitute",
+        "seed_issue": 10121,
+        "seed_issue_url": "https://github.com/earendil-works/pi/issues/10121",
+        "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+        "resolution_url": "https://github.com/earendil-works/pi/pull/7707",
+        "provenance": {
+          "classification": "verified_substitute",
+          "seed": {
+            "repository": "earendil-works/pi",
+            "issue": 10121,
+            "url": "https://github.com/earendil-works/pi/issues/10121",
+            "table_note": "truncated assistant/tool call is replayed incorrectly and resume creates an empty session"
+          },
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 7707,
+            "url": "https://github.com/earendil-works/pi/pull/7707",
+            "pull_request": 7707,
+            "pull_request_url": "https://github.com/earendil-works/pi/pull/7707"
+          },
+          "commit": {
+            "sha": "a838c069e6318edee8317eff759b74c3934745f0",
+            "subject": "harness-v2 jsonl session atomic writes for forks & torn-tail truncation (#7707)",
+            "parents": [
+              "fadb74f684aaa7755463593e0564b58f9ed081e2"
+            ],
+            "body_excerpt": "* fix(agent): make JSONL publication crash-safe\n\n* fix(agent): move JSONL file creation from repo to storage\n\n* fix(agent): move JSONL forking from repo to storage\n\n* fix(agent): move fork mutation creation into session state"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "parent_and_changed_files_recorded",
+            "implementation_diff_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "earendil-works/pi",
+        "issue_number": 7707,
+        "issue": {
+          "number": 7707,
+          "title": "harness-v2 jsonl session atomic writes for forks & torn-tail truncation (#7707)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 7707,
+              "title": "harness-v2 jsonl session atomic writes for forks & torn-tail truncation (#7707)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tpackages/agent/src/harness/env/nodejs.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/session/jsonl/repo.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/session/jsonl/storage.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/session/jsonl/types.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/session/memory.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/session/state.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/types.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/test/harness/nodejs-env.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/test/harness/session/jsonl-storage.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/test/harness/session/jsonl.test.ts"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "a838c069e6318edee8317eff759b74c3934745f0",
+                "subject": "harness-v2 jsonl session atomic writes for forks & torn-tail truncation (#7707)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+        "pinned_ref": "a838c069e6318edee8317eff759b74c3934745f0",
+        "resolved_commit": "a838c069e6318edee8317eff759b74c3934745f0",
+        "parent_commit": "fadb74f684aaa7755463593e0564b58f9ed081e2",
+        "commit_show_stat": "commit a838c069e6318edee8317eff759b74c3934745f0\nAuthor:     David Brailovsky <davidbrai@gmail.com>\nAuthorDate: Thu Aug 6 11:46:58 2026 +0200\nCommit:     GitHub <noreply@github.com>\nCommitDate: Thu Aug 6 11:46:58 2026 +0200\n\n    harness-v2 jsonl session atomic writes for forks & torn-tail truncation (#7707)\n    \n    * fix(agent): make JSONL publication crash-safe\n    \n    * fix(agent): move JSONL file creation from repo to storage\n    \n    * fix(agent): move JSONL forking from repo to storage\n    \n    * fix(agent): move fork mutation creation into session state\n\n packages/agent/src/harness/env/nodejs.ts           |  28 ++-\n packages/agent/src/harness/session/jsonl/repo.ts   |  59 ++----\n .../agent/src/harness/session/jsonl/storage.ts     |  77 ++++---\n packages/agent/src/harness/session/jsonl/types.ts  |   1 +\n packages/agent/src/harness/session/memory.ts       |  49 +----\n packages/agent/src/harness/session/state.ts        |  42 ++++\n packages/agent/src/harness/types.ts                |   2 +\n packages/agent/test/harness/nodejs-env.test.ts     |  30 +++\n .../test/harness/session/jsonl-storage.test.ts     |  22 +-\n packages/agent/test/harness/session/jsonl.test.ts  | 223 ++++++++++++++++++++-\n 10 files changed, 407 insertions(+), 126 deletions(-)\n",
+        "changed_files_name_status": "M\tpackages/agent/src/harness/env/nodejs.ts\nM\tpackages/agent/src/harness/session/jsonl/repo.ts\nM\tpackages/agent/src/harness/session/jsonl/storage.ts\nM\tpackages/agent/src/harness/session/jsonl/types.ts\nM\tpackages/agent/src/harness/session/memory.ts\nM\tpackages/agent/src/harness/session/state.ts\nM\tpackages/agent/src/harness/types.ts\nM\tpackages/agent/test/harness/nodejs-env.test.ts\nM\tpackages/agent/test/harness/session/jsonl-storage.test.ts\nM\tpackages/agent/test/harness/session/jsonl.test.ts\n",
+        "linked_issue_numbers": [
+          7707
+        ],
+        "manifest_metadata": {
+          "category": "state-continuity-and-resume",
+          "theme": "state continuity and resume",
+          "file_sample": [
+            "packages/agent/src/harness/env/nodejs.ts",
+            "packages/agent/src/harness/session/jsonl/repo.ts",
+            "packages/agent/src/harness/session/jsonl/storage.ts",
+            "packages/agent/src/harness/session/jsonl/types.ts",
+            "packages/agent/src/harness/session/memory.ts",
+            "packages/agent/src/harness/session/state.ts",
+            "packages/agent/src/harness/types.ts",
+            "packages/agent/test/harness/nodejs-env.test.ts",
+            "packages/agent/test/harness/session/jsonl-storage.test.ts",
+            "packages/agent/test/harness/session/jsonl.test.ts"
+          ],
+          "case_id": "earendil-works__pi__7707__state-continuity-and-resume",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_substitute",
+          "seed_issue": 10121,
+          "seed_issue_url": "https://github.com/earendil-works/pi/issues/10121",
+          "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+          "resolution_url": "https://github.com/earendil-works/pi/pull/7707",
+          "source": "agent_core_seven_category_extraction_v2",
+          "provenance": {
+            "classification": "verified_substitute",
+            "seed": {
+              "repository": "earendil-works/pi",
+              "issue": 10121,
+              "url": "https://github.com/earendil-works/pi/issues/10121",
+              "table_note": "truncated assistant/tool call is replayed incorrectly and resume creates an empty session"
+            },
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 7707,
+              "url": "https://github.com/earendil-works/pi/pull/7707",
+              "pull_request": 7707,
+              "pull_request_url": "https://github.com/earendil-works/pi/pull/7707"
+            },
+            "commit": {
+              "sha": "a838c069e6318edee8317eff759b74c3934745f0",
+              "subject": "harness-v2 jsonl session atomic writes for forks & torn-tail truncation (#7707)",
+              "parents": [
+                "fadb74f684aaa7755463593e0564b58f9ed081e2"
+              ],
+              "body_excerpt": "* fix(agent): make JSONL publication crash-safe\n\n* fix(agent): move JSONL file creation from repo to storage\n\n* fix(agent): move JSONL forking from repo to storage\n\n* fix(agent): move fork mutation creation into session state"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "parent_and_changed_files_recorded",
+              "implementation_diff_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T10:05:21.811785+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "earendil-works__pi__7707__a838c069",
+          "title": "Publish session forks and torn-tail repairs without exposing partial state",
+          "before": "At parent fadb74f684aaa7755463593e0564b58f9ed081e2, fork creation wrote the destination header directly to its final JSONL path and then appended copied entries, lane pointers, name, and labels one mutation at a time. A failure during that sequence could leave a discoverable partial fork. Torn-tail recovery similarly overwrote the original session file directly with its valid prefix, so an interrupted repair could damage the only persisted copy.",
+          "after": "At a838c069e6318edee8317eff759b74c3934745f0, the filesystem contract provides atomic rename-with-replacement. Fork semantics are first converted into a complete ordered mutation plan, and both fork creation and torn-tail repair build a sibling temporary file before atomically renaming it into place. Population or rename failures remove the temporary file and leave the destination absent or unchanged.",
+          "diff": "The change adds an atomic rename capability to the filesystem abstraction and Node implementation; introduces a shared stage-then-rename publication helper with best-effort temporary cleanup; moves fork mutation derivation into session state for reuse by memory and JSONL backends; delegates JSONL fork publication to storage so the entire header and mutation sequence is staged before visibility; and changes torn-tail truncation to publish a staged valid prefix. Failure-injection tests cover staging failure, rename failure, preservation of the original during failed repair, temporary-file cleanup, and successful reopening with fork state intact."
+        },
+        "evidence_units": [
+          {
+            "id": "E-COMMIT-001",
+            "kind": "commit",
+            "claim": "Commit a838c069 is the implementation-bearing resolution for PR/issue 7707 and changes ten agent implementation and test files.",
+            "source": "issue-bundle.json linked_pull_requests[0].commits[0] and commit_show_stat; git show --stat a838c069e6318edee8317eff759b74c3934745f0"
+          },
+          {
+            "id": "E-BEFORE-FORK-001",
+            "kind": "diff",
+            "claim": "Before the change, the repository created the final fork file immediately, then copied entries, lanes, name, and labels through separate awaited appends, allowing a failed sequence to leave a partial destination.",
+            "source": "git show fadb74f684aaa7755463593e0564b58f9ed081e2:packages/agent/src/harness/session/jsonl/repo.ts lines 66-104 and 119-150"
+          },
+          {
+            "id": "E-BEFORE-REPAIR-001",
+            "kind": "diff",
+            "claim": "Before the change, detection of a malformed final JSONL line repaired the file by writing the valid prefix directly over the original path.",
+            "source": "git show fadb74f684aaa7755463593e0564b58f9ed081e2:packages/agent/src/harness/session/jsonl/storage.ts lines 33-58"
+          },
+          {
+            "id": "E-RENAME-001",
+            "kind": "implementation",
+            "claim": "The filesystem contract now exposes atomic rename with destination replacement, and the Node implementation resolves both paths, invokes rename, and reports source-path failures.",
+            "source": "git show a838c069e6318edee8317eff759b74c3934745f0:packages/agent/src/harness/types.ts lines 248-253; packages/agent/src/harness/env/nodejs.ts lines 585-600"
+          },
+          {
+            "id": "E-RENAME-TEST-001",
+            "kind": "test",
+            "claim": "Tests verify that rename removes the source, replaces existing destination content, reports a missing source path, and leaves the destination unchanged on failure.",
+            "source": "git show a838c069e6318edee8317eff759b74c3934745f0:packages/agent/test/harness/nodejs-env.test.ts lines 196-223"
+          },
+          {
+            "id": "E-PUBLISH-001",
+            "kind": "implementation",
+            "claim": "The publication helper populates a deterministic sibling .tmp file, renames it over the destination only after population completes, and removes the temporary file on population or rename failure while preserving the original error.",
+            "source": "git show a838c069e6318edee8317eff759b74c3934745f0:packages/agent/src/harness/session/jsonl/storage.ts lines 23-46"
+          },
+          {
+            "id": "E-FORK-PLAN-001",
+            "kind": "implementation",
+            "claim": "Session state derives a complete, consecutively sequenced fork mutation list containing the selected entries, lane pointers, optional name, and labels; invalid branch targets are rejected before publication.",
+            "source": "git show a838c069e6318edee8317eff759b74c3934745f0:packages/agent/src/harness/session/state.ts lines 260-299"
+          },
+          {
+            "id": "E-FORK-CALL-001",
+            "kind": "call_site",
+            "claim": "The repository prepares only the destination header and path, then delegates the fork to source storage; JSONL storage stages the header and every derived mutation before atomic publication and reloads the published file.",
+            "source": "git show a838c069e6318edee8317eff759b74c3934745f0:packages/agent/src/harness/session/jsonl/repo.ts lines 67-76 and 91-120; packages/agent/src/harness/session/jsonl/storage.ts lines 99-109"
+          },
+          {
+            "id": "E-FORK-PARITY-001",
+            "kind": "call_site",
+            "claim": "The in-memory backend consumes the same fork mutation derivation as the JSONL backend, keeping fork selection and metadata-copy semantics aligned across storage implementations.",
+            "source": "git show a838c069e6318edee8317eff759b74c3934745f0:packages/agent/src/harness/session/memory.ts lines 25-36"
+          },
+          {
+            "id": "E-FORK-SUCCESS-TEST-001",
+            "kind": "test",
+            "claim": "Successful fork tests verify persisted message counts and verify that a reopened tree fork retains entries, lanes, name, labels, and excludes records.",
+            "source": "git show a838c069e6318edee8317eff759b74c3934745f0:packages/agent/test/harness/session/jsonl.test.ts lines 230-285"
+          },
+          {
+            "id": "E-FORK-FAILURE-TEST-001",
+            "kind": "test",
+            "claim": "Failure-injection tests verify that append failure during staging and atomic rename failure publish no fork, keep only the source session listed, and leave no .tmp file.",
+            "source": "git show a838c069e6318edee8317eff759b74c3934745f0:packages/agent/test/harness/session/jsonl.test.ts lines 287-329"
+          },
+          {
+            "id": "E-REPAIR-CALL-001",
+            "kind": "call_site",
+            "claim": "When replay detects a parse failure confined to the physical final line, storage stages the valid prefix through the atomic publication helper rather than overwriting the session directly.",
+            "source": "git show a838c069e6318edee8317eff759b74c3934745f0:packages/agent/src/harness/session/jsonl/storage.ts lines 69-96"
+          },
+          {
+            "id": "E-REPAIR-FAILURE-TEST-001",
+            "kind": "test",
+            "claim": "A repair failure injected after truncating the staged file causes open to fail while the original torn session remains byte-for-byte unchanged and the temporary file is removed.",
+            "source": "git show a838c069e6318edee8317eff759b74c3934745f0:packages/agent/test/harness/session/jsonl.test.ts lines 625-648"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "provide-atomic-file-replacement",
+            "title": "Provide atomic destination replacement",
+            "description": "Expose a filesystem operation that commits a fully prepared sibling file by atomically replacing the destination and returns structured path-aware failures.",
+            "evidence_ids": [
+              "E-RENAME-001",
+              "E-RENAME-TEST-001"
+            ],
+            "semantic_action": {
+              "intent": "Make a prepared file become visible as one replacement event without exposing intermediate destination content.",
+              "module_role": "filesystem capability boundary",
+              "operation": "adapt",
+              "pre_state": "A complete source file and a destination path on a filesystem that supports same-filesystem atomic rename are available.",
+              "post_state": "On success the source no longer exists and the destination contains the source content; on rename failure the existing destination remains unchanged and the error identifies the failing source when available.",
+              "validation": "Replace an existing destination and assert the source disappears and new content is visible; inject a missing-source failure and assert the prior destination content remains.",
+              "parameters": [
+                "source_path",
+                "destination_path",
+                "abort_signal"
+              ],
+              "evidence_ids": [
+                "E-RENAME-001",
+                "E-RENAME-TEST-001"
+              ]
+            }
+          },
+          {
+            "name": "derive-complete-fork-mutation-plan",
+            "title": "Derive the complete fork state before persistence",
+            "description": "Convert fork selection options and current session state into one ordered mutation plan shared by persistent and in-memory backends.",
+            "evidence_ids": [
+              "E-FORK-PLAN-001",
+              "E-FORK-PARITY-001",
+              "E-FORK-SUCCESS-TEST-001"
+            ],
+            "semantic_action": {
+              "intent": "Determine and validate all state required by a session fork before any destination is published.",
+              "module_role": "session state transition planner",
+              "operation": "normalize",
+              "pre_state": "A valid source session state and fork scope, target entry, and position options are available.",
+              "post_state": "A consecutively sequenced mutation list represents the selected entries, resulting lanes, optional session name, and labels; an invalid fork target fails before destination publication.",
+              "validation": "Create and reopen branch and tree forks, then compare message counts, entries, lanes, name, labels, and excluded records with the selected source state.",
+              "parameters": [
+                "source_session_state",
+                "fork_scope",
+                "selected_entry_id",
+                "fork_position"
+              ],
+              "evidence_ids": [
+                "E-FORK-PLAN-001",
+                "E-FORK-PARITY-001",
+                "E-FORK-SUCCESS-TEST-001"
+              ]
+            }
+          },
+          {
+            "name": "publish-complete-fork-atomically",
+            "title": "Publish a fork only after it is complete",
+            "description": "Build the fork header and all planned mutations in a sibling temporary file, then expose the fork through one atomic replacement and clean up failed staging artifacts.",
+            "evidence_ids": [
+              "E-PUBLISH-001",
+              "E-FORK-CALL-001",
+              "E-FORK-FAILURE-TEST-001",
+              "E-FORK-SUCCESS-TEST-001"
+            ],
+            "semantic_action": {
+              "intent": "Prevent incomplete derived sessions from becoming discoverable after interrupted or failed fork creation.",
+              "module_role": "persistent session publication boundary",
+              "operation": "reconcile",
+              "pre_state": "A destination header, destination path, and complete validated fork mutation plan exist while the final destination is not yet published.",
+              "post_state": "Either a complete reopenable fork is present at the destination, or no fork and no staging file is visible after a reported failure.",
+              "validation": "Inject failures during mutation staging and final rename and assert the fork is absent from repository listing with no .tmp residue; on success reopen and verify all selected state.",
+              "parameters": [
+                "destination_path",
+                "session_header",
+                "fork_mutations",
+                "filesystem"
+              ],
+              "evidence_ids": [
+                "E-PUBLISH-001",
+                "E-FORK-CALL-001",
+                "E-FORK-FAILURE-TEST-001",
+                "E-FORK-SUCCESS-TEST-001"
+              ]
+            }
+          },
+          {
+            "name": "repair-torn-tail-with-atomic-replacement",
+            "title": "Repair a torn log tail without risking the original",
+            "description": "Stage the valid JSONL prefix separately and replace the damaged session only after the repaired file is complete.",
+            "evidence_ids": [
+              "E-BEFORE-REPAIR-001",
+              "E-PUBLISH-001",
+              "E-REPAIR-CALL-001",
+              "E-REPAIR-FAILURE-TEST-001"
+            ],
+            "semantic_action": {
+              "intent": "Recover replayable state from an incomplete final record without destroying the original session if repair is interrupted.",
+              "module_role": "persistent session recovery boundary",
+              "operation": "repair",
+              "pre_state": "Replay has accepted all preceding mutations and identified a parse failure confined to the final physical line with an underlying parse cause.",
+              "post_state": "On successful publication the session contains the valid prefix; on staging or rename failure the original bytes remain unchanged and the staging file is removed.",
+              "validation": "Inject a failure after damaging the staged repair file, then assert open reports a storage error, the original session bytes are unchanged, and no .tmp file remains.",
+              "parameters": [
+                "session_path",
+                "valid_prefix",
+                "filesystem"
+              ],
+              "evidence_ids": [
+                "E-PUBLISH-001",
+                "E-REPAIR-CALL-001",
+                "E-REPAIR-FAILURE-TEST-001"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "crash-safe-derived-session-publication",
+            "title": "Create a derived session without exposing partial state",
+            "description": "Plan the entire derived state first, stage it outside the visible destination, and publish it with one atomic filesystem operation.",
+            "atomic_names": [
+              "provide-atomic-file-replacement",
+              "derive-complete-fork-mutation-plan",
+              "publish-complete-fork-atomically"
+            ],
+            "evidence_ids": [
+              "E-BEFORE-FORK-001",
+              "E-RENAME-001",
+              "E-PUBLISH-001",
+              "E-FORK-PLAN-001",
+              "E-FORK-CALL-001",
+              "E-FORK-SUCCESS-TEST-001",
+              "E-FORK-FAILURE-TEST-001"
+            ],
+            "workflow_graph": {
+              "goal": "A derived persistent session is either complete and reopenable or entirely absent after any reported staging or publication failure.",
+              "when_to_use": [
+                "Creating a new persistent state artifact requires copying multiple entries, pointers, or metadata from an existing session.",
+                "The destination can be observed by repository listing or opened while multi-step construction failures are possible."
+              ],
+              "anti_goals": [
+                "Do not publish the destination header before all derived mutations are staged.",
+                "Do not change which entries, lanes, name, or labels the fork operation selects.",
+                "Do not treat deletion of a partially published destination as equivalent to never publishing it."
+              ],
+              "not_applicable_when": [
+                "The operation is a normal append to an already published log rather than publication of a new complete artifact.",
+                "The filesystem cannot provide same-filesystem atomic rename-with-replacement semantics.",
+                "The destination is intentionally designed to expose incremental construction."
+              ],
+              "inputs": [
+                "source session state",
+                "fork scope and optional target position",
+                "destination header and path",
+                "filesystem atomic replacement capability"
+              ],
+              "entry_state": "The source session is loadable, the destination is not published, and fork selection has not yet been materialized as one complete persistence plan.",
+              "exit_state": "The destination contains a complete validated fork that reopens with the selected state, or failure leaves neither a visible destination nor a staging artifact.",
+              "steps": [
+                {
+                  "action_name": "provide-atomic-file-replacement",
+                  "role": "establish-contract",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "The persistent backend publishes files through an injected filesystem abstraction.",
+                  "validation": "Replacing an existing file is atomic at the abstraction boundary, and failed rename preserves its destination."
+                },
+                {
+                  "action_name": "derive-complete-fork-mutation-plan",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "The derived artifact is a session fork selected by tree or branch options.",
+                  "validation": "The plan has consecutive sequence numbers and reconstitutes selected entries, lane pointers, name, and labels while rejecting invalid targets."
+                },
+                {
+                  "action_name": "publish-complete-fork-atomically",
+                  "role": "reconcile",
+                  "required": true,
+                  "depends_on": [
+                    "provide-atomic-file-replacement",
+                    "derive-complete-fork-mutation-plan"
+                  ],
+                  "condition": "A validated plan and destination header are available.",
+                  "validation": "Injected staging and rename failures expose no fork and leave no temporary file; successful publication reopens with complete state."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "provide-atomic-file-replacement",
+                  "to": "publish-complete-fork-atomically",
+                  "type": "enables"
+                },
+                {
+                  "from": "derive-complete-fork-mutation-plan",
+                  "to": "publish-complete-fork-atomically",
+                  "type": "requires"
+                },
+                {
+                  "from": "publish-complete-fork-atomically",
+                  "to": "derive-complete-fork-mutation-plan",
+                  "type": "validates"
+                }
+              ],
+              "validation_ladder": [
+                "Verify atomic replacement semantics and path-aware failure reporting at the filesystem boundary.",
+                "Verify successful reopened forks preserve message counts, entries, lanes, name, and labels.",
+                "Inject failure during staged mutation writing and verify the fork is not listed and no temporary file remains.",
+                "Inject failure during final rename and verify the same absence and cleanup invariants."
+              ],
+              "stop_conditions": [
+                "Stop if the complete derived state cannot be determined before writing the destination.",
+                "Stop if source and destination cannot reside on a filesystem supporting atomic rename.",
+                "Stop and report failure if staging or rename fails; do not expose or continue using the destination."
+              ],
+              "unresolved_or_deferred": [
+                "Concurrent publications to the same destination require caller serialization because the implementation uses a deterministic sibling .tmp path."
+              ]
+            }
+          },
+          {
+            "name": "failure-safe-torn-log-recovery",
+            "title": "Recover a torn persistent log without overwriting the original in place",
+            "description": "Identify a recoverable incomplete final record, stage the accepted prefix separately, and atomically replace the damaged log only after staging succeeds.",
+            "atomic_names": [
+              "provide-atomic-file-replacement",
+              "repair-torn-tail-with-atomic-replacement"
+            ],
+            "evidence_ids": [
+              "E-BEFORE-REPAIR-001",
+              "E-RENAME-001",
+              "E-PUBLISH-001",
+              "E-REPAIR-CALL-001",
+              "E-REPAIR-FAILURE-TEST-001"
+            ],
+            "workflow_graph": {
+              "goal": "Restore a replayable log prefix while preserving the original bytes whenever repair publication fails.",
+              "when_to_use": [
+                "Sequential replay succeeds through a valid prefix and only the final physical record is syntactically incomplete.",
+                "Repair requires replacing persisted content rather than merely appending a missing newline."
+              ],
+              "anti_goals": [
+                "Do not truncate the original file before a complete repaired replacement is ready.",
+                "Do not silently repair malformed interior records or semantically invalid complete records.",
+                "Do not discard the original error when temporary cleanup runs."
+              ],
+              "not_applicable_when": [
+                "The malformed record is not the final physical line.",
+                "The final record is complete but violates replay invariants.",
+                "The only defect is a valid final line missing its terminating newline and append-only repair is sufficient."
+              ],
+              "inputs": [
+                "damaged session path",
+                "accepted physical lines forming the valid prefix",
+                "parse failure classification",
+                "filesystem atomic replacement capability"
+              ],
+              "entry_state": "The original log remains present, replay has accepted its prefix, and the final physical line has a parse failure with an underlying cause.",
+              "exit_state": "The destination contains the valid replayable prefix, or a reported failure leaves the original damaged bytes unchanged and removes the staging file.",
+              "steps": [
+                {
+                  "action_name": "provide-atomic-file-replacement",
+                  "role": "establish-contract",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "Recovery can stage a sibling file on the same filesystem as the session.",
+                  "validation": "Atomic replacement succeeds as one rename event and rename failure leaves existing destination content unchanged."
+                },
+                {
+                  "action_name": "repair-torn-tail-with-atomic-replacement",
+                  "role": "repair",
+                  "required": true,
+                  "depends_on": [
+                    "provide-atomic-file-replacement"
+                  ],
+                  "condition": "The parse failure is confined to the final physical line and prior mutations have replayed successfully.",
+                  "validation": "A failed staged repair preserves the original byte sequence and removes the .tmp file; successful repair returns storage representing the accepted prefix."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "provide-atomic-file-replacement",
+                  "to": "repair-torn-tail-with-atomic-replacement",
+                  "type": "enables"
+                },
+                {
+                  "from": "repair-torn-tail-with-atomic-replacement",
+                  "to": "provide-atomic-file-replacement",
+                  "type": "validates"
+                }
+              ],
+              "validation_ladder": [
+                "Classify the corruption and reject malformed interior or complete semantically invalid mutations.",
+                "Verify the computed repair content is exactly the accepted prefix plus a terminating newline.",
+                "Inject a staging failure after modifying the temporary file and verify the original bytes remain unchanged.",
+                "Verify cleanup removes the sibling temporary file on failure."
+              ],
+              "stop_conditions": [
+                "Stop without repair if corruption is not confined to the final physical line.",
+                "Stop without repair if replay of any complete preceding mutation fails.",
+                "Stop and preserve the original if staging or atomic rename fails."
+              ],
+              "unresolved_or_deferred": [
+                "The evidence bundle contains no CI status or reviewer discussion, so validation is grounded in committed tests rather than recorded test-run results."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "The GitHub bundle omits the PR body, reviews, comments, timeline, and status checks, so the exact reported production failure trace and executed CI results are unavailable.",
+          "The helper documentation requires serialization for publications sharing a destination because they use the same deterministic .tmp path; this commit does not add or test such serialization."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "provide-atomic-file-replacement",
+          "title": "Provide atomic destination replacement",
+          "description": "Expose a filesystem operation that commits a fully prepared sibling file by atomically replacing the destination and returns structured path-aware failures.",
+          "evidence_ids": [
+            "E-RENAME-001",
+            "E-RENAME-TEST-001"
+          ],
+          "semantic_action": {
+            "intent": "Make a prepared file become visible as one replacement event without exposing intermediate destination content.",
+            "module_role": "filesystem capability boundary",
+            "operation": "adapt",
+            "pre_state": "A complete source file and a destination path on a filesystem that supports same-filesystem atomic rename are available.",
+            "post_state": "On success the source no longer exists and the destination contains the source content; on rename failure the existing destination remains unchanged and the error identifies the failing source when available.",
+            "validation": "Replace an existing destination and assert the source disappears and new content is visible; inject a missing-source failure and assert the prior destination content remains.",
+            "parameters": [
+              "source_path",
+              "destination_path",
+              "abort_signal"
+            ],
+            "evidence_ids": [
+              "E-RENAME-001",
+              "E-RENAME-TEST-001"
+            ]
+          }
+        },
+        {
+          "name": "derive-complete-fork-mutation-plan",
+          "title": "Derive the complete fork state before persistence",
+          "description": "Convert fork selection options and current session state into one ordered mutation plan shared by persistent and in-memory backends.",
+          "evidence_ids": [
+            "E-FORK-PLAN-001",
+            "E-FORK-PARITY-001",
+            "E-FORK-SUCCESS-TEST-001"
+          ],
+          "semantic_action": {
+            "intent": "Determine and validate all state required by a session fork before any destination is published.",
+            "module_role": "session state transition planner",
+            "operation": "normalize",
+            "pre_state": "A valid source session state and fork scope, target entry, and position options are available.",
+            "post_state": "A consecutively sequenced mutation list represents the selected entries, resulting lanes, optional session name, and labels; an invalid fork target fails before destination publication.",
+            "validation": "Create and reopen branch and tree forks, then compare message counts, entries, lanes, name, labels, and excluded records with the selected source state.",
+            "parameters": [
+              "source_session_state",
+              "fork_scope",
+              "selected_entry_id",
+              "fork_position"
+            ],
+            "evidence_ids": [
+              "E-FORK-PLAN-001",
+              "E-FORK-PARITY-001",
+              "E-FORK-SUCCESS-TEST-001"
+            ]
+          }
+        },
+        {
+          "name": "publish-complete-fork-atomically",
+          "title": "Publish a fork only after it is complete",
+          "description": "Build the fork header and all planned mutations in a sibling temporary file, then expose the fork through one atomic replacement and clean up failed staging artifacts.",
+          "evidence_ids": [
+            "E-PUBLISH-001",
+            "E-FORK-CALL-001",
+            "E-FORK-FAILURE-TEST-001",
+            "E-FORK-SUCCESS-TEST-001"
+          ],
+          "semantic_action": {
+            "intent": "Prevent incomplete derived sessions from becoming discoverable after interrupted or failed fork creation.",
+            "module_role": "persistent session publication boundary",
+            "operation": "reconcile",
+            "pre_state": "A destination header, destination path, and complete validated fork mutation plan exist while the final destination is not yet published.",
+            "post_state": "Either a complete reopenable fork is present at the destination, or no fork and no staging file is visible after a reported failure.",
+            "validation": "Inject failures during mutation staging and final rename and assert the fork is absent from repository listing with no .tmp residue; on success reopen and verify all selected state.",
+            "parameters": [
+              "destination_path",
+              "session_header",
+              "fork_mutations",
+              "filesystem"
+            ],
+            "evidence_ids": [
+              "E-PUBLISH-001",
+              "E-FORK-CALL-001",
+              "E-FORK-FAILURE-TEST-001",
+              "E-FORK-SUCCESS-TEST-001"
+            ]
+          }
+        },
+        {
+          "name": "repair-torn-tail-with-atomic-replacement",
+          "title": "Repair a torn log tail without risking the original",
+          "description": "Stage the valid JSONL prefix separately and replace the damaged session only after the repaired file is complete.",
+          "evidence_ids": [
+            "E-BEFORE-REPAIR-001",
+            "E-PUBLISH-001",
+            "E-REPAIR-CALL-001",
+            "E-REPAIR-FAILURE-TEST-001"
+          ],
+          "semantic_action": {
+            "intent": "Recover replayable state from an incomplete final record without destroying the original session if repair is interrupted.",
+            "module_role": "persistent session recovery boundary",
+            "operation": "repair",
+            "pre_state": "Replay has accepted all preceding mutations and identified a parse failure confined to the final physical line with an underlying parse cause.",
+            "post_state": "On successful publication the session contains the valid prefix; on staging or rename failure the original bytes remain unchanged and the staging file is removed.",
+            "validation": "Inject a failure after damaging the staged repair file, then assert open reports a storage error, the original session bytes are unchanged, and no .tmp file remains.",
+            "parameters": [
+              "session_path",
+              "valid_prefix",
+              "filesystem"
+            ],
+            "evidence_ids": [
+              "E-PUBLISH-001",
+              "E-REPAIR-CALL-001",
+              "E-REPAIR-FAILURE-TEST-001"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "crash-safe-derived-session-publication",
+          "title": "Create a derived session without exposing partial state",
+          "description": "Plan the entire derived state first, stage it outside the visible destination, and publish it with one atomic filesystem operation.",
+          "atomic_names": [
+            "provide-atomic-file-replacement",
+            "derive-complete-fork-mutation-plan",
+            "publish-complete-fork-atomically"
+          ],
+          "evidence_ids": [
+            "E-BEFORE-FORK-001",
+            "E-RENAME-001",
+            "E-PUBLISH-001",
+            "E-FORK-PLAN-001",
+            "E-FORK-CALL-001",
+            "E-FORK-SUCCESS-TEST-001",
+            "E-FORK-FAILURE-TEST-001"
+          ],
+          "workflow_graph": {
+            "goal": "A derived persistent session is either complete and reopenable or entirely absent after any reported staging or publication failure.",
+            "when_to_use": [
+              "Creating a new persistent state artifact requires copying multiple entries, pointers, or metadata from an existing session.",
+              "The destination can be observed by repository listing or opened while multi-step construction failures are possible."
+            ],
+            "anti_goals": [
+              "Do not publish the destination header before all derived mutations are staged.",
+              "Do not change which entries, lanes, name, or labels the fork operation selects.",
+              "Do not treat deletion of a partially published destination as equivalent to never publishing it."
+            ],
+            "not_applicable_when": [
+              "The operation is a normal append to an already published log rather than publication of a new complete artifact.",
+              "The filesystem cannot provide same-filesystem atomic rename-with-replacement semantics.",
+              "The destination is intentionally designed to expose incremental construction."
+            ],
+            "inputs": [
+              "source session state",
+              "fork scope and optional target position",
+              "destination header and path",
+              "filesystem atomic replacement capability"
+            ],
+            "entry_state": "The source session is loadable, the destination is not published, and fork selection has not yet been materialized as one complete persistence plan.",
+            "exit_state": "The destination contains a complete validated fork that reopens with the selected state, or failure leaves neither a visible destination nor a staging artifact.",
+            "steps": [
+              {
+                "action_name": "provide-atomic-file-replacement",
+                "role": "establish-contract",
+                "required": true,
+                "depends_on": [],
+                "condition": "The persistent backend publishes files through an injected filesystem abstraction.",
+                "validation": "Replacing an existing file is atomic at the abstraction boundary, and failed rename preserves its destination."
+              },
+              {
+                "action_name": "derive-complete-fork-mutation-plan",
+                "role": "implement",
+                "required": true,
+                "depends_on": [],
+                "condition": "The derived artifact is a session fork selected by tree or branch options.",
+                "validation": "The plan has consecutive sequence numbers and reconstitutes selected entries, lane pointers, name, and labels while rejecting invalid targets."
+              },
+              {
+                "action_name": "publish-complete-fork-atomically",
+                "role": "reconcile",
+                "required": true,
+                "depends_on": [
+                  "provide-atomic-file-replacement",
+                  "derive-complete-fork-mutation-plan"
+                ],
+                "condition": "A validated plan and destination header are available.",
+                "validation": "Injected staging and rename failures expose no fork and leave no temporary file; successful publication reopens with complete state."
+              }
+            ],
+            "edges": [
+              {
+                "from": "provide-atomic-file-replacement",
+                "to": "publish-complete-fork-atomically",
+                "type": "enables"
+              },
+              {
+                "from": "derive-complete-fork-mutation-plan",
+                "to": "publish-complete-fork-atomically",
+                "type": "requires"
+              },
+              {
+                "from": "publish-complete-fork-atomically",
+                "to": "derive-complete-fork-mutation-plan",
+                "type": "validates"
+              }
+            ],
+            "validation_ladder": [
+              "Verify atomic replacement semantics and path-aware failure reporting at the filesystem boundary.",
+              "Verify successful reopened forks preserve message counts, entries, lanes, name, and labels.",
+              "Inject failure during staged mutation writing and verify the fork is not listed and no temporary file remains.",
+              "Inject failure during final rename and verify the same absence and cleanup invariants."
+            ],
+            "stop_conditions": [
+              "Stop if the complete derived state cannot be determined before writing the destination.",
+              "Stop if source and destination cannot reside on a filesystem supporting atomic rename.",
+              "Stop and report failure if staging or rename fails; do not expose or continue using the destination."
+            ],
+            "unresolved_or_deferred": [
+              "Concurrent publications to the same destination require caller serialization because the implementation uses a deterministic sibling .tmp path."
+            ]
+          }
+        },
+        {
+          "name": "failure-safe-torn-log-recovery",
+          "title": "Recover a torn persistent log without overwriting the original in place",
+          "description": "Identify a recoverable incomplete final record, stage the accepted prefix separately, and atomically replace the damaged log only after staging succeeds.",
+          "atomic_names": [
+            "provide-atomic-file-replacement",
+            "repair-torn-tail-with-atomic-replacement"
+          ],
+          "evidence_ids": [
+            "E-BEFORE-REPAIR-001",
+            "E-RENAME-001",
+            "E-PUBLISH-001",
+            "E-REPAIR-CALL-001",
+            "E-REPAIR-FAILURE-TEST-001"
+          ],
+          "workflow_graph": {
+            "goal": "Restore a replayable log prefix while preserving the original bytes whenever repair publication fails.",
+            "when_to_use": [
+              "Sequential replay succeeds through a valid prefix and only the final physical record is syntactically incomplete.",
+              "Repair requires replacing persisted content rather than merely appending a missing newline."
+            ],
+            "anti_goals": [
+              "Do not truncate the original file before a complete repaired replacement is ready.",
+              "Do not silently repair malformed interior records or semantically invalid complete records.",
+              "Do not discard the original error when temporary cleanup runs."
+            ],
+            "not_applicable_when": [
+              "The malformed record is not the final physical line.",
+              "The final record is complete but violates replay invariants.",
+              "The only defect is a valid final line missing its terminating newline and append-only repair is sufficient."
+            ],
+            "inputs": [
+              "damaged session path",
+              "accepted physical lines forming the valid prefix",
+              "parse failure classification",
+              "filesystem atomic replacement capability"
+            ],
+            "entry_state": "The original log remains present, replay has accepted its prefix, and the final physical line has a parse failure with an underlying cause.",
+            "exit_state": "The destination contains the valid replayable prefix, or a reported failure leaves the original damaged bytes unchanged and removes the staging file.",
+            "steps": [
+              {
+                "action_name": "provide-atomic-file-replacement",
+                "role": "establish-contract",
+                "required": true,
+                "depends_on": [],
+                "condition": "Recovery can stage a sibling file on the same filesystem as the session.",
+                "validation": "Atomic replacement succeeds as one rename event and rename failure leaves existing destination content unchanged."
+              },
+              {
+                "action_name": "repair-torn-tail-with-atomic-replacement",
+                "role": "repair",
+                "required": true,
+                "depends_on": [
+                  "provide-atomic-file-replacement"
+                ],
+                "condition": "The parse failure is confined to the final physical line and prior mutations have replayed successfully.",
+                "validation": "A failed staged repair preserves the original byte sequence and removes the .tmp file; successful repair returns storage representing the accepted prefix."
+              }
+            ],
+            "edges": [
+              {
+                "from": "provide-atomic-file-replacement",
+                "to": "repair-torn-tail-with-atomic-replacement",
+                "type": "enables"
+              },
+              {
+                "from": "repair-torn-tail-with-atomic-replacement",
+                "to": "provide-atomic-file-replacement",
+                "type": "validates"
+              }
+            ],
+            "validation_ladder": [
+              "Classify the corruption and reject malformed interior or complete semantically invalid mutations.",
+              "Verify the computed repair content is exactly the accepted prefix plus a terminating newline.",
+              "Inject a staging failure after modifying the temporary file and verify the original bytes remain unchanged.",
+              "Verify cleanup removes the sibling temporary file on failure."
+            ],
+            "stop_conditions": [
+              "Stop without repair if corruption is not confined to the final physical line.",
+              "Stop without repair if replay of any complete preceding mutation fails.",
+              "Stop and preserve the original if staging or atomic rename fails."
+            ],
+            "unresolved_or_deferred": [
+              "The evidence bundle contains no CI status or reviewer discussion, so validation is grounded in committed tests rather than recorded test-run results."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The GitHub bundle omits the PR body, reviews, comments, timeline, and status checks, so the exact reported production failure trace and executed CI results are unavailable.",
+        "The helper documentation requires serialization for publications sharing a destination because they use the same deterministic .tmp path; this commit does not add or test such serialization."
+      ]
+    },
+    "call_sites": [
+      "The repository prepares only the destination header and path, then delegates the fork to source storage; JSONL storage stages the header and every derived mutation before atomic publication and reloads the published file.",
+      "The in-memory backend consumes the same fork mutation derivation as the JSONL backend, keeping fork selection and metadata-copy semantics aligned across storage implementations.",
+      "When replay detects a parse failure confined to the physical final line, storage stages the valid prefix through the atomic publication helper rather than overwriting the session directly."
+    ],
+    "tests": [
+      "Tests verify that rename removes the source, replaces existing destination content, reports a missing source path, and leaves the destination unchanged on failure.",
+      "Successful fork tests verify persisted message counts and verify that a reopened tree fork retains entries, lanes, name, labels, and excludes records.",
+      "Failure-injection tests verify that append failure during staging and atomic rename failure publish no fork, keep only the source session listed, and leave no .tmp file.",
+      "A repair failure injected after truncating the staged file causes open to fail while the original torn session remains byte-for-byte unchanged and the temporary file is removed."
+    ]
+  },
+  {
+    "episode_id": "QwenLM__qwen-code__9050__e0b8bea9",
+    "title": "Restore sessions under the selected workspace runtime’s storage context",
+    "before": "At parent 9b716cc0e61ffdd4967665d7c0e3c952cf06d7de, both REST and ACP restore paths selected a workspace runtime and constructed a SessionService with that runtime’s sessionRuntimeBaseDir, but the surrounding asynchronous load/resume operation was not executed inside Storage.runWithResolvedRuntimeBaseDir. Consequently, bridge restore work and nested code consulting Storage.getRuntimeBaseDir could observe the process/default runtime root instead of the selected workspace runtime root.",
+    "after": "At e0b8bea9e0ba369a0661bc51cbbb9a27555aff48, the REST load/resume critical section and the ACP load/resume critical section are invoked through runWithWorkspaceRuntimeStorage using the selected runtime. The ambient resolved storage root therefore remains pinned to sessionRuntimeBaseDir throughout asynchronous restore work. Tests cover both load and resume through REST with a secondary workspace root and through ACP after runtime replacement with a distinct root.",
+    "diff": "The change wraps the REST archive-coordinated restore callback in runWithWorkspaceRuntimeStorage(runtime, ...), extracts the ACP archive-coordinated restore callback as restoreInRuntime and invokes it through the same helper, broadens that helper’s parameter type to the minimal sessionRuntimeBaseDir-bearing runtime projection, and adds four parameterized regression cases covering REST load/resume and ACP load/resume against non-default selected runtime roots.",
+    "repository": "QwenLM/qwen-code",
+    "revision": "github-issue-9050",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "QwenLM/qwen-code",
+      "issue": 9050,
+      "checkout": "/home/chenyujia/tritonToLlvm/qwen-code",
+      "manifest_metadata": {
+        "category": "state-continuity-and-resume",
+        "role": "train_candidate",
+        "case_id": "QwenLM__qwen-code__9050__state-continuity-and-resume",
+        "sample_kind": "verified_substitute",
+        "seed_issue": 9573,
+        "seed_issue_url": "https://github.com/QwenLM/qwen-code/issues/9573",
+        "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+        "resolution_url": "https://github.com/QwenLM/qwen-code/pull/9050",
+        "provenance": {
+          "classification": "verified_substitute",
+          "seed": {
+            "repository": "QwenLM/qwen-code",
+            "issue": 9573,
+            "url": "https://github.com/QwenLM/qwen-code/issues/9573",
+            "table_note": "resumed session is missing a saved tool result"
+          },
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 9050,
+            "url": "https://github.com/QwenLM/qwen-code/pull/9050",
+            "pull_request": 9050,
+            "pull_request_url": "https://github.com/QwenLM/qwen-code/pull/9050"
+          },
+          "commit": {
+            "sha": "e0b8bea9e0ba369a0661bc51cbbb9a27555aff48",
+            "subject": "fix(cli): restore sessions in selected workspace runtime (#9050)",
+            "parents": [
+              "9b716cc0e61ffdd4967665d7c0e3c952cf06d7de"
+            ],
+            "body_excerpt": "* fix(cli): restore sessions in workspace runtime\n\n* fix(cli): pin ACP restores to workspace runtime\n\n---------\n\nCo-authored-by: 西岐 <fengqi.mfq@alibaba-inc.com>\nCo-authored-by: wenshao <shaojin.wensj@alibaba-inc.com>\nCo-authored-by: qwen-code-dev-bot <qwen-code-dev-bot@users.noreply.github.com>"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "parent_and_changed_files_recorded",
+            "implementation_diff_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "QwenLM/qwen-code",
+        "issue_number": 9050,
+        "issue": {
+          "number": 9050,
+          "title": "fix(cli): restore sessions in selected workspace runtime (#9050)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 9050,
+              "title": "fix(cli): restore sessions in selected workspace runtime (#9050)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tpackages/cli/src/serve/acp-http/dispatch.ts"
+              },
+              {
+                "status_line": "M\tpackages/cli/src/serve/acp-http/workspace-qualified-acp.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/cli/src/serve/multi-workspace-sessions.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/cli/src/serve/routes/session.ts"
+              },
+              {
+                "status_line": "M\tpackages/cli/src/serve/workspace-runtime-storage.ts"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "e0b8bea9e0ba369a0661bc51cbbb9a27555aff48",
+                "subject": "fix(cli): restore sessions in selected workspace runtime (#9050)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/qwen-code",
+        "pinned_ref": "e0b8bea9e0ba369a0661bc51cbbb9a27555aff48",
+        "resolved_commit": "e0b8bea9e0ba369a0661bc51cbbb9a27555aff48",
+        "parent_commit": "9b716cc0e61ffdd4967665d7c0e3c952cf06d7de",
+        "commit_show_stat": "tree 17a9fd0c92f614d78863dda385f167453daaaec1\nparent 9b716cc0e61ffdd4967665d7c0e3c952cf06d7de\nauthor XIQI <75725040+XIQIXIQIXIQI@users.noreply.github.com> 1790505165 +0000\ncommitter GitHub <noreply@github.com> 1790505165 +0000\ngpgsig -----BEGIN PGP SIGNATURE-----\n \n wsFcBAABCAAQBQJquPDeCRC1aQ7uu5UhlAAA2XMQAFwPKBX6YH1IDGpFYkIlY8UC\n xF5kxrKZxe5OS7LtMf9F1JWfoPnMRjA2ZJ/+ey2JLe3djxTpNuCpGHzT3jZKFuyn\n /THb6SpkTzFKFdE+XjKGQsVq0QMrd1TG6Qf9sKXKtokeu1KP4qsJH9QLOLJRxtjC\n csc/JXsXxnNLL/yJuU0lyT+YFUc+KAr8cN6c7lc0iggo+v2uZ2mvm4CljrXAV8nG\n OJnssgnjZqbwilgQcdlU9hjnl6gIAORBF4/D08/yuLrGhCxQaSliCO2KzYugK+aN\n xNP9HVZabepq5HQeUYHJsB74ZsQu3V2HLp5xCcQyFMB2JWRh2RygevcUo2PEusFN\n mdfdKEzUJiaSETqqtNllSgqTDuWNUZQyYwY6Pz8RPtA4vl0/9Bw8sZeou5BbQWJJ\n 5sPfQ3xlv3hyFsfZJ/aQByehyK9tzApWynwRbcQvEJtgcjRA5auByHKz/bRF2/4g\n N3exSwP+K+GIu2sXzq2yuDD5RzEkGRvfUvQd4Z/jDUslNCjfMF6y3d2o19Qg2KvU\n WvZQXMSumWYFh7CqsQ1BMgq3wWtJd9MWOCOtHP8vXz/dYzirU5+H0mamkQpfqGPx\n 31bPu3EfZFSvguosDtNiDJKcXd4VilJv+odkSE4fWLNsBXKkfi7/PHx8bkO/7hRs\n 1+y1FM4yTp3ZzYXn01IR\n =Sbsx\n -----END PGP SIGNATURE-----\n \n\nfix(cli): restore sessions in selected workspace runtime (#9050)\n\n* fix(cli): restore sessions in workspace runtime\n\n* fix(cli): pin ACP restores to workspace runtime\n\n---------\n\nCo-authored-by: 西岐 <fengqi.mfq@alibaba-inc.com>\nCo-authored-by: wenshao <shaojin.wensj@alibaba-inc.com>\nCo-authored-by: qwen-code-dev-bot <qwen-code-dev-bot@users.noreply.github.com>",
+        "changed_files_name_status": "M\tpackages/cli/src/serve/acp-http/dispatch.ts\nM\tpackages/cli/src/serve/acp-http/workspace-qualified-acp.test.ts\nM\tpackages/cli/src/serve/multi-workspace-sessions.test.ts\nM\tpackages/cli/src/serve/routes/session.ts\nM\tpackages/cli/src/serve/workspace-runtime-storage.ts\n",
+        "linked_issue_numbers": [
+          9050
+        ],
+        "manifest_metadata": {
+          "category": "state-continuity-and-resume",
+          "theme": "state continuity and resume",
+          "file_sample": [
+            "packages/cli/src/serve/acp-http/dispatch.ts",
+            "packages/cli/src/serve/acp-http/workspace-qualified-acp.test.ts",
+            "packages/cli/src/serve/multi-workspace-sessions.test.ts",
+            "packages/cli/src/serve/routes/session.ts",
+            "packages/cli/src/serve/workspace-runtime-storage.ts"
+          ],
+          "case_id": "QwenLM__qwen-code__9050__state-continuity-and-resume",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_substitute",
+          "seed_issue": 9573,
+          "seed_issue_url": "https://github.com/QwenLM/qwen-code/issues/9573",
+          "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+          "resolution_url": "https://github.com/QwenLM/qwen-code/pull/9050",
+          "source": "agent_core_seven_category_extraction_v2",
+          "provenance": {
+            "classification": "verified_substitute",
+            "seed": {
+              "repository": "QwenLM/qwen-code",
+              "issue": 9573,
+              "url": "https://github.com/QwenLM/qwen-code/issues/9573",
+              "table_note": "resumed session is missing a saved tool result"
+            },
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 9050,
+              "url": "https://github.com/QwenLM/qwen-code/pull/9050",
+              "pull_request": 9050,
+              "pull_request_url": "https://github.com/QwenLM/qwen-code/pull/9050"
+            },
+            "commit": {
+              "sha": "e0b8bea9e0ba369a0661bc51cbbb9a27555aff48",
+              "subject": "fix(cli): restore sessions in selected workspace runtime (#9050)",
+              "parents": [
+                "9b716cc0e61ffdd4967665d7c0e3c952cf06d7de"
+              ],
+              "body_excerpt": "* fix(cli): restore sessions in workspace runtime\n\n* fix(cli): pin ACP restores to workspace runtime\n\n---------\n\nCo-authored-by: 西岐 <fengqi.mfq@alibaba-inc.com>\nCo-authored-by: wenshao <shaojin.wensj@alibaba-inc.com>\nCo-authored-by: qwen-code-dev-bot <qwen-code-dev-bot@users.noreply.github.com>"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "parent_and_changed_files_recorded",
+              "implementation_diff_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T10:10:03.793755+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout.",
+          "git show --stat was unavailable because this checkout is a promisor/partial clone; commit metadata and manifest file samples are retained."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "QwenLM__qwen-code__9050__e0b8bea9",
+          "title": "Restore sessions under the selected workspace runtime’s storage context",
+          "before": "At parent 9b716cc0e61ffdd4967665d7c0e3c952cf06d7de, both REST and ACP restore paths selected a workspace runtime and constructed a SessionService with that runtime’s sessionRuntimeBaseDir, but the surrounding asynchronous load/resume operation was not executed inside Storage.runWithResolvedRuntimeBaseDir. Consequently, bridge restore work and nested code consulting Storage.getRuntimeBaseDir could observe the process/default runtime root instead of the selected workspace runtime root.",
+          "after": "At e0b8bea9e0ba369a0661bc51cbbb9a27555aff48, the REST load/resume critical section and the ACP load/resume critical section are invoked through runWithWorkspaceRuntimeStorage using the selected runtime. The ambient resolved storage root therefore remains pinned to sessionRuntimeBaseDir throughout asynchronous restore work. Tests cover both load and resume through REST with a secondary workspace root and through ACP after runtime replacement with a distinct root.",
+          "diff": "The change wraps the REST archive-coordinated restore callback in runWithWorkspaceRuntimeStorage(runtime, ...), extracts the ACP archive-coordinated restore callback as restoreInRuntime and invokes it through the same helper, broadens that helper’s parameter type to the minimal sessionRuntimeBaseDir-bearing runtime projection, and adds four parameterized regression cases covering REST load/resume and ACP load/resume against non-default selected runtime roots."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "Commit e0b8bea9e0ba369a0661bc51cbbb9a27555aff48 has parent 9b716cc0e61ffdd4967665d7c0e3c952cf06d7de, is titled “fix(cli): restore sessions in selected workspace runtime (#9050),” and modifies the REST route, ACP dispatcher, shared runtime-storage helper, and their tests.",
+            "source": "issue-bundle.json fields resolved_commit, parent_commit, commit_show_stat, and changed_files_name_status; git show --format=fuller --name-status e0b8bea9e0ba369a0661bc51cbbb9a27555aff48"
+          },
+          {
+            "id": "E2",
+            "kind": "diff",
+            "claim": "Before the change, the REST restore path entered archiveCoordinator.runSharedMany directly; after the change, that complete asynchronous critical section is passed to runWithWorkspaceRuntimeStorage(runtime, ...).",
+            "source": "git diff 9b716cc0e61ffdd4967665d7c0e3c952cf06d7de..e0b8bea9e0ba369a0661bc51cbbb9a27555aff48 -- packages/cli/src/serve/routes/session.ts, around commit lines 3949-4246"
+          },
+          {
+            "id": "E3",
+            "kind": "call_site",
+            "claim": "Inside the newly scoped REST operation, the selected runtime supplies both the SessionService runtimeBaseDir and the bridge used for loadSession or resumeSession, so storage lookup, metadata recovery, and bridge restoration share one selected-runtime context.",
+            "source": "e0b8bea9e0ba369a0661bc51cbbb9a27555aff48:packages/cli/src/serve/routes/session.ts, restore block around lines 3949-4246"
+          },
+          {
+            "id": "E4",
+            "kind": "test",
+            "claim": "The REST regression test stores a session beneath a secondary runtime root, spies on the selected workspace bridge’s loadSession or resumeSession, performs POST /session/:id/load or /resume, and requires both HTTP 200 and Storage.getRuntimeBaseDir() equal to the secondary runtime root during bridge restoration.",
+            "source": "e0b8bea9e0ba369a0661bc51cbbb9a27555aff48:packages/cli/src/serve/multi-workspace-sessions.test.ts, parameterized test “runs a cold %s inside the selected workspace runtime root” around lines 2191-2245"
+          },
+          {
+            "id": "E5",
+            "kind": "diff",
+            "claim": "Before the change, ACP directly awaited archiveCoordinator.runSharedMany; after the change, it defines restoreInRuntime for that critical section and invokes it through runWithWorkspaceRuntimeStorage(sessionRuntime, restoreInRuntime).",
+            "source": "git diff 9b716cc0e61ffdd4967665d7c0e3c952cf06d7de..e0b8bea9e0ba369a0661bc51cbbb9a27555aff48 -- packages/cli/src/serve/acp-http/dispatch.ts, around commit lines 2242-2382"
+          },
+          {
+            "id": "E6",
+            "kind": "call_site",
+            "claim": "The ACP scoped operation resolves persisted session data with a SessionService configured for sessionRuntime.sessionRuntimeBaseDir and then calls loadSession or resumeSession on the same sessionRuntime bridge.",
+            "source": "e0b8bea9e0ba369a0661bc51cbbb9a27555aff48:packages/cli/src/serve/acp-http/dispatch.ts, restore block around lines 2242-2382"
+          },
+          {
+            "id": "E7",
+            "kind": "test",
+            "claim": "The ACP regression test writes a stored session under a replacement runtime root, activates that replacement runtime, sends session/load or session/resume, and requires the bridge restore callback to observe the replacement root through Storage.getRuntimeBaseDir(), with no JSON-RPC error and exactly one restore call.",
+            "source": "e0b8bea9e0ba369a0661bc51cbbb9a27555aff48:packages/cli/src/serve/acp-http/workspace-qualified-acp.test.ts, parameterized test “restores session/%s in the selected runtime storage” around lines 803-866"
+          },
+          {
+            "id": "E8",
+            "kind": "implementation",
+            "claim": "runWithWorkspaceRuntimeStorage delegates to Storage.runWithResolvedRuntimeBaseDir(runtime.sessionRuntimeBaseDir, fn), establishing the ambient storage context for the callback; the commit narrows its required input contract to Pick<WorkspaceRuntime, 'sessionRuntimeBaseDir'>.",
+            "source": "e0b8bea9e0ba369a0661bc51cbbb9a27555aff48:packages/cli/src/serve/workspace-runtime-storage.ts lines 12-21 and its diff from parent"
+          },
+          {
+            "id": "E9",
+            "kind": "validation",
+            "claim": "The added tests explicitly exercise both restore actions, load and resume, on each affected transport and assert the selected runtime root at the bridge boundary where the prior ambient-context mismatch could surface.",
+            "source": "e0b8bea9e0ba369a0661bc51cbbb9a27555aff48:packages/cli/src/serve/multi-workspace-sessions.test.ts and packages/cli/src/serve/acp-http/workspace-qualified-acp.test.ts added parameterized cases"
+          },
+          {
+            "id": "E10",
+            "kind": "issue",
+            "claim": "The available bundle identifies PR/issue 9050 as the selected-workspace-runtime restore fix, but its body, comments, timeline, reviews, and status checks are unavailable.",
+            "source": "/home/chenyujia/tritonToLlvm/arex-skill-graph/data/skill-extraction/agent-core-seven-category-extraction-v2/codex-5.6-sol-contract-v2-20261001/04-state-continuity-and-resume/QwenLM__qwen-code__9050/issue-bundle.json"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "scope-http-session-restore-to-selected-runtime",
+            "title": "Run HTTP session restoration inside the selected runtime’s storage scope",
+            "description": "Bind the full asynchronous HTTP load/resume critical section—not only its SessionService instance—to the selected workspace runtime’s storage root so nested restoration code observes the correct persisted state.",
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E8"
+            ],
+            "semantic_action": {
+              "intent": "Prevent cold HTTP load and resume operations from reading or continuing session state under a process-default runtime root when a different workspace runtime was selected.",
+              "module_role": "Workspace-qualified HTTP session restoration boundary",
+              "operation": "scope",
+              "pre_state": "A restore request has selected a workspace runtime whose sessionRuntimeBaseDir may differ from the ambient Storage runtime base directory, while the archive-coordinated asynchronous restore operation is still invoked without an ambient runtime binding.",
+              "post_state": "The archive-coordinated restore, persisted-session resolution, metadata reads, and selected bridge load/resume call execute with the ambient Storage runtime base directory equal to the selected workspace runtime’s sessionRuntimeBaseDir.",
+              "validation": "For both load and resume, persist the target session under a secondary runtime root, invoke the HTTP restore route for that workspace, assert success, and assert the selected bridge observes that secondary root through Storage.getRuntimeBaseDir().",
+              "parameters": [
+                "selected_workspace_runtime",
+                "session_runtime_base_directory",
+                "requested_session_id",
+                "restore_action: load|resume",
+                "archive_coordinator",
+                "workspace_bridge"
+              ],
+              "evidence_ids": [
+                "E2",
+                "E3",
+                "E4",
+                "E8"
+              ]
+            }
+          },
+          {
+            "name": "scope-acp-session-restore-to-selected-runtime",
+            "title": "Run ACP session restoration inside the selected runtime’s storage scope",
+            "description": "Bind the complete asynchronous ACP load/resume critical section to the selected or replacement workspace runtime so bridge restoration and nested storage access remain aligned with runtime selection.",
+            "evidence_ids": [
+              "E5",
+              "E6",
+              "E7",
+              "E8"
+            ],
+            "semantic_action": {
+              "intent": "Prevent ACP load and resume operations from restoring session state under a stale or default storage root after workspace-runtime selection or replacement.",
+              "module_role": "Workspace-qualified protocol session restoration boundary",
+              "operation": "scope",
+              "pre_state": "An ACP restore request has resolved a sessionRuntime with its own sessionRuntimeBaseDir, but the asynchronous archive-coordinated restore callback is invoked outside that runtime’s ambient Storage context.",
+              "post_state": "Persisted-session lookup, metadata recovery, and the selected runtime bridge’s load/resume operation execute while Storage resolves paths from sessionRuntime.sessionRuntimeBaseDir.",
+              "validation": "For both protocol load and resume, activate a replacement runtime with a distinct storage root, store the session there, issue the request, and assert no protocol error, one restore call, and observation of the replacement root inside the bridge callback.",
+              "parameters": [
+                "selected_session_runtime",
+                "session_runtime_base_directory",
+                "requested_session_id",
+                "protocol_method: session/load|session/resume",
+                "archive_coordinator",
+                "runtime_bridge"
+              ],
+              "evidence_ids": [
+                "E5",
+                "E6",
+                "E7",
+                "E8"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "preserve-selected-runtime-context-across-session-restore",
+            "title": "Preserve workspace runtime context throughout session restoration",
+            "description": "A partial-order resolution workflow for restore paths that select the correct workspace runtime explicitly but lose that selection through an ambient storage API during asynchronous load or resume work.",
+            "atomic_names": [
+              "scope-http-session-restore-to-selected-runtime",
+              "scope-acp-session-restore-to-selected-runtime"
+            ],
+            "evidence_ids": [
+              "E1",
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9"
+            ],
+            "workflow_graph": {
+              "goal": "Ensure every supported cold session load/resume entry point restores persisted state and invokes its bridge under the storage root owned by the selected workspace runtime.",
+              "when_to_use": [
+                "A service supports multiple workspace runtimes or runtime replacement, with separate persisted-session roots.",
+                "The restore path passes an explicit runtime root to one service but nested asynchronous restore code also consults an ambient or context-local storage root.",
+                "Restoration succeeds in the primary/default workspace but fails, misses state, or observes the wrong root for a secondary or replacement runtime."
+              ],
+              "anti_goals": [
+                "Do not merge or relocate session stores between workspace runtimes.",
+                "Do not change session identifiers, restore metadata, archive-lock semantics, bridge ownership, or load/resume response shapes.",
+                "Do not replace workspace selection logic; preserve the already selected runtime and propagate its storage context.",
+                "Do not globally mutate a process-wide storage root when a callback-scoped binding is available."
+              ],
+              "not_applicable_when": [
+                "All session storage access is explicitly parameterized and no restore dependency consults ambient runtime state.",
+                "The requested session is absent from the correctly selected runtime store rather than hidden by a context mismatch.",
+                "The operation creates a new session and does not restore persisted state.",
+                "Only one immutable runtime root exists and runtime selection or replacement cannot occur."
+              ],
+              "inputs": [
+                "Restore entry points and their load/resume branches",
+                "Selected workspace runtime and sessionRuntimeBaseDir",
+                "Ambient storage-context API with asynchronous callback propagation",
+                "Persisted-session resolver and metadata readers",
+                "Selected runtime bridge",
+                "Tests capable of creating distinct runtime roots"
+              ],
+              "entry_state": "Workspace selection returns the intended runtime, and direct service construction may use its root, but the enclosing asynchronous restoration chain can still observe a different ambient storage root.",
+              "exit_state": "Every affected load/resume entry point scopes its complete restore critical section to the selected runtime root, and regression tests prove the selected or replacement root is visible at the bridge boundary for both actions.",
+              "steps": [
+                {
+                  "action_name": "scope-http-session-restore-to-selected-runtime",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "The product exposes an HTTP session load/resume route that selects among workspace runtimes.",
+                  "validation": "A session stored only beneath a secondary runtime root can be loaded and resumed through HTTP, and the selected bridge observes that root."
+                },
+                {
+                  "action_name": "scope-acp-session-restore-to-selected-runtime",
+                  "role": "reconcile",
+                  "required": true,
+                  "depends_on": [
+                    "scope-http-session-restore-to-selected-runtime"
+                  ],
+                  "condition": "The product also exposes ACP or another protocol restore entry point with an independent dispatch path.",
+                  "validation": "After activating a runtime replacement with a distinct root, both protocol load and resume complete without error and the replacement bridge observes its own root."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "scope-http-session-restore-to-selected-runtime",
+                  "to": "scope-acp-session-restore-to-selected-runtime",
+                  "type": "enables"
+                }
+              ],
+              "validation_ladder": [
+                "Inspect each restore entry point to confirm runtime selection and ambient storage binding cover the same complete asynchronous critical section.",
+                "For the HTTP path, store sessions only under a non-default secondary root and verify both load and resume return success while the bridge observes that root.",
+                "For the protocol path, activate a replacement runtime with a distinct root and verify both load and resume use the replacement bridge under that root.",
+                "Retain existing restore locking, session-resolution, metadata, isolation, ownership, and response behavior inside the scoped callback."
+              ],
+              "stop_conditions": [
+                "Stop if the selected runtime does not expose a stable session storage root.",
+                "Stop and diagnose runtime-selection logic if the wrong runtime or bridge is chosen before storage scoping begins.",
+                "Stop if correct behavior requires moving or sharing persisted state across runtime boundaries; that is a different migration or ownership problem.",
+                "Stop if scoping only a synchronous prefix does not propagate through awaited restore work; the context mechanism must support the complete asynchronous callback."
+              ],
+              "unresolved_or_deferred": [
+                "The evidence bundle does not include CI status checks or review discussion.",
+                "Tests were inspected as committed regression oracles; no clean test execution result is available from the provided checkout.",
+                "ACP is a repository-specific transport instance; applicability to another project requires an equivalent independent restore entry point rather than the same protocol."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "The GitHub bundle omits the PR body, reviews, comments, timeline, and status checks, so the original reporter’s exact observed failure and CI outcome cannot be established beyond the implementation and committed tests.",
+          "The working checkout has widespread pre-existing deletions, so validation is grounded in the pinned commit’s test code rather than a newly executed test run."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "scope-http-session-restore-to-selected-runtime",
+          "title": "Run HTTP session restoration inside the selected runtime’s storage scope",
+          "description": "Bind the full asynchronous HTTP load/resume critical section—not only its SessionService instance—to the selected workspace runtime’s storage root so nested restoration code observes the correct persisted state.",
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E8"
+          ],
+          "semantic_action": {
+            "intent": "Prevent cold HTTP load and resume operations from reading or continuing session state under a process-default runtime root when a different workspace runtime was selected.",
+            "module_role": "Workspace-qualified HTTP session restoration boundary",
+            "operation": "scope",
+            "pre_state": "A restore request has selected a workspace runtime whose sessionRuntimeBaseDir may differ from the ambient Storage runtime base directory, while the archive-coordinated asynchronous restore operation is still invoked without an ambient runtime binding.",
+            "post_state": "The archive-coordinated restore, persisted-session resolution, metadata reads, and selected bridge load/resume call execute with the ambient Storage runtime base directory equal to the selected workspace runtime’s sessionRuntimeBaseDir.",
+            "validation": "For both load and resume, persist the target session under a secondary runtime root, invoke the HTTP restore route for that workspace, assert success, and assert the selected bridge observes that secondary root through Storage.getRuntimeBaseDir().",
+            "parameters": [
+              "selected_workspace_runtime",
+              "session_runtime_base_directory",
+              "requested_session_id",
+              "restore_action: load|resume",
+              "archive_coordinator",
+              "workspace_bridge"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E8"
+            ]
+          }
+        },
+        {
+          "name": "scope-acp-session-restore-to-selected-runtime",
+          "title": "Run ACP session restoration inside the selected runtime’s storage scope",
+          "description": "Bind the complete asynchronous ACP load/resume critical section to the selected or replacement workspace runtime so bridge restoration and nested storage access remain aligned with runtime selection.",
+          "evidence_ids": [
+            "E5",
+            "E6",
+            "E7",
+            "E8"
+          ],
+          "semantic_action": {
+            "intent": "Prevent ACP load and resume operations from restoring session state under a stale or default storage root after workspace-runtime selection or replacement.",
+            "module_role": "Workspace-qualified protocol session restoration boundary",
+            "operation": "scope",
+            "pre_state": "An ACP restore request has resolved a sessionRuntime with its own sessionRuntimeBaseDir, but the asynchronous archive-coordinated restore callback is invoked outside that runtime’s ambient Storage context.",
+            "post_state": "Persisted-session lookup, metadata recovery, and the selected runtime bridge’s load/resume operation execute while Storage resolves paths from sessionRuntime.sessionRuntimeBaseDir.",
+            "validation": "For both protocol load and resume, activate a replacement runtime with a distinct storage root, store the session there, issue the request, and assert no protocol error, one restore call, and observation of the replacement root inside the bridge callback.",
+            "parameters": [
+              "selected_session_runtime",
+              "session_runtime_base_directory",
+              "requested_session_id",
+              "protocol_method: session/load|session/resume",
+              "archive_coordinator",
+              "runtime_bridge"
+            ],
+            "evidence_ids": [
+              "E5",
+              "E6",
+              "E7",
+              "E8"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "preserve-selected-runtime-context-across-session-restore",
+          "title": "Preserve workspace runtime context throughout session restoration",
+          "description": "A partial-order resolution workflow for restore paths that select the correct workspace runtime explicitly but lose that selection through an ambient storage API during asynchronous load or resume work.",
+          "atomic_names": [
+            "scope-http-session-restore-to-selected-runtime",
+            "scope-acp-session-restore-to-selected-runtime"
+          ],
+          "evidence_ids": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9"
+          ],
+          "workflow_graph": {
+            "goal": "Ensure every supported cold session load/resume entry point restores persisted state and invokes its bridge under the storage root owned by the selected workspace runtime.",
+            "when_to_use": [
+              "A service supports multiple workspace runtimes or runtime replacement, with separate persisted-session roots.",
+              "The restore path passes an explicit runtime root to one service but nested asynchronous restore code also consults an ambient or context-local storage root.",
+              "Restoration succeeds in the primary/default workspace but fails, misses state, or observes the wrong root for a secondary or replacement runtime."
+            ],
+            "anti_goals": [
+              "Do not merge or relocate session stores between workspace runtimes.",
+              "Do not change session identifiers, restore metadata, archive-lock semantics, bridge ownership, or load/resume response shapes.",
+              "Do not replace workspace selection logic; preserve the already selected runtime and propagate its storage context.",
+              "Do not globally mutate a process-wide storage root when a callback-scoped binding is available."
+            ],
+            "not_applicable_when": [
+              "All session storage access is explicitly parameterized and no restore dependency consults ambient runtime state.",
+              "The requested session is absent from the correctly selected runtime store rather than hidden by a context mismatch.",
+              "The operation creates a new session and does not restore persisted state.",
+              "Only one immutable runtime root exists and runtime selection or replacement cannot occur."
+            ],
+            "inputs": [
+              "Restore entry points and their load/resume branches",
+              "Selected workspace runtime and sessionRuntimeBaseDir",
+              "Ambient storage-context API with asynchronous callback propagation",
+              "Persisted-session resolver and metadata readers",
+              "Selected runtime bridge",
+              "Tests capable of creating distinct runtime roots"
+            ],
+            "entry_state": "Workspace selection returns the intended runtime, and direct service construction may use its root, but the enclosing asynchronous restoration chain can still observe a different ambient storage root.",
+            "exit_state": "Every affected load/resume entry point scopes its complete restore critical section to the selected runtime root, and regression tests prove the selected or replacement root is visible at the bridge boundary for both actions.",
+            "steps": [
+              {
+                "action_name": "scope-http-session-restore-to-selected-runtime",
+                "role": "implement",
+                "required": true,
+                "depends_on": [],
+                "condition": "The product exposes an HTTP session load/resume route that selects among workspace runtimes.",
+                "validation": "A session stored only beneath a secondary runtime root can be loaded and resumed through HTTP, and the selected bridge observes that root."
+              },
+              {
+                "action_name": "scope-acp-session-restore-to-selected-runtime",
+                "role": "reconcile",
+                "required": true,
+                "depends_on": [
+                  "scope-http-session-restore-to-selected-runtime"
+                ],
+                "condition": "The product also exposes ACP or another protocol restore entry point with an independent dispatch path.",
+                "validation": "After activating a runtime replacement with a distinct root, both protocol load and resume complete without error and the replacement bridge observes its own root."
+              }
+            ],
+            "edges": [
+              {
+                "from": "scope-http-session-restore-to-selected-runtime",
+                "to": "scope-acp-session-restore-to-selected-runtime",
+                "type": "enables"
+              }
+            ],
+            "validation_ladder": [
+              "Inspect each restore entry point to confirm runtime selection and ambient storage binding cover the same complete asynchronous critical section.",
+              "For the HTTP path, store sessions only under a non-default secondary root and verify both load and resume return success while the bridge observes that root.",
+              "For the protocol path, activate a replacement runtime with a distinct root and verify both load and resume use the replacement bridge under that root.",
+              "Retain existing restore locking, session-resolution, metadata, isolation, ownership, and response behavior inside the scoped callback."
+            ],
+            "stop_conditions": [
+              "Stop if the selected runtime does not expose a stable session storage root.",
+              "Stop and diagnose runtime-selection logic if the wrong runtime or bridge is chosen before storage scoping begins.",
+              "Stop if correct behavior requires moving or sharing persisted state across runtime boundaries; that is a different migration or ownership problem.",
+              "Stop if scoping only a synchronous prefix does not propagate through awaited restore work; the context mechanism must support the complete asynchronous callback."
+            ],
+            "unresolved_or_deferred": [
+              "The evidence bundle does not include CI status checks or review discussion.",
+              "Tests were inspected as committed regression oracles; no clean test execution result is available from the provided checkout.",
+              "ACP is a repository-specific transport instance; applicability to another project requires an equivalent independent restore entry point rather than the same protocol."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The GitHub bundle omits the PR body, reviews, comments, timeline, and status checks, so the original reporter’s exact observed failure and CI outcome cannot be established beyond the implementation and committed tests.",
+        "The working checkout has widespread pre-existing deletions, so validation is grounded in the pinned commit’s test code rather than a newly executed test run."
+      ]
+    },
+    "call_sites": [
+      "Inside the newly scoped REST operation, the selected runtime supplies both the SessionService runtimeBaseDir and the bridge used for loadSession or resumeSession, so storage lookup, metadata recovery, and bridge restoration share one selected-runtime context.",
+      "The ACP scoped operation resolves persisted session data with a SessionService configured for sessionRuntime.sessionRuntimeBaseDir and then calls loadSession or resumeSession on the same sessionRuntime bridge."
+    ],
+    "tests": [
+      "The REST regression test stores a session beneath a secondary runtime root, spies on the selected workspace bridge’s loadSession or resumeSession, performs POST /session/:id/load or /resume, and requires both HTTP 200 and Storage.getRuntimeBaseDir() equal to the secondary runtime root during bridge restoration.",
+      "The ACP regression test writes a stored session under a replacement runtime root, activates that replacement runtime, sends session/load or session/resume, and requires the bridge restore callback to observe the replacement root through Storage.getRuntimeBaseDir(), with no JSON-RPC error and exactly one restore call."
+    ]
+  }
+]

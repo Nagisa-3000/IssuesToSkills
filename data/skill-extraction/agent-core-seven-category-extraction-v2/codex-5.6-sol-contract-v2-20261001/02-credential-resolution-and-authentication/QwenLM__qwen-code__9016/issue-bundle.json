@@ -1,0 +1,145 @@
+{
+  "source": "local_git_pinned_ref",
+  "repository": "QwenLM/qwen-code",
+  "issue_number": 9016,
+  "issue": {
+    "number": 9016,
+    "title": "fix(auth): let Vertex AI authenticate with Application Default Credentials (#9017)",
+    "body": null,
+    "metadata_unavailable": [
+      "issue body",
+      "comments",
+      "timeline",
+      "author/review discussion"
+    ]
+  },
+  "comments": [],
+  "timeline": [],
+  "linked_pull_requests": [
+    {
+      "pull_request": {
+        "number": 9017,
+        "title": "fix(auth): let Vertex AI authenticate with Application Default Credentials (#9017)",
+        "metadata_unavailable": [
+          "PR body",
+          "reviews",
+          "status checks"
+        ]
+      },
+      "files": [
+        {
+          "status_line": "M\tdocs/users/configuration/auth.md"
+        },
+        {
+          "status_line": "M\tdocs/users/configuration/model-providers.md"
+        },
+        {
+          "status_line": "M\tpackages/cli/src/acp-integration/acpAgent.test.ts"
+        },
+        {
+          "status_line": "M\tpackages/cli/src/acp-integration/acpAgent.ts"
+        },
+        {
+          "status_line": "M\tpackages/cli/src/config/auth.test.ts"
+        },
+        {
+          "status_line": "M\tpackages/cli/src/config/auth.ts"
+        },
+        {
+          "status_line": "M\tpackages/core/src/core/contentGenerator.test.ts"
+        },
+        {
+          "status_line": "M\tpackages/core/src/core/contentGenerator.ts"
+        },
+        {
+          "status_line": "M\tpackages/core/src/core/geminiContentGenerator/index.ts"
+        },
+        {
+          "status_line": "M\tpackages/core/src/index.ts"
+        },
+        {
+          "status_line": "M\tpackages/core/src/models/index.ts"
+        },
+        {
+          "status_line": "M\tpackages/core/src/models/modelConfigErrors.ts"
+        }
+      ],
+      "commits": [
+        {
+          "sha": "fd9c452dc889d27338ab1e2e9a2b22aebcfc5430",
+          "subject": "fix(auth): let Vertex AI authenticate with Application Default Credentials (#9017)"
+        }
+      ]
+    }
+  ],
+  "checkout": "/home/chenyujia/tritonToLlvm/qwen-code",
+  "pinned_ref": "fd9c452dc889d27338ab1e2e9a2b22aebcfc5430",
+  "resolved_commit": "fd9c452dc889d27338ab1e2e9a2b22aebcfc5430",
+  "parent_commit": "c2d63fbe582a3d37051816dea4775687a4ab9896",
+  "commit_show_stat": "commit fd9c452dc889d27338ab1e2e9a2b22aebcfc5430\nAuthor:     Isaac Hernández <isadohergar@gmail.com>\nAuthorDate: Sun Aug 23 19:27:16 2026 +0000\nCommit:     GitHub <noreply@github.com>\nCommitDate: Sun Aug 23 19:27:16 2026 +0000\n\n    fix(auth): let Vertex AI authenticate with Application Default Credentials (#9017)\n    \n    * fix(auth): let Vertex AI authenticate with Application Default Credentials\n    \n    Vertex AI auth required an API key, so an ADC or service account setup\n    could not start. Supplying a placeholder to satisfy the check made it\n    worse: an explicitly passed key switches the Google SDK to Vertex\n    Express mode, which clears the project and location and rejects the\n    request with \"API keys are not supported by this API\".\n    \n    Treat a configured GOOGLE_CLOUD_PROJECT as sufficient credentials for\n    the vertex-ai auth type, in both the CLI pre-flight check and the core\n    model config validation, and leave the API key absent so the SDK\n    resolves ADC itself. The missing-credentials errors now mention the\n    keyless path instead of pointing only at envKey.\n    \n    Fixes #9016\n    \n    * fix(auth): select Vertex mode explicitly and keep declared key vars authoritative\n    \n    Review follow-ups on the Vertex ADC change.\n    \n    Vertex mode no longer depends on the GOOGLE_GENAI_USE_VERTEXAI side effect.\n    Only the CLI pre-flight check writes that variable, and the startup call to it\n    sits under the sandbox branch, so a plain interactive or ACP session built a\n    client pointed at the Gemini API endpoint instead of Vertex. The flag is now\n    derived from the auth type at construction, and left untouched for the other\n    auth types so the SDK keeps its own environment fallback there.\n    \n    An entry that declares its own key variable no longer falls through to ADC when\n    that variable is unset. It keeps failing on the declared variable, so a secret\n    that failed to inject cannot silently authenticate as a different principal.\n    The keyless hint is suppressed for those entries as well, since it would be\n    advice that cannot work.\n    \n    The ACP pre-flight cell reports an indeterminate state for a keyless Vertex\n    setup rather than a confirmed token: a configured project is routing\n    configuration, not evidence that a credential resolves. All three gates now\n    share one definition of a configured project, so whitespace is handled the same\n    way everywhere, and the CLI missing-key message carries the same keyless hint as\n    the core errors.\n    \n    Docs corrected on two counts: the environment-only row now says a keyless setup\n    must select the auth type explicitly, since it is not inferred from the project\n    alone, and the provider note names every key source the resolver folds in.\n    \n    ---------\n    \n    Co-authored-by: Shaojin Wen <shaojin.wensj@alibaba-inc.com>\n\n docs/users/configuration/auth.md                   |  12 +--\n docs/users/configuration/model-providers.md        |   3 +\n packages/cli/src/acp-integration/acpAgent.test.ts  |  74 ++++++++++++++\n packages/cli/src/acp-integration/acpAgent.ts       |  20 ++++\n packages/cli/src/config/auth.test.ts               |  58 +++++++++++\n packages/cli/src/config/auth.ts                    |  42 +++++++-\n packages/core/src/core/contentGenerator.test.ts    | 109 ++++++++++++++++++++-\n packages/core/src/core/contentGenerator.ts         |  37 ++++++-\n .../core/src/core/geminiContentGenerator/index.ts  |  11 ++-\n packages/core/src/index.ts                         |   1 +\n packages/core/src/models/index.ts                  |   2 +\n packages/core/src/models/modelConfigErrors.ts      |  29 +++++-\n 12 files changed, 384 insertions(+), 14 deletions(-)\n",
+  "changed_files_name_status": "M\tdocs/users/configuration/auth.md\nM\tdocs/users/configuration/model-providers.md\nM\tpackages/cli/src/acp-integration/acpAgent.test.ts\nM\tpackages/cli/src/acp-integration/acpAgent.ts\nM\tpackages/cli/src/config/auth.test.ts\nM\tpackages/cli/src/config/auth.ts\nM\tpackages/core/src/core/contentGenerator.test.ts\nM\tpackages/core/src/core/contentGenerator.ts\nM\tpackages/core/src/core/geminiContentGenerator/index.ts\nM\tpackages/core/src/index.ts\nM\tpackages/core/src/models/index.ts\nM\tpackages/core/src/models/modelConfigErrors.ts\n",
+  "linked_issue_numbers": [
+    9016
+  ],
+  "manifest_metadata": {
+    "category": "credential-resolution-and-authentication",
+    "theme": "credential resolution and authentication",
+    "file_sample": [
+      "docs/users/configuration/auth.md",
+      "docs/users/configuration/model-providers.md",
+      "packages/cli/src/acp-integration/acpAgent.test.ts",
+      "packages/cli/src/acp-integration/acpAgent.ts",
+      "packages/cli/src/config/auth.test.ts",
+      "packages/cli/src/config/auth.ts",
+      "packages/core/src/core/contentGenerator.test.ts",
+      "packages/core/src/core/contentGenerator.ts",
+      "packages/core/src/core/geminiContentGenerator/index.ts",
+      "packages/core/src/index.ts",
+      "packages/core/src/models/index.ts",
+      "packages/core/src/models/modelConfigErrors.ts"
+    ],
+    "case_id": "QwenLM__qwen-code__9016__credential-resolution-and-authentication",
+    "role": "train_candidate",
+    "split": "train_candidate",
+    "sample_kind": "exact_table_row",
+    "seed_issue": 9016,
+    "seed_issue_url": "https://github.com/QwenLM/qwen-code/issues/9016",
+    "seed_relation": "exact_table_row_with_verified_resolution",
+    "resolution_url": "https://github.com/QwenLM/qwen-code/pull/9017",
+    "source": "agent_core_seven_category_extraction_v2",
+    "provenance": {
+      "classification": "exact_table_row",
+      "seed": {
+        "repository": "QwenLM/qwen-code",
+        "issue": 9016,
+        "url": "https://github.com/QwenLM/qwen-code/issues/9016",
+        "table_note": "Vertex AI ADC authentication failure"
+      },
+      "resolution_artifact": {
+        "type": "issue",
+        "number": 9016,
+        "url": "https://github.com/QwenLM/qwen-code/issues/9016",
+        "pull_request": 9017,
+        "pull_request_url": "https://github.com/QwenLM/qwen-code/pull/9017"
+      },
+      "commit": {
+        "sha": "fd9c452dc889d27338ab1e2e9a2b22aebcfc5430",
+        "subject": "fix(auth): let Vertex AI authenticate with Application Default Credentials (#9017)",
+        "parents": [
+          "c2d63fbe582a3d37051816dea4775687a4ab9896"
+        ],
+        "body_excerpt": "* fix(auth): let Vertex AI authenticate with Application Default Credentials\n\nVertex AI auth required an API key, so an ADC or service account setup\ncould not start. Supplying a placeholder to satisfy the check made it\nworse: an explicitly passed key switches the Google SDK to Vertex\nExpress mode, which clears the project and location and rejects the\nrequest with \"API keys are not supported by this API\".\n\nTreat a configured GOOGLE_CLOUD_PROJECT as sufficient credentials for\nthe vertex-ai auth type, in both the CLI pre-flight check and the core\nmodel config validation, and leave the API key absent so the SDK\nresolves ADC itself. The missing-credentials errors now mention the\nkeyless path instead of pointing only at envKey.\n\nFixes #9016\n\n* fix(auth): select Vertex mode explicitly and keep de"
+      },
+      "verification": [
+        "local_git_commit_resolved",
+        "parent_and_changed_files_recorded",
+        "implementation_diff_present",
+        "test_or_spec_change_present"
+      ]
+    }
+  },
+  "fetched_at": "2026-10-01T10:03:40.181962+00:00",
+  "limitations": [
+    "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+  ]
+}

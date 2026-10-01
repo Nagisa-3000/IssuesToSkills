@@ -1,0 +1,245 @@
+{
+  "episode": {
+    "episode_id": "earendil-works__pi__7494__cbaca603",
+    "title": "Preserve paired tool-call identifiers for protocol versions that require them",
+    "before": "At parent 786c76cb76bea452fa7287cc1014c4a3d3cad2b1, the shared Google message converter treated only model IDs beginning with `claude-` or `gpt-oss-` as requiring explicit tool-call IDs. Consequently, Gemini 3 history serialization omitted IDs from both function-call parts and their corresponding function-response parts, even though the internal history contained matching tool-call identifiers.",
+    "after": "At cbaca60389f5d7097a43c95f56a19d344ecf2195, the requirement predicate also recognizes parsed Gemini major versions greater than or equal to 3. Existing converter branches governed by that predicate therefore emit the same normalized identifiers on function-call and function-response parts for Gemini 3 across the Google Generative AI and Vertex adapters, while Gemini 2.5 continues omitting them.",
+    "diff": "The implementation adds the existing Gemini major-version parser to `requiresToolCallId`, extending the predicate by one condition without changing the serialization branches. Tests add paired tool results, verify IDs on both sides of two tool interactions for multiple Gemini 3 model IDs and both adapter APIs, verify omission for Gemini 2.5, and directly test the expanded predicate while retaining prior Claude and GPT-OSS behavior."
+  },
+  "evidence_units": [
+    {
+      "id": "ev-commit-01",
+      "kind": "commit",
+      "claim": "Commit cbaca603 is titled `fix(ai): preserve Gemini 3 tool call IDs (#7494)`, has parent 786c76cb, and modifies the shared converter and its Gemini 3 test file.",
+      "source": "git show --format=fuller --name-status cbaca60389f5d7097a43c95f56a19d344ecf2195"
+    },
+    {
+      "id": "ev-before-01",
+      "kind": "implementation",
+      "claim": "In the parent, `requiresToolCallId` returns true only for model IDs beginning with `claude-` or `gpt-oss-`; Gemini model IDs are not included.",
+      "source": "git show 786c76cb76bea452fa7287cc1014c4a3d3cad2b1:packages/ai/src/api/google-shared.ts, function `requiresToolCallId`"
+    },
+    {
+      "id": "ev-callsite-01",
+      "kind": "call_site",
+      "claim": "The shared converter uses `requiresToolCallId(model.id)` when serializing assistant tool calls, conditionally adding `functionCall.id` from the internal tool-call block.",
+      "source": "git show cbaca60389f5d7097a43c95f56a19d344ecf2195:packages/ai/src/api/google-shared.ts, `convertMessages`, assistant `toolCall` branch around line 176"
+    },
+    {
+      "id": "ev-callsite-02",
+      "kind": "call_site",
+      "claim": "The same predicate controls whether a tool-result message contributes its matching `toolCallId` as `functionResponse.id`.",
+      "source": "git show cbaca60389f5d7097a43c95f56a19d344ecf2195:packages/ai/src/api/google-shared.ts, `convertMessages`, tool-result branch around lines 215-222"
+    },
+    {
+      "id": "ev-callsite-03",
+      "kind": "call_site",
+      "claim": "The Google Generative AI and Google Vertex request builders both pass model and conversation context through the shared `convertMessages` implementation.",
+      "source": "git show cbaca60389f5d7097a43c95f56a19d344ecf2195:packages/ai/src/api/google-generative-ai.ts around line 360; packages/ai/src/api/google-vertex.ts around line 459"
+    },
+    {
+      "id": "ev-normalization-01",
+      "kind": "implementation",
+      "claim": "Before serialization, `transformMessages` maintains a mapping from normalized tool-call IDs to tool-result IDs, preserving correlation when identifier normalization changes an ID.",
+      "source": "git show cbaca60389f5d7097a43c95f56a19d344ecf2195:packages/ai/src/api/transform-messages.ts, `transformMessages` first pass"
+    },
+    {
+      "id": "ev-diff-01",
+      "kind": "diff",
+      "claim": "The implementation extends `requiresToolCallId` with `getGeminiMajorVersion(modelId) !== undefined && geminiMajorVersion >= 3`; no separate Gemini-specific serialization path is introduced.",
+      "source": "git diff 786c76cb76bea452fa7287cc1014c4a3d3cad2b1 cbaca60389f5d7097a43c95f56a19d344ecf2195 -- packages/ai/src/api/google-shared.ts"
+    },
+    {
+      "id": "ev-test-01",
+      "kind": "test",
+      "claim": "The integration-style parameterized test supplies two tool calls and two matching tool results, then expects both serialized function-call IDs and function-response IDs to equal `call_1` and `call_2` for Gemini 3 through Google Generative AI and Vertex histories.",
+      "source": "git show cbaca60389f5d7097a43c95f56a19d344ecf2195:packages/ai/test/google-shared-gemini3-unsigned-tool-call.test.ts, test `preserves tool call IDs for $id via $api history`"
+    },
+    {
+      "id": "ev-test-02",
+      "kind": "test",
+      "claim": "The compatibility test expects two Gemini 2.5 function calls and two function responses to remain present while all four serialized IDs remain undefined.",
+      "source": "git show cbaca60389f5d7097a43c95f56a19d344ecf2195:packages/ai/test/google-shared-gemini3-unsigned-tool-call.test.ts, test `does not add a thoughtSignature for non-Gemini-3 models`"
+    },
+    {
+      "id": "ev-test-03",
+      "kind": "test",
+      "claim": "The direct predicate test expects false for Gemini 2.5 and true for Gemini 3.6, Claude, and GPT-OSS model IDs.",
+      "source": "git show cbaca60389f5d7097a43c95f56a19d344ecf2195:packages/ai/test/google-shared-gemini3-unsigned-tool-call.test.ts, `requiresToolCallId` describe block"
+    },
+    {
+      "id": "ev-validation-01",
+      "kind": "validation",
+      "claim": "The changed test file provides a validation ladder covering the classification boundary, paired request/response serialization, both consuming adapters, multiple tool interactions, and the older-version exclusion.",
+      "source": "git diff 786c76cb76bea452fa7287cc1014c4a3d3cad2b1 cbaca60389f5d7097a43c95f56a19d344ecf2195 -- packages/ai/test/google-shared-gemini3-unsigned-tool-call.test.ts"
+    }
+  ],
+  "candidate_atomics": [
+    {
+      "name": "classify-explicit-tool-id-requirement",
+      "title": "Classify which protocol versions require explicit tool-call IDs",
+      "description": "Extend the shared capability predicate at the version boundary while preserving existing model-family behavior and excluding older versions.",
+      "evidence_ids": [
+        "ev-before-01",
+        "ev-diff-01",
+        "ev-test-03"
+      ],
+      "semantic_action": {
+        "intent": "Identify histories whose external structured-tool protocol requires explicit correlation identifiers.",
+        "module_role": "Protocol capability classifier shared by message serialization",
+        "operation": "classify",
+        "pre_state": "The classifier recognizes existing model families but returns false for a newer protocol generation whose tool interactions require explicit IDs.",
+        "post_state": "The classifier returns true for the newer major-version boundary and existing required families, and false for the verified older version.",
+        "validation": "Evaluate representative identifiers immediately below and above the version boundary plus existing true cases; expect Gemini 2.5 false and Gemini 3.6, Claude, and GPT-OSS true.",
+        "parameters": [
+          "model identifier",
+          "parsed protocol major version",
+          "minimum major version requiring explicit IDs"
+        ],
+        "evidence_ids": [
+          "ev-before-01",
+          "ev-diff-01",
+          "ev-test-03"
+        ]
+      }
+    },
+    {
+      "name": "preserve-paired-tool-correlation-ids",
+      "title": "Preserve matching IDs across tool calls and tool results",
+      "description": "Use the shared capability decision to serialize the same correlated identifier on both the function call and its response while retaining omission for protocols that do not require it.",
+      "evidence_ids": [
+        "ev-callsite-01",
+        "ev-callsite-02",
+        "ev-normalization-01",
+        "ev-test-01",
+        "ev-test-02"
+      ],
+      "semantic_action": {
+        "intent": "Keep each serialized tool result unambiguously correlated with the tool call that produced it.",
+        "module_role": "Conversation-history adapter at the structured tool-call boundary",
+        "operation": "reconcile",
+        "pre_state": "Internal assistant tool calls and tool results contain matching identifiers, but serialization omits both identifiers because the capability predicate is false.",
+        "post_state": "For protocols classified as requiring IDs, each serialized function call and corresponding function response carries the same normalized identifier; protocols outside that class retain the prior omission behavior.",
+        "validation": "Serialize histories containing multiple calls and matching results, assert ordered ID equality on both sides for each supported adapter, and assert IDs remain absent for an older protocol version.",
+        "parameters": [
+          "conversation history",
+          "target model identifier",
+          "tool-call identifier",
+          "tool-result correlation identifier",
+          "provider adapter"
+        ],
+        "evidence_ids": [
+          "ev-callsite-01",
+          "ev-callsite-02",
+          "ev-callsite-03",
+          "ev-normalization-01",
+          "ev-test-01",
+          "ev-test-02"
+        ]
+      }
+    }
+  ],
+  "candidate_workflows": [
+    {
+      "name": "restore-versioned-tool-call-correlation",
+      "title": "Restore tool-call correlation at a versioned protocol boundary",
+      "description": "Repair structured history conversion when a newer protocol generation requires explicit identifiers on both tool calls and their responses, without changing older-version wire behavior.",
+      "atomic_names": [
+        "classify-explicit-tool-id-requirement",
+        "preserve-paired-tool-correlation-ids"
+      ],
+      "evidence_ids": [
+        "ev-before-01",
+        "ev-diff-01",
+        "ev-callsite-01",
+        "ev-callsite-02",
+        "ev-callsite-03",
+        "ev-test-01",
+        "ev-test-02",
+        "ev-test-03",
+        "ev-validation-01"
+      ],
+      "workflow_graph": {
+        "goal": "Ensure every tool call and corresponding tool result retain a matching explicit identifier when the target protocol version requires correlation IDs.",
+        "when_to_use": [
+          "A conversation adapter receives internally correlated tool calls and results but emits structured history without their identifiers.",
+          "The requirement begins at an identifiable model or protocol version boundary.",
+          "One shared capability predicate already controls both call-side and response-side ID serialization."
+        ],
+        "anti_goals": [
+          "Do not add IDs unconditionally to older protocol versions whose established wire representation omits them.",
+          "Do not create separate provider-specific conversion paths when both adapters consume the shared converter.",
+          "Do not alter thought-signature handling, tool payloads, or result content while repairing identifier correlation."
+        ],
+        "not_applicable_when": [
+          "The internal history lacks stable identifiers linking tool results to tool calls.",
+          "Only one side of the external protocol accepts an identifier and paired call-response equality is not its contract.",
+          "The affected adapters do not share the capability predicate or serialization boundary."
+        ],
+        "inputs": [
+          "Target model or protocol identifier",
+          "Version parser or equivalent capability metadata",
+          "Conversation history with tool calls and matching tool results",
+          "Shared message-conversion entry point",
+          "Representative older and newer version cases"
+        ],
+        "entry_state": "A newer protocol generation is routed through a shared converter, but the capability predicate excludes it, so call and response IDs are dropped during replay.",
+        "exit_state": "The required protocol generation emits matching IDs on every serialized function call and function response through each shared adapter, while the tested older generation continues omitting IDs.",
+        "steps": [
+          {
+            "action_name": "classify-explicit-tool-id-requirement",
+            "role": "establish-contract",
+            "required": true,
+            "depends_on": [],
+            "condition": "The ID requirement can be expressed as a stable family or major-version capability boundary.",
+            "validation": "Direct boundary cases return the expected capability result without regressing previously supported families."
+          },
+          {
+            "action_name": "preserve-paired-tool-correlation-ids",
+            "role": "reconcile",
+            "required": true,
+            "depends_on": [
+              "classify-explicit-tool-id-requirement"
+            ],
+            "condition": "Both function-call and function-response serialization consult the shared capability decision.",
+            "validation": "A multi-call history produces equal ordered IDs on call and response parts for every consuming adapter, and produces no IDs for the excluded older version."
+          }
+        ],
+        "edges": [
+          {
+            "from": "classify-explicit-tool-id-requirement",
+            "to": "preserve-paired-tool-correlation-ids",
+            "type": "enables"
+          },
+          {
+            "from": "preserve-paired-tool-correlation-ids",
+            "to": "classify-explicit-tool-id-requirement",
+            "type": "validates"
+          }
+        ],
+        "validation_ladder": [
+          "Unit-check the capability predicate immediately below and above the version boundary.",
+          "Serialize at least two tool calls and matching results to detect missing, duplicated, or reordered correlation IDs.",
+          "Assert equality of call-side and response-side identifier sequences.",
+          "Run the same history through every adapter that consumes the shared converter.",
+          "Assert an older protocol version preserves its prior omission behavior.",
+          "Retain unrelated structured-message assertions, including thought-signature behavior."
+        ],
+        "stop_conditions": [
+          "Stop if the protocol's explicit-ID requirement cannot be established from implementation or tests.",
+          "Stop if internal tool results cannot be mapped to their originating calls.",
+          "Stop if enabling the capability changes older-version serialization.",
+          "Stop if only call IDs or only response IDs survive the conversion."
+        ],
+        "unresolved_or_deferred": [
+          "The GitHub bundle contains no PR body, issue discussion, review rationale, or status-check results.",
+          "No independent test execution result was supplied; validation is grounded in the committed test oracle."
+        ]
+      }
+    }
+  ],
+  "unresolved_questions": [
+    "The commit body says `fixes #7047`, but the supplied bundle contains no metadata for that linked issue, so its reproduction details are unavailable.",
+    "The exact upstream API failure message caused by omitted Gemini 3 IDs is not present in the checkout diff or GitHub evidence bundle."
+  ]
+}

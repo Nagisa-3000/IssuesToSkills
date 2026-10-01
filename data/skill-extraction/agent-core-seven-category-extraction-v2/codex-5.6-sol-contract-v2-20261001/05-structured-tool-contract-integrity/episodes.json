@@ -1,0 +1,2759 @@
+[
+  {
+    "episode_id": "earendil-works__pi__7494__cbaca603",
+    "title": "Preserve paired tool-call identifiers for protocol versions that require them",
+    "before": "At parent 786c76cb76bea452fa7287cc1014c4a3d3cad2b1, the shared Google message converter treated only model IDs beginning with `claude-` or `gpt-oss-` as requiring explicit tool-call IDs. Consequently, Gemini 3 history serialization omitted IDs from both function-call parts and their corresponding function-response parts, even though the internal history contained matching tool-call identifiers.",
+    "after": "At cbaca60389f5d7097a43c95f56a19d344ecf2195, the requirement predicate also recognizes parsed Gemini major versions greater than or equal to 3. Existing converter branches governed by that predicate therefore emit the same normalized identifiers on function-call and function-response parts for Gemini 3 across the Google Generative AI and Vertex adapters, while Gemini 2.5 continues omitting them.",
+    "diff": "The implementation adds the existing Gemini major-version parser to `requiresToolCallId`, extending the predicate by one condition without changing the serialization branches. Tests add paired tool results, verify IDs on both sides of two tool interactions for multiple Gemini 3 model IDs and both adapter APIs, verify omission for Gemini 2.5, and directly test the expanded predicate while retaining prior Claude and GPT-OSS behavior.",
+    "repository": "earendil-works/pi",
+    "revision": "github-issue-7494",
+    "evidence_ids": [
+      "ev-commit-01",
+      "ev-before-01",
+      "ev-callsite-01",
+      "ev-callsite-02",
+      "ev-callsite-03",
+      "ev-normalization-01",
+      "ev-diff-01",
+      "ev-test-01",
+      "ev-test-02",
+      "ev-test-03",
+      "ev-validation-01"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "earendil-works/pi",
+      "issue": 7494,
+      "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+      "manifest_metadata": {
+        "category": "structured-tool-contract-integrity",
+        "role": "train_candidate",
+        "case_id": "earendil-works__pi__7494__structured-tool-contract-integrity",
+        "sample_kind": "verified_substitute",
+        "seed_issue": 10086,
+        "seed_issue_url": "https://github.com/earendil-works/pi/issues/10086",
+        "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+        "resolution_url": "https://github.com/earendil-works/pi/pull/7494",
+        "provenance": {
+          "classification": "verified_substitute",
+          "seed": {
+            "repository": "earendil-works/pi",
+            "issue": 10086,
+            "url": "https://github.com/earendil-works/pi/issues/10086",
+            "table_note": "strict fields truncate or mutate streamed Mistral tool-call arguments"
+          },
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 7494,
+            "url": "https://github.com/earendil-works/pi/pull/7494",
+            "pull_request": 7494,
+            "pull_request_url": "https://github.com/earendil-works/pi/pull/7494"
+          },
+          "commit": {
+            "sha": "cbaca60389f5d7097a43c95f56a19d344ecf2195",
+            "subject": "fix(ai): preserve Gemini 3 tool call IDs (#7494)",
+            "parents": [
+              "786c76cb76bea452fa7287cc1014c4a3d3cad2b1"
+            ],
+            "body_excerpt": "fixes #7047"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "parent_and_changed_files_recorded",
+            "implementation_diff_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "earendil-works/pi",
+        "issue_number": 7494,
+        "issue": {
+          "number": 7494,
+          "title": "fix(ai): preserve Gemini 3 tool call IDs (#7494)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 7494,
+              "title": "fix(ai): preserve Gemini 3 tool call IDs (#7494)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tpackages/ai/src/api/google-shared.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/test/google-shared-gemini3-unsigned-tool-call.test.ts"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "cbaca60389f5d7097a43c95f56a19d344ecf2195",
+                "subject": "fix(ai): preserve Gemini 3 tool call IDs (#7494)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+        "pinned_ref": "cbaca60389f5d7097a43c95f56a19d344ecf2195",
+        "resolved_commit": "cbaca60389f5d7097a43c95f56a19d344ecf2195",
+        "parent_commit": "786c76cb76bea452fa7287cc1014c4a3d3cad2b1",
+        "commit_show_stat": "commit cbaca60389f5d7097a43c95f56a19d344ecf2195\nAuthor:     muyiyr <32588751+muyiyr@users.noreply.github.com>\nAuthorDate: Mon Aug 3 19:45:01 2026 +0800\nCommit:     GitHub <noreply@github.com>\nCommitDate: Mon Aug 3 13:45:01 2026 +0200\n\n    fix(ai): preserve Gemini 3 tool call IDs (#7494)\n    \n    fixes #7047\n\n packages/ai/src/api/google-shared.ts               |  7 ++-\n ...oogle-shared-gemini3-unsigned-tool-call.test.ts | 59 ++++++++++++++++++++--\n 2 files changed, 61 insertions(+), 5 deletions(-)\n",
+        "changed_files_name_status": "M\tpackages/ai/src/api/google-shared.ts\nM\tpackages/ai/test/google-shared-gemini3-unsigned-tool-call.test.ts\n",
+        "linked_issue_numbers": [
+          7494
+        ],
+        "manifest_metadata": {
+          "category": "structured-tool-contract-integrity",
+          "theme": "structured tool contract integrity",
+          "file_sample": [
+            "packages/ai/src/api/google-shared.ts",
+            "packages/ai/test/google-shared-gemini3-unsigned-tool-call.test.ts"
+          ],
+          "case_id": "earendil-works__pi__7494__structured-tool-contract-integrity",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_substitute",
+          "seed_issue": 10086,
+          "seed_issue_url": "https://github.com/earendil-works/pi/issues/10086",
+          "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+          "resolution_url": "https://github.com/earendil-works/pi/pull/7494",
+          "source": "agent_core_seven_category_extraction_v2",
+          "provenance": {
+            "classification": "verified_substitute",
+            "seed": {
+              "repository": "earendil-works/pi",
+              "issue": 10086,
+              "url": "https://github.com/earendil-works/pi/issues/10086",
+              "table_note": "strict fields truncate or mutate streamed Mistral tool-call arguments"
+            },
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 7494,
+              "url": "https://github.com/earendil-works/pi/pull/7494",
+              "pull_request": 7494,
+              "pull_request_url": "https://github.com/earendil-works/pi/pull/7494"
+            },
+            "commit": {
+              "sha": "cbaca60389f5d7097a43c95f56a19d344ecf2195",
+              "subject": "fix(ai): preserve Gemini 3 tool call IDs (#7494)",
+              "parents": [
+                "786c76cb76bea452fa7287cc1014c4a3d3cad2b1"
+              ],
+              "body_excerpt": "fixes #7047"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "parent_and_changed_files_recorded",
+              "implementation_diff_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T09:56:51.013745+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "earendil-works__pi__7494__cbaca603",
+          "title": "Preserve paired tool-call identifiers for protocol versions that require them",
+          "before": "At parent 786c76cb76bea452fa7287cc1014c4a3d3cad2b1, the shared Google message converter treated only model IDs beginning with `claude-` or `gpt-oss-` as requiring explicit tool-call IDs. Consequently, Gemini 3 history serialization omitted IDs from both function-call parts and their corresponding function-response parts, even though the internal history contained matching tool-call identifiers.",
+          "after": "At cbaca60389f5d7097a43c95f56a19d344ecf2195, the requirement predicate also recognizes parsed Gemini major versions greater than or equal to 3. Existing converter branches governed by that predicate therefore emit the same normalized identifiers on function-call and function-response parts for Gemini 3 across the Google Generative AI and Vertex adapters, while Gemini 2.5 continues omitting them.",
+          "diff": "The implementation adds the existing Gemini major-version parser to `requiresToolCallId`, extending the predicate by one condition without changing the serialization branches. Tests add paired tool results, verify IDs on both sides of two tool interactions for multiple Gemini 3 model IDs and both adapter APIs, verify omission for Gemini 2.5, and directly test the expanded predicate while retaining prior Claude and GPT-OSS behavior."
+        },
+        "evidence_units": [
+          {
+            "id": "ev-commit-01",
+            "kind": "commit",
+            "claim": "Commit cbaca603 is titled `fix(ai): preserve Gemini 3 tool call IDs (#7494)`, has parent 786c76cb, and modifies the shared converter and its Gemini 3 test file.",
+            "source": "git show --format=fuller --name-status cbaca60389f5d7097a43c95f56a19d344ecf2195"
+          },
+          {
+            "id": "ev-before-01",
+            "kind": "implementation",
+            "claim": "In the parent, `requiresToolCallId` returns true only for model IDs beginning with `claude-` or `gpt-oss-`; Gemini model IDs are not included.",
+            "source": "git show 786c76cb76bea452fa7287cc1014c4a3d3cad2b1:packages/ai/src/api/google-shared.ts, function `requiresToolCallId`"
+          },
+          {
+            "id": "ev-callsite-01",
+            "kind": "call_site",
+            "claim": "The shared converter uses `requiresToolCallId(model.id)` when serializing assistant tool calls, conditionally adding `functionCall.id` from the internal tool-call block.",
+            "source": "git show cbaca60389f5d7097a43c95f56a19d344ecf2195:packages/ai/src/api/google-shared.ts, `convertMessages`, assistant `toolCall` branch around line 176"
+          },
+          {
+            "id": "ev-callsite-02",
+            "kind": "call_site",
+            "claim": "The same predicate controls whether a tool-result message contributes its matching `toolCallId` as `functionResponse.id`.",
+            "source": "git show cbaca60389f5d7097a43c95f56a19d344ecf2195:packages/ai/src/api/google-shared.ts, `convertMessages`, tool-result branch around lines 215-222"
+          },
+          {
+            "id": "ev-callsite-03",
+            "kind": "call_site",
+            "claim": "The Google Generative AI and Google Vertex request builders both pass model and conversation context through the shared `convertMessages` implementation.",
+            "source": "git show cbaca60389f5d7097a43c95f56a19d344ecf2195:packages/ai/src/api/google-generative-ai.ts around line 360; packages/ai/src/api/google-vertex.ts around line 459"
+          },
+          {
+            "id": "ev-normalization-01",
+            "kind": "implementation",
+            "claim": "Before serialization, `transformMessages` maintains a mapping from normalized tool-call IDs to tool-result IDs, preserving correlation when identifier normalization changes an ID.",
+            "source": "git show cbaca60389f5d7097a43c95f56a19d344ecf2195:packages/ai/src/api/transform-messages.ts, `transformMessages` first pass"
+          },
+          {
+            "id": "ev-diff-01",
+            "kind": "diff",
+            "claim": "The implementation extends `requiresToolCallId` with `getGeminiMajorVersion(modelId) !== undefined && geminiMajorVersion >= 3`; no separate Gemini-specific serialization path is introduced.",
+            "source": "git diff 786c76cb76bea452fa7287cc1014c4a3d3cad2b1 cbaca60389f5d7097a43c95f56a19d344ecf2195 -- packages/ai/src/api/google-shared.ts"
+          },
+          {
+            "id": "ev-test-01",
+            "kind": "test",
+            "claim": "The integration-style parameterized test supplies two tool calls and two matching tool results, then expects both serialized function-call IDs and function-response IDs to equal `call_1` and `call_2` for Gemini 3 through Google Generative AI and Vertex histories.",
+            "source": "git show cbaca60389f5d7097a43c95f56a19d344ecf2195:packages/ai/test/google-shared-gemini3-unsigned-tool-call.test.ts, test `preserves tool call IDs for $id via $api history`"
+          },
+          {
+            "id": "ev-test-02",
+            "kind": "test",
+            "claim": "The compatibility test expects two Gemini 2.5 function calls and two function responses to remain present while all four serialized IDs remain undefined.",
+            "source": "git show cbaca60389f5d7097a43c95f56a19d344ecf2195:packages/ai/test/google-shared-gemini3-unsigned-tool-call.test.ts, test `does not add a thoughtSignature for non-Gemini-3 models`"
+          },
+          {
+            "id": "ev-test-03",
+            "kind": "test",
+            "claim": "The direct predicate test expects false for Gemini 2.5 and true for Gemini 3.6, Claude, and GPT-OSS model IDs.",
+            "source": "git show cbaca60389f5d7097a43c95f56a19d344ecf2195:packages/ai/test/google-shared-gemini3-unsigned-tool-call.test.ts, `requiresToolCallId` describe block"
+          },
+          {
+            "id": "ev-validation-01",
+            "kind": "validation",
+            "claim": "The changed test file provides a validation ladder covering the classification boundary, paired request/response serialization, both consuming adapters, multiple tool interactions, and the older-version exclusion.",
+            "source": "git diff 786c76cb76bea452fa7287cc1014c4a3d3cad2b1 cbaca60389f5d7097a43c95f56a19d344ecf2195 -- packages/ai/test/google-shared-gemini3-unsigned-tool-call.test.ts"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "classify-explicit-tool-id-requirement",
+            "title": "Classify which protocol versions require explicit tool-call IDs",
+            "description": "Extend the shared capability predicate at the version boundary while preserving existing model-family behavior and excluding older versions.",
+            "evidence_ids": [
+              "ev-before-01",
+              "ev-diff-01",
+              "ev-test-03"
+            ],
+            "semantic_action": {
+              "intent": "Identify histories whose external structured-tool protocol requires explicit correlation identifiers.",
+              "module_role": "Protocol capability classifier shared by message serialization",
+              "operation": "classify",
+              "pre_state": "The classifier recognizes existing model families but returns false for a newer protocol generation whose tool interactions require explicit IDs.",
+              "post_state": "The classifier returns true for the newer major-version boundary and existing required families, and false for the verified older version.",
+              "validation": "Evaluate representative identifiers immediately below and above the version boundary plus existing true cases; expect Gemini 2.5 false and Gemini 3.6, Claude, and GPT-OSS true.",
+              "parameters": [
+                "model identifier",
+                "parsed protocol major version",
+                "minimum major version requiring explicit IDs"
+              ],
+              "evidence_ids": [
+                "ev-before-01",
+                "ev-diff-01",
+                "ev-test-03"
+              ]
+            }
+          },
+          {
+            "name": "preserve-paired-tool-correlation-ids",
+            "title": "Preserve matching IDs across tool calls and tool results",
+            "description": "Use the shared capability decision to serialize the same correlated identifier on both the function call and its response while retaining omission for protocols that do not require it.",
+            "evidence_ids": [
+              "ev-callsite-01",
+              "ev-callsite-02",
+              "ev-normalization-01",
+              "ev-test-01",
+              "ev-test-02"
+            ],
+            "semantic_action": {
+              "intent": "Keep each serialized tool result unambiguously correlated with the tool call that produced it.",
+              "module_role": "Conversation-history adapter at the structured tool-call boundary",
+              "operation": "reconcile",
+              "pre_state": "Internal assistant tool calls and tool results contain matching identifiers, but serialization omits both identifiers because the capability predicate is false.",
+              "post_state": "For protocols classified as requiring IDs, each serialized function call and corresponding function response carries the same normalized identifier; protocols outside that class retain the prior omission behavior.",
+              "validation": "Serialize histories containing multiple calls and matching results, assert ordered ID equality on both sides for each supported adapter, and assert IDs remain absent for an older protocol version.",
+              "parameters": [
+                "conversation history",
+                "target model identifier",
+                "tool-call identifier",
+                "tool-result correlation identifier",
+                "provider adapter"
+              ],
+              "evidence_ids": [
+                "ev-callsite-01",
+                "ev-callsite-02",
+                "ev-callsite-03",
+                "ev-normalization-01",
+                "ev-test-01",
+                "ev-test-02"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "restore-versioned-tool-call-correlation",
+            "title": "Restore tool-call correlation at a versioned protocol boundary",
+            "description": "Repair structured history conversion when a newer protocol generation requires explicit identifiers on both tool calls and their responses, without changing older-version wire behavior.",
+            "atomic_names": [
+              "classify-explicit-tool-id-requirement",
+              "preserve-paired-tool-correlation-ids"
+            ],
+            "evidence_ids": [
+              "ev-before-01",
+              "ev-diff-01",
+              "ev-callsite-01",
+              "ev-callsite-02",
+              "ev-callsite-03",
+              "ev-test-01",
+              "ev-test-02",
+              "ev-test-03",
+              "ev-validation-01"
+            ],
+            "workflow_graph": {
+              "goal": "Ensure every tool call and corresponding tool result retain a matching explicit identifier when the target protocol version requires correlation IDs.",
+              "when_to_use": [
+                "A conversation adapter receives internally correlated tool calls and results but emits structured history without their identifiers.",
+                "The requirement begins at an identifiable model or protocol version boundary.",
+                "One shared capability predicate already controls both call-side and response-side ID serialization."
+              ],
+              "anti_goals": [
+                "Do not add IDs unconditionally to older protocol versions whose established wire representation omits them.",
+                "Do not create separate provider-specific conversion paths when both adapters consume the shared converter.",
+                "Do not alter thought-signature handling, tool payloads, or result content while repairing identifier correlation."
+              ],
+              "not_applicable_when": [
+                "The internal history lacks stable identifiers linking tool results to tool calls.",
+                "Only one side of the external protocol accepts an identifier and paired call-response equality is not its contract.",
+                "The affected adapters do not share the capability predicate or serialization boundary."
+              ],
+              "inputs": [
+                "Target model or protocol identifier",
+                "Version parser or equivalent capability metadata",
+                "Conversation history with tool calls and matching tool results",
+                "Shared message-conversion entry point",
+                "Representative older and newer version cases"
+              ],
+              "entry_state": "A newer protocol generation is routed through a shared converter, but the capability predicate excludes it, so call and response IDs are dropped during replay.",
+              "exit_state": "The required protocol generation emits matching IDs on every serialized function call and function response through each shared adapter, while the tested older generation continues omitting IDs.",
+              "steps": [
+                {
+                  "action_name": "classify-explicit-tool-id-requirement",
+                  "role": "establish-contract",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "The ID requirement can be expressed as a stable family or major-version capability boundary.",
+                  "validation": "Direct boundary cases return the expected capability result without regressing previously supported families."
+                },
+                {
+                  "action_name": "preserve-paired-tool-correlation-ids",
+                  "role": "reconcile",
+                  "required": true,
+                  "depends_on": [
+                    "classify-explicit-tool-id-requirement"
+                  ],
+                  "condition": "Both function-call and function-response serialization consult the shared capability decision.",
+                  "validation": "A multi-call history produces equal ordered IDs on call and response parts for every consuming adapter, and produces no IDs for the excluded older version."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "classify-explicit-tool-id-requirement",
+                  "to": "preserve-paired-tool-correlation-ids",
+                  "type": "enables"
+                },
+                {
+                  "from": "preserve-paired-tool-correlation-ids",
+                  "to": "classify-explicit-tool-id-requirement",
+                  "type": "validates"
+                }
+              ],
+              "validation_ladder": [
+                "Unit-check the capability predicate immediately below and above the version boundary.",
+                "Serialize at least two tool calls and matching results to detect missing, duplicated, or reordered correlation IDs.",
+                "Assert equality of call-side and response-side identifier sequences.",
+                "Run the same history through every adapter that consumes the shared converter.",
+                "Assert an older protocol version preserves its prior omission behavior.",
+                "Retain unrelated structured-message assertions, including thought-signature behavior."
+              ],
+              "stop_conditions": [
+                "Stop if the protocol's explicit-ID requirement cannot be established from implementation or tests.",
+                "Stop if internal tool results cannot be mapped to their originating calls.",
+                "Stop if enabling the capability changes older-version serialization.",
+                "Stop if only call IDs or only response IDs survive the conversion."
+              ],
+              "unresolved_or_deferred": [
+                "The GitHub bundle contains no PR body, issue discussion, review rationale, or status-check results.",
+                "No independent test execution result was supplied; validation is grounded in the committed test oracle."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "The commit body says `fixes #7047`, but the supplied bundle contains no metadata for that linked issue, so its reproduction details are unavailable.",
+          "The exact upstream API failure message caused by omitted Gemini 3 IDs is not present in the checkout diff or GitHub evidence bundle."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "classify-explicit-tool-id-requirement",
+          "title": "Classify which protocol versions require explicit tool-call IDs",
+          "description": "Extend the shared capability predicate at the version boundary while preserving existing model-family behavior and excluding older versions.",
+          "evidence_ids": [
+            "ev-before-01",
+            "ev-diff-01",
+            "ev-test-03"
+          ],
+          "semantic_action": {
+            "intent": "Identify histories whose external structured-tool protocol requires explicit correlation identifiers.",
+            "module_role": "Protocol capability classifier shared by message serialization",
+            "operation": "classify",
+            "pre_state": "The classifier recognizes existing model families but returns false for a newer protocol generation whose tool interactions require explicit IDs.",
+            "post_state": "The classifier returns true for the newer major-version boundary and existing required families, and false for the verified older version.",
+            "validation": "Evaluate representative identifiers immediately below and above the version boundary plus existing true cases; expect Gemini 2.5 false and Gemini 3.6, Claude, and GPT-OSS true.",
+            "parameters": [
+              "model identifier",
+              "parsed protocol major version",
+              "minimum major version requiring explicit IDs"
+            ],
+            "evidence_ids": [
+              "ev-before-01",
+              "ev-diff-01",
+              "ev-test-03"
+            ]
+          }
+        },
+        {
+          "name": "preserve-paired-tool-correlation-ids",
+          "title": "Preserve matching IDs across tool calls and tool results",
+          "description": "Use the shared capability decision to serialize the same correlated identifier on both the function call and its response while retaining omission for protocols that do not require it.",
+          "evidence_ids": [
+            "ev-callsite-01",
+            "ev-callsite-02",
+            "ev-normalization-01",
+            "ev-test-01",
+            "ev-test-02"
+          ],
+          "semantic_action": {
+            "intent": "Keep each serialized tool result unambiguously correlated with the tool call that produced it.",
+            "module_role": "Conversation-history adapter at the structured tool-call boundary",
+            "operation": "reconcile",
+            "pre_state": "Internal assistant tool calls and tool results contain matching identifiers, but serialization omits both identifiers because the capability predicate is false.",
+            "post_state": "For protocols classified as requiring IDs, each serialized function call and corresponding function response carries the same normalized identifier; protocols outside that class retain the prior omission behavior.",
+            "validation": "Serialize histories containing multiple calls and matching results, assert ordered ID equality on both sides for each supported adapter, and assert IDs remain absent for an older protocol version.",
+            "parameters": [
+              "conversation history",
+              "target model identifier",
+              "tool-call identifier",
+              "tool-result correlation identifier",
+              "provider adapter"
+            ],
+            "evidence_ids": [
+              "ev-callsite-01",
+              "ev-callsite-02",
+              "ev-callsite-03",
+              "ev-normalization-01",
+              "ev-test-01",
+              "ev-test-02"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "restore-versioned-tool-call-correlation",
+          "title": "Restore tool-call correlation at a versioned protocol boundary",
+          "description": "Repair structured history conversion when a newer protocol generation requires explicit identifiers on both tool calls and their responses, without changing older-version wire behavior.",
+          "atomic_names": [
+            "classify-explicit-tool-id-requirement",
+            "preserve-paired-tool-correlation-ids"
+          ],
+          "evidence_ids": [
+            "ev-before-01",
+            "ev-diff-01",
+            "ev-callsite-01",
+            "ev-callsite-02",
+            "ev-callsite-03",
+            "ev-test-01",
+            "ev-test-02",
+            "ev-test-03",
+            "ev-validation-01"
+          ],
+          "workflow_graph": {
+            "goal": "Ensure every tool call and corresponding tool result retain a matching explicit identifier when the target protocol version requires correlation IDs.",
+            "when_to_use": [
+              "A conversation adapter receives internally correlated tool calls and results but emits structured history without their identifiers.",
+              "The requirement begins at an identifiable model or protocol version boundary.",
+              "One shared capability predicate already controls both call-side and response-side ID serialization."
+            ],
+            "anti_goals": [
+              "Do not add IDs unconditionally to older protocol versions whose established wire representation omits them.",
+              "Do not create separate provider-specific conversion paths when both adapters consume the shared converter.",
+              "Do not alter thought-signature handling, tool payloads, or result content while repairing identifier correlation."
+            ],
+            "not_applicable_when": [
+              "The internal history lacks stable identifiers linking tool results to tool calls.",
+              "Only one side of the external protocol accepts an identifier and paired call-response equality is not its contract.",
+              "The affected adapters do not share the capability predicate or serialization boundary."
+            ],
+            "inputs": [
+              "Target model or protocol identifier",
+              "Version parser or equivalent capability metadata",
+              "Conversation history with tool calls and matching tool results",
+              "Shared message-conversion entry point",
+              "Representative older and newer version cases"
+            ],
+            "entry_state": "A newer protocol generation is routed through a shared converter, but the capability predicate excludes it, so call and response IDs are dropped during replay.",
+            "exit_state": "The required protocol generation emits matching IDs on every serialized function call and function response through each shared adapter, while the tested older generation continues omitting IDs.",
+            "steps": [
+              {
+                "action_name": "classify-explicit-tool-id-requirement",
+                "role": "establish-contract",
+                "required": true,
+                "depends_on": [],
+                "condition": "The ID requirement can be expressed as a stable family or major-version capability boundary.",
+                "validation": "Direct boundary cases return the expected capability result without regressing previously supported families."
+              },
+              {
+                "action_name": "preserve-paired-tool-correlation-ids",
+                "role": "reconcile",
+                "required": true,
+                "depends_on": [
+                  "classify-explicit-tool-id-requirement"
+                ],
+                "condition": "Both function-call and function-response serialization consult the shared capability decision.",
+                "validation": "A multi-call history produces equal ordered IDs on call and response parts for every consuming adapter, and produces no IDs for the excluded older version."
+              }
+            ],
+            "edges": [
+              {
+                "from": "classify-explicit-tool-id-requirement",
+                "to": "preserve-paired-tool-correlation-ids",
+                "type": "enables"
+              },
+              {
+                "from": "preserve-paired-tool-correlation-ids",
+                "to": "classify-explicit-tool-id-requirement",
+                "type": "validates"
+              }
+            ],
+            "validation_ladder": [
+              "Unit-check the capability predicate immediately below and above the version boundary.",
+              "Serialize at least two tool calls and matching results to detect missing, duplicated, or reordered correlation IDs.",
+              "Assert equality of call-side and response-side identifier sequences.",
+              "Run the same history through every adapter that consumes the shared converter.",
+              "Assert an older protocol version preserves its prior omission behavior.",
+              "Retain unrelated structured-message assertions, including thought-signature behavior."
+            ],
+            "stop_conditions": [
+              "Stop if the protocol's explicit-ID requirement cannot be established from implementation or tests.",
+              "Stop if internal tool results cannot be mapped to their originating calls.",
+              "Stop if enabling the capability changes older-version serialization.",
+              "Stop if only call IDs or only response IDs survive the conversion."
+            ],
+            "unresolved_or_deferred": [
+              "The GitHub bundle contains no PR body, issue discussion, review rationale, or status-check results.",
+              "No independent test execution result was supplied; validation is grounded in the committed test oracle."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The commit body says `fixes #7047`, but the supplied bundle contains no metadata for that linked issue, so its reproduction details are unavailable.",
+        "The exact upstream API failure message caused by omitted Gemini 3 IDs is not present in the checkout diff or GitHub evidence bundle."
+      ]
+    },
+    "call_sites": [
+      "The shared converter uses `requiresToolCallId(model.id)` when serializing assistant tool calls, conditionally adding `functionCall.id` from the internal tool-call block.",
+      "The same predicate controls whether a tool-result message contributes its matching `toolCallId` as `functionResponse.id`.",
+      "The Google Generative AI and Google Vertex request builders both pass model and conversation context through the shared `convertMessages` implementation."
+    ],
+    "tests": [
+      "The integration-style parameterized test supplies two tool calls and two matching tool results, then expects both serialized function-call IDs and function-response IDs to equal `call_1` and `call_2` for Gemini 3 through Google Generative AI and Vertex histories.",
+      "The compatibility test expects two Gemini 2.5 function calls and two function responses to remain present while all four serialized IDs remain undefined.",
+      "The direct predicate test expects false for Gemini 2.5 and true for Gemini 3.6, Claude, and GPT-OSS model IDs."
+    ]
+  },
+  {
+    "episode_id": "openai-codex-44472-03f014564",
+    "title": "Fail closed when tool-call completion evidence is ambiguous, reused, or truncated",
+    "before": "At parent b348fc26674189f758d5941cdab3f78f258b2aa7, the recorder began without indexing initial-history identifiers, treated every registered runtime cell as newly started, did not reject duplicate nested call IDs, and did not verify that recorded exec/wait outputs had a unique matching input. Prompt budgeting could revoke completion broadly when evidence was truncated, and recorder allocation was fixed at session construction rather than following eligible runtime configuration refreshes.",
+    "after": "At 03f014564deef528c25e80fe67ec51871cb6ee51, the recorder indexes bounded call-ID evidence from initial history, tracks call and runtime-cell reuse, and marks completion incomplete whenever freshness cannot be proved. Prompt attachment verifies unique input/output associations, propagates irreversible invalidation across outputs belonging to an affected runtime cell, and withholds wait completion after resume or fork. Metadata budgeting replaces an over-budget output's inventory with a local omission marker and clears completion only for outputs sharing the damaged cell. Recording enablement can be refreshed independently from execution features while legacy reloads preserve the live recorder.",
+    "diff": "The change modifies 12 files with 1,772 insertions and 638 deletions. It adds a bounded monotonic SeenIds filter; passes InitialHistory into recorder construction; adds origin, runtime-cell, duplicate-call, and exec/wait association checks; makes retained completeness fail closed across retries and compaction; rewrites request-budget handling around per-output omission markers and cell-scoped completion invalidation; adds runtime recorder refresh handling; and adds unit and integration regressions for reused IDs, missing or paginated history, mismatched wrappers, resumed waits, compaction, unrelated truncation, and runtime enablement.",
+    "repository": "openai/codex",
+    "revision": "github-issue-44472",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10",
+      "E11",
+      "E12",
+      "E13",
+      "E14"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "openai/codex",
+      "issue": 44472,
+      "checkout": "/home/chenyujia/tritonToLlvm/codex-agent",
+      "manifest_metadata": {
+        "category": "structured-tool-contract-integrity",
+        "role": "train_candidate",
+        "case_id": "openai__codex__44472__structured-tool-contract-integrity",
+        "sample_kind": "verified_substitute",
+        "seed_issue": 46195,
+        "seed_issue_url": "https://github.com/openai/codex/issues/46195",
+        "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+        "resolution_url": "https://github.com/openai/codex/pull/44472",
+        "provenance": {
+          "classification": "verified_substitute",
+          "seed": {
+            "repository": "openai/codex",
+            "issue": 46195,
+            "url": "https://github.com/openai/codex/issues/46195",
+            "table_note": "tool call reaches the provider without output and the thread stalls"
+          },
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 44472,
+            "url": "https://github.com/openai/codex/pull/44472",
+            "pull_request": 44472,
+            "pull_request_url": "https://github.com/openai/codex/pull/44472"
+          },
+          "commit": {
+            "sha": "03f014564deef528c25e80fe67ec51871cb6ee51",
+            "subject": "Harden Code Mode tool-call completeness tracking (#44472)",
+            "parents": [
+              "b348fc26674189f758d5941cdab3f78f258b2aa7"
+            ],
+            "body_excerpt": "## Why\n\nReused call IDs, ambiguous exec/wait associations, and missing history can make tool-call completeness claims unreliable. Truncating one cell's recorded calls should also preserve completeness for unrelated cells.\n\n## What changed\n\n- Track observed call and runtime cell IDs with bounded memory, including call IDs from initial history, and withhold completeness when evidence is missing or ambiguous.\n- Validate exec/wait input-output associations and keep invalidated completeness from returning on retries. Withhold wait completeness after resume or fork, where runtime cell IDs can be reused.\n- Keep truncation markers and omission counts local to each output, clearing completeness across the affected cell while preserving unrelated cells within the metadata budget.\n- Refresh recording"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "parent_and_changed_files_recorded",
+            "implementation_diff_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "openai/codex",
+        "issue_number": 44472,
+        "issue": {
+          "number": 44472,
+          "title": "Harden Code Mode tool-call completeness tracking (#44472)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 44472,
+              "title": "Harden Code Mode tool-call completeness tracking (#44472)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tcodex-rs/core/src/session/mod.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/core/src/session/session.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/core/src/session/tests.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/core/src/tools/executed_tool_calls.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/core/src/tools/executed_tool_calls/request_metadata.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/core/src/tools/executed_tool_calls/request_metadata_tests.rs"
+              },
+              {
+                "status_line": "A\tcodex-rs/core/src/tools/executed_tool_calls/seen_ids.rs"
+              },
+              {
+                "status_line": "A\tcodex-rs/core/src/tools/executed_tool_calls/seen_ids_tests.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/core/src/tools/handlers/mcp.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/core/tests/suite/code_mode.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/protocol/src/models/executed_tool_calls.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/protocol/src/models/executed_tool_calls_tests.rs"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "03f014564deef528c25e80fe67ec51871cb6ee51",
+                "subject": "Harden Code Mode tool-call completeness tracking (#44472)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/codex-agent",
+        "pinned_ref": "03f014564deef528c25e80fe67ec51871cb6ee51",
+        "resolved_commit": "03f014564deef528c25e80fe67ec51871cb6ee51",
+        "parent_commit": "b348fc26674189f758d5941cdab3f78f258b2aa7",
+        "commit_show_stat": "commit 03f014564deef528c25e80fe67ec51871cb6ee51\nAuthor:     ningyi-oai <ningyi@openai.com>\nAuthorDate: Thu Sep 10 08:48:42 2026 +0000\nCommit:     copyberry <copyberry@app.openai.com>\nCommitDate: Thu Sep 10 08:57:35 2026 +0000\n\n    Harden Code Mode tool-call completeness tracking (#44472)\n    \n    ## Why\n    \n    Reused call IDs, ambiguous exec/wait associations, and missing history can make tool-call completeness claims unreliable. Truncating one cell's recorded calls should also preserve completeness for unrelated cells.\n    \n    ## What changed\n    \n    - Track observed call and runtime cell IDs with bounded memory, including call IDs from initial history, and withhold completeness when evidence is missing or ambiguous.\n    - Validate exec/wait input-output associations and keep invalidated completeness from returning on retries. Withhold wait completeness after resume or fork, where runtime cell IDs can be reused.\n    - Keep truncation markers and omission counts local to each output, clearing completeness across the affected cell while preserving unrelated cells within the metadata budget.\n    - Refresh recording enablement from runtime configuration without changing execution features, and preserve the live recorder during legacy configuration reloads.\n    \n    ## Testing\n    \n    Add regression coverage for reused IDs, compaction, resumed waits, mismatched wrappers, runtime recording changes, and metadata budgeting that preserves unrelated complete calls.\n    \n    GitOrigin-RevId: 0bc85964bee079879620ec0664eea530a13b61fb\n\n codex-rs/core/src/session/mod.rs                   |  17 +-\n codex-rs/core/src/session/session.rs               |   5 +-\n codex-rs/core/src/session/tests.rs                 |   6 +-\n codex-rs/core/src/tools/executed_tool_calls.rs     | 199 ++++--\n .../tools/executed_tool_calls/request_metadata.rs  | 269 ++++++--\n .../executed_tool_calls/request_metadata_tests.rs  | 683 +++++++++++++++------\n .../core/src/tools/executed_tool_calls/seen_ids.rs | 133 ++++\n .../tools/executed_tool_calls/seen_ids_tests.rs    |  14 +\n codex-rs/core/src/tools/handlers/mcp.rs            |   6 +-\n codex-rs/core/tests/suite/code_mode.rs             | 449 ++++++++++++++\n .../protocol/src/models/executed_tool_calls.rs     | 387 ++++--------\n .../src/models/executed_tool_calls_tests.rs        | 242 +++++---\n 12 files changed, 1772 insertions(+), 638 deletions(-)\n",
+        "changed_files_name_status": "M\tcodex-rs/core/src/session/mod.rs\nM\tcodex-rs/core/src/session/session.rs\nM\tcodex-rs/core/src/session/tests.rs\nM\tcodex-rs/core/src/tools/executed_tool_calls.rs\nM\tcodex-rs/core/src/tools/executed_tool_calls/request_metadata.rs\nM\tcodex-rs/core/src/tools/executed_tool_calls/request_metadata_tests.rs\nA\tcodex-rs/core/src/tools/executed_tool_calls/seen_ids.rs\nA\tcodex-rs/core/src/tools/executed_tool_calls/seen_ids_tests.rs\nM\tcodex-rs/core/src/tools/handlers/mcp.rs\nM\tcodex-rs/core/tests/suite/code_mode.rs\nM\tcodex-rs/protocol/src/models/executed_tool_calls.rs\nM\tcodex-rs/protocol/src/models/executed_tool_calls_tests.rs\n",
+        "linked_issue_numbers": [
+          44472
+        ],
+        "manifest_metadata": {
+          "category": "structured-tool-contract-integrity",
+          "theme": "structured tool contract integrity",
+          "file_sample": [
+            "codex-rs/core/src/session/mod.rs",
+            "codex-rs/core/src/session/session.rs",
+            "codex-rs/core/src/session/tests.rs",
+            "codex-rs/core/src/tools/executed_tool_calls.rs",
+            "codex-rs/core/src/tools/executed_tool_calls/request_metadata.rs",
+            "codex-rs/core/src/tools/executed_tool_calls/request_metadata_tests.rs",
+            "codex-rs/core/src/tools/executed_tool_calls/seen_ids.rs",
+            "codex-rs/core/src/tools/executed_tool_calls/seen_ids_tests.rs",
+            "codex-rs/core/src/tools/handlers/mcp.rs",
+            "codex-rs/core/tests/suite/code_mode.rs",
+            "codex-rs/protocol/src/models/executed_tool_calls.rs",
+            "codex-rs/protocol/src/models/executed_tool_calls_tests.rs"
+          ],
+          "case_id": "openai__codex__44472__structured-tool-contract-integrity",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_substitute",
+          "seed_issue": 46195,
+          "seed_issue_url": "https://github.com/openai/codex/issues/46195",
+          "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+          "resolution_url": "https://github.com/openai/codex/pull/44472",
+          "source": "agent_core_seven_category_extraction_v2",
+          "provenance": {
+            "classification": "verified_substitute",
+            "seed": {
+              "repository": "openai/codex",
+              "issue": 46195,
+              "url": "https://github.com/openai/codex/issues/46195",
+              "table_note": "tool call reaches the provider without output and the thread stalls"
+            },
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 44472,
+              "url": "https://github.com/openai/codex/pull/44472",
+              "pull_request": 44472,
+              "pull_request_url": "https://github.com/openai/codex/pull/44472"
+            },
+            "commit": {
+              "sha": "03f014564deef528c25e80fe67ec51871cb6ee51",
+              "subject": "Harden Code Mode tool-call completeness tracking (#44472)",
+              "parents": [
+                "b348fc26674189f758d5941cdab3f78f258b2aa7"
+              ],
+              "body_excerpt": "## Why\n\nReused call IDs, ambiguous exec/wait associations, and missing history can make tool-call completeness claims unreliable. Truncating one cell's recorded calls should also preserve completeness for unrelated cells.\n\n## What changed\n\n- Track observed call and runtime cell IDs with bounded memory, including call IDs from initial history, and withhold completeness when evidence is missing or ambiguous.\n- Validate exec/wait input-output associations and keep invalidated completeness from returning on retries. Withhold wait completeness after resume or fork, where runtime cell IDs can be reused.\n- Keep truncation markers and omission counts local to each output, clearing completeness across the affected cell while preserving unrelated cells within the metadata budget.\n- Refresh recording"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "parent_and_changed_files_recorded",
+              "implementation_diff_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T10:00:17.630681+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "openai-codex-44472-03f014564",
+          "title": "Fail closed when tool-call completion evidence is ambiguous, reused, or truncated",
+          "before": "At parent b348fc26674189f758d5941cdab3f78f258b2aa7, the recorder began without indexing initial-history identifiers, treated every registered runtime cell as newly started, did not reject duplicate nested call IDs, and did not verify that recorded exec/wait outputs had a unique matching input. Prompt budgeting could revoke completion broadly when evidence was truncated, and recorder allocation was fixed at session construction rather than following eligible runtime configuration refreshes.",
+          "after": "At 03f014564deef528c25e80fe67ec51871cb6ee51, the recorder indexes bounded call-ID evidence from initial history, tracks call and runtime-cell reuse, and marks completion incomplete whenever freshness cannot be proved. Prompt attachment verifies unique input/output associations, propagates irreversible invalidation across outputs belonging to an affected runtime cell, and withholds wait completion after resume or fork. Metadata budgeting replaces an over-budget output's inventory with a local omission marker and clears completion only for outputs sharing the damaged cell. Recording enablement can be refreshed independently from execution features while legacy reloads preserve the live recorder.",
+          "diff": "The change modifies 12 files with 1,772 insertions and 638 deletions. It adds a bounded monotonic SeenIds filter; passes InitialHistory into recorder construction; adds origin, runtime-cell, duplicate-call, and exec/wait association checks; makes retained completeness fail closed across retries and compaction; rewrites request-budget handling around per-output omission markers and cell-scoped completion invalidation; adds runtime recorder refresh handling; and adds unit and integration regressions for reused IDs, missing or paginated history, mismatched wrappers, resumed waits, compaction, unrelated truncation, and runtime enablement."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "The pinned commit identifies reused call IDs, ambiguous exec/wait associations, missing history, and cross-cell truncation effects as causes of unreliable completeness claims, and states that the resolution tracks IDs, validates associations, localizes truncation, and refreshes recording enablement.",
+            "source": "git show --format=fuller 03f014564deef528c25e80fe67ec51871cb6ee51"
+          },
+          {
+            "id": "E2",
+            "kind": "diff",
+            "claim": "The parent recorder constructor accepted only feature state, allocated optional immutable recorder storage, did not index history, and unconditionally changed a registered cell to Started.",
+            "source": "git show b348fc26674189f758d5941cdab3f78f258b2aa7:codex-rs/core/src/tools/executed_tool_calls.rs lines 119-125, 330-350"
+          },
+          {
+            "id": "E3",
+            "kind": "implementation",
+            "claim": "SeenIds uses a bounded monotonic bitmap with separate call-ID and runtime-cell namespaces, indexes identifiers from normal and compacted initial history subject to entry and byte limits, and reports history_ids_indexed=false when complete indexing cannot be established.",
+            "source": "git show 03f014564deef528c25e80fe67ec51871cb6ee51:codex-rs/core/src/tools/executed_tool_calls/seen_ids.rs lines 1-133"
+          },
+          {
+            "id": "E4",
+            "kind": "implementation",
+            "claim": "Recorder initialization now consumes InitialHistory, permits wait-completion proof only for new or cleared history, and starts a cell only when its runtime ID and origin are fresh and history identifiers were successfully indexed; otherwise it makes the cell incomplete.",
+            "source": "git show 03f014564deef528c25e80fe67ec51871cb6ee51:codex-rs/core/src/tools/executed_tool_calls.rs lines 163-179, 416-446"
+          },
+          {
+            "id": "E5",
+            "kind": "implementation",
+            "claim": "Repeated wrapper origins, direct call IDs, runtime-cell IDs, and nested call IDs invalidate completion; invalidation is propagated to retained records associated with the affected origin or runtime cell.",
+            "source": "git show 03f014564deef528c25e80fe67ec51871cb6ee51:codex-rs/core/src/tools/executed_tool_calls.rs lines 91-126, 241-243, 317-369, 416-446"
+          },
+          {
+            "id": "E6",
+            "kind": "implementation",
+            "claim": "Prompt attachment counts outputs, records only unique input positions, validates that each exec or wait input precedes and semantically matches its output, rejects direct-call collisions, and prevents a retained incomplete record from becoming complete again after inventory or association evidence is lost.",
+            "source": "git show 03f014564deef528c25e80fe67ec51871cb6ee51:codex-rs/core/src/tools/executed_tool_calls/request_metadata.rs lines 37-49, 64-171, 179-247, 308-350"
+          },
+          {
+            "id": "E7",
+            "kind": "implementation",
+            "claim": "Prompt attachment withholds completion for ordinary wait outputs when the session came from resumed or forked history because runtime cell handles may be reused, while direct exec output can still be certified from locally observed evidence.",
+            "source": "git show 03f014564deef528c25e80fe67ec51871cb6ee51:codex-rs/core/src/tools/executed_tool_calls.rs lines 164-175; codex-rs/core/src/tools/executed_tool_calls/request_metadata.rs lines 129-132"
+          },
+          {
+            "id": "E8",
+            "kind": "implementation",
+            "claim": "Protocol budgeting now tracks damaged cell identifiers, clears completeness across only those cells, sheds optional result metadata and sources before call evidence, and replaces an over-budget output's own calls with a local omission marker rather than using a global omission fallback.",
+            "source": "git show 03f014564deef528c25e80fe67ec51871cb6ee51:codex-rs/protocol/src/models/executed_tool_calls.rs lines 88-218, 468-560"
+          },
+          {
+            "id": "E9",
+            "kind": "call_site",
+            "claim": "Session construction passes initial history to the recorder, making historical call identifiers part of the completion-proof boundary.",
+            "source": "git show 03f014564deef528c25e80fe67ec51871cb6ee51:codex-rs/core/src/session/session.rs around lines 1478-1483"
+          },
+          {
+            "id": "E10",
+            "kind": "call_site",
+            "claim": "Normal runtime configuration refresh updates recorder enablement independently of execution features, while legacy configuration reload explicitly skips recorder refresh to preserve the current live recorder.",
+            "source": "git show 03f014564deef528c25e80fe67ec51871cb6ee51:codex-rs/core/src/session/mod.rs around lines 1932-1962 and 2144-2159"
+          },
+          {
+            "id": "E11",
+            "kind": "test",
+            "claim": "Recorder-level regressions cover lossless completion, paginated history, forked waits, wrapper mismatch, reused origins, direct-ID collision, truncation after compaction, missing historical evidence, and preservation of unrelated complete outputs under overflow.",
+            "source": "git show 03f014564deef528c25e80fe67ec51871cb6ee51:codex-rs/core/src/tools/executed_tool_calls/request_metadata_tests.rs tests tool_call_completeness_requires_finished_lossless_recording, paginated_history_allows_fresh_origins_but_rejects_known_ids, forked_wait_keeps_calls_without_completion, wrapper_mismatch_cannot_become_complete_on_a_later_wait, completeness_rejects_reused_origin, completeness_rejects_direct_id_collision_and_late_calls, request_truncation_prevents_completion_after_compaction, untracked_history_budget_loss_keeps_later_wait_incomplete, unrelated_raw_overflow_retains_a_complete_exec_within_the_request_budget"
+          },
+          {
+            "id": "E12",
+            "kind": "test",
+            "claim": "End-to-end Code Mode regressions exercise ID knowledge after compaction, runtime recording enablement, recorder preservation across refresh, resumed wait cell reuse, and survival of an unrelated complete call during truncation.",
+            "source": "git show 03f014564deef528c25e80fe67ec51871cb6ee51:codex-rs/core/tests/suite/code_mode.rs tests code_mode_wait_id_stays_known_after_compaction, code_mode_result_metadata_follows_runtime_recording_enablement, code_mode_result_metadata_keeps_prepared_call_binding_across_runtime_refresh, code_mode_resumed_wait_does_not_certify_a_reused_runtime_cell, code_mode_complete_call_survives_unrelated_truncation"
+          },
+          {
+            "id": "E13",
+            "kind": "test",
+            "claim": "Protocol tests assert that completeness is host-only and fail-closed, raw result metadata is shed before stronger evidence, and metadata budgeting retains evidence without allowing one damaged cell to certify another output.",
+            "source": "git show 03f014564deef528c25e80fe67ec51871cb6ee51:codex-rs/protocol/src/models/executed_tool_calls_tests.rs tests executed_tool_call_prompt_budget_includes_metadata_fields, tool_call_completeness_is_host_only_and_fail_closed, raw_result_metadata_is_shed_before_sources_calls_or_completion, result_metadata_markers_do_not_displace_existing_evidence"
+          },
+          {
+            "id": "E14",
+            "kind": "validation",
+            "claim": "The implementation supplies layered regression oracles at bounded-ID unit, recorder/request-metadata, protocol-budgeting, and end-to-end Code Mode levels; the evidence bundle does not report an executed test command or status-check result.",
+            "source": "issue-bundle.json commit_show_stat Testing section and metadata_unavailable status checks; test sources at pinned commit 03f014564deef528c25e80fe67ec51871cb6ee51"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "index_observed_identifiers_for_freshness",
+            "title": "Index observed identifiers before certifying freshness",
+            "description": "Maintain bounded, monotonic knowledge of historical and live identifiers so reused or unindexable identifiers cannot be treated as fresh evidence for completion.",
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E9",
+              "E11"
+            ],
+            "semantic_action": {
+              "intent": "Prevent identifier reuse or unavailable history from producing a false tool-call completion claim.",
+              "module_role": "Session-scoped evidence freshness tracker",
+              "operation": "guard",
+              "pre_state": "A recorder may encounter call origins or runtime handles that were already present in initial history, reused during the session, or unavailable because historical indexing exceeded a safety bound.",
+              "post_state": "Completion can begin only for identifiers proven fresh against bounded historical and live observations; collisions, oversized identifiers, and incomplete history indexing fail closed.",
+              "validation": "Bounded-filter tests verify namespace separation and saturation behavior; recorder tests verify that paginated known IDs and reused origins are rejected while genuinely fresh origins remain usable.",
+              "parameters": [
+                "initial_history",
+                "call_id",
+                "runtime_cell_id",
+                "history_entry_limit",
+                "history_id_byte_limit",
+                "identifier_byte_limit"
+              ],
+              "evidence_ids": [
+                "E3",
+                "E4",
+                "E11"
+              ]
+            }
+          },
+          {
+            "name": "validate_tool_input_output_associations",
+            "title": "Validate tool input and output associations",
+            "description": "Verify that every completion-bearing output has one preceding, type-correct exec or wait input with the expected origin and runtime handle, and make any loss of that evidence irreversible for the affected cell.",
+            "evidence_ids": [
+              "E5",
+              "E6",
+              "E7",
+              "E11",
+              "E12"
+            ],
+            "semantic_action": {
+              "intent": "Withhold completeness when wrappers, outputs, retries, or resumed runtime handles are ambiguous or inconsistent.",
+              "module_role": "Prompt evidence reconciler",
+              "operation": "reconcile",
+              "pre_state": "Recorded calls may be attached to duplicated outputs, mismatched wrappers, reused origins, colliding direct calls, resumed waits, or retry history whose association evidence has changed.",
+              "post_state": "Only a unique, ordered, type-correct association can retain completeness, and once the associated inventory or mapping is invalidated all retained outputs for that runtime cell remain incomplete.",
+              "validation": "Recorder regressions cover mismatched wrappers, reused origins, duplicate IDs, forked waits, and retry/compaction loss; end-to-end tests cover resumed runtime-cell reuse and compaction.",
+              "parameters": [
+                "prompt_items",
+                "output_call_id",
+                "originating_call_id",
+                "runtime_cell_id",
+                "retained_inventory",
+                "initial_history_kind"
+              ],
+              "evidence_ids": [
+                "E5",
+                "E6",
+                "E7",
+                "E11",
+                "E12"
+              ]
+            }
+          },
+          {
+            "name": "localize_metadata_budget_damage",
+            "title": "Localize metadata-budget damage to affected cells",
+            "description": "Apply request-size limits per output, preserve stronger evidence before optional metadata, and revoke completion only where truncation or omission damaged the recorded inventory.",
+            "evidence_ids": [
+              "E8",
+              "E11",
+              "E12",
+              "E13"
+            ],
+            "semantic_action": {
+              "intent": "Keep unrelated complete tool-call inventories trustworthy when another output exceeds the metadata budget.",
+              "module_role": "Structured metadata budget enforcer",
+              "operation": "normalize",
+              "pre_state": "Serialized tool-call metadata exceeds argument, per-output, or request limits, so some evidence must be truncated or omitted.",
+              "post_state": "Optional result metadata and sources are shed first; an over-budget output carries its own omission marker; completion is cleared for every output sharing the damaged cell but remains available to intact unrelated cells.",
+              "validation": "Protocol tests exercise budget priority and fail-closed completion, recorder tests preserve an unrelated complete exec under overflow, and an end-to-end Code Mode test verifies the same behavior.",
+              "parameters": [
+                "response_items",
+                "metadata_byte_budget",
+                "argument_byte_budget",
+                "cell_id",
+                "executed_tool_calls",
+                "tool_result_metadata",
+                "tool_result_sources"
+              ],
+              "evidence_ids": [
+                "E8",
+                "E11",
+                "E12",
+                "E13"
+              ]
+            }
+          },
+          {
+            "name": "refresh_recording_state_without_execution_drift",
+            "title": "Refresh recording state without changing execution behavior",
+            "description": "Allow runtime rollout configuration to enable or disable evidence recording independently from tool dispatch, while preventing stale legacy snapshots from replacing a valid live recorder.",
+            "evidence_ids": [
+              "E10",
+              "E11",
+              "E12"
+            ],
+            "semantic_action": {
+              "intent": "Keep metadata recording aligned with current runtime policy without altering which tools can execute or falsely certifying calls made before recording began.",
+              "module_role": "Runtime configuration owner",
+              "operation": "adapt",
+              "pre_state": "A session's recording rollout may change after construction, or a legacy reload may carry the session's original feature snapshot rather than current host policy.",
+              "post_state": "Normal runtime refresh atomically creates or removes recorder state without changing execution gates; late-created state marks prior history unobserved, and legacy reload preserves the existing recorder.",
+              "validation": "Recorder and end-to-end tests verify runtime enablement, absence of completeness when earlier history was unobserved, and preservation of prepared call bindings across refresh.",
+              "parameters": [
+                "current_recorder_state",
+                "next_feature_snapshot",
+                "refresh_recording_flag",
+                "execution_feature_state"
+              ],
+              "evidence_ids": [
+                "E10",
+                "E11",
+                "E12"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "harden_structured_tool_completion_proofs",
+            "title": "Harden structured tool-call completion proofs",
+            "description": "A fail-closed resolution chain for completion metadata that crosses session history, asynchronous exec/wait wrappers, retries, compaction, and bounded prompt serialization.",
+            "atomic_names": [
+              "index_observed_identifiers_for_freshness",
+              "validate_tool_input_output_associations",
+              "localize_metadata_budget_damage",
+              "refresh_recording_state_without_execution_drift"
+            ],
+            "evidence_ids": [
+              "E1",
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E10",
+              "E11",
+              "E12",
+              "E13",
+              "E14"
+            ],
+            "workflow_graph": {
+              "goal": "Emit a positive structured completion claim only when the host retains an unambiguous, lossless chain from a fresh invocation through its nested calls and matching output, while preserving valid claims for unrelated cells.",
+              "when_to_use": [
+                "A host records nested tool activity and exposes a structured completeness marker to a later model request or downstream consumer.",
+                "Invocation or runtime identifiers can be reused across retries, compaction, resume, fork, or asynchronous wait operations.",
+                "Recorded evidence is subject to per-call or aggregate serialization budgets.",
+                "Recording policy can change during a long-lived session."
+              ],
+              "anti_goals": [
+                "Do not change tool execution availability, dispatch gates, or nested-tool behavior merely to change recording policy.",
+                "Do not infer completeness from a successful wrapper callback, terminal wait, or retained marker when association or inventory evidence is missing.",
+                "Do not discard trustworthy metadata for unrelated cells solely because one cell exceeded a budget.",
+                "Do not use unbounded sets or unbounded hashing to prove identifier freshness."
+              ],
+              "not_applicable_when": [
+                "The metadata is informational only and no consumer interprets it as a complete inventory or proof.",
+                "Invocation identifiers and output associations are guaranteed unique and immutable by a stronger external protocol, with no retries, resume, fork, compaction, or truncation boundary.",
+                "No host-side execution evidence can be inspected; in that case a positive completion contract cannot be established."
+              ],
+              "inputs": [
+                "Initial session history, including compacted replacement history when available",
+                "Live tool input and output items with call identifiers and tool type information",
+                "Runtime cell identifiers and originating wrapper identifiers",
+                "Recorded nested-call inventory and retained retry state",
+                "Per-argument, per-output, and aggregate metadata budgets",
+                "Current and incoming runtime recording feature state"
+              ],
+              "entry_state": "The system can record nested calls, but identifier freshness, wrapper association, retry integrity, budget truncation, or runtime enablement may allow an unsupported completeness marker.",
+              "exit_state": "Every positive completion marker is backed by fresh identifiers, a unique matching input/output association, and an intact recorded inventory within the serialized prompt; ambiguous or damaged cells are incomplete, unrelated intact cells remain complete, and recording policy changes do not alter execution behavior.",
+              "steps": [
+                {
+                  "action_name": "index_observed_identifiers_for_freshness",
+                  "role": "establish-contract",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "Always required when identifiers can cross history or recorder-lifetime boundaries.",
+                  "validation": "Known historical and repeated identifiers return non-fresh; failed indexing prevents cell start from becoming completion-eligible."
+                },
+                {
+                  "action_name": "validate_tool_input_output_associations",
+                  "role": "reconcile",
+                  "required": true,
+                  "depends_on": [
+                    "index_observed_identifiers_for_freshness"
+                  ],
+                  "condition": "Apply when attaching recorded evidence to outputs or replaying retained evidence after retry or compaction.",
+                  "validation": "Each certified output has exactly one preceding type-correct exec or wait input, matching origin/runtime handle, no direct-call collision, and an intact retained inventory."
+                },
+                {
+                  "action_name": "localize_metadata_budget_damage",
+                  "role": "repair",
+                  "required": true,
+                  "depends_on": [
+                    "validate_tool_input_output_associations"
+                  ],
+                  "condition": "Apply before sending or storing metadata whenever argument or aggregate limits can truncate recorded evidence.",
+                  "validation": "Damaged cells lose completion across their outputs, their omission marker remains local, and unrelated intact cells retain completion under the global budget."
+                },
+                {
+                  "action_name": "refresh_recording_state_without_execution_drift",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [
+                    "index_observed_identifiers_for_freshness"
+                  ],
+                  "condition": "Apply when recorder enablement is controlled by runtime rollout or configuration refresh.",
+                  "validation": "Runtime enablement changes recorder allocation without changing execution features; late enablement cannot certify unobserved history; legacy reload keeps the live recorder."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "index_observed_identifiers_for_freshness",
+                  "to": "validate_tool_input_output_associations",
+                  "type": "enables"
+                },
+                {
+                  "from": "validate_tool_input_output_associations",
+                  "to": "localize_metadata_budget_damage",
+                  "type": "requires"
+                },
+                {
+                  "from": "localize_metadata_budget_damage",
+                  "to": "validate_tool_input_output_associations",
+                  "type": "repairs"
+                },
+                {
+                  "from": "index_observed_identifiers_for_freshness",
+                  "to": "refresh_recording_state_without_execution_drift",
+                  "type": "enables"
+                },
+                {
+                  "from": "refresh_recording_state_without_execution_drift",
+                  "to": "validate_tool_input_output_associations",
+                  "type": "requires"
+                }
+              ],
+              "validation_ladder": [
+                "Unit-test bounded identifier tracking, namespace separation, saturation, historical indexing limits, and repeated-ID rejection.",
+                "Test recorder state transitions for lossless completion, duplicate nested IDs, wrapper mismatches, direct-call collisions, forked or resumed waits, retries, and compaction.",
+                "Test protocol serialization budgets to confirm optional metadata is shed before core evidence and completion is revoked only for damaged cells.",
+                "Run end-to-end asynchronous tool scenarios for runtime enablement, configuration refresh, resumed handle reuse, compaction, and unrelated-output truncation."
+              ],
+              "stop_conditions": [
+                "Stop and withhold completeness if initial-history identifiers cannot be indexed within bounds and freshness is required.",
+                "Stop and invalidate the affected cell if an origin, runtime handle, or nested call ID is reused or collides.",
+                "Stop and invalidate retained completion if an output is duplicated, lacks one matching preceding input, changes inventory, or no longer matches its exec/wait wrapper.",
+                "Stop and clear completion for the affected cell when truncation or omission prevents retention of its full call inventory.",
+                "Stop extraction-level validation short of claiming a green build because the evidence bundle contains test sources but no executed status-check or test-command result."
+              ],
+              "unresolved_or_deferred": [
+                "The GitHub bundle lacks PR discussion, reviews, and status-check results.",
+                "No test command was executed as part of this extraction, so repository-wide runtime validation remains unconfirmed.",
+                "The bounded bitmap intentionally permits false-positive collisions that withhold completion; its production collision rate is not established by this episode."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Were the cited unit and integration suites executed successfully for the pinned commit? The available bundle contains test code and the commit's testing description but no status-check results.",
+          "What production frequency of bounded-filter collisions or history-index limit exhaustion is observed? The implementation deliberately fails closed in either case."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "index_observed_identifiers_for_freshness",
+          "title": "Index observed identifiers before certifying freshness",
+          "description": "Maintain bounded, monotonic knowledge of historical and live identifiers so reused or unindexable identifiers cannot be treated as fresh evidence for completion.",
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E9",
+            "E11"
+          ],
+          "semantic_action": {
+            "intent": "Prevent identifier reuse or unavailable history from producing a false tool-call completion claim.",
+            "module_role": "Session-scoped evidence freshness tracker",
+            "operation": "guard",
+            "pre_state": "A recorder may encounter call origins or runtime handles that were already present in initial history, reused during the session, or unavailable because historical indexing exceeded a safety bound.",
+            "post_state": "Completion can begin only for identifiers proven fresh against bounded historical and live observations; collisions, oversized identifiers, and incomplete history indexing fail closed.",
+            "validation": "Bounded-filter tests verify namespace separation and saturation behavior; recorder tests verify that paginated known IDs and reused origins are rejected while genuinely fresh origins remain usable.",
+            "parameters": [
+              "initial_history",
+              "call_id",
+              "runtime_cell_id",
+              "history_entry_limit",
+              "history_id_byte_limit",
+              "identifier_byte_limit"
+            ],
+            "evidence_ids": [
+              "E3",
+              "E4",
+              "E11"
+            ]
+          }
+        },
+        {
+          "name": "validate_tool_input_output_associations",
+          "title": "Validate tool input and output associations",
+          "description": "Verify that every completion-bearing output has one preceding, type-correct exec or wait input with the expected origin and runtime handle, and make any loss of that evidence irreversible for the affected cell.",
+          "evidence_ids": [
+            "E5",
+            "E6",
+            "E7",
+            "E11",
+            "E12"
+          ],
+          "semantic_action": {
+            "intent": "Withhold completeness when wrappers, outputs, retries, or resumed runtime handles are ambiguous or inconsistent.",
+            "module_role": "Prompt evidence reconciler",
+            "operation": "reconcile",
+            "pre_state": "Recorded calls may be attached to duplicated outputs, mismatched wrappers, reused origins, colliding direct calls, resumed waits, or retry history whose association evidence has changed.",
+            "post_state": "Only a unique, ordered, type-correct association can retain completeness, and once the associated inventory or mapping is invalidated all retained outputs for that runtime cell remain incomplete.",
+            "validation": "Recorder regressions cover mismatched wrappers, reused origins, duplicate IDs, forked waits, and retry/compaction loss; end-to-end tests cover resumed runtime-cell reuse and compaction.",
+            "parameters": [
+              "prompt_items",
+              "output_call_id",
+              "originating_call_id",
+              "runtime_cell_id",
+              "retained_inventory",
+              "initial_history_kind"
+            ],
+            "evidence_ids": [
+              "E5",
+              "E6",
+              "E7",
+              "E11",
+              "E12"
+            ]
+          }
+        },
+        {
+          "name": "localize_metadata_budget_damage",
+          "title": "Localize metadata-budget damage to affected cells",
+          "description": "Apply request-size limits per output, preserve stronger evidence before optional metadata, and revoke completion only where truncation or omission damaged the recorded inventory.",
+          "evidence_ids": [
+            "E8",
+            "E11",
+            "E12",
+            "E13"
+          ],
+          "semantic_action": {
+            "intent": "Keep unrelated complete tool-call inventories trustworthy when another output exceeds the metadata budget.",
+            "module_role": "Structured metadata budget enforcer",
+            "operation": "normalize",
+            "pre_state": "Serialized tool-call metadata exceeds argument, per-output, or request limits, so some evidence must be truncated or omitted.",
+            "post_state": "Optional result metadata and sources are shed first; an over-budget output carries its own omission marker; completion is cleared for every output sharing the damaged cell but remains available to intact unrelated cells.",
+            "validation": "Protocol tests exercise budget priority and fail-closed completion, recorder tests preserve an unrelated complete exec under overflow, and an end-to-end Code Mode test verifies the same behavior.",
+            "parameters": [
+              "response_items",
+              "metadata_byte_budget",
+              "argument_byte_budget",
+              "cell_id",
+              "executed_tool_calls",
+              "tool_result_metadata",
+              "tool_result_sources"
+            ],
+            "evidence_ids": [
+              "E8",
+              "E11",
+              "E12",
+              "E13"
+            ]
+          }
+        },
+        {
+          "name": "refresh_recording_state_without_execution_drift",
+          "title": "Refresh recording state without changing execution behavior",
+          "description": "Allow runtime rollout configuration to enable or disable evidence recording independently from tool dispatch, while preventing stale legacy snapshots from replacing a valid live recorder.",
+          "evidence_ids": [
+            "E10",
+            "E11",
+            "E12"
+          ],
+          "semantic_action": {
+            "intent": "Keep metadata recording aligned with current runtime policy without altering which tools can execute or falsely certifying calls made before recording began.",
+            "module_role": "Runtime configuration owner",
+            "operation": "adapt",
+            "pre_state": "A session's recording rollout may change after construction, or a legacy reload may carry the session's original feature snapshot rather than current host policy.",
+            "post_state": "Normal runtime refresh atomically creates or removes recorder state without changing execution gates; late-created state marks prior history unobserved, and legacy reload preserves the existing recorder.",
+            "validation": "Recorder and end-to-end tests verify runtime enablement, absence of completeness when earlier history was unobserved, and preservation of prepared call bindings across refresh.",
+            "parameters": [
+              "current_recorder_state",
+              "next_feature_snapshot",
+              "refresh_recording_flag",
+              "execution_feature_state"
+            ],
+            "evidence_ids": [
+              "E10",
+              "E11",
+              "E12"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "harden_structured_tool_completion_proofs",
+          "title": "Harden structured tool-call completion proofs",
+          "description": "A fail-closed resolution chain for completion metadata that crosses session history, asynchronous exec/wait wrappers, retries, compaction, and bounded prompt serialization.",
+          "atomic_names": [
+            "index_observed_identifiers_for_freshness",
+            "validate_tool_input_output_associations",
+            "localize_metadata_budget_damage",
+            "refresh_recording_state_without_execution_drift"
+          ],
+          "evidence_ids": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10",
+            "E11",
+            "E12",
+            "E13",
+            "E14"
+          ],
+          "workflow_graph": {
+            "goal": "Emit a positive structured completion claim only when the host retains an unambiguous, lossless chain from a fresh invocation through its nested calls and matching output, while preserving valid claims for unrelated cells.",
+            "when_to_use": [
+              "A host records nested tool activity and exposes a structured completeness marker to a later model request or downstream consumer.",
+              "Invocation or runtime identifiers can be reused across retries, compaction, resume, fork, or asynchronous wait operations.",
+              "Recorded evidence is subject to per-call or aggregate serialization budgets.",
+              "Recording policy can change during a long-lived session."
+            ],
+            "anti_goals": [
+              "Do not change tool execution availability, dispatch gates, or nested-tool behavior merely to change recording policy.",
+              "Do not infer completeness from a successful wrapper callback, terminal wait, or retained marker when association or inventory evidence is missing.",
+              "Do not discard trustworthy metadata for unrelated cells solely because one cell exceeded a budget.",
+              "Do not use unbounded sets or unbounded hashing to prove identifier freshness."
+            ],
+            "not_applicable_when": [
+              "The metadata is informational only and no consumer interprets it as a complete inventory or proof.",
+              "Invocation identifiers and output associations are guaranteed unique and immutable by a stronger external protocol, with no retries, resume, fork, compaction, or truncation boundary.",
+              "No host-side execution evidence can be inspected; in that case a positive completion contract cannot be established."
+            ],
+            "inputs": [
+              "Initial session history, including compacted replacement history when available",
+              "Live tool input and output items with call identifiers and tool type information",
+              "Runtime cell identifiers and originating wrapper identifiers",
+              "Recorded nested-call inventory and retained retry state",
+              "Per-argument, per-output, and aggregate metadata budgets",
+              "Current and incoming runtime recording feature state"
+            ],
+            "entry_state": "The system can record nested calls, but identifier freshness, wrapper association, retry integrity, budget truncation, or runtime enablement may allow an unsupported completeness marker.",
+            "exit_state": "Every positive completion marker is backed by fresh identifiers, a unique matching input/output association, and an intact recorded inventory within the serialized prompt; ambiguous or damaged cells are incomplete, unrelated intact cells remain complete, and recording policy changes do not alter execution behavior.",
+            "steps": [
+              {
+                "action_name": "index_observed_identifiers_for_freshness",
+                "role": "establish-contract",
+                "required": true,
+                "depends_on": [],
+                "condition": "Always required when identifiers can cross history or recorder-lifetime boundaries.",
+                "validation": "Known historical and repeated identifiers return non-fresh; failed indexing prevents cell start from becoming completion-eligible."
+              },
+              {
+                "action_name": "validate_tool_input_output_associations",
+                "role": "reconcile",
+                "required": true,
+                "depends_on": [
+                  "index_observed_identifiers_for_freshness"
+                ],
+                "condition": "Apply when attaching recorded evidence to outputs or replaying retained evidence after retry or compaction.",
+                "validation": "Each certified output has exactly one preceding type-correct exec or wait input, matching origin/runtime handle, no direct-call collision, and an intact retained inventory."
+              },
+              {
+                "action_name": "localize_metadata_budget_damage",
+                "role": "repair",
+                "required": true,
+                "depends_on": [
+                  "validate_tool_input_output_associations"
+                ],
+                "condition": "Apply before sending or storing metadata whenever argument or aggregate limits can truncate recorded evidence.",
+                "validation": "Damaged cells lose completion across their outputs, their omission marker remains local, and unrelated intact cells retain completion under the global budget."
+              },
+              {
+                "action_name": "refresh_recording_state_without_execution_drift",
+                "role": "implement",
+                "required": true,
+                "depends_on": [
+                  "index_observed_identifiers_for_freshness"
+                ],
+                "condition": "Apply when recorder enablement is controlled by runtime rollout or configuration refresh.",
+                "validation": "Runtime enablement changes recorder allocation without changing execution features; late enablement cannot certify unobserved history; legacy reload keeps the live recorder."
+              }
+            ],
+            "edges": [
+              {
+                "from": "index_observed_identifiers_for_freshness",
+                "to": "validate_tool_input_output_associations",
+                "type": "enables"
+              },
+              {
+                "from": "validate_tool_input_output_associations",
+                "to": "localize_metadata_budget_damage",
+                "type": "requires"
+              },
+              {
+                "from": "localize_metadata_budget_damage",
+                "to": "validate_tool_input_output_associations",
+                "type": "repairs"
+              },
+              {
+                "from": "index_observed_identifiers_for_freshness",
+                "to": "refresh_recording_state_without_execution_drift",
+                "type": "enables"
+              },
+              {
+                "from": "refresh_recording_state_without_execution_drift",
+                "to": "validate_tool_input_output_associations",
+                "type": "requires"
+              }
+            ],
+            "validation_ladder": [
+              "Unit-test bounded identifier tracking, namespace separation, saturation, historical indexing limits, and repeated-ID rejection.",
+              "Test recorder state transitions for lossless completion, duplicate nested IDs, wrapper mismatches, direct-call collisions, forked or resumed waits, retries, and compaction.",
+              "Test protocol serialization budgets to confirm optional metadata is shed before core evidence and completion is revoked only for damaged cells.",
+              "Run end-to-end asynchronous tool scenarios for runtime enablement, configuration refresh, resumed handle reuse, compaction, and unrelated-output truncation."
+            ],
+            "stop_conditions": [
+              "Stop and withhold completeness if initial-history identifiers cannot be indexed within bounds and freshness is required.",
+              "Stop and invalidate the affected cell if an origin, runtime handle, or nested call ID is reused or collides.",
+              "Stop and invalidate retained completion if an output is duplicated, lacks one matching preceding input, changes inventory, or no longer matches its exec/wait wrapper.",
+              "Stop and clear completion for the affected cell when truncation or omission prevents retention of its full call inventory.",
+              "Stop extraction-level validation short of claiming a green build because the evidence bundle contains test sources but no executed status-check or test-command result."
+            ],
+            "unresolved_or_deferred": [
+              "The GitHub bundle lacks PR discussion, reviews, and status-check results.",
+              "No test command was executed as part of this extraction, so repository-wide runtime validation remains unconfirmed.",
+              "The bounded bitmap intentionally permits false-positive collisions that withhold completion; its production collision rate is not established by this episode."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Were the cited unit and integration suites executed successfully for the pinned commit? The available bundle contains test code and the commit's testing description but no status-check results.",
+        "What production frequency of bounded-filter collisions or history-index limit exhaustion is observed? The implementation deliberately fails closed in either case."
+      ]
+    },
+    "call_sites": [
+      "Session construction passes initial history to the recorder, making historical call identifiers part of the completion-proof boundary.",
+      "Normal runtime configuration refresh updates recorder enablement independently of execution features, while legacy configuration reload explicitly skips recorder refresh to preserve the current live recorder."
+    ],
+    "tests": [
+      "Recorder-level regressions cover lossless completion, paginated history, forked waits, wrapper mismatch, reused origins, direct-ID collision, truncation after compaction, missing historical evidence, and preservation of unrelated complete outputs under overflow.",
+      "End-to-end Code Mode regressions exercise ID knowledge after compaction, runtime recording enablement, recorder preservation across refresh, resumed wait cell reuse, and survival of an unrelated complete call during truncation.",
+      "Protocol tests assert that completeness is host-only and fail-closed, raw result metadata is shed before stronger evidence, and metadata budgeting retains evidence without allowing one damaged cell to certify another output."
+    ]
+  },
+  {
+    "episode_id": "QwenLM__qwen-code__4695__3ce46949c",
+    "title": "Halt repeated variants of read-only repository inspection commands",
+    "before": "At parent commit 680f523853175856236162460fcd6985c9d68620, the always-on loop detector recognized consecutive calls only when the tool name and complete arguments were identical, plus a per-turn tool-call cap. Variants such as repository status, summary diff, revision-only diff, and tracked-file listing produced different argument hashes, so a consecutive sequence of semantically equivalent read-only inspections could continue without the always-on detector identifying stagnation.",
+    "after": "At commit 3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da, shell tool requests are classified into a common repository-overview-inspection bucket only when every shell-chain segment is a read-only status, diff, or tracked-file listing and any diff is revision/option based rather than path-specific. Eight consecutive bucketed requests halt the run through the always-on safety tier, record and emit a dedicated loop type, clear pending calls, and expose a human-readable CLI reason. Nonmatching calls and retries reset the streak; session disable is honored; write-bearing, mixed-purpose, non-repository, and file-specific review commands fail open.",
+    "diff": "The change adds a semantic classifier and consecutive-streak state to the loop-detection service, invokes the new check between the identical-call guard and hard per-turn cap, resets its state at progress/retry/prompt boundaries, introduces a dedicated telemetry enum value, and propagates that reason through the existing client halt path and non-interactive message formatter. It adds regression coverage for variant and newline-separated inspection loops, threshold behavior, reset behavior, session disable, and false-positive exclusions. Five files changed with 461 insertions and 16 deletions.",
+    "repository": "QwenLM/qwen-code",
+    "revision": "github-issue-4695",
+    "evidence_ids": [
+      "ev-commit-1",
+      "ev-before-1",
+      "ev-diff-1",
+      "ev-impl-classifier",
+      "ev-impl-state",
+      "ev-callsite-1",
+      "ev-contract-1",
+      "ev-test-positive",
+      "ev-test-reset",
+      "ev-test-exclusions",
+      "ev-validation-limit"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "QwenLM/qwen-code",
+      "issue": 4695,
+      "checkout": "/home/chenyujia/tritonToLlvm/qwen-code",
+      "manifest_metadata": {
+        "category": "structured-tool-contract-integrity",
+        "role": "train_candidate",
+        "case_id": "QwenLM__qwen-code__4695__structured-tool-contract-integrity",
+        "sample_kind": "exact_table_row",
+        "seed_issue": 4695,
+        "seed_issue_url": "https://github.com/QwenLM/qwen-code/issues/4695",
+        "seed_relation": "exact_table_row_with_verified_resolution",
+        "resolution_url": "https://github.com/QwenLM/qwen-code/pull/5944",
+        "provenance": {
+          "classification": "exact_table_row",
+          "seed": {
+            "repository": "QwenLM/qwen-code",
+            "issue": 4695,
+            "url": "https://github.com/QwenLM/qwen-code/issues/4695",
+            "table_note": "identical tool call is sent repeatedly without a circuit breaker"
+          },
+          "resolution_artifact": {
+            "type": "issue",
+            "number": 4695,
+            "url": "https://github.com/QwenLM/qwen-code/issues/4695",
+            "pull_request": 5944,
+            "pull_request_url": "https://github.com/QwenLM/qwen-code/pull/5944"
+          },
+          "commit": {
+            "sha": "3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da",
+            "subject": "fix(core): halt repeated shell inspection variants (#5944)",
+            "parents": [
+              "680f523853175856236162460fcd6985c9d68620"
+            ],
+            "body_excerpt": "* fix(core): halt repeated shell inspection variants\n\n* test(core): cover shell-stagnation streak reset, fix guard-count doc\n\nAddress review on #5944: the checkAlwaysOnSafeties JSDoc still said it\nenforces two guards after the shell inspection-command stagnation guard\nwas added, so correct it to three.\n\nAdd a regression test proving a non-inspection tool call resets the\nshell-stagnation streak to zero, which is the guard's main false-positive\ndefense and was previously untested.\n\n* fix(core): exclude write-bearing git chains from stagnation bucket\n\nisGitInspectionCommand matched if any segment of a shell chain was a git\nstatus/diff/ls-files, so a productive chain like\n`git add . && git status && git commit` was classified as read-only\ninspection. Eight such commands would falsely trip the "
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "parent_and_changed_files_recorded",
+            "implementation_diff_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "QwenLM/qwen-code",
+        "issue_number": 4695,
+        "issue": {
+          "number": 4695,
+          "title": "fix(core): halt repeated shell inspection variants (#5944)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 5944,
+              "title": "fix(core): halt repeated shell inspection variants (#5944)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tpackages/cli/src/nonInteractiveCli.ts"
+              },
+              {
+                "status_line": "M\tpackages/core/src/core/client.ts"
+              },
+              {
+                "status_line": "M\tpackages/core/src/services/loopDetectionService.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/core/src/services/loopDetectionService.ts"
+              },
+              {
+                "status_line": "M\tpackages/core/src/telemetry/types.ts"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da",
+                "subject": "fix(core): halt repeated shell inspection variants (#5944)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/qwen-code",
+        "pinned_ref": "3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da",
+        "resolved_commit": "3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da",
+        "parent_commit": "680f523853175856236162460fcd6985c9d68620",
+        "commit_show_stat": "commit 3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da\nAuthor:     易良 <1204183885@qq.com>\nAuthorDate: Sun Jun 28 21:08:19 2026 +0800\nCommit:     GitHub <noreply@github.com>\nCommitDate: Sun Jun 28 13:08:19 2026 +0000\n\n    fix(core): halt repeated shell inspection variants (#5944)\n    \n    * fix(core): halt repeated shell inspection variants\n    \n    * test(core): cover shell-stagnation streak reset, fix guard-count doc\n    \n    Address review on #5944: the checkAlwaysOnSafeties JSDoc still said it\n    enforces two guards after the shell inspection-command stagnation guard\n    was added, so correct it to three.\n    \n    Add a regression test proving a non-inspection tool call resets the\n    shell-stagnation streak to zero, which is the guard's main false-positive\n    defense and was previously untested.\n    \n    * fix(core): exclude write-bearing git chains from stagnation bucket\n    \n    isGitInspectionCommand matched if any segment of a shell chain was a git\n    status/diff/ls-files, so a productive chain like\n    `git add . && git status && git commit` was classified as read-only\n    inspection. Eight such commands would falsely trip the always-on\n    shell-stagnation guard.\n    \n    Require every segment of the chain to be a read-only git inspection\n    before bucketing. Mixed chains that also write fail open (non-inspection),\n    the safe direction for an always-on halt. The #4695 loop is still caught:\n    its compound case is status && diff, both read-only.\n    \n    * fix(core): halt repeated shell inspection variants\n    \n    * fix(core): treat path-specific git diffs as progress\n    \n    * test(core): cover shell stagnation guard boundaries\n    \n    * test(core): address shell stagnation review feedback\n    \n    * docs(core): sync loop guard comments\n\n packages/cli/src/nonInteractiveCli.ts              |   3 +\n packages/core/src/core/client.ts                   |  14 +-\n .../core/src/services/loopDetectionService.test.ts | 308 +++++++++++++++++++++\n packages/core/src/services/loopDetectionService.ts | 150 +++++++++-\n packages/core/src/telemetry/types.ts               |   2 +\n 5 files changed, 461 insertions(+), 16 deletions(-)\n",
+        "changed_files_name_status": "M\tpackages/cli/src/nonInteractiveCli.ts\nM\tpackages/core/src/core/client.ts\nM\tpackages/core/src/services/loopDetectionService.test.ts\nM\tpackages/core/src/services/loopDetectionService.ts\nM\tpackages/core/src/telemetry/types.ts\n",
+        "linked_issue_numbers": [
+          4695
+        ],
+        "manifest_metadata": {
+          "category": "structured-tool-contract-integrity",
+          "theme": "structured tool contract integrity",
+          "file_sample": [
+            "packages/cli/src/nonInteractiveCli.ts",
+            "packages/core/src/core/client.ts",
+            "packages/core/src/services/loopDetectionService.test.ts",
+            "packages/core/src/services/loopDetectionService.ts",
+            "packages/core/src/telemetry/types.ts"
+          ],
+          "case_id": "QwenLM__qwen-code__4695__structured-tool-contract-integrity",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "exact_table_row",
+          "seed_issue": 4695,
+          "seed_issue_url": "https://github.com/QwenLM/qwen-code/issues/4695",
+          "seed_relation": "exact_table_row_with_verified_resolution",
+          "resolution_url": "https://github.com/QwenLM/qwen-code/pull/5944",
+          "source": "agent_core_seven_category_extraction_v2",
+          "provenance": {
+            "classification": "exact_table_row",
+            "seed": {
+              "repository": "QwenLM/qwen-code",
+              "issue": 4695,
+              "url": "https://github.com/QwenLM/qwen-code/issues/4695",
+              "table_note": "identical tool call is sent repeatedly without a circuit breaker"
+            },
+            "resolution_artifact": {
+              "type": "issue",
+              "number": 4695,
+              "url": "https://github.com/QwenLM/qwen-code/issues/4695",
+              "pull_request": 5944,
+              "pull_request_url": "https://github.com/QwenLM/qwen-code/pull/5944"
+            },
+            "commit": {
+              "sha": "3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da",
+              "subject": "fix(core): halt repeated shell inspection variants (#5944)",
+              "parents": [
+                "680f523853175856236162460fcd6985c9d68620"
+              ],
+              "body_excerpt": "* fix(core): halt repeated shell inspection variants\n\n* test(core): cover shell-stagnation streak reset, fix guard-count doc\n\nAddress review on #5944: the checkAlwaysOnSafeties JSDoc still said it\nenforces two guards after the shell inspection-command stagnation guard\nwas added, so correct it to three.\n\nAdd a regression test proving a non-inspection tool call resets the\nshell-stagnation streak to zero, which is the guard's main false-positive\ndefense and was previously untested.\n\n* fix(core): exclude write-bearing git chains from stagnation bucket\n\nisGitInspectionCommand matched if any segment of a shell chain was a git\nstatus/diff/ls-files, so a productive chain like\n`git add . && git status && git commit` was classified as read-only\ninspection. Eight such commands would falsely trip the "
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "parent_and_changed_files_recorded",
+              "implementation_diff_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T10:03:16.295684+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "QwenLM__qwen-code__4695__3ce46949c",
+          "title": "Halt repeated variants of read-only repository inspection commands",
+          "before": "At parent commit 680f523853175856236162460fcd6985c9d68620, the always-on loop detector recognized consecutive calls only when the tool name and complete arguments were identical, plus a per-turn tool-call cap. Variants such as repository status, summary diff, revision-only diff, and tracked-file listing produced different argument hashes, so a consecutive sequence of semantically equivalent read-only inspections could continue without the always-on detector identifying stagnation.",
+          "after": "At commit 3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da, shell tool requests are classified into a common repository-overview-inspection bucket only when every shell-chain segment is a read-only status, diff, or tracked-file listing and any diff is revision/option based rather than path-specific. Eight consecutive bucketed requests halt the run through the always-on safety tier, record and emit a dedicated loop type, clear pending calls, and expose a human-readable CLI reason. Nonmatching calls and retries reset the streak; session disable is honored; write-bearing, mixed-purpose, non-repository, and file-specific review commands fail open.",
+          "diff": "The change adds a semantic classifier and consecutive-streak state to the loop-detection service, invokes the new check between the identical-call guard and hard per-turn cap, resets its state at progress/retry/prompt boundaries, introduces a dedicated telemetry enum value, and propagates that reason through the existing client halt path and non-interactive message formatter. It adds regression coverage for variant and newline-separated inspection loops, threshold behavior, reset behavior, session disable, and false-positive exclusions. Five files changed with 461 insertions and 16 deletions."
+        },
+        "evidence_units": [
+          {
+            "id": "ev-commit-1",
+            "kind": "commit",
+            "claim": "Pinned commit 3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da resolves the linked issue through PR 5944 and has parent 680f523853175856236162460fcd6985c9d68620; five files changed with 461 insertions and 16 deletions.",
+            "source": "git show --format=fuller --stat 3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da; issue-bundle.json linked_pull_requests[0] and manifest_metadata.provenance"
+          },
+          {
+            "id": "ev-before-1",
+            "kind": "implementation",
+            "claim": "The parent implementation's always-on tier checked only exact consecutive tool-call identity and the per-turn cap; it had no semantic shell-inspection bucket or streak.",
+            "source": "git show 680f523853175856236162460fcd6985c9d68620:packages/core/src/services/loopDetectionService.ts, checkAlwaysOnSafeties and service state fields"
+          },
+          {
+            "id": "ev-diff-1",
+            "kind": "diff",
+            "claim": "The change introduces an eight-call shell-inspection threshold, a bucket key and streak, classification helpers, detection and logging, and reset integration.",
+            "source": "git diff 680f523853175856236162460fcd6985c9d68620 3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da -- packages/core/src/services/loopDetectionService.ts"
+          },
+          {
+            "id": "ev-impl-classifier",
+            "kind": "implementation",
+            "claim": "A shell request is bucketed only when its command is a nonempty chain whose every segment is a read-only status, diff, or tracked-file listing; path-specific diffs, write-bearing chains, and mixed commands are excluded.",
+            "source": "3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da:packages/core/src/services/loopDetectionService.ts lines 369-443"
+          },
+          {
+            "id": "ev-impl-state",
+            "kind": "implementation",
+            "claim": "Matching requests increment one semantic streak and trigger at eight; a nonmatching request clears the bucket and streak, while retry and prompt reset paths also clear the state.",
+            "source": "3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da:packages/core/src/services/loopDetectionService.ts lines 53-57, 108-112, 273-281, 339-367, 861-884"
+          },
+          {
+            "id": "ev-callsite-1",
+            "kind": "call_site",
+            "claim": "Production streaming invokes the guard before configuration-gated heuristics; on detection it clears pending tool calls, emits LoopDetected with the recorded type, performs error cleanup, and returns the turn.",
+            "source": "3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da:packages/core/src/core/client.ts lines 2148-2188"
+          },
+          {
+            "id": "ev-contract-1",
+            "kind": "implementation",
+            "claim": "The new dedicated loop type is part of the telemetry contract and the non-interactive CLI maps it to a human-readable reason and identifies it as outside the model.skipLoopDetection gate.",
+            "source": "3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da:packages/core/src/telemetry/types.ts LoopType; packages/cli/src/nonInteractiveCli.ts lines 101-139"
+          },
+          {
+            "id": "ev-test-positive",
+            "kind": "test",
+            "claim": "Regression tests prove that eight distinct and compound/newline-separated read-only inspection variants trigger the always-on guard, set the dedicated loop type, and log its telemetry value.",
+            "source": "3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da:packages/core/src/services/loopDetectionService.test.ts lines 225-264 and 437-469"
+          },
+          {
+            "id": "ev-test-reset",
+            "kind": "test",
+            "claim": "Regression tests prove that a non-inspection tool request or retry resets the inspection streak and that an explicit session disable prevents this detector from firing.",
+            "source": "3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da:packages/core/src/services/loopDetectionService.test.ts lines 266-383"
+          },
+          {
+            "id": "ev-test-exclusions",
+            "kind": "test",
+            "claim": "Boundary tests prove that write-bearing repository chains, chains containing another command type, non-repository shell commands, and file-specific diffs are not placed in the stagnation bucket.",
+            "source": "3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da:packages/core/src/services/loopDetectionService.test.ts lines 385-435 and 471-529"
+          },
+          {
+            "id": "ev-validation-limit",
+            "kind": "validation",
+            "claim": "Validation is grounded in the committed regression suite, but the tests were not rerun in this checkout because the working tree currently presents tracked files as deleted and the runtime executable is unavailable.",
+            "source": "Local inspection: git status --short at HEAD 693528b004a736007fb2616e31441eb6ef39a14f reported tracked-file deletions; node invocation returned 'node: command not found'"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "classify-read-only-overview-inspections",
+            "title": "Classify only non-progressing overview inspections",
+            "description": "Normalize syntactically varied shell requests into one stagnation class only when every command segment performs repository-wide read-only inspection, while treating productive or narrowly targeted commands as progress.",
+            "evidence_ids": [
+              "ev-diff-1",
+              "ev-impl-classifier",
+              "ev-test-positive",
+              "ev-test-exclusions"
+            ],
+            "semantic_action": {
+              "intent": "Recognize repeated operations that are semantically equivalent despite argument variation without misclassifying productive shell work.",
+              "module_role": "tool-request semantic classifier",
+              "operation": "normalize",
+              "pre_state": "A shell tool request contains an unclassified command string that may have multiple chained segments.",
+              "post_state": "The request has either one stable overview-inspection key or no stagnation key; write-bearing, mixed-purpose, non-repository, and path-specific review commands have no key.",
+              "validation": "Feed positive command variants and negative boundary cases through the always-on checker; only complete chains of overview-style read-only inspections may contribute to the common streak.",
+              "parameters": [
+                "tool_name",
+                "command_text",
+                "shell_chain_segments",
+                "allowed_read_only_operations",
+                "diff_revision_tokens",
+                "diff_pathspec"
+              ],
+              "evidence_ids": [
+                "ev-impl-classifier",
+                "ev-test-positive",
+                "ev-test-exclusions"
+              ]
+            }
+          },
+          {
+            "name": "halt-consecutive-semantic-stagnation",
+            "title": "Stop a consecutive semantic inspection loop",
+            "description": "Track consecutive requests sharing the semantic inspection key, reset on progress or replay boundaries, and halt at the bounded threshold while respecting the explicit session override.",
+            "evidence_ids": [
+              "ev-diff-1",
+              "ev-impl-state",
+              "ev-test-positive",
+              "ev-test-reset"
+            ],
+            "semantic_action": {
+              "intent": "Bound a loop whose tool arguments vary while its observable read-only operation remains unchanged.",
+              "module_role": "always-on tool-loop circuit breaker",
+              "operation": "guard",
+              "pre_state": "No loop has fired, detection is enabled for the session, and incoming tool requests may repeatedly map to the same semantic inspection key.",
+              "post_state": "At the threshold the loop is marked detected with a dedicated reason and logged; before the threshold processing continues, while nonmatching calls, retries, and prompt resets clear the streak.",
+              "validation": "Verify no detection through threshold minus one, detection and telemetry at the threshold, streak restart after nonmatching calls and retries, and suppression after session disable.",
+              "parameters": [
+                "semantic_inspection_key",
+                "consecutive_streak",
+                "stagnation_threshold",
+                "retry_event",
+                "prompt_boundary",
+                "session_disable"
+              ],
+              "evidence_ids": [
+                "ev-impl-state",
+                "ev-test-positive",
+                "ev-test-reset"
+              ]
+            }
+          },
+          {
+            "name": "propagate-structured-halt-reason",
+            "title": "Propagate the structured halt reason to consumers",
+            "description": "Carry the newly detected reason through telemetry, stream termination, pending-call cleanup, and user-facing reporting so consumers observe a consistent contract.",
+            "evidence_ids": [
+              "ev-callsite-1",
+              "ev-contract-1"
+            ],
+            "semantic_action": {
+              "intent": "Ensure a detector firing produces an actionable, consistently typed halt rather than allowing queued work to continue or reporting an ambiguous failure.",
+              "module_role": "tool-stream termination and reporting boundary",
+              "operation": "reconcile",
+              "pre_state": "The always-on detector has returned true and recorded the semantic stagnation loop type while pending tool requests may exist.",
+              "post_state": "Pending requests are discarded, a typed loop event is emitted, the turn terminates through the existing cleanup path, telemetry can distinguish the reason, and headless output explains the halt and configuration behavior.",
+              "validation": "Inspect the production call site and reporting mappings to confirm the same loop type drives cleanup, stream output, telemetry, and the human-readable message.",
+              "parameters": [
+                "loop_type",
+                "pending_tool_calls",
+                "stream_event",
+                "telemetry_event",
+                "user_message"
+              ],
+              "evidence_ids": [
+                "ev-callsite-1",
+                "ev-contract-1"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "bound-semantic-tool-call-stagnation",
+            "title": "Add a precise circuit breaker for argument-varying tool stagnation",
+            "description": "A partial-order workflow for detecting repeated tool requests that differ textually but share one non-progressing semantic operation, while preserving productive variants and propagating a structured halt contract.",
+            "atomic_names": [
+              "classify-read-only-overview-inspections",
+              "halt-consecutive-semantic-stagnation",
+              "propagate-structured-halt-reason"
+            ],
+            "evidence_ids": [
+              "ev-before-1",
+              "ev-diff-1",
+              "ev-impl-classifier",
+              "ev-impl-state",
+              "ev-callsite-1",
+              "ev-contract-1",
+              "ev-test-positive",
+              "ev-test-reset",
+              "ev-test-exclusions"
+            ],
+            "workflow_graph": {
+              "goal": "Halt a bounded run of semantically equivalent, non-progressing tool requests even when their raw arguments vary, without stopping productive or targeted operations.",
+              "when_to_use": [
+                "A tool loop evades exact request equality because the model rewrites arguments while repeating the same observable read-only operation.",
+                "The repeated operation has a narrow semantic class with evidence-backed exclusions precise enough for an always-on or high-confidence guard.",
+                "The runtime already has a termination path capable of discarding queued calls and emitting a structured reason."
+              ],
+              "anti_goals": [
+                "Do not classify all repeated uses of one tool name as equivalent.",
+                "Do not stop write-bearing, mixed-purpose, targeted-review, or otherwise progress-bearing operations merely because they contain an inspection segment.",
+                "Do not place the new precise guard behind a broad heuristic-skip setting when the intended contract is always-on, though an explicit session-level disable may remain honored.",
+                "Do not alter unrelated content, thought, read-file, alternating-call, or hard-cap detectors."
+              ],
+              "not_applicable_when": [
+                "No stable semantic equivalence class can be derived from the structured request or command payload.",
+                "The suspected loop includes productive state changes or target-specific narrowing that constitutes progress.",
+                "Only issue-title or similarity evidence exists without an implementation diff and validation oracle.",
+                "The consumer has no safe halt path for cancelling queued operations and reporting the reason."
+              ],
+              "inputs": [
+                "Representative looping request variants",
+                "Counterexamples that must count as progress",
+                "Structured tool name and argument payload",
+                "Consecutive-streak threshold",
+                "Retry, prompt-reset, and session-disable lifecycle semantics",
+                "Typed loop-event, telemetry, and user-message contracts"
+              ],
+              "entry_state": "Exact request equality does not catch a repeated semantic operation because each consecutive request varies its arguments, so the run can continue until a distant generic cap or external failure.",
+              "exit_state": "Only the proven non-progressing request class shares a semantic key; its uninterrupted streak halts at the configured bound, progress and replay boundaries reset it, excluded operations continue, and all consumers receive one structured halt reason.",
+              "steps": [
+                {
+                  "action_name": "classify-read-only-overview-inspections",
+                  "role": "establish-contract",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "Use only after positive loop variants and productive counterexamples establish a narrow semantic boundary.",
+                  "validation": "Positive overview-inspection variants share one key, while write-bearing, mixed, non-repository, and path-specific cases do not."
+                },
+                {
+                  "action_name": "halt-consecutive-semantic-stagnation",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [
+                    "classify-read-only-overview-inspections"
+                  ],
+                  "condition": "Apply when consecutive requests receive the admitted semantic key and detection is not explicitly disabled for the session.",
+                  "validation": "The threshold request fires; threshold-minus-one does not; nonmatching requests, retries, and prompt resets restart counting."
+                },
+                {
+                  "action_name": "propagate-structured-halt-reason",
+                  "role": "reconcile",
+                  "required": true,
+                  "depends_on": [
+                    "halt-consecutive-semantic-stagnation"
+                  ],
+                  "condition": "Apply whenever the new circuit breaker reports detection.",
+                  "validation": "The production stream clears pending calls, emits the dedicated reason, terminates, logs telemetry, and provides a matching user-facing explanation."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "classify-read-only-overview-inspections",
+                  "to": "halt-consecutive-semantic-stagnation",
+                  "type": "enables"
+                },
+                {
+                  "from": "halt-consecutive-semantic-stagnation",
+                  "to": "propagate-structured-halt-reason",
+                  "type": "requires"
+                },
+                {
+                  "from": "classify-read-only-overview-inspections",
+                  "to": "halt-consecutive-semantic-stagnation",
+                  "type": "validates"
+                },
+                {
+                  "from": "propagate-structured-halt-reason",
+                  "to": "halt-consecutive-semantic-stagnation",
+                  "type": "validates"
+                }
+              ],
+              "validation_ladder": [
+                "Classifier unit boundary: admit distinct overview-style read-only variants and reject productive, mixed-purpose, unrelated, and targeted operations.",
+                "State-machine boundary: verify threshold-minus-one, exact threshold, interruption reset, retry reset, prompt reset, and explicit session disable.",
+                "Integration boundary: confirm the guard executes before configuration-gated heuristics and clears queued requests on detection.",
+                "Contract boundary: confirm one dedicated reason is consistent across detector state, emitted stream event, telemetry, and user-facing text.",
+                "Repository validation: run the focused loop-detection test file in a clean checkout with the repository's declared runtime and package manager."
+              ],
+              "stop_conditions": [
+                "Stop and defer if semantic equivalence cannot be expressed narrowly enough to avoid known productive cases.",
+                "Stop if the detector cannot reset on observable progress or replay boundaries.",
+                "Stop if a firing cannot safely cancel pending requests and terminate the current run.",
+                "Do not claim runtime validation until the focused tests execute successfully in a usable checkout."
+              ],
+              "unresolved_or_deferred": [
+                "The issue and PR bodies, comments, reviews, timeline, and status checks are unavailable in the evidence bundle.",
+                "The focused regression suite was inspected but not executed because this workspace exposes a deleted working tree and lacks the runtime executable.",
+                "No cross-repository resolution pattern is proposed from this single workflow."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "What exact runtime and package-manager command passed for PR 5944 is unavailable because status-check metadata is absent and local execution was not possible.",
+          "The bundle identifies seed issue 4695 and resolution PR 5944, but provides no issue body or discussion beyond the provenance note that repeated tool calls lacked a circuit breaker."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "classify-read-only-overview-inspections",
+          "title": "Classify only non-progressing overview inspections",
+          "description": "Normalize syntactically varied shell requests into one stagnation class only when every command segment performs repository-wide read-only inspection, while treating productive or narrowly targeted commands as progress.",
+          "evidence_ids": [
+            "ev-diff-1",
+            "ev-impl-classifier",
+            "ev-test-positive",
+            "ev-test-exclusions"
+          ],
+          "semantic_action": {
+            "intent": "Recognize repeated operations that are semantically equivalent despite argument variation without misclassifying productive shell work.",
+            "module_role": "tool-request semantic classifier",
+            "operation": "normalize",
+            "pre_state": "A shell tool request contains an unclassified command string that may have multiple chained segments.",
+            "post_state": "The request has either one stable overview-inspection key or no stagnation key; write-bearing, mixed-purpose, non-repository, and path-specific review commands have no key.",
+            "validation": "Feed positive command variants and negative boundary cases through the always-on checker; only complete chains of overview-style read-only inspections may contribute to the common streak.",
+            "parameters": [
+              "tool_name",
+              "command_text",
+              "shell_chain_segments",
+              "allowed_read_only_operations",
+              "diff_revision_tokens",
+              "diff_pathspec"
+            ],
+            "evidence_ids": [
+              "ev-impl-classifier",
+              "ev-test-positive",
+              "ev-test-exclusions"
+            ]
+          }
+        },
+        {
+          "name": "halt-consecutive-semantic-stagnation",
+          "title": "Stop a consecutive semantic inspection loop",
+          "description": "Track consecutive requests sharing the semantic inspection key, reset on progress or replay boundaries, and halt at the bounded threshold while respecting the explicit session override.",
+          "evidence_ids": [
+            "ev-diff-1",
+            "ev-impl-state",
+            "ev-test-positive",
+            "ev-test-reset"
+          ],
+          "semantic_action": {
+            "intent": "Bound a loop whose tool arguments vary while its observable read-only operation remains unchanged.",
+            "module_role": "always-on tool-loop circuit breaker",
+            "operation": "guard",
+            "pre_state": "No loop has fired, detection is enabled for the session, and incoming tool requests may repeatedly map to the same semantic inspection key.",
+            "post_state": "At the threshold the loop is marked detected with a dedicated reason and logged; before the threshold processing continues, while nonmatching calls, retries, and prompt resets clear the streak.",
+            "validation": "Verify no detection through threshold minus one, detection and telemetry at the threshold, streak restart after nonmatching calls and retries, and suppression after session disable.",
+            "parameters": [
+              "semantic_inspection_key",
+              "consecutive_streak",
+              "stagnation_threshold",
+              "retry_event",
+              "prompt_boundary",
+              "session_disable"
+            ],
+            "evidence_ids": [
+              "ev-impl-state",
+              "ev-test-positive",
+              "ev-test-reset"
+            ]
+          }
+        },
+        {
+          "name": "propagate-structured-halt-reason",
+          "title": "Propagate the structured halt reason to consumers",
+          "description": "Carry the newly detected reason through telemetry, stream termination, pending-call cleanup, and user-facing reporting so consumers observe a consistent contract.",
+          "evidence_ids": [
+            "ev-callsite-1",
+            "ev-contract-1"
+          ],
+          "semantic_action": {
+            "intent": "Ensure a detector firing produces an actionable, consistently typed halt rather than allowing queued work to continue or reporting an ambiguous failure.",
+            "module_role": "tool-stream termination and reporting boundary",
+            "operation": "reconcile",
+            "pre_state": "The always-on detector has returned true and recorded the semantic stagnation loop type while pending tool requests may exist.",
+            "post_state": "Pending requests are discarded, a typed loop event is emitted, the turn terminates through the existing cleanup path, telemetry can distinguish the reason, and headless output explains the halt and configuration behavior.",
+            "validation": "Inspect the production call site and reporting mappings to confirm the same loop type drives cleanup, stream output, telemetry, and the human-readable message.",
+            "parameters": [
+              "loop_type",
+              "pending_tool_calls",
+              "stream_event",
+              "telemetry_event",
+              "user_message"
+            ],
+            "evidence_ids": [
+              "ev-callsite-1",
+              "ev-contract-1"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "bound-semantic-tool-call-stagnation",
+          "title": "Add a precise circuit breaker for argument-varying tool stagnation",
+          "description": "A partial-order workflow for detecting repeated tool requests that differ textually but share one non-progressing semantic operation, while preserving productive variants and propagating a structured halt contract.",
+          "atomic_names": [
+            "classify-read-only-overview-inspections",
+            "halt-consecutive-semantic-stagnation",
+            "propagate-structured-halt-reason"
+          ],
+          "evidence_ids": [
+            "ev-before-1",
+            "ev-diff-1",
+            "ev-impl-classifier",
+            "ev-impl-state",
+            "ev-callsite-1",
+            "ev-contract-1",
+            "ev-test-positive",
+            "ev-test-reset",
+            "ev-test-exclusions"
+          ],
+          "workflow_graph": {
+            "goal": "Halt a bounded run of semantically equivalent, non-progressing tool requests even when their raw arguments vary, without stopping productive or targeted operations.",
+            "when_to_use": [
+              "A tool loop evades exact request equality because the model rewrites arguments while repeating the same observable read-only operation.",
+              "The repeated operation has a narrow semantic class with evidence-backed exclusions precise enough for an always-on or high-confidence guard.",
+              "The runtime already has a termination path capable of discarding queued calls and emitting a structured reason."
+            ],
+            "anti_goals": [
+              "Do not classify all repeated uses of one tool name as equivalent.",
+              "Do not stop write-bearing, mixed-purpose, targeted-review, or otherwise progress-bearing operations merely because they contain an inspection segment.",
+              "Do not place the new precise guard behind a broad heuristic-skip setting when the intended contract is always-on, though an explicit session-level disable may remain honored.",
+              "Do not alter unrelated content, thought, read-file, alternating-call, or hard-cap detectors."
+            ],
+            "not_applicable_when": [
+              "No stable semantic equivalence class can be derived from the structured request or command payload.",
+              "The suspected loop includes productive state changes or target-specific narrowing that constitutes progress.",
+              "Only issue-title or similarity evidence exists without an implementation diff and validation oracle.",
+              "The consumer has no safe halt path for cancelling queued operations and reporting the reason."
+            ],
+            "inputs": [
+              "Representative looping request variants",
+              "Counterexamples that must count as progress",
+              "Structured tool name and argument payload",
+              "Consecutive-streak threshold",
+              "Retry, prompt-reset, and session-disable lifecycle semantics",
+              "Typed loop-event, telemetry, and user-message contracts"
+            ],
+            "entry_state": "Exact request equality does not catch a repeated semantic operation because each consecutive request varies its arguments, so the run can continue until a distant generic cap or external failure.",
+            "exit_state": "Only the proven non-progressing request class shares a semantic key; its uninterrupted streak halts at the configured bound, progress and replay boundaries reset it, excluded operations continue, and all consumers receive one structured halt reason.",
+            "steps": [
+              {
+                "action_name": "classify-read-only-overview-inspections",
+                "role": "establish-contract",
+                "required": true,
+                "depends_on": [],
+                "condition": "Use only after positive loop variants and productive counterexamples establish a narrow semantic boundary.",
+                "validation": "Positive overview-inspection variants share one key, while write-bearing, mixed, non-repository, and path-specific cases do not."
+              },
+              {
+                "action_name": "halt-consecutive-semantic-stagnation",
+                "role": "implement",
+                "required": true,
+                "depends_on": [
+                  "classify-read-only-overview-inspections"
+                ],
+                "condition": "Apply when consecutive requests receive the admitted semantic key and detection is not explicitly disabled for the session.",
+                "validation": "The threshold request fires; threshold-minus-one does not; nonmatching requests, retries, and prompt resets restart counting."
+              },
+              {
+                "action_name": "propagate-structured-halt-reason",
+                "role": "reconcile",
+                "required": true,
+                "depends_on": [
+                  "halt-consecutive-semantic-stagnation"
+                ],
+                "condition": "Apply whenever the new circuit breaker reports detection.",
+                "validation": "The production stream clears pending calls, emits the dedicated reason, terminates, logs telemetry, and provides a matching user-facing explanation."
+              }
+            ],
+            "edges": [
+              {
+                "from": "classify-read-only-overview-inspections",
+                "to": "halt-consecutive-semantic-stagnation",
+                "type": "enables"
+              },
+              {
+                "from": "halt-consecutive-semantic-stagnation",
+                "to": "propagate-structured-halt-reason",
+                "type": "requires"
+              },
+              {
+                "from": "classify-read-only-overview-inspections",
+                "to": "halt-consecutive-semantic-stagnation",
+                "type": "validates"
+              },
+              {
+                "from": "propagate-structured-halt-reason",
+                "to": "halt-consecutive-semantic-stagnation",
+                "type": "validates"
+              }
+            ],
+            "validation_ladder": [
+              "Classifier unit boundary: admit distinct overview-style read-only variants and reject productive, mixed-purpose, unrelated, and targeted operations.",
+              "State-machine boundary: verify threshold-minus-one, exact threshold, interruption reset, retry reset, prompt reset, and explicit session disable.",
+              "Integration boundary: confirm the guard executes before configuration-gated heuristics and clears queued requests on detection.",
+              "Contract boundary: confirm one dedicated reason is consistent across detector state, emitted stream event, telemetry, and user-facing text.",
+              "Repository validation: run the focused loop-detection test file in a clean checkout with the repository's declared runtime and package manager."
+            ],
+            "stop_conditions": [
+              "Stop and defer if semantic equivalence cannot be expressed narrowly enough to avoid known productive cases.",
+              "Stop if the detector cannot reset on observable progress or replay boundaries.",
+              "Stop if a firing cannot safely cancel pending requests and terminate the current run.",
+              "Do not claim runtime validation until the focused tests execute successfully in a usable checkout."
+            ],
+            "unresolved_or_deferred": [
+              "The issue and PR bodies, comments, reviews, timeline, and status checks are unavailable in the evidence bundle.",
+              "The focused regression suite was inspected but not executed because this workspace exposes a deleted working tree and lacks the runtime executable.",
+              "No cross-repository resolution pattern is proposed from this single workflow."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "What exact runtime and package-manager command passed for PR 5944 is unavailable because status-check metadata is absent and local execution was not possible.",
+        "The bundle identifies seed issue 4695 and resolution PR 5944, but provides no issue body or discussion beyond the provenance note that repeated tool calls lacked a circuit breaker."
+      ]
+    },
+    "call_sites": [
+      "Production streaming invokes the guard before configuration-gated heuristics; on detection it clears pending tool calls, emits LoopDetected with the recorded type, performs error cleanup, and returns the turn."
+    ],
+    "tests": [
+      "Regression tests prove that eight distinct and compound/newline-separated read-only inspection variants trigger the always-on guard, set the dedicated loop type, and log its telemetry value.",
+      "Regression tests prove that a non-inspection tool request or retry resets the inspection streak and that an explicit session disable prevents this detector from firing.",
+      "Boundary tests prove that write-bearing repository chains, chains containing another command type, non-repository shell commands, and file-specific diffs are not placed in the stagnation bucket."
+    ]
+  },
+  {
+    "episode_id": "NousResearch__hermes-agent__101899__cf8b08edac",
+    "title": "Strip truncated tool-argument fragments prefixed by a bare tool name",
+    "before": "At parent commit 41c17d9b5e1299b404700f86d6abad5cd406f3b6, the unterminated-tool-call sanitizer recognized argument-tag fragments only when an <arg_key> or <arg_value> tag itself began the line (apart from whitespace), or when an argument closer ended the line. A truncated serialization such as \"process_manage<arg_key>action</arg_key>...\" therefore escaped sanitization because the bare tool name preceded the first tag.",
+    "after": "At cf8b08edac3a78feb4b9db0c20a62934c3a6c49d, the line-boundary alternative accepts an optional prefix composed only of identifier-like characters [\\w.:-] before an argument tag. Both display and storage sanitizers consequently remove bare-name-prefixed truncated tool-call fragments while retaining preceding visible text; existing tests continue to require that prose containing spaced inline argument-tag examples and subsequent prose remain intact.",
+    "diff": "The implementation changed one regular-expression alternative from matching optional whitespace immediately followed by an argument tag to matching optional whitespace, then zero or more identifier-like characters, then the tag. Comments document the bounded prefix and prose-preservation intent. Two parameterized regression cases were added: one complete name-prefixed argument fragment and one fragment cut inside its argument value. The cases run against both the final-display sanitizer and the stored-content sanitizer.",
+    "repository": "NousResearch/hermes-agent",
+    "revision": "github-issue-101899",
+    "evidence_ids": [
+      "E1-parent-boundary-rule",
+      "E2-implementation-prefix-extension",
+      "E3-sanitizer-use",
+      "E4-dual-consumer-contract",
+      "E5-name-prefixed-regressions",
+      "E6-prose-preservation-oracle",
+      "E7-commit-intent",
+      "E8-resolution-linkage"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 101899,
+      "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+      "manifest_metadata": {
+        "category": "structured-tool-contract-integrity",
+        "role": "train_candidate",
+        "case_id": "NousResearch__hermes-agent__101899__structured-tool-contract-integrity",
+        "sample_kind": "verified_substitute",
+        "seed_issue": 123832,
+        "seed_issue_url": "https://github.com/NousResearch/hermes-agent/issues/123832",
+        "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+        "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/101899",
+        "provenance": {
+          "classification": "verified_substitute",
+          "seed": {
+            "repository": "NousResearch/hermes-agent",
+            "issue": 123832,
+            "url": "https://github.com/NousResearch/hermes-agent/issues/123832",
+            "table_note": "repairing a tool-call prefix corrupts its arguments"
+          },
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 101899,
+            "url": "https://github.com/NousResearch/hermes-agent/pull/101899",
+            "pull_request": 101899,
+            "pull_request_url": "https://github.com/NousResearch/hermes-agent/pull/101899"
+          },
+          "commit": {
+            "sha": "cf8b08edac3a78feb4b9db0c20a62934c3a6c49d",
+            "subject": "fix(agent): strip arg fragments glued to a bare tool name (#101899)",
+            "parents": [
+              "41c17d9b5e1299b404700f86d6abad5cd406f3b6"
+            ],
+            "body_excerpt": "The line-boundary arg-tag rule (#102303) required the tag at line\nstart, so a cut call with no <tool_call> opener but the tool name on\nthe same line (process_manage<arg_key>action</arg_key>...) leaked raw\nmarkup. Allow an identifier-only prefix before the tag; the prefix has\nno spaces, so prose like 'The <arg_key> holds...' still survives."
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "parent_and_changed_files_recorded",
+            "implementation_diff_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "NousResearch/hermes-agent",
+        "issue_number": 101899,
+        "issue": {
+          "number": 101899,
+          "title": "fix(agent): strip arg fragments glued to a bare tool name (#101899)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 101899,
+              "title": "fix(agent): strip arg fragments glued to a bare tool name (#101899)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tagent/agent_runtime_helpers.py"
+              },
+              {
+                "status_line": "M\ttests/agent/test_strip_reasoning_tags_cli.py"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "cf8b08edac3a78feb4b9db0c20a62934c3a6c49d",
+                "subject": "fix(agent): strip arg fragments glued to a bare tool name (#101899)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+        "pinned_ref": "cf8b08edac3a78feb4b9db0c20a62934c3a6c49d",
+        "resolved_commit": "cf8b08edac3a78feb4b9db0c20a62934c3a6c49d",
+        "parent_commit": "41c17d9b5e1299b404700f86d6abad5cd406f3b6",
+        "commit_show_stat": "commit cf8b08edac3a78feb4b9db0c20a62934c3a6c49d\nAuthor:     kshitijk4poor <82637225+kshitijk4poor@users.noreply.github.com>\nAuthorDate: Thu Sep 24 17:40:05 2026 +0530\nCommit:     kshitij <82637225+kshitijk4poor@users.noreply.github.com>\nCommitDate: Thu Sep 24 22:25:37 2026 +0530\n\n    fix(agent): strip arg fragments glued to a bare tool name (#101899)\n    \n    The line-boundary arg-tag rule (#102303) required the tag at line\n    start, so a cut call with no <tool_call> opener but the tool name on\n    the same line (process_manage<arg_key>action</arg_key>...) leaked raw\n    markup. Allow an identifier-only prefix before the tag; the prefix has\n    no spaces, so prose like 'The <arg_key> holds...' still survives.\n\n agent/agent_runtime_helpers.py               | 7 ++++---\n tests/agent/test_strip_reasoning_tags_cli.py | 5 ++++-\n 2 files changed, 8 insertions(+), 4 deletions(-)\n",
+        "changed_files_name_status": "M\tagent/agent_runtime_helpers.py\nM\ttests/agent/test_strip_reasoning_tags_cli.py\n",
+        "linked_issue_numbers": [
+          101899
+        ],
+        "manifest_metadata": {
+          "category": "structured-tool-contract-integrity",
+          "theme": "structured tool contract integrity",
+          "file_sample": [
+            "agent/agent_runtime_helpers.py",
+            "tests/agent/test_strip_reasoning_tags_cli.py"
+          ],
+          "case_id": "NousResearch__hermes-agent__101899__structured-tool-contract-integrity",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_substitute",
+          "seed_issue": 123832,
+          "seed_issue_url": "https://github.com/NousResearch/hermes-agent/issues/123832",
+          "seed_relation": "verified_same_repository_same_category_substitute_for_unresolved_seed",
+          "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/101899",
+          "source": "agent_core_seven_category_extraction_v2",
+          "provenance": {
+            "classification": "verified_substitute",
+            "seed": {
+              "repository": "NousResearch/hermes-agent",
+              "issue": 123832,
+              "url": "https://github.com/NousResearch/hermes-agent/issues/123832",
+              "table_note": "repairing a tool-call prefix corrupts its arguments"
+            },
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 101899,
+              "url": "https://github.com/NousResearch/hermes-agent/pull/101899",
+              "pull_request": 101899,
+              "pull_request_url": "https://github.com/NousResearch/hermes-agent/pull/101899"
+            },
+            "commit": {
+              "sha": "cf8b08edac3a78feb4b9db0c20a62934c3a6c49d",
+              "subject": "fix(agent): strip arg fragments glued to a bare tool name (#101899)",
+              "parents": [
+                "41c17d9b5e1299b404700f86d6abad5cd406f3b6"
+              ],
+              "body_excerpt": "The line-boundary arg-tag rule (#102303) required the tag at line\nstart, so a cut call with no <tool_call> opener but the tool name on\nthe same line (process_manage<arg_key>action</arg_key>...) leaked raw\nmarkup. Allow an identifier-only prefix before the tag; the prefix has\nno spaces, so prose like 'The <arg_key> holds...' still survives."
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "parent_and_changed_files_recorded",
+              "implementation_diff_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T10:05:38.352554+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "NousResearch__hermes-agent__101899__cf8b08edac",
+          "title": "Strip truncated tool-argument fragments prefixed by a bare tool name",
+          "before": "At parent commit 41c17d9b5e1299b404700f86d6abad5cd406f3b6, the unterminated-tool-call sanitizer recognized argument-tag fragments only when an <arg_key> or <arg_value> tag itself began the line (apart from whitespace), or when an argument closer ended the line. A truncated serialization such as \"process_manage<arg_key>action</arg_key>...\" therefore escaped sanitization because the bare tool name preceded the first tag.",
+          "after": "At cf8b08edac3a78feb4b9db0c20a62934c3a6c49d, the line-boundary alternative accepts an optional prefix composed only of identifier-like characters [\\w.:-] before an argument tag. Both display and storage sanitizers consequently remove bare-name-prefixed truncated tool-call fragments while retaining preceding visible text; existing tests continue to require that prose containing spaced inline argument-tag examples and subsequent prose remain intact.",
+          "diff": "The implementation changed one regular-expression alternative from matching optional whitespace immediately followed by an argument tag to matching optional whitespace, then zero or more identifier-like characters, then the tag. Comments document the bounded prefix and prose-preservation intent. Two parameterized regression cases were added: one complete name-prefixed argument fragment and one fragment cut inside its argument value. The cases run against both the final-display sanitizer and the stored-content sanitizer."
+        },
+        "evidence_units": [
+          {
+            "id": "E1-parent-boundary-rule",
+            "kind": "implementation",
+            "claim": "The parent implementation required an arg_key or arg_value tag to appear directly at a line boundary after optional whitespace, so its fragment alternative did not admit a bare tool-name prefix.",
+            "source": "git show 41c17d9b5e1299b404700f86d6abad5cd406f3b6:agent/agent_runtime_helpers.py lines 65-74"
+          },
+          {
+            "id": "E2-implementation-prefix-extension",
+            "kind": "diff",
+            "claim": "The pinned change inserted [\\w.:-]* before the argument tag in the unterminated-fragment alternative, allowing an identifier-only prefix while excluding prefixes containing spaces.",
+            "source": "git diff 41c17d9b5e1299b404700f86d6abad5cd406f3b6 cf8b08edac3a78feb4b9db0c20a62934c3a6c49d -- agent/agent_runtime_helpers.py"
+          },
+          {
+            "id": "E3-sanitizer-use",
+            "kind": "call_site",
+            "claim": "The changed pattern is included in the ordered stripping-pattern collection, and strip_think_blocks applies every pattern by substitution to visible content.",
+            "source": "git show cf8b08edac3a78feb4b9db0c20a62934c3a6c49d:agent/agent_runtime_helpers.py lines 668-686"
+          },
+          {
+            "id": "E4-dual-consumer-contract",
+            "kind": "call_site",
+            "claim": "The regression suite defines display and storage stripper variants and applies the fragment cases to both, establishing that the shared behavior is required at final display and stored-content boundaries.",
+            "source": "git show cf8b08edac3a78feb4b9db0c20a62934c3a6c49d:tests/agent/test_strip_reasoning_tags_cli.py lines 1-14 and 28-31"
+          },
+          {
+            "id": "E5-name-prefixed-regressions",
+            "kind": "test",
+            "claim": "Two added cases require a complete bare-name-prefixed argument fragment and a fragment cut inside an argument value to be removed while preserving the preceding visible line.",
+            "source": "git show cf8b08edac3a78feb4b9db0c20a62934c3a6c49d:tests/agent/test_strip_reasoning_tags_cli.py lines 68-85"
+          },
+          {
+            "id": "E6-prose-preservation-oracle",
+            "kind": "test",
+            "claim": "Neighboring tests require inline prose with argument tags, later prose, and ordinary complete-block handling to survive appropriately, constraining the matcher against broad deletion.",
+            "source": "git show cf8b08edac3a78feb4b9db0c20a62934c3a6c49d:tests/agent/test_strip_reasoning_tags_cli.py lines 87-102"
+          },
+          {
+            "id": "E7-commit-intent",
+            "kind": "commit",
+            "claim": "The commit states that name-prefixed cut calls leaked raw markup and that only an identifier-only prefix should be allowed so prose such as \"The <arg_key> holds...\" survives.",
+            "source": "git show --format=fuller cf8b08edac3a78feb4b9db0c20a62934c3a6c49d"
+          },
+          {
+            "id": "E8-resolution-linkage",
+            "kind": "commit",
+            "claim": "The evidence bundle resolves issue/PR 101899 to the pinned commit, records parent 41c17d9b5e1299b404700f86d6abad5cd406f3b6, and identifies the implementation and regression-test files as the only changed files.",
+            "source": "/home/chenyujia/tritonToLlvm/arex-skill-graph/data/skill-extraction/agent-core-seven-category-extraction-v2/codex-5.6-sol-contract-v2-20261001/05-structured-tool-contract-integrity/NousResearch__hermes-agent__101899/issue-bundle.json"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "bound-name-prefixed-structured-fragment-matching",
+            "title": "Recognize name-prefixed structured-call fragments without consuming prose",
+            "description": "Extend a line-oriented malformed-call detector to admit only an identifier-like prefix attached directly to an argument tag, preserving its existing line boundary and prose-safety constraints.",
+            "evidence_ids": [
+              "E1-parent-boundary-rule",
+              "E2-implementation-prefix-extension",
+              "E3-sanitizer-use",
+              "E7-commit-intent"
+            ],
+            "semantic_action": {
+              "intent": "Prevent raw structured-call argument markup from reaching visible or stored assistant text when a truncated serialization begins with a bare tool name.",
+              "module_role": "Malformed structured-output sanitizer shared by assistant-content consumers",
+              "operation": "guard",
+              "pre_state": "A line contains a truncated argument-tag serialization whose first tag is glued to a bare identifier-like call name, and the sanitizer only recognizes tags that directly begin the line.",
+              "post_state": "The name-prefixed fragment is classified as unrecoverable structured output and removed, while prefixes containing prose-separating spaces remain outside this new match shape.",
+              "validation": "Apply the sanitizer to complete and cut name-prefixed fragments and verify that only the preceding visible text remains; also verify that spaced inline prose examples survive.",
+              "parameters": [
+                "assistant content string",
+                "line-boundary fragment",
+                "optional identifier-like call-name prefix",
+                "argument key/value tag vocabulary"
+              ],
+              "evidence_ids": [
+                "E1-parent-boundary-rule",
+                "E2-implementation-prefix-extension",
+                "E3-sanitizer-use",
+                "E5-name-prefixed-regressions",
+                "E6-prose-preservation-oracle"
+              ]
+            }
+          },
+          {
+            "name": "verify-fragment-removal-across-content-boundaries",
+            "title": "Verify malformed-fragment removal across display and storage boundaries",
+            "description": "Encode the malformed inputs and preservation expectations once, then exercise both consumer-facing sanitizers to prevent their structured-output contracts from diverging.",
+            "evidence_ids": [
+              "E4-dual-consumer-contract",
+              "E5-name-prefixed-regressions",
+              "E6-prose-preservation-oracle"
+            ],
+            "semantic_action": {
+              "intent": "Establish a regression oracle showing that every relevant assistant-content boundary removes the newly recognized malformed fragments without broadening deletion into ordinary prose.",
+              "module_role": "Cross-boundary structured-output contract test",
+              "operation": "validate",
+              "pre_state": "Multiple content sanitizers are expected to provide equivalent tool-call tag coverage, but the name-prefixed truncated-fragment shape lacks an explicit shared regression case.",
+              "post_state": "Both display and storage sanitizer variants are checked against complete and cut name-prefixed fragments, and preservation tests constrain false-positive removal.",
+              "validation": "Run the parameterized fragment test for both sanitizer variants and the adjacent prose-preservation tests; the expected outputs retain visible prefixes and remove malformed markup.",
+              "parameters": [
+                "display sanitizer",
+                "storage sanitizer",
+                "complete name-prefixed fragment",
+                "value-truncated name-prefixed fragment",
+                "prose-preservation examples"
+              ],
+              "evidence_ids": [
+                "E4-dual-consumer-contract",
+                "E5-name-prefixed-regressions",
+                "E6-prose-preservation-oracle"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "repair-leaking-truncated-structured-call-fragments",
+            "title": "Repair leaked truncated tool-call fragments while preserving ordinary prose",
+            "description": "A bounded workflow for a sanitizer that already removes malformed structured calls but misses a newly observed serialization prefix. It narrows the grammar change to the smallest evidenced prefix class and validates both removal and non-removal behavior across content consumers.",
+            "atomic_names": [
+              "bound-name-prefixed-structured-fragment-matching",
+              "verify-fragment-removal-across-content-boundaries"
+            ],
+            "evidence_ids": [
+              "E1-parent-boundary-rule",
+              "E2-implementation-prefix-extension",
+              "E3-sanitizer-use",
+              "E4-dual-consumer-contract",
+              "E5-name-prefixed-regressions",
+              "E6-prose-preservation-oracle",
+              "E7-commit-intent"
+            ],
+            "workflow_graph": {
+              "goal": "Remove unrecoverable name-prefixed structured-call fragments from assistant content at every relevant sanitization boundary without deleting natural-language mentions or later unrelated prose.",
+              "when_to_use": [
+                "A structured-output sanitizer already handles line-leading argument tags, but raw markup leaks when the first tag is directly attached to a bare identifier-like call name.",
+                "The malformed fragment is unrecoverable and should be removed rather than parsed or executed.",
+                "More than one consumer boundary is expected to enforce the same stripping contract."
+              ],
+              "anti_goals": [
+                "Do not interpret, reconstruct, or execute the truncated call.",
+                "Do not accept arbitrary prose before an argument tag as a fragment prefix.",
+                "Do not remove unrelated preceding or subsequent visible prose.",
+                "Do not redesign complete structured-call parsing or unrelated reasoning-tag handling."
+              ],
+              "not_applicable_when": [
+                "The input is a complete, valid structured call that should be parsed through the normal tool-call path.",
+                "The suspected prefix contains spaces or sentence text and cannot be distinguished from an inline prose example by the evidenced identifier-only rule.",
+                "The affected consumer does not use the shared line-oriented stripping contract.",
+                "There is no reproducible malformed input and preservation oracle."
+              ],
+              "inputs": [
+                "A captured malformed assistant-content sample",
+                "The sanitizer's existing line-boundary grammar",
+                "The set of display and storage sanitizer consumers",
+                "Positive removal expectations and negative prose-preservation examples"
+              ],
+              "entry_state": "Raw argument markup from a truncated structured call can survive because a bare call name appears immediately before the first argument tag, while existing behavior already protects ordinary inline prose.",
+              "exit_state": "Identifier-only name-prefixed fragments are removed by all tested sanitizer consumers, preceding visible text is retained, and spaced inline prose plus unrelated trailing prose remain protected.",
+              "steps": [
+                {
+                  "action_name": "bound-name-prefixed-structured-fragment-matching",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "The failing sample has a line-boundary identifier-like prefix directly glued to an arg_key or arg_value tag.",
+                  "validation": "The matcher admits the observed complete and value-truncated prefixed shapes, while its prefix character class cannot span spaces into ordinary prose."
+                },
+                {
+                  "action_name": "verify-fragment-removal-across-content-boundaries",
+                  "role": "validate",
+                  "required": true,
+                  "depends_on": [
+                    "bound-name-prefixed-structured-fragment-matching"
+                  ],
+                  "condition": "Display and storage paths are both contractually expected to strip tool-call markup.",
+                  "validation": "Parameterized cases produce only the visible prefix for both sanitizer variants, and prose-preservation cases remain unchanged."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "bound-name-prefixed-structured-fragment-matching",
+                  "to": "verify-fragment-removal-across-content-boundaries",
+                  "type": "enables"
+                },
+                {
+                  "from": "verify-fragment-removal-across-content-boundaries",
+                  "to": "bound-name-prefixed-structured-fragment-matching",
+                  "type": "validates"
+                }
+              ],
+              "validation_ladder": [
+                "Confirm the parent matcher excludes the captured name-prefixed shape.",
+                "Check the revised grammar admits only the evidenced identifier-like attached prefix.",
+                "Verify complete and value-truncated name-prefixed fragments are removed while their preceding visible lines remain.",
+                "Run the same cases against display and storage sanitizers.",
+                "Verify inline prose containing argument tags and subsequent unrelated prose survive."
+              ],
+              "stop_conditions": [
+                "Stop if the prefix requires whitespace or arbitrary sentence text; the evidenced bounded grammar no longer distinguishes it safely from prose.",
+                "Stop if the fragment is recoverable through the normal complete-call parser rather than an unrecoverable sanitization case.",
+                "Stop if any preservation oracle shows deletion of ordinary prose or unrelated trailing content.",
+                "Stop before claiming runtime test success when the test runner is unavailable."
+              ],
+              "unresolved_or_deferred": [
+                "The checkout environment does not provide the pytest executable, so the regression suite could not be executed during extraction.",
+                "The GitHub bundle contains no PR body, review discussion, or status-check results; no CI outcome is claimed."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Were the added regression tests executed successfully in CI for the pinned commit? The supplied bundle omits status checks, and pytest is unavailable in the inspection environment.",
+          "The exact implementation relationship of the display sanitizer to the changed shared pattern is established here through the dual-consumer regression contract, but its full source-level delegation path was not required by or changed in this commit."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "bound-name-prefixed-structured-fragment-matching",
+          "title": "Recognize name-prefixed structured-call fragments without consuming prose",
+          "description": "Extend a line-oriented malformed-call detector to admit only an identifier-like prefix attached directly to an argument tag, preserving its existing line boundary and prose-safety constraints.",
+          "evidence_ids": [
+            "E1-parent-boundary-rule",
+            "E2-implementation-prefix-extension",
+            "E3-sanitizer-use",
+            "E7-commit-intent"
+          ],
+          "semantic_action": {
+            "intent": "Prevent raw structured-call argument markup from reaching visible or stored assistant text when a truncated serialization begins with a bare tool name.",
+            "module_role": "Malformed structured-output sanitizer shared by assistant-content consumers",
+            "operation": "guard",
+            "pre_state": "A line contains a truncated argument-tag serialization whose first tag is glued to a bare identifier-like call name, and the sanitizer only recognizes tags that directly begin the line.",
+            "post_state": "The name-prefixed fragment is classified as unrecoverable structured output and removed, while prefixes containing prose-separating spaces remain outside this new match shape.",
+            "validation": "Apply the sanitizer to complete and cut name-prefixed fragments and verify that only the preceding visible text remains; also verify that spaced inline prose examples survive.",
+            "parameters": [
+              "assistant content string",
+              "line-boundary fragment",
+              "optional identifier-like call-name prefix",
+              "argument key/value tag vocabulary"
+            ],
+            "evidence_ids": [
+              "E1-parent-boundary-rule",
+              "E2-implementation-prefix-extension",
+              "E3-sanitizer-use",
+              "E5-name-prefixed-regressions",
+              "E6-prose-preservation-oracle"
+            ]
+          }
+        },
+        {
+          "name": "verify-fragment-removal-across-content-boundaries",
+          "title": "Verify malformed-fragment removal across display and storage boundaries",
+          "description": "Encode the malformed inputs and preservation expectations once, then exercise both consumer-facing sanitizers to prevent their structured-output contracts from diverging.",
+          "evidence_ids": [
+            "E4-dual-consumer-contract",
+            "E5-name-prefixed-regressions",
+            "E6-prose-preservation-oracle"
+          ],
+          "semantic_action": {
+            "intent": "Establish a regression oracle showing that every relevant assistant-content boundary removes the newly recognized malformed fragments without broadening deletion into ordinary prose.",
+            "module_role": "Cross-boundary structured-output contract test",
+            "operation": "validate",
+            "pre_state": "Multiple content sanitizers are expected to provide equivalent tool-call tag coverage, but the name-prefixed truncated-fragment shape lacks an explicit shared regression case.",
+            "post_state": "Both display and storage sanitizer variants are checked against complete and cut name-prefixed fragments, and preservation tests constrain false-positive removal.",
+            "validation": "Run the parameterized fragment test for both sanitizer variants and the adjacent prose-preservation tests; the expected outputs retain visible prefixes and remove malformed markup.",
+            "parameters": [
+              "display sanitizer",
+              "storage sanitizer",
+              "complete name-prefixed fragment",
+              "value-truncated name-prefixed fragment",
+              "prose-preservation examples"
+            ],
+            "evidence_ids": [
+              "E4-dual-consumer-contract",
+              "E5-name-prefixed-regressions",
+              "E6-prose-preservation-oracle"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "repair-leaking-truncated-structured-call-fragments",
+          "title": "Repair leaked truncated tool-call fragments while preserving ordinary prose",
+          "description": "A bounded workflow for a sanitizer that already removes malformed structured calls but misses a newly observed serialization prefix. It narrows the grammar change to the smallest evidenced prefix class and validates both removal and non-removal behavior across content consumers.",
+          "atomic_names": [
+            "bound-name-prefixed-structured-fragment-matching",
+            "verify-fragment-removal-across-content-boundaries"
+          ],
+          "evidence_ids": [
+            "E1-parent-boundary-rule",
+            "E2-implementation-prefix-extension",
+            "E3-sanitizer-use",
+            "E4-dual-consumer-contract",
+            "E5-name-prefixed-regressions",
+            "E6-prose-preservation-oracle",
+            "E7-commit-intent"
+          ],
+          "workflow_graph": {
+            "goal": "Remove unrecoverable name-prefixed structured-call fragments from assistant content at every relevant sanitization boundary without deleting natural-language mentions or later unrelated prose.",
+            "when_to_use": [
+              "A structured-output sanitizer already handles line-leading argument tags, but raw markup leaks when the first tag is directly attached to a bare identifier-like call name.",
+              "The malformed fragment is unrecoverable and should be removed rather than parsed or executed.",
+              "More than one consumer boundary is expected to enforce the same stripping contract."
+            ],
+            "anti_goals": [
+              "Do not interpret, reconstruct, or execute the truncated call.",
+              "Do not accept arbitrary prose before an argument tag as a fragment prefix.",
+              "Do not remove unrelated preceding or subsequent visible prose.",
+              "Do not redesign complete structured-call parsing or unrelated reasoning-tag handling."
+            ],
+            "not_applicable_when": [
+              "The input is a complete, valid structured call that should be parsed through the normal tool-call path.",
+              "The suspected prefix contains spaces or sentence text and cannot be distinguished from an inline prose example by the evidenced identifier-only rule.",
+              "The affected consumer does not use the shared line-oriented stripping contract.",
+              "There is no reproducible malformed input and preservation oracle."
+            ],
+            "inputs": [
+              "A captured malformed assistant-content sample",
+              "The sanitizer's existing line-boundary grammar",
+              "The set of display and storage sanitizer consumers",
+              "Positive removal expectations and negative prose-preservation examples"
+            ],
+            "entry_state": "Raw argument markup from a truncated structured call can survive because a bare call name appears immediately before the first argument tag, while existing behavior already protects ordinary inline prose.",
+            "exit_state": "Identifier-only name-prefixed fragments are removed by all tested sanitizer consumers, preceding visible text is retained, and spaced inline prose plus unrelated trailing prose remain protected.",
+            "steps": [
+              {
+                "action_name": "bound-name-prefixed-structured-fragment-matching",
+                "role": "implement",
+                "required": true,
+                "depends_on": [],
+                "condition": "The failing sample has a line-boundary identifier-like prefix directly glued to an arg_key or arg_value tag.",
+                "validation": "The matcher admits the observed complete and value-truncated prefixed shapes, while its prefix character class cannot span spaces into ordinary prose."
+              },
+              {
+                "action_name": "verify-fragment-removal-across-content-boundaries",
+                "role": "validate",
+                "required": true,
+                "depends_on": [
+                  "bound-name-prefixed-structured-fragment-matching"
+                ],
+                "condition": "Display and storage paths are both contractually expected to strip tool-call markup.",
+                "validation": "Parameterized cases produce only the visible prefix for both sanitizer variants, and prose-preservation cases remain unchanged."
+              }
+            ],
+            "edges": [
+              {
+                "from": "bound-name-prefixed-structured-fragment-matching",
+                "to": "verify-fragment-removal-across-content-boundaries",
+                "type": "enables"
+              },
+              {
+                "from": "verify-fragment-removal-across-content-boundaries",
+                "to": "bound-name-prefixed-structured-fragment-matching",
+                "type": "validates"
+              }
+            ],
+            "validation_ladder": [
+              "Confirm the parent matcher excludes the captured name-prefixed shape.",
+              "Check the revised grammar admits only the evidenced identifier-like attached prefix.",
+              "Verify complete and value-truncated name-prefixed fragments are removed while their preceding visible lines remain.",
+              "Run the same cases against display and storage sanitizers.",
+              "Verify inline prose containing argument tags and subsequent unrelated prose survive."
+            ],
+            "stop_conditions": [
+              "Stop if the prefix requires whitespace or arbitrary sentence text; the evidenced bounded grammar no longer distinguishes it safely from prose.",
+              "Stop if the fragment is recoverable through the normal complete-call parser rather than an unrecoverable sanitization case.",
+              "Stop if any preservation oracle shows deletion of ordinary prose or unrelated trailing content.",
+              "Stop before claiming runtime test success when the test runner is unavailable."
+            ],
+            "unresolved_or_deferred": [
+              "The checkout environment does not provide the pytest executable, so the regression suite could not be executed during extraction.",
+              "The GitHub bundle contains no PR body, review discussion, or status-check results; no CI outcome is claimed."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Were the added regression tests executed successfully in CI for the pinned commit? The supplied bundle omits status checks, and pytest is unavailable in the inspection environment.",
+        "The exact implementation relationship of the display sanitizer to the changed shared pattern is established here through the dual-consumer regression contract, but its full source-level delegation path was not required by or changed in this commit."
+      ]
+    },
+    "call_sites": [
+      "The changed pattern is included in the ordered stripping-pattern collection, and strip_think_blocks applies every pattern by substitution to visible content.",
+      "The regression suite defines display and storage stripper variants and applies the fragment cases to both, establishing that the shared behavior is required at final display and stored-content boundaries."
+    ],
+    "tests": [
+      "Two added cases require a complete bare-name-prefixed argument fragment and a fragment cut inside an argument value to be removed while preserving the preceding visible line.",
+      "Neighboring tests require inline prose with argument tags, later prose, and ordinary complete-block handling to survive appropriately, constraining the matcher against broad deletion."
+    ]
+  }
+]
