@@ -86,6 +86,15 @@ def _test_evidence(row: Mapping[str, Any]) -> list[dict[str, Any]]:
     return evidence
 
 
+def _retrieval_judgment(report_root: Path, case_id: str) -> Mapping[str, Any] | None:
+    guidance_path = report_root / "runs" / _safe_name(case_id) / "guided" / "guidance.json"
+    if not guidance_path.is_file():
+        return None
+    guidance = _read_json(guidance_path)
+    judge = guidance.get("judge") if isinstance(guidance, Mapping) else None
+    return judge if isinstance(judge, Mapping) else None
+
+
 def _fallback_judgment(row: Mapping[str, Any]) -> dict[str, Any]:
     passed = bool(row.get("test_success"))
     clean = not bool(row.get("test_edit_violation"))
@@ -199,6 +208,7 @@ def main() -> int:
             rows,
             judgments,
             oracle_qualified=qualification.get(case_id) if args.qualification else None,
+            retrieval_judgment=_retrieval_judgment(args.report.parent, case_id),
             weights=DEFAULT_WEIGHTS,
         )
         scored["case_id"] = case_id

@@ -1,0 +1,215 @@
+{
+  "schema_version": "weighted-guided-agent-evaluation-v1",
+  "source_report": "data/skill-extraction/provider-endpoint-pilot-20260929-v4/agent-eval-pi-v2/report.json",
+  "cases": 1,
+  "model": "openai/gpt-5.6-sol",
+  "independent_llm_evaluator_used": true,
+  "evaluations": [
+    {
+      "schema_version": "paired-agent-evaluation-v1",
+      "oracle_qualified": true,
+      "setup_gate": {
+        "passed": true
+      },
+      "retrieval_gate": {
+        "checked": true,
+        "passed": false,
+        "applicable": false,
+        "selected_skill_id": null,
+        "confidence": 0.96,
+        "rationale": "No candidate is supported by causal implementation or test evidence. The specific workflows and actions address HTTP error-detail formatting, outbound request adaptation, endpoint configuration, or persisted session routing; none establishes semantics for validating a completion response whose finish reason is absent. The generic provider-interface pattern cannot be selected solely from the task category and issue title, especially because the supplied snapshot omits the implementation, call sites, test contents, and behavioral evidence needed to determine equivalence."
+      },
+      "eligible_for_causal_comparison": false,
+      "weights": {
+        "correctness": 0.6,
+        "code_quality": 0.25,
+        "efficiency": 0.15
+      },
+      "weight_basis": {
+        "policy": "Correctness receives the majority weight because repository-level coding benchmarks treat issue resolution through regression tests as the primary outcome. Quality and efficiency are reported separately and only break ties between oracle-passing arms. The 60/25/15 split is an AREX operational choice, not a weight copied from any cited benchmark.",
+        "references": [
+          {
+            "name": "SWE-bench",
+            "url": "https://arxiv.org/abs/2310.06770",
+            "relevance": "Uses repository tests to determine whether a real issue is resolved."
+          },
+          {
+            "name": "SWE-agent",
+            "url": "https://arxiv.org/abs/2405.15793",
+            "relevance": "Reports issue-resolution performance together with agent trajectory cost."
+          },
+          {
+            "name": "SWE-bench Verified",
+            "url": "https://openai.com/index/introducing-swe-bench-verified/",
+            "relevance": "Emphasizes validated problem statements and reliable test oracles."
+          }
+        ]
+      },
+      "arms": {
+        "no_skill": {
+          "eligible": true,
+          "leakage_gate": {
+            "passed": true,
+            "violations": []
+          },
+          "setup_success": true,
+          "test_success": true,
+          "issue_postcondition_satisfied": true,
+          "task_solved": true,
+          "correctness": 98.0,
+          "code_quality": 83.3333,
+          "quality_components": {
+            "patch_scope_precision": 95.0,
+            "maintainability_style": 93.0,
+            "validation_quality": 62.0
+          },
+          "efficiency": {
+            "token": 93.7192,
+            "wall": 46.1122,
+            "combined": 74.6764
+          },
+          "overall_score": 90.8348,
+          "usage_tokens": 358635,
+          "wall_seconds": 202.03750551699977,
+          "judge": {
+            "semantic_completion": 90,
+            "patch_scope_precision": 95,
+            "maintainability_style": 93,
+            "validation_quality": 62,
+            "issue_postcondition_satisfied": true,
+            "rationale": "The patch implements the core required behavior: a stream containing only null or undefined finish_reason values now ends with the expected \"Stream ended without finish_reason\" error, while normal terminal reasons are recorded. The implementation is small, localized, and readable. However, it changes the terminal-check ordering relative to existing error handling, so a pre-existing output.stopReason of \"error\" without a recorded finish reason could be replaced by the missing-finish-reason error rather than preserving the original provider error. It also treats any non-null value, including an empty string, as a received finish reason, which is broader than the prior truthiness check. Validation covered the existing provider test file and formatting checks, but no dedicated regression test for the newly required truncated-stream case was added or executed, and broader package tests were not shown.",
+            "concerns": [
+              "The missing-finish-reason check runs before the existing output.stopReason === \"error\" check, potentially masking an established provider error and altering prior error precedence.",
+              "The explicit null/undefined check considers an empty-string finish_reason present; such a malformed value would not be classified as a missing finish reason.",
+              "No focused regression test was added for a stream ending after only null finish_reason chunks, so the exact new postcondition was not directly demonstrated by the reported test run.",
+              "Only one AI test file was run; no full package or cross-project regression run is reported."
+            ]
+          }
+        },
+        "guided": {
+          "eligible": true,
+          "leakage_gate": {
+            "passed": true,
+            "violations": []
+          },
+          "setup_success": true,
+          "test_success": true,
+          "issue_postcondition_satisfied": true,
+          "task_solved": true,
+          "correctness": 99.8,
+          "code_quality": 92.3333,
+          "quality_components": {
+            "patch_scope_precision": 98.0,
+            "maintainability_style": 97.0,
+            "validation_quality": 82.0
+          },
+          "efficiency": {
+            "token": 100.0,
+            "wall": 100.0,
+            "combined": 100.0
+          },
+          "overall_score": 97.9633,
+          "usage_tokens": 336110,
+          "wall_seconds": 93.16401362800025,
+          "judge": {
+            "semantic_completion": 99,
+            "patch_scope_precision": 98,
+            "maintainability_style": 97,
+            "validation_quality": 82,
+            "issue_postcondition_satisfied": true,
+            "rationale": "The patch correctly tracks whether any truthy terminal finish_reason was received and throws the expected \"Stream ended without finish_reason\" error when a stream terminates without one. It preserves the higher-priority abort behavior and does not interfere with normal finish-reason mapping, tool-call handling, or successful completion. The implementation is minimal, localized, clear, and closely matches the required behavior. The targeted OpenAI completions suite passed all 18 tests and git diff validation passed. Validation is somewhat incomplete because only one visible test file was run, no dedicated regression test was added in the candidate patch, and the package changelog update present in the reference was omitted; these do not undermine the executable fix itself.",
+            "concerns": [
+              "No explicit regression test for a stream containing only null finish_reason chunks was added by the candidate.",
+              "Validation covered only the targeted OpenAI completions test file rather than the full package or all listed visible tests.",
+              "The package changelog was not updated, although this is documentation rather than a functional requirement.",
+              "The missing-finish check precedes the generic error-stop check, unlike the reference; this appears harmless with the current state transitions because an error derived from a truthy finish_reason also marks the flag, but preserving the prior error-check ordering would be marginally safer."
+            ]
+          }
+        }
+      },
+      "outcome": "descriptive_only_no_applicable_skill_selected",
+      "guided_minus_no_skill": {
+        "overall_score": 7.1285,
+        "usage_tokens": -22525,
+        "wall_seconds": -108.8735
+      },
+      "case_id": "earendil-works__pi__4558__provider-interface-adaptation"
+    }
+  ],
+  "llm_calls": [
+    {
+      "model": "openai/gpt-5.6-sol",
+      "endpoint": "https://llm.rvnpu.cn/v1/chat/completions",
+      "attempt": 1,
+      "elapsed_ms": 22387.94,
+      "usage": {
+        "completion_tokens": 888,
+        "prompt_tokens": 3073,
+        "total_tokens": 3961,
+        "completion_tokens_details": {
+          "reasoning_tokens": 567
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "cache_creation_tokens": 0,
+          "cached_creation_tokens": 0
+        }
+      },
+      "response_id": "resp_069af07257dbd233016abdfa53073487d0bfc8f73de93e5a96"
+    },
+    {
+      "model": "openai/gpt-5.6-sol",
+      "endpoint": "https://llm.rvnpu.cn/v1/chat/completions",
+      "attempt": 1,
+      "elapsed_ms": 21501.75,
+      "usage": {
+        "completion_tokens": 680,
+        "prompt_tokens": 3029,
+        "total_tokens": 3709,
+        "completion_tokens_details": {
+          "reasoning_tokens": 382
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "cache_creation_tokens": 0,
+          "cached_creation_tokens": 0
+        }
+      },
+      "response_id": "resp_0819f184f57b1e2b016abdfa69848c87d09378189223d13683"
+    }
+  ],
+  "judgments": {
+    "earendil-works__pi__4558__provider-interface-adaptation": {
+      "no_skill": {
+        "semantic_completion": 90,
+        "patch_scope_precision": 95,
+        "maintainability_style": 93,
+        "validation_quality": 62,
+        "issue_postcondition_satisfied": true,
+        "rationale": "The patch implements the core required behavior: a stream containing only null or undefined finish_reason values now ends with the expected \"Stream ended without finish_reason\" error, while normal terminal reasons are recorded. The implementation is small, localized, and readable. However, it changes the terminal-check ordering relative to existing error handling, so a pre-existing output.stopReason of \"error\" without a recorded finish reason could be replaced by the missing-finish-reason error rather than preserving the original provider error. It also treats any non-null value, including an empty string, as a received finish reason, which is broader than the prior truthiness check. Validation covered the existing provider test file and formatting checks, but no dedicated regression test for the newly required truncated-stream case was added or executed, and broader package tests were not shown.",
+        "concerns": [
+          "The missing-finish-reason check runs before the existing output.stopReason === \"error\" check, potentially masking an established provider error and altering prior error precedence.",
+          "The explicit null/undefined check considers an empty-string finish_reason present; such a malformed value would not be classified as a missing finish reason.",
+          "No focused regression test was added for a stream ending after only null finish_reason chunks, so the exact new postcondition was not directly demonstrated by the reported test run.",
+          "Only one AI test file was run; no full package or cross-project regression run is reported."
+        ]
+      },
+      "guided": {
+        "semantic_completion": 99,
+        "patch_scope_precision": 98,
+        "maintainability_style": 97,
+        "validation_quality": 82,
+        "issue_postcondition_satisfied": true,
+        "rationale": "The patch correctly tracks whether any truthy terminal finish_reason was received and throws the expected \"Stream ended without finish_reason\" error when a stream terminates without one. It preserves the higher-priority abort behavior and does not interfere with normal finish-reason mapping, tool-call handling, or successful completion. The implementation is minimal, localized, clear, and closely matches the required behavior. The targeted OpenAI completions suite passed all 18 tests and git diff validation passed. Validation is somewhat incomplete because only one visible test file was run, no dedicated regression test was added in the candidate patch, and the package changelog update present in the reference was omitted; these do not undermine the executable fix itself.",
+        "concerns": [
+          "No explicit regression test for a stream containing only null finish_reason chunks was added by the candidate.",
+          "Validation covered only the targeted OpenAI completions test file rather than the full package or all listed visible tests.",
+          "The package changelog was not updated, although this is documentation rather than a functional requirement.",
+          "The missing-finish check precedes the generic error-stop check, unlike the reference; this appears harmless with the current state transitions because an error derived from a truthy finish_reason also marks the flag, but preserving the prior error-check ordering would be marginally safer."
+        ]
+      }
+    }
+  }
+}

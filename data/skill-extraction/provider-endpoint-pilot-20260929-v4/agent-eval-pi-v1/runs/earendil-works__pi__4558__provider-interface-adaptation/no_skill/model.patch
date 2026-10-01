@@ -1,0 +1,32 @@
+diff --git a/packages/ai/src/providers/openai-completions.ts b/packages/ai/src/providers/openai-completions.ts
+index de4c523..d674837 100644
+--- a/packages/ai/src/providers/openai-completions.ts
++++ b/packages/ai/src/providers/openai-completions.ts
+@@ -167,6 +167,7 @@ export const streamOpenAICompletions: StreamFunction<"openai-completions", OpenA
+ 			let thinkingBlock: ThinkingContent | null = null;
+ 			const toolCallBlocksByIndex = new Map<number, StreamingToolCallBlock>();
+ 			const toolCallBlocksById = new Map<string, StreamingToolCallBlock>();
++			let receivedFinishReason = false;
+ 			const blocks = output.content as StreamingBlock[];
+ 			const getContentIndex = (block: StreamingBlock) => blocks.indexOf(block);
+ 			const finishBlock = (block: StreamingBlock) => {
+@@ -282,7 +283,8 @@ export const streamOpenAICompletions: StreamFunction<"openai-completions", OpenA
+ 					output.usage = parseChunkUsage((choice as any).usage, model);
+ 				}
+ 
+-				if (choice.finish_reason) {
++				if (choice.finish_reason !== null && choice.finish_reason !== undefined) {
++					receivedFinishReason = true;
+ 					const finishReasonResult = mapStopReason(choice.finish_reason);
+ 					output.stopReason = finishReasonResult.stopReason;
+ 					if (finishReasonResult.errorMessage) {
+@@ -390,6 +392,9 @@ export const streamOpenAICompletions: StreamFunction<"openai-completions", OpenA
+ 			if (output.stopReason === "error") {
+ 				throw new Error(output.errorMessage || "Provider returned an error stop reason");
+ 			}
++			if (!receivedFinishReason) {
++				throw new Error("Stream ended without finish_reason");
++			}
+ 
+ 			stream.push({ type: "done", reason: output.stopReason, message: output });
+ 			stream.end();

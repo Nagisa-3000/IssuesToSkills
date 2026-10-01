@@ -228,17 +228,33 @@ SWE-bench Verified, and SWE-agent; the numeric 60/25/15 split is this
 experiment's policy.
 
 Five repeated paired runs were scored, representing only two independent
-holdout cases:
+holdout cases. A run enters the causal Skill comparison only when the retrieval
+judge actually selects an applicable Skill. Supplying retrieved candidates
+while the judge returns `selected_skill_id = null` is descriptive context, not
+evidence that a Skill caused the outcome.
 
-| holdout | repeats | no-skill solved | guided solved | result |
-| --- | ---: | ---: | ---: | --- |
-| Aider #199 | 2 | 0 | 0 | both visible-test passes were judged semantically incomplete |
-| Hermes #121359 | 3 | 0 | 1 | one guided correctness win; two repeats solved by neither arm |
+| holdout | repeats | applicable Skill selected | causal result |
+| --- | ---: | ---: | --- |
+| Aider #199 | 2 | 1 | selected-Pattern run: neither arm satisfied the full issue postcondition |
+| Hermes #121359 | 3 | 1 | selected-Atomic run: neither arm satisfied the full issue postcondition |
 
-The aggregate guided solved rate is 1/5 and the no-skill solved rate is 0/5,
-but repeats are not independent samples. Only one of two independent cases
-shows a guided advantage, and that advantage is not stable across the three
-Hermes repeats. Pattern promotion therefore remains unsupported.
+Three additional runs, including the Hermes run whose guided arm passed the
+visible tests, were classified as
+`descriptive_only_no_applicable_skill_selected`: the retrieval judge had
+explicitly rejected every candidate. They cannot be credited as Skill wins.
+Across the two causally eligible runs, both guided and no-skill solved rates are
+0/2. Pattern promotion therefore remains unsupported.
+
+The newly qualified Pi #4558 case was also run as a fresh matched pair with
+`openai/gpt-5.6-sol`. Both arms passed the focused oracle and the independent
+evaluator found both patches semantically complete; guided used 22,525 fewer
+model tokens and 108.87 fewer wall-clock seconds. However, the retrieval judge
+correctly returned `applicable=false` and `selected_skill_id=null`: the catalog
+contains outbound adaptation, routing, and HTTP-error workflows, not the
+missing-`finish_reason` response-validation contract. This result is retained
+as a useful negative-control/descriptive run, but it is **not** credited as a
+Skill win and it reinforces that Pi #4558 is a poor semantic holdout for the
+current provider/endpoint Pattern.
 
 Artifacts:
 
@@ -249,7 +265,15 @@ data/skill-extraction/provider-endpoint-pilot-20260929-v3/agent-eval-aider-v2/we
 data/skill-extraction/provider-endpoint-pilot-20260929-v3/agent-eval-hermes/weighted-evaluation.json
 data/skill-extraction/provider-endpoint-pilot-20260929-v3/agent-eval-hermes-v2/weighted-evaluation.json
 data/skill-extraction/provider-endpoint-pilot-20260929-v3/agent-eval-hermes-v3/weighted-evaluation.json
+data/skill-extraction/provider-endpoint-pilot-20260929-v4/agent-eval-pi-v2/report.json
+data/skill-extraction/provider-endpoint-pilot-20260929-v4/agent-eval-pi-v2/weighted-evaluation.json
 ```
+
+`agent-eval-pi-v1` is retained as an invalid setup attempt: the no-skill arm's
+first `npm ci` ended with npm's `Exit handler never called` failure, so the two
+arms did not share a valid matched environment. It is excluded from every
+causal and cost comparison. The v2 run rebuilt dependencies from a clean
+`node_modules` directory with bounded retries; both setup gates passed.
 
 This pilot should be read against the user-supplied seven-category table. For
 the first row, the exact seeded issues #121359 (Hermes) and #9452 (Qwen) have

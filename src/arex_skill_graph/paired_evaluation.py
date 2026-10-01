@@ -143,6 +143,7 @@ def score_pair(
     judgments: Mapping[str, Mapping[str, Any]],
     *,
     oracle_qualified: bool | None,
+    retrieval_judgment: Mapping[str, Any] | None = None,
     weights: EvaluationWeights = DEFAULT_WEIGHTS,
 ) -> dict[str, Any]:
     """Score one matched pair while preserving correctness and leakage gates."""
@@ -175,6 +176,7 @@ def score_pair(
         arm_scores[arm] = {
             "eligible": gate["passed"],
             "leakage_gate": gate,
+            "setup_success": bool(row.get("setup_success", True)),
             "test_success": bool(row.get("test_success")),
             "issue_postcondition_satisfied": bool(judge.get("issue_postcondition_satisfied")),
             "task_solved": task_solved,
@@ -189,12 +191,37 @@ def score_pair(
         }
 
     gates_pass = all(value["eligible"] for value in arm_scores.values())
+    setup_gate_passed = all(value["setup_success"] for value in arm_scores.values())
+    retrieval_checked = retrieval_judgment is not None
+    selected_skill_id = (
+        str(retrieval_judgment.get("selected_skill_id"))
+        if retrieval_judgment and retrieval_judgment.get("selected_skill_id")
+        else None
+    )
+    retrieval_passed = (
+        not retrieval_checked
+        or (bool(retrieval_judgment.get("applicable")) and selected_skill_id is not None)
+    )
+    retrieval_gate = {
+        "checked": retrieval_checked,
+        "passed": retrieval_passed,
+        "applicable": (
+            bool(retrieval_judgment.get("applicable")) if retrieval_judgment else None
+        ),
+        "selected_skill_id": selected_skill_id,
+        "confidence": retrieval_judgment.get("confidence") if retrieval_judgment else None,
+        "rationale": retrieval_judgment.get("rationale") if retrieval_judgment else None,
+    }
     baseline_passed = arm_scores["no_skill"]["task_solved"]
     guided_passed = arm_scores["guided"]["task_solved"]
     if not gates_pass:
         outcome = "invalid_leakage"
+    elif not setup_gate_passed:
+        outcome = "invalid_setup"
     elif oracle_qualified is False:
         outcome = "descriptive_only_oracle_unqualified"
+    elif not retrieval_passed:
+        outcome = "descriptive_only_no_applicable_skill_selected"
     elif guided_passed and not baseline_passed:
         outcome = "guided_correctness_win"
     elif baseline_passed and not guided_passed:
@@ -214,7 +241,11 @@ def score_pair(
     return {
         "schema_version": "paired-agent-evaluation-v1",
         "oracle_qualified": oracle_qualified,
-        "eligible_for_causal_comparison": gates_pass and oracle_qualified is True,
+        "setup_gate": {"passed": setup_gate_passed},
+        "retrieval_gate": retrieval_gate,
+        "eligible_for_causal_comparison": (
+            gates_pass and setup_gate_passed and oracle_qualified is True and retrieval_passed
+        ),
         "weights": normalized.to_json(),
         "weight_basis": WEIGHT_BASIS,
         "arms": arm_scores,
@@ -303,7 +334,7 @@ def aggregate_evaluations(documents: Sequence[Mapping[str, Any]]) -> dict[str, A
     if independent_baseline_advantage:
         reasons.append("at_least_one_independent_case_favors_no_skill")
     if len(eligible) != len(records):
-        reasons.append("at_least_one_run_failed_oracle_or_leakage_gate")
+        reasons.append("at_least_one_run_failed_causal_gate")
 
     return {
         "schema_version": "weighted-agent-evaluation-aggregate-v1",

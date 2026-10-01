@@ -91,6 +91,46 @@ def test_passing_visible_tests_without_postcondition_is_not_solved() -> None:
     assert result["arms"]["guided"]["efficiency"]["combined"] == 0
 
 
+def test_no_selected_skill_is_descriptive_not_causal() -> None:
+    result = score_pair(
+        [
+            row("no_skill", passed=False, tokens=100, wall=10),
+            row("guided", passed=True, tokens=100, wall=10),
+        ],
+        {
+            "no_skill": judgment(20, postcondition=False),
+            "guided": judgment(90),
+        },
+        oracle_qualified=True,
+        retrieval_judgment={
+            "applicable": False,
+            "selected_skill_id": None,
+            "confidence": 0.95,
+            "rationale": "No retrieved skill matches the response-validation contract.",
+        },
+    )
+    assert result["outcome"] == "descriptive_only_no_applicable_skill_selected"
+    assert result["eligible_for_causal_comparison"] is False
+
+
+def test_setup_failure_invalidates_causal_pair() -> None:
+    baseline = row("no_skill", passed=False, tokens=100, wall=10)
+    baseline["setup_success"] = False
+    guided = row("guided", passed=True, tokens=100, wall=10)
+    guided["setup_success"] = True
+    result = score_pair(
+        [baseline, guided],
+        {
+            "no_skill": judgment(0, postcondition=False),
+            "guided": judgment(90),
+        },
+        oracle_qualified=True,
+        retrieval_judgment={"applicable": True, "selected_skill_id": "workflow:test"},
+    )
+    assert result["outcome"] == "invalid_setup"
+    assert result["eligible_for_causal_comparison"] is False
+
+
 def test_weights_are_normalized() -> None:
     assert EvaluationWeights(6, 2.5, 1.5).to_json() == {
         "correctness": 0.6,

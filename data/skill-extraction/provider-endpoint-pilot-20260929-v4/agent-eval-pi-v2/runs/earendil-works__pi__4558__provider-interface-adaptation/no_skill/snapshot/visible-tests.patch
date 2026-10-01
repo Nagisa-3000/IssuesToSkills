@@ -1,0 +1,43 @@
+diff --git a/packages/ai/test/openai-completions-tool-choice.test.ts b/packages/ai/test/openai-completions-tool-choice.test.ts
+index 7b79b2daab201917b488555b127bcd195e7904d9..22b7242a997cd40e35bd333855d1438b7e75c454 100644
+--- a/packages/ai/test/openai-completions-tool-choice.test.ts
++++ b/packages/ai/test/openai-completions-tool-choice.test.ts
+@@ -441,6 +441,38 @@ describe("openai-completions tool_choice", () => {
+ 		expect(response.content).toEqual([{ type: "text", text: "OK" }]);
+ 	});
+ 
++	it("errors when a stream ends after only null finish_reason chunks", async () => {
++		mockState.chunks = [
++			{
++				id: "chatcmpl-truncated",
++				choices: [{ delta: { content: "partial answer" }, finish_reason: null }],
++			},
++			{
++				id: "chatcmpl-truncated",
++				choices: [{ delta: { content: "partial answer" }, finish_reason: null }],
++			},
++		];
++
++		const { compat: _compat, ...baseModel } = getModel("openai", "gpt-4o-mini")!;
++		const model = { ...baseModel, api: "openai-completions" } as const;
++		const response = await streamSimple(
++			model,
++			{
++				messages: [
++					{
++						role: "user",
++						content: "Reply with a longer sentence",
++						timestamp: Date.now(),
++					},
++				],
++			},
++			{ apiKey: "test" },
++		).result();
++
++		expect(response.stopReason).toBe("error");
++		expect(response.errorMessage).toBe("Stream ended without finish_reason");
++	});
++
+ 	it("coalesces tool call deltas by stable index when provider mutates ids mid-stream", async () => {
+ 		mockState.chunks = [
+ 			{
