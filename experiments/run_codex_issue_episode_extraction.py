@@ -7,6 +7,7 @@ Codex process is invoked inside each checkout with read-only sandboxing and a
 strict JSON output schema; insufficiently grounded issues remain audit records
 and are excluded from downstream admission.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -23,21 +24,43 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-SCHEMA = ROOT / "schemas" / "codex-change-episode-v1.schema.json"
-META_SKILL = ROOT / "data" / "skill-extraction" / "packages" / "universal-resolution-distiller" / "SKILL.md"
+SCHEMA = ROOT / "schemas" / "codex-change-episode-v2.schema.json"
+META_SKILL = (
+    ROOT / "data" / "skill-extraction" / "packages" / "universal-resolution-distiller" / "SKILL.md"
+)
 
 DEFAULT_CASES = [
     # Small pilot: two implementation-bearing cases plus one negative control.
     # Keep this list intentionally bounded; expand only after reviewing cost and
     # extraction quality from the first run.
-    {"repository": "Aider-AI/aider", "issue": 3941, "checkout": "/home/chenyujia/tritonToLlvm/aider-agent"},
-    {"repository": "NousResearch/hermes-agent", "issue": 122513, "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent"},
-    {"repository": "earendil-works/pi", "issue": 10092, "checkout": "/home/chenyujia/tritonToLlvm/pi-agent"},
+    {
+        "repository": "Aider-AI/aider",
+        "issue": 3941,
+        "checkout": "/home/chenyujia/tritonToLlvm/aider-agent",
+    },
+    {
+        "repository": "NousResearch/hermes-agent",
+        "issue": 122513,
+        "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+    },
+    {
+        "repository": "earendil-works/pi",
+        "issue": 10092,
+        "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+    },
 ]
 
 QUALIFYING_EVIDENCE_KINDS = {
-    "implementation", "implementation_change", "diff", "commit", "call-site",
-    "call_site", "test", "validation", "benchmark", "code_review",
+    "implementation",
+    "implementation_change",
+    "diff",
+    "commit",
+    "call-site",
+    "call_site",
+    "test",
+    "validation",
+    "benchmark",
+    "code_review",
 }
 
 
@@ -46,7 +69,10 @@ def now_id() -> str:
 
 
 def gh_json(url: str, token: str | None) -> Any:
-    headers = {"Accept": "application/vnd.github+json", "User-Agent": "arex-skill-graph-codex-extractor"}
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "arex-skill-graph-codex-extractor",
+    }
     if token:
         headers["Authorization"] = f"Bearer {token}"
     request = urllib.request.Request(url, headers=headers)
@@ -105,39 +131,84 @@ def local_issue_bundle(case: dict[str, Any]) -> dict[str, Any]:
     commit = _git(checkout, "rev-parse", f"{ref}^{{commit}}").strip()
     parents = _git(checkout, "rev-list", "--parents", "-n", "1", commit).strip().split()[1:]
     parent = parents[0] if parents else ""
-    show, show_error = _git_best_effort(checkout, "show", "--no-ext-diff", "--format=fuller", "--stat", commit)
+    show, show_error = _git_best_effort(
+        checkout, "show", "--no-ext-diff", "--format=fuller", "--stat", commit
+    )
     if not show:
         show, _ = _git_best_effort(checkout, "cat-file", "-p", commit)
-    names, names_error = _git_best_effort(checkout, "diff-tree", "-m", "--no-commit-id", "--name-status", "-r", commit)
+    names, names_error = _git_best_effort(
+        checkout, "diff-tree", "-m", "--no-commit-id", "--name-status", "-r", commit
+    )
     if not names:
         names = "\n".join(f"M\t{path}" for path in case.get("file_sample", []))
-    limitations = ["No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."]
+    limitations = [
+        "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+    ]
     if show_error:
-        limitations.append("git show --stat was unavailable because this checkout is a promisor/partial clone; commit metadata and manifest file samples are retained.")
+        limitations.append(
+            "git show --stat was unavailable because this checkout is a promisor/partial clone; commit metadata and manifest file samples are retained."
+        )
     if names_error:
-        limitations.append("git diff-tree was unavailable; changed-file evidence is limited to manifest file samples.")
+        limitations.append(
+            "git diff-tree was unavailable; changed-file evidence is limited to manifest file samples."
+        )
     return {
         "source": "local_git_pinned_ref",
         "repository": str(case["repository"]),
         "issue_number": int(case["issue"]),
-        "issue": {"number": int(case["issue"]), "title": case.get("title", ""), "body": None,
-                  "metadata_unavailable": ["issue body", "comments", "timeline", "author/review discussion"]},
-        "comments": [], "timeline": [],
-        "linked_pull_requests": [{
-            "pull_request": {"number": int(case.get("pull_request", 0) or 0), "title": case.get("title", ""),
-                              "metadata_unavailable": ["PR body", "reviews", "status checks"]},
-            "files": [{"status_line": line} for line in names.splitlines() if line.strip()],
-            "commits": [{"sha": commit, "subject": subject} for subject in case.get("commit_subjects", [])],
-        }] if case.get("pull_request") else [],
-        "checkout": str(checkout), "pinned_ref": ref, "resolved_commit": commit, "parent_commit": parent,
-        "commit_show_stat": show, "changed_files_name_status": names,
+        "issue": {
+            "number": int(case["issue"]),
+            "title": case.get("title", ""),
+            "body": None,
+            "metadata_unavailable": [
+                "issue body",
+                "comments",
+                "timeline",
+                "author/review discussion",
+            ],
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+            {
+                "pull_request": {
+                    "number": int(case.get("pull_request", 0) or 0),
+                    "title": case.get("title", ""),
+                    "metadata_unavailable": ["PR body", "reviews", "status checks"],
+                },
+                "files": [{"status_line": line} for line in names.splitlines() if line.strip()],
+                "commits": [
+                    {"sha": commit, "subject": subject}
+                    for subject in case.get("commit_subjects", [])
+                ],
+            }
+        ]
+        if case.get("pull_request")
+        else [],
+        "checkout": str(checkout),
+        "pinned_ref": ref,
+        "resolved_commit": commit,
+        "parent_commit": parent,
+        "commit_show_stat": show,
+        "changed_files_name_status": names,
         "linked_issue_numbers": case.get("linked_issue_numbers", [int(case["issue"])]),
         "manifest_metadata": {
             k: case[k]
             for k in (
-                "category", "theme", "module_families", "file_sample", "quality",
-                "case_id", "role", "split", "sample_kind", "seed_issue",
-                "seed_issue_url", "seed_relation", "resolution_url", "source",
+                "category",
+                "theme",
+                "module_families",
+                "file_sample",
+                "quality",
+                "case_id",
+                "role",
+                "split",
+                "sample_kind",
+                "seed_issue",
+                "seed_issue_url",
+                "seed_relation",
+                "resolution_url",
+                "source",
                 "provenance",
             )
             if k in case
@@ -148,7 +219,10 @@ def local_issue_bundle(case: dict[str, Any]) -> dict[str, Any]:
 
 
 def issue_bundle(case: dict[str, Any], token: str | None, max_linked_prs: int) -> dict[str, Any]:
-    if os.environ.get("GITHUB_OFFLINE_FALLBACK") == "1" or os.environ.get("GITHUB_CACHE_ONLY") == "1":
+    if (
+        os.environ.get("GITHUB_OFFLINE_FALLBACK") == "1"
+        or os.environ.get("GITHUB_CACHE_ONLY") == "1"
+    ):
         return local_issue_bundle(case)
     repo = str(case["repository"])
     issue_number = int(case["issue"])
@@ -156,7 +230,11 @@ def issue_bundle(case: dict[str, Any], token: str | None, max_linked_prs: int) -
     issue = gh_json(f"{api}/issues/{issue_number}", token)
     comments = paged(f"{api}/issues/{issue_number}/comments", token)
     timeline = paged(f"{api}/issues/{issue_number}/timeline", token)
-    pr_numbers = set(extract_pr_numbers(issue)) | set(extract_pr_numbers(comments)) | set(extract_pr_numbers(timeline))
+    pr_numbers = (
+        set(extract_pr_numbers(issue))
+        | set(extract_pr_numbers(comments))
+        | set(extract_pr_numbers(timeline))
+    )
     if isinstance(issue, dict) and issue.get("pull_request"):
         pr_numbers.add(issue_number)
     pull_requests: list[dict[str, Any]] = []
@@ -214,16 +292,25 @@ return empty candidate arrays, put the reason in unresolved_questions, and do no
 claim a usable episode. Candidate atomics and workflows must be grounded in the
 returned episode evidence, not generic repository knowledge.
 
-For every candidate_atomic, fill semantic_action when the evidence supports it:
-intent, semantic module_role, finite operation, pre_state, post_state,
-validation, and parameter slots; if it is not supportable, return null rather
-than inventing values. Keep paths, symbols, commit ids, and provider names in
-evidence or parameters; do not use them as the abstraction. For every
-candidate_workflow, fill workflow_graph as a partial-order resolution chain
-when supportable, otherwise return null.
-Use requires/enables/validates/repairs edges based on code and tests rather than
-commit timestamp alone. Keep unresolved_or_deferred explicit. The universal
-problem class is a routing hypothesis, not permission to invent a match.
+For every candidate_atomic, provide both a stable machine name and a plain-
+language title, then fill semantic_action with intent, semantic module_role,
+finite operation, pre_state, post_state, validation, parameter slots, and
+evidence ids. If those semantics are not supportable, do not emit the candidate.
+Keep paths, symbols, commit ids, and provider names in evidence or parameters;
+do not use them as the abstraction.
+
+For every candidate_workflow, provide both a stable machine name and a plain-
+language title. Fill workflow_graph as an executable partial-order resolution
+chain. It must explain when_to_use, anti_goals (what must not be changed or
+optimized for), not_applicable_when, required inputs, entry/exit state, a
+validation ladder, and stop conditions. Every step must reference one emitted
+Atomic by action_name and specify its role, required/optional status through the
+required boolean, dependencies by action name, applicability condition, and
+step-level validation oracle. Use requires/enables/validates/repairs edges based
+on code and tests rather than commit timestamp alone. Keep
+unresolved_or_deferred explicit. Do not emit a Workflow whose actionable
+contract cannot be grounded. The universal problem class is a routing
+hypothesis, not permission to invent a match.
 """
 
 
@@ -265,25 +352,54 @@ def _windows_codex_command(executable: str, arguments: list[str]) -> list[str]:
     return [powershell, "-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", encoded]
 
 
-def run_codex(executable: str, checkout: Path, prompt: str, response_path: Path, stdout_path: Path, stderr_path: Path, profile: str | None = None, model: str | None = None, sandbox: str = "read-only", timeout_seconds: int = 900, bypass_sandbox: bool = False) -> int:
+def run_codex(
+    executable: str,
+    checkout: Path,
+    prompt: str,
+    response_path: Path,
+    stdout_path: Path,
+    stderr_path: Path,
+    profile: str | None = None,
+    model: str | None = None,
+    sandbox: str = "read-only",
+    timeout_seconds: int = 900,
+    bypass_sandbox: bool = False,
+) -> int:
     codex_arguments: list[str] = []
     if profile:
         codex_arguments += ["--profile", profile]
     if model:
         codex_arguments += ["--model", model]
     codex_arguments += [
-        "exec", "--ephemeral", "--skip-git-repo-check", "--json", "--sandbox", sandbox,
-        "--output-schema", _external_path(executable, SCHEMA),
-        "-o", _external_path(executable, response_path),
-        "-C", _external_path(executable, checkout), "-",
+        "exec",
+        "--ephemeral",
+        "--skip-git-repo-check",
+        "--json",
+        "--sandbox",
+        sandbox,
+        "--output-schema",
+        _external_path(executable, SCHEMA),
+        "-o",
+        _external_path(executable, response_path),
+        "-C",
+        _external_path(executable, checkout),
+        "-",
     ]
     if bypass_sandbox:
         codex_arguments.insert(0, "--dangerously-bypass-approvals-and-sandbox")
     windows_executable = executable.lower().endswith((".exe", ".cmd", ".ps1"))
-    command = _windows_codex_command(executable, codex_arguments) if windows_executable else [executable, *codex_arguments]
+    command = (
+        _windows_codex_command(executable, codex_arguments)
+        if windows_executable
+        else [executable, *codex_arguments]
+    )
     stdout_path.parent.mkdir(parents=True, exist_ok=True)
     try:
-        process_cwd = Path("/mnt/c/Users/W") if windows_executable and Path("/mnt/c/Users/W").exists() else checkout
+        process_cwd = (
+            Path("/mnt/c/Users/W")
+            if windows_executable and Path("/mnt/c/Users/W").exists()
+            else checkout
+        )
         # Feed the prompt through stdin.  Besides avoiding Windows command-line
         # length/quoting limits, this is the stable non-interactive path used by
         # the direct JSONL pilot.  The final structured response is still
@@ -312,7 +428,13 @@ def validate_response(value: Any) -> tuple[bool, list[str]]:
     errors: list[str] = []
     if not isinstance(value, dict):
         return False, ["response is not an object"]
-    for key in ("episode", "evidence_units", "candidate_atomics", "candidate_workflows", "unresolved_questions"):
+    for key in (
+        "episode",
+        "evidence_units",
+        "candidate_atomics",
+        "candidate_workflows",
+        "unresolved_questions",
+    ):
         if key not in value:
             errors.append(f"missing top-level key: {key}")
     episode = value.get("episode")
@@ -343,16 +465,104 @@ def validate_response(value: Any) -> tuple[bool, list[str]]:
         qualifying |= kind in QUALIFYING_EVIDENCE_KINDS
     if not qualifying:
         errors.append("no implementation-bearing evidence kind")
-    if not isinstance(value.get("candidate_atomics"), list):
+    atomics = value.get("candidate_atomics")
+    if not isinstance(atomics, list):
         errors.append("candidate_atomics is not an array")
-    if not isinstance(value.get("candidate_workflows"), list):
+        atomics = []
+    atomic_names: set[str] = set()
+    for index, atomic in enumerate(atomics):
+        if not isinstance(atomic, dict):
+            errors.append(f"candidate_atomics[{index}] is not an object")
+            continue
+        name = str(atomic.get("name", "")).strip()
+        if not name:
+            errors.append(f"candidate_atomics[{index}].name is empty")
+        elif name in atomic_names:
+            errors.append(f"duplicate candidate atomic name: {name}")
+        atomic_names.add(name)
+        for key in ("title", "description"):
+            if not str(atomic.get(key, "")).strip():
+                errors.append(f"candidate_atomics[{index}].{key} is empty")
+        semantic = atomic.get("semantic_action")
+        if not isinstance(semantic, dict):
+            errors.append(f"candidate_atomics[{index}].semantic_action is not an object")
+            continue
+        for key in ("intent", "module_role", "operation", "pre_state", "post_state", "validation"):
+            if not str(semantic.get(key, "")).strip():
+                errors.append(f"candidate_atomics[{index}].semantic_action.{key} is empty")
+
+    workflows = value.get("candidate_workflows")
+    if not isinstance(workflows, list):
         errors.append("candidate_workflows is not an array")
+        workflows = []
+    for index, workflow in enumerate(workflows):
+        if not isinstance(workflow, dict):
+            errors.append(f"candidate_workflows[{index}] is not an object")
+            continue
+        for key in ("name", "title", "description"):
+            if not str(workflow.get(key, "")).strip():
+                errors.append(f"candidate_workflows[{index}].{key} is empty")
+        graph = workflow.get("workflow_graph")
+        if not isinstance(graph, dict):
+            errors.append(f"candidate_workflows[{index}].workflow_graph is not an object")
+            continue
+        for key in (
+            "when_to_use",
+            "anti_goals",
+            "not_applicable_when",
+            "inputs",
+            "validation_ladder",
+            "stop_conditions",
+        ):
+            values = graph.get(key)
+            if not isinstance(values, list) or not any(str(item).strip() for item in values):
+                errors.append(f"candidate_workflows[{index}].workflow_graph.{key} is empty")
+        steps = graph.get("steps")
+        if not isinstance(steps, list) or not steps:
+            errors.append(f"candidate_workflows[{index}].workflow_graph.steps is empty")
+            continue
+        step_names: set[str] = set()
+        for step_index, step in enumerate(steps):
+            if not isinstance(step, dict):
+                errors.append(
+                    f"candidate_workflows[{index}].workflow_graph.steps[{step_index}] "
+                    "is not an object"
+                )
+                continue
+            action_name = str(step.get("action_name", "")).strip()
+            if action_name not in atomic_names:
+                errors.append(
+                    f"candidate_workflows[{index}] references unknown action: {action_name}"
+                )
+            step_names.add(action_name)
+            if not str(step.get("validation", "")).strip():
+                errors.append(
+                    f"candidate_workflows[{index}].workflow_graph.steps[{step_index}] "
+                    "has no validation oracle"
+                )
+        for step_index, step in enumerate(steps):
+            if not isinstance(step, dict):
+                continue
+            dependencies = step.get("depends_on")
+            if not isinstance(dependencies, list):
+                errors.append(
+                    f"candidate_workflows[{index}].workflow_graph.steps[{step_index}]."
+                    "depends_on is not an array"
+                )
+                continue
+            for dependency in dependencies:
+                if str(dependency) not in step_names:
+                    errors.append(
+                        f"candidate_workflows[{index}] references unknown dependency: {dependency}"
+                    )
     if not isinstance(value.get("unresolved_questions"), list):
         errors.append("unresolved_questions is not an array")
     return not errors, errors
 
 
-def canonical_episode(response: dict[str, Any], bundle: dict[str, Any], case: dict[str, Any]) -> dict[str, Any]:
+def canonical_episode(
+    response: dict[str, Any], bundle: dict[str, Any], case: dict[str, Any]
+) -> dict[str, Any]:
     episode = dict(response["episode"])
     evidence = response["evidence_units"]
     supplied_id = str(episode.get("episode_id") or "").strip()
@@ -361,7 +571,9 @@ def canonical_episode(response: dict[str, Any], bundle: dict[str, Any], case: di
     episode["episode_id"] = supplied_id
     episode["repository"] = str(case["repository"])
     episode["revision"] = str(episode.get("revision") or "github-issue-" + str(case["issue"]))
-    episode["evidence_ids"] = [str(unit["id"]) for unit in evidence if isinstance(unit, dict) and unit.get("id")]
+    episode["evidence_ids"] = [
+        str(unit["id"]) for unit in evidence if isinstance(unit, dict) and unit.get("id")
+    ]
     episode["metadata"] = {
         "source": "github_issue_pr_commit_codex",
         "repository": case["repository"],
@@ -384,8 +596,17 @@ def canonical_episode(response: dict[str, Any], bundle: dict[str, Any], case: di
         "candidate_workflows": response.get("candidate_workflows", []),
         "unresolved_questions": response.get("unresolved_questions", []),
     }
-    episode.setdefault("call_sites", [u["claim"] for u in evidence if str(u.get("kind", "")).lower().replace("-", "_") == "call_site"])
-    episode.setdefault("tests", [u["claim"] for u in evidence if "test" in str(u.get("kind", "")).lower()])
+    episode.setdefault(
+        "call_sites",
+        [
+            u["claim"]
+            for u in evidence
+            if str(u.get("kind", "")).lower().replace("-", "_") == "call_site"
+        ],
+    )
+    episode.setdefault(
+        "tests", [u["claim"] for u in evidence if "test" in str(u.get("kind", "")).lower()]
+    )
     return episode
 
 
@@ -399,10 +620,7 @@ def load_cases(path: Path | None, role: str = "all") -> list[dict[str, Any]]:
         raise TypeError("manifest must be a JSON array or an object with a cases array")
     cases = [dict(item) for item in data]
     if role != "all":
-        cases = [
-            item for item in cases
-            if str(item.get("role") or item.get("split") or "") == role
-        ]
+        cases = [item for item in cases if str(item.get("role") or item.get("split") or "") == role]
     return cases
 
 
@@ -410,18 +628,48 @@ def main() -> int:
     global SCHEMA
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", type=Path, help="JSON array of {repository, issue, checkout}")
-    parser.add_argument("--schema", type=Path, default=SCHEMA, help="schema path visible to the Codex process")
-    parser.add_argument("--output", type=Path, default=ROOT / "data" / "skill-extraction" / "codex-runs" / now_id())
+    parser.add_argument(
+        "--schema", type=Path, default=SCHEMA, help="schema path visible to the Codex process"
+    )
+    parser.add_argument(
+        "--output", type=Path, default=ROOT / "data" / "skill-extraction" / "codex-runs" / now_id()
+    )
     parser.add_argument("--codex", default="codex", help="configured Codex CLI executable")
-    parser.add_argument("--codex-profile", default=os.environ.get("CODEX_PROFILE"), help="Codex profile layered onto user config")
-    parser.add_argument("--codex-model", default=os.environ.get("CODEX_MODEL"), help="Codex model override")
-    parser.add_argument("--codex-sandbox", default=os.environ.get("CODEX_SANDBOX", "read-only"), choices=("read-only", "workspace-write", "danger-full-access"), help="Codex sandbox policy")
-    parser.add_argument("--codex-bypass-sandbox", action="store_true", help="explicitly bypass Codex approvals/sandbox; use only with an isolated staging checkout")
+    parser.add_argument(
+        "--codex-profile",
+        default=os.environ.get("CODEX_PROFILE"),
+        help="Codex profile layered onto user config",
+    )
+    parser.add_argument(
+        "--codex-model", default=os.environ.get("CODEX_MODEL"), help="Codex model override"
+    )
+    parser.add_argument(
+        "--codex-sandbox",
+        default=os.environ.get("CODEX_SANDBOX", "read-only"),
+        choices=("read-only", "workspace-write", "danger-full-access"),
+        help="Codex sandbox policy",
+    )
+    parser.add_argument(
+        "--codex-bypass-sandbox",
+        action="store_true",
+        help="explicitly bypass Codex approvals/sandbox; use only with an isolated staging checkout",
+    )
     parser.add_argument("--github-token", default=os.environ.get("GITHUB_TOKEN"))
-    parser.add_argument("--role", default="all", choices=("all", "train_candidate", "holdout_candidate"), help="optional manifest role filter")
-    parser.add_argument("--max-cases", type=int, default=3, help="hard cap on Codex extraction calls")
-    parser.add_argument("--max-linked-prs", type=int, default=2, help="hard cap on PR bundles fetched per issue")
-    parser.add_argument("--codex-timeout-seconds", type=int, default=900, help="per-episode Codex timeout")
+    parser.add_argument(
+        "--role",
+        default="all",
+        choices=("all", "train_candidate", "holdout_candidate"),
+        help="optional manifest role filter",
+    )
+    parser.add_argument(
+        "--max-cases", type=int, default=3, help="hard cap on Codex extraction calls"
+    )
+    parser.add_argument(
+        "--max-linked-prs", type=int, default=2, help="hard cap on PR bundles fetched per issue"
+    )
+    parser.add_argument(
+        "--codex-timeout-seconds", type=int, default=900, help="per-episode Codex timeout"
+    )
     args = parser.parse_args()
     args.output = args.output.expanduser().resolve()
     SCHEMA = args.schema.expanduser().resolve()
@@ -434,13 +682,19 @@ def main() -> int:
         case_dir = args.output / f"{repo_slug}__{case['issue']}"
         case_dir.mkdir(parents=True, exist_ok=True)
         checkout = Path(str(case["checkout"])).expanduser().resolve()
-        record: dict[str, Any] = {"repository": case["repository"], "issue": case["issue"], "checkout": str(checkout)}
+        record: dict[str, Any] = {
+            "repository": case["repository"],
+            "issue": case["issue"],
+            "checkout": str(checkout),
+        }
         try:
             if not (checkout / ".git").exists():
                 raise RuntimeError(f"checkout is not a git repository: {checkout}")
             bundle = issue_bundle(case, args.github_token, max(0, args.max_linked_prs))
             bundle_path = case_dir / "issue-bundle.json"
-            bundle_path.write_text(json.dumps(bundle, ensure_ascii=False, indent=2), encoding="utf-8")
+            bundle_path.write_text(
+                json.dumps(bundle, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
             prompt = prompt_for(bundle_path, case)
             if args.codex.lower().endswith((".exe", ".cmd", ".ps1")):
                 prompt = prompt.replace(str(bundle_path), _external_path(args.codex, bundle_path))
@@ -460,13 +714,33 @@ def main() -> int:
                 "max_linked_prs": args.max_linked_prs,
                 "timeout_seconds": args.codex_timeout_seconds,
             }
-            (case_dir / "codex-command.json").write_text(json.dumps(command_meta, indent=2), encoding="utf-8")
-            returncode = run_codex(args.codex, checkout, prompt, response_path, case_dir / "codex-stdout.log", case_dir / "codex-stderr.log", args.codex_profile, args.codex_model, args.codex_sandbox, max(1, args.codex_timeout_seconds), args.codex_bypass_sandbox)
+            (case_dir / "codex-command.json").write_text(
+                json.dumps(command_meta, indent=2), encoding="utf-8"
+            )
+            returncode = run_codex(
+                args.codex,
+                checkout,
+                prompt,
+                response_path,
+                case_dir / "codex-stdout.log",
+                case_dir / "codex-stderr.log",
+                args.codex_profile,
+                args.codex_model,
+                args.codex_sandbox,
+                max(1, args.codex_timeout_seconds),
+                args.codex_bypass_sandbox,
+            )
             record["codex_returncode"] = returncode
             record["execution_status"] = "completed" if returncode == 0 else "failed_or_timed_out"
-            response = json.loads(response_path.read_text(encoding="utf-8")) if response_path.exists() else None
+            response = (
+                json.loads(response_path.read_text(encoding="utf-8"))
+                if response_path.exists()
+                else None
+            )
             ok, errors = validate_response(response)
-            (case_dir / "validation.json").write_text(json.dumps({"valid": ok, "errors": errors}, indent=2), encoding="utf-8")
+            (case_dir / "validation.json").write_text(
+                json.dumps({"valid": ok, "errors": errors}, indent=2), encoding="utf-8"
+            )
             record["valid"] = ok
             record["validation_errors"] = errors
             if ok:
@@ -481,8 +755,12 @@ def main() -> int:
             record["admitted"] = False
             record["error"] = f"{type(exc).__name__}: {exc}"
         records.append(record)
-    (args.output / "episodes.json").write_text(json.dumps(admitted, ensure_ascii=False, indent=2), encoding="utf-8")
-    (args.output / "extraction-records.json").write_text(json.dumps(records, ensure_ascii=False, indent=2), encoding="utf-8")
+    (args.output / "episodes.json").write_text(
+        json.dumps(admitted, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    (args.output / "extraction-records.json").write_text(
+        json.dumps(records, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     summary = {
         "source": "server_codex_cli",
         "prepared_fixtures_used": False,
@@ -498,8 +776,19 @@ def main() -> int:
         "insufficient_or_failed": sum(not bool(item.get("admitted")) for item in records),
         "records": records,
     }
-    (args.output / "extraction-summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(json.dumps({"output": str(args.output), "admitted_episodes": len(admitted), "total_cases": len(records)}, ensure_ascii=False))
+    (args.output / "extraction-summary.json").write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    print(
+        json.dumps(
+            {
+                "output": str(args.output),
+                "admitted_episodes": len(admitted),
+                "total_cases": len(records),
+            },
+            ensure_ascii=False,
+        )
+    )
     return 0 if all(item.get("admitted") or item.get("valid") is False for item in records) else 1
 
 

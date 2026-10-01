@@ -25,3 +25,12 @@ this directory or extraction artifacts.
 Current scope ends after schema-validated ChangeEpisode plus candidate Atomic
 and Workflow extraction. Holdout agent evaluation, retrieval, graph expansion,
 LLM judge/use, feedback, merge/retirement, and final evaluation are deferred.
+
+The archived `codex-5.6-sol-20261001` run used the v1 extraction schema and is
+kept immutable for provenance. New extraction runs use
+`schemas/codex-change-episode-v2.schema.json`, which requires plain-language
+titles, `when_to_use`, `anti_goals`, exclusions, inputs, action-linked steps,
+step validation, a validation ladder, and stop conditions. Existing v1
+episodes must be explicitly migrated or re-extracted before entering a v2
+Workflow/Pattern catalog; consumers must not silently synthesize the missing
+contract fields.

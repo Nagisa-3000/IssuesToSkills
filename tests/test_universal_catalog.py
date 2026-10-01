@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import importlib.util
-import json
 from pathlib import Path
 
 from arex_skill_graph.retrieval import SkillRetriever
 from arex_skill_graph.store import CatalogStore
-
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -20,8 +18,12 @@ def load_module(name: str, path: Path):
 
 
 def test_materializer_preserves_workflow_action_pattern_graph(tmp_path: Path) -> None:
-    builder = load_module("universal_graph_for_catalog", ROOT / "experiments/build_universal_resolution_graph.py")
-    materializer = load_module("universal_materializer", ROOT / "experiments/materialize_universal_resolution_graph.py")
+    builder = load_module(
+        "universal_graph_for_catalog", ROOT / "experiments/build_universal_resolution_graph.py"
+    )
+    materializer = load_module(
+        "universal_materializer", ROOT / "experiments/materialize_universal_resolution_graph.py"
+    )
     manifest = {
         "cases": [
             {"repository": "org/a", "issue": 1, "category": "state", "role": "train_candidate"},
@@ -35,27 +37,52 @@ def test_materializer_preserves_workflow_action_pattern_graph(tmp_path: Path) ->
             "repository": repo,
             "metadata": {
                 "issue": issue,
-                "candidate_atomics": [{
-                    "name": "reconcile state",
-                    "description": "Reconcile authoritative state.",
-                    "semantic_action": {
-                        "intent": "reconcile authoritative state",
-                        "module_role": "state owner",
-                        "operation": "reconcile",
-                        "pre_state": "derived state diverges",
-                        "post_state": "derived state agrees",
-                        "validation": "replay test",
-                    },
-                }],
-                "candidate_workflows": [{
-                    "name": "restore and validate",
-                    "description": "Restore state then validate replay.",
-                    "atomic_names": ["reconcile state"],
-                    "workflow_graph": {
-                        "steps": [{"action_name": "reconcile state", "role": "reconcile"}],
-                        "edges": [],
-                    },
-                }],
+                "candidate_atomics": [
+                    {
+                        "name": "reconcile state",
+                        "title": "Reconcile authoritative state",
+                        "description": "Reconcile authoritative state.",
+                        "semantic_action": {
+                            "intent": "reconcile authoritative state",
+                            "module_role": "state owner",
+                            "operation": "reconcile",
+                            "pre_state": "derived state diverges",
+                            "post_state": "derived state agrees",
+                            "validation": "replay test",
+                        },
+                    }
+                ],
+                "candidate_workflows": [
+                    {
+                        "name": "restore and validate",
+                        "title": "Restore state and validate replay",
+                        "description": "Restore state then validate replay.",
+                        "atomic_names": ["reconcile state"],
+                        "workflow_graph": {
+                            "goal": "restore authoritative state",
+                            "when_to_use": ["reconstructed state diverges after a boundary"],
+                            "anti_goals": ["do not replace the authoritative source"],
+                            "not_applicable_when": ["no authoritative snapshot exists"],
+                            "inputs": ["state snapshot"],
+                            "entry_state": "derived state diverges",
+                            "exit_state": "derived state agrees",
+                            "steps": [
+                                {
+                                    "action_name": "reconcile state",
+                                    "role": "reconcile",
+                                    "required": True,
+                                    "depends_on": [],
+                                    "condition": "when state diverges",
+                                    "validation": "replay test",
+                                }
+                            ],
+                            "edges": [],
+                            "validation_ladder": ["run replay test"],
+                            "stop_conditions": ["stop without an authoritative snapshot"],
+                            "unresolved_or_deferred": [],
+                        },
+                    }
+                ],
             },
         }
 
@@ -74,7 +101,8 @@ def test_materializer_preserves_workflow_action_pattern_graph(tmp_path: Path) ->
         assert stats["nodes"]["pattern"] == 1
         assert stats["edges"]["has_step"] == 2
         assert stats["edges"]["executed_by"] == 2
-        response = SkillRetriever(store).search("reconcile state", top_k=5, seed_k=10, expand_hops=2)
+        response = SkillRetriever(store).search(
+            "reconcile state", top_k=5, seed_k=10, expand_hops=2
+        )
         assert response.hits
         assert any(hit.node.node_type.value == "action" for hit in response.hits)
-
