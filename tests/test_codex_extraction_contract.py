@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -10,6 +11,14 @@ SPEC = importlib.util.spec_from_file_location("codex_episode_extractor", SCRIPT)
 assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
+
+
+def _git(repository: Path, *args: str) -> str:
+    return subprocess.check_output(
+        ["git", *args],
+        cwd=repository,
+        text=True,
+    ).strip()
 
 
 def _response() -> dict[str, object]:
@@ -149,3 +158,48 @@ def test_validator_treats_empty_candidate_arrays_as_abstention_not_admission() -
     assert valid is False
     assert "no candidate atomics were extracted" in errors
     assert "no candidate workflows were extracted" in errors
+
+
+def test_local_bundle_uses_selected_merge_parent_for_implementation_diff(
+    tmp_path: Path,
+) -> None:
+    repository = tmp_path / "repo"
+    repository.mkdir()
+    _git(repository, "init", "-b", "main")
+    _git(repository, "config", "user.name", "AREX test")
+    _git(repository, "config", "user.email", "arex@example.test")
+    (repository / "base.txt").write_text("base\n", encoding="utf-8")
+    _git(repository, "add", "base.txt")
+    _git(repository, "commit", "-m", "base")
+
+    _git(repository, "checkout", "-b", "feature")
+    (repository / "feature.txt").write_text("feature fix\n", encoding="utf-8")
+    _git(repository, "add", "feature.txt")
+    _git(repository, "commit", "-m", "feature fix")
+
+    _git(repository, "checkout", "main")
+    (repository / "main.txt").write_text("unrelated main change\n", encoding="utf-8")
+    _git(repository, "add", "main.txt")
+    _git(repository, "commit", "-m", "main update")
+    main_commit = _git(repository, "rev-parse", "HEAD")
+
+    _git(repository, "checkout", "feature")
+    _git(repository, "merge", "--no-ff", "main", "-m", "merge main into feature")
+    merge_commit = _git(repository, "rev-parse", "HEAD")
+
+    bundle = MODULE.local_issue_bundle(
+        {
+            "repository": "owner/repo",
+            "issue": 1,
+            "checkout": str(repository),
+            "ref": merge_commit,
+            "diff_parent": 2,
+            "category": "credential-resolution-and-authentication",
+        }
+    )
+
+    assert bundle["parent_commit"] == main_commit
+    assert bundle["diff_parent"] == 2
+    assert bundle["all_parent_commits"][1] == main_commit
+    assert "feature.txt" in bundle["changed_files_name_status"]
+    assert "main.txt" not in bundle["changed_files_name_status"]

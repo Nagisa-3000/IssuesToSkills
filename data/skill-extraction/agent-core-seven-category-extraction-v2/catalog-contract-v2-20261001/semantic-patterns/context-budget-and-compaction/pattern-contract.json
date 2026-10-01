@@ -1,0 +1,241 @@
+{
+  "schema_version": "resolution-pattern-induction-v1",
+  "pattern_id": "pattern:8105d8c0f3d9ec16",
+  "category": "context-budget-and-compaction",
+  "decision": "candidate_pending_holdout",
+  "title": "Repair budget decisions at their policy boundary",
+  "summary": "When an existing context-related budget resolves to an unsafe value, correct the resolver or threshold provider that owns the decision, preserve stricter constraints and unrelated fallback behavior, and add focused tests that lock the intended precedence. The exact implementation remains conditional on whether the defect is an ordered capability classification or a dynamic-versus-configured limit calculation.",
+  "when_to_use": [
+    "A runtime context, generation, or retained-output budget is demonstrably lower or otherwise different from the value implied by authoritative capability or current-capacity inputs.",
+    "The incorrect value can be traced to a stable policy boundary such as an ordered capability resolver or a threshold provider.",
+    "Multiple independent limits or classifier branches can compete, and the intended winner can be expressed as an observable contract.",
+    "Downstream compaction or truncation behavior is already present and the demonstrated defect is the budget supplied to it rather than the downstream mechanism itself."
+  ],
+  "anti_goals": [
+    "Do not globally raise defaults to repair one identifier, call site, or capacity condition.",
+    "Do not broaden or reorder unrelated fallback rules without evidence that their behavior should change.",
+    "Do not rewrite compaction, truncation, persistence, or file-spill mechanisms when their input budget is the defective boundary.",
+    "Do not treat approximate unit conversions as exact tokenization.",
+    "Do not validate only the newly expected value while leaving competing precedence branches and neighboring behavior unconstrained."
+  ],
+  "not_applicable_when": [
+    "No authoritative capability, configured ceiling, or observable current-capacity input exists from which to derive the intended budget.",
+    "The runtime already resolves and consumes the intended budget, indicating that the failure belongs to another layer.",
+    "The affected operation does not obtain its limit through a stable resolver or threshold provider.",
+    "The failure is caused by transient request handling, summary selection, preserved-tail accounting, or another compaction contract rather than budget resolution."
+  ],
+  "invariants": [
+    "The repair occurs at the policy boundary that supplies the budget to existing consumers.",
+    "Every independent budget dimension implicated by the defect is updated and validated; correcting only one dimension is insufficient when another can still fall through.",
+    "A specific rule must take precedence over a broader fallback only when evidence supports the specific rule.",
+    "A dynamic capacity-derived bound must not weaken an existing stricter configured ceiling.",
+    "Focused checks must cover both the corrected result and at least one competing or neighboring branch.",
+    "Repository-specific classifier ordering and capacity-conversion logic remain conditional implementations, not universal mandatory steps."
+  ],
+  "action_template": [
+    {
+      "role_id": "repair-budget-policy",
+      "title": "Correct the owning budget policy",
+      "purpose": "Change the existing resolver or threshold provider so the affected runtime path receives the evidence-backed budget while preserving stricter constraints and unrelated behavior.",
+      "required": true,
+      "condition": "Apply after tracing the incorrect runtime value to an ordered classifier, threshold provider, or equivalent stable policy boundary.",
+      "validation": "Inspect or exercise the policy boundary to confirm the affected inputs select the intended value and that the existing consumer still obtains its budget through that boundary."
+    },
+    {
+      "role_id": "lock-budget-contract",
+      "title": "Lock budget precedence with focused checks",
+      "purpose": "Encode exact examples for the corrected budget decision, its competing precedence branch, and representative unaffected behavior.",
+      "required": true,
+      "condition": "Apply after the owning budget policy expresses the intended decision for every implicated dimension.",
+      "validation": "Focused tests must fail under the prior policy and pass only when the corrected value, the opposite precedence branch, and neighboring fallback or configuration behavior are all preserved."
+    }
+  ],
+  "decision_points": [
+    {
+      "question": "What observable policy defect produces the incorrect budget?",
+      "branches": [
+        {
+          "condition": "A supported identifier falls through an ordered capability classifier to a broader or default budget.",
+          "action_role_ids": [
+            "repair-budget-policy",
+            "lock-budget-contract"
+          ]
+        },
+        {
+          "condition": "A static configured threshold ignores observable remaining capacity at evaluation time.",
+          "action_role_ids": [
+            "repair-budget-policy",
+            "lock-budget-contract"
+          ]
+        }
+      ]
+    },
+    {
+      "question": "Can the intended budget and precedence be established from available evidence?",
+      "branches": [
+        {
+          "condition": "Yes; authoritative capabilities or measurable capacity inputs identify the intended result and competing bound.",
+          "action_role_ids": [
+            "repair-budget-policy",
+            "lock-budget-contract"
+          ]
+        },
+        {
+          "condition": "No; the capability is disputed, required usage data is unavailable, or only an ungrounded proxy could be introduced.",
+          "action_role_ids": []
+        }
+      ]
+    },
+    {
+      "question": "Which repository-specific implementation branch applies?",
+      "branches": [
+        {
+          "condition": "Input and output capabilities are maintained in separate ordered classifiers; update and validate each implicated classifier before broader fallbacks.",
+          "action_role_ids": [
+            "repair-budget-policy",
+            "lock-budget-contract"
+          ]
+        },
+        {
+          "condition": "The provider combines a configured ceiling with current remaining capacity; select the smaller bound and validate both winner branches.",
+          "action_role_ids": [
+            "repair-budget-policy",
+            "lock-budget-contract"
+          ]
+        }
+      ]
+    }
+  ],
+  "ordering_constraints": [
+    {
+      "before_role_id": "repair-budget-policy",
+      "after_role_id": "lock-budget-contract",
+      "condition": "The focused regression contract is finalized after the policy boundary expresses all intended dimensions and precedence rules."
+    }
+  ],
+  "validation_ladder": [
+    "Focused contract checks: exercise the repaired resolver or provider with controlled inputs and assert the exact expected budget for every implicated dimension or bound.",
+    "Integration checks: verify the existing runtime configuration or guarded output path still consumes the repaired policy result without bypassing it or replacing the downstream mechanism.",
+    "Regression checks: exercise the competing precedence branch and representative neighboring identifiers, fallback rules, default configuration, or custom configuration to detect unintended widening or weakening.",
+    "Execution check: run the relevant focused test target and applicable package checks when the checkout is executable; otherwise record execution as deferred rather than claiming a pass."
+  ],
+  "known_failure_modes": [
+    {
+      "failure": "Only one independently resolved budget dimension is corrected.",
+      "detection": "The affected input or output check passes while another capability lookup still returns a generic or default value.",
+      "mitigation": "Enumerate all implicated dimensions before implementation and include exact focused assertions for each one."
+    },
+    {
+      "failure": "A specific repair unintentionally changes broader fallback behavior.",
+      "detection": "Representative neighboring identifiers or configurations resolve to new values despite lacking supporting evidence.",
+      "mitigation": "Keep the specific rule ahead of the broad fallback and retain adjacent regression examples for unaffected behavior."
+    },
+    {
+      "failure": "A dynamic estimate overrides a stricter configured ceiling.",
+      "detection": "A controlled case with a smaller configured limit returns the larger capacity-derived value.",
+      "mitigation": "Use the smaller applicable bound and test both precedence directions, including custom configuration."
+    },
+    {
+      "failure": "The policy is changed, but the runtime consumer bypasses it.",
+      "detection": "Static call-site inspection or an integration check shows the consumer still reads a constant, stale field, or different resolver.",
+      "mitigation": "Trace the repaired value through the existing consumer boundary and add an integration-level assertion where supported."
+    },
+    {
+      "failure": "Tests prove only the new happy path.",
+      "detection": "The suite lacks cases for the opposite precedence branch or representative unaffected fallback behavior.",
+      "mitigation": "Add focused branch tests and neighboring regressions before considering the repair complete."
+    }
+  ],
+  "exclusions": [
+    "Bounded retry, cancellation, and retry-lifecycle observability for generated summaries are separate request-resilience contracts.",
+    "Selecting an ordered summarizer prefix and reconciling a generated summary with a preserved tail are separate compaction-accounting contracts.",
+    "The supporting Actions are not interchangeable: capability classification and remaining-capacity capping realize the same roles through distinct state transitions and validation oracles.",
+    "No untouched holdout repair is present in the supplied graph, so the pattern is not promoted beyond candidate_pending_holdout."
+  ],
+  "supporting_workflow_ids": [
+    "workflow:0a319eebe6566d37",
+    "workflow:a7d9ff2248556484"
+  ],
+  "workflow_realizations": [
+    {
+      "workflow_id": "workflow:0a319eebe6566d37",
+      "repository": "QwenLM/qwen-code",
+      "role_bindings": [
+        {
+          "role_id": "repair-budget-policy",
+          "action_ids": [
+            "semantic-action:2b8ef8d34d1e1b68"
+          ]
+        },
+        {
+          "role_id": "lock-budget-contract",
+          "action_ids": [
+            "semantic-action:0ccbb58662634c16"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E10"
+      ]
+    },
+    {
+      "workflow_id": "workflow:a7d9ff2248556484",
+      "repository": "google-gemini/gemini-cli",
+      "role_bindings": [
+        {
+          "role_id": "repair-budget-policy",
+          "action_ids": [
+            "semantic-action:7ffb3d9a37cbb643"
+          ]
+        },
+        {
+          "role_id": "lock-budget-contract",
+          "action_ids": [
+            "semantic-action:efb1d3e4e77e58c6"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9",
+        "E10",
+        "E11"
+      ]
+    }
+  ],
+  "confidence": 0.82,
+  "rationale": "Two independent repositories support the same coherent role sequence: repair the budget decision at its owning policy boundary, then validate exact outcomes, competing precedence, and unaffected behavior. Each required role has a distinct Action realization in both repositories. The evidence does not establish that the Actions are interchangeable, and repository-specific classifier and capacity-calculation branches remain conditional. Promotion requires a separate untouched holdout repair because no holdout was loaded.",
+  "evidence_ids": [
+    "E1",
+    "E2",
+    "E3",
+    "E4",
+    "E5",
+    "E6",
+    "E7",
+    "E8",
+    "E9",
+    "E10",
+    "E11"
+  ],
+  "missing_probes": [
+    "Apply the two-role policy to a separate untouched repository repair involving an incorrect context-related budget decision.",
+    "Verify in the holdout that the incorrect value is repaired at an existing policy boundary rather than through a downstream workaround.",
+    "Verify in the holdout that focused contract checks, consumer integration checks, and neighboring regressions are all independently observable.",
+    "Obtain successful test execution evidence where the supplied training workflows currently provide committed or static validation without captured local or CI results."
+  ]
+}

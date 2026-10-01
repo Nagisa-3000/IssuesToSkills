@@ -1,0 +1,2896 @@
+{
+  "system": "You are the independent Pattern inducer for an evidence-grounded resolution graph. Use only the supplied training Workflows and Actions. A Pattern is a plain-language cross-project decision policy, not a category label, repository recipe, or claim that different Actions are interchangeable. Preserve distinct Action contracts. Express the reusable structure as role-level action_template entries and bind each supporting Workflow to the exact Action ids that realize those roles. State when to use the Pattern, anti-goals, exclusions, decision branches, ordering, and validation. Use candidate_pending_holdout only when at least two repositories support every required role; it still requires a separate untouched holdout repair. Never invent holdout facts, solution refs, tests, evidence ids, Action ids, or Workflow ids. Return JSON only.",
+  "user": {
+    "operation": "induce_human_resolution_pattern",
+    "instructions": [
+      "Give the Pattern a short title a software engineer can understand without knowing AREX.",
+      "Describe observable applicability signals, not product names or issue numbers.",
+      "Do not merge Actions. Use workflow_realizations to map generic roles to existing ids.",
+      "A required role must be independently realized in at least two repositories.",
+      "Keep repository-specific branches conditional rather than universally mandatory.",
+      "The validation ladder must distinguish focused contract checks, integration checks, and regressions.",
+      "If the evidence supports only fragments rather than one coherent policy, return defer."
+    ],
+    "training_graph": {
+      "pattern_candidate": {
+        "id": "pattern:b3b85833d21d5a7f",
+        "node_type": "resolution_pattern",
+        "category": "structured-tool-contract-integrity",
+        "intent": "Resolve structured tool contract integrity through a contract-first, evidence-validated change chain.",
+        "mandatory_actions": [],
+        "optional_actions": [],
+        "workflow_template": [],
+        "ordering_constraints": [],
+        "decision_points": [],
+        "invariants": [],
+        "validation_ladder": [],
+        "known_failure_modes": [],
+        "supporting_workflows": [
+          "workflow:adc49622fb3d239f",
+          "workflow:c66cbb12e8aecefb",
+          "workflow:ca26a11e0df3317e",
+          "workflow:d47ed29bdc49ca8f"
+        ],
+        "supporting_repositories": [
+          "NousResearch/hermes-agent",
+          "QwenLM/qwen-code",
+          "earendil-works/pi",
+          "openai/codex"
+        ],
+        "counterexamples": [],
+        "confidence": 0.0,
+        "promotion_status": "insufficient-structural-support",
+        "held_out_results": [],
+        "extraction_method": "structural-action-fingerprint-v1; semantic judge required before promotion"
+      },
+      "workflows": [
+        {
+          "id": "workflow:adc49622fb3d239f",
+          "node_type": "issue_workflow",
+          "category": "structured-tool-contract-integrity",
+          "repository": "openai/codex",
+          "issue": 44472,
+          "episode_id": "openai-codex-44472-03f014564",
+          "name": "harden_structured_tool_completion_proofs",
+          "title": "Harden structured tool-call completion proofs",
+          "description": "A fail-closed resolution chain for completion metadata that crosses session history, asynchronous exec/wait wrappers, retries, compaction, and bounded prompt serialization.",
+          "goal": "Emit a positive structured completion claim only when the host retains an unambiguous, lossless chain from a fresh invocation through its nested calls and matching output, while preserving valid claims for unrelated cells.",
+          "when_to_use": [
+            "A host records nested tool activity and exposes a structured completeness marker to a later model request or downstream consumer.",
+            "Invocation or runtime identifiers can be reused across retries, compaction, resume, fork, or asynchronous wait operations.",
+            "Recorded evidence is subject to per-call or aggregate serialization budgets.",
+            "Recording policy can change during a long-lived session."
+          ],
+          "anti_goals": [
+            "Do not change tool execution availability, dispatch gates, or nested-tool behavior merely to change recording policy.",
+            "Do not infer completeness from a successful wrapper callback, terminal wait, or retained marker when association or inventory evidence is missing.",
+            "Do not discard trustworthy metadata for unrelated cells solely because one cell exceeded a budget.",
+            "Do not use unbounded sets or unbounded hashing to prove identifier freshness."
+          ],
+          "not_applicable_when": [
+            "The metadata is informational only and no consumer interprets it as a complete inventory or proof.",
+            "Invocation identifiers and output associations are guaranteed unique and immutable by a stronger external protocol, with no retries, resume, fork, compaction, or truncation boundary.",
+            "No host-side execution evidence can be inspected; in that case a positive completion contract cannot be established."
+          ],
+          "inputs": [
+            "Initial session history, including compacted replacement history when available",
+            "Live tool input and output items with call identifiers and tool type information",
+            "Runtime cell identifiers and originating wrapper identifiers",
+            "Recorded nested-call inventory and retained retry state",
+            "Per-argument, per-output, and aggregate metadata budgets",
+            "Current and incoming runtime recording feature state"
+          ],
+          "entry_state": "The system can record nested calls, but identifier freshness, wrapper association, retry integrity, budget truncation, or runtime enablement may allow an unsupported completeness marker.",
+          "exit_state": "Every positive completion marker is backed by fresh identifiers, a unique matching input/output association, and an intact recorded inventory within the serialized prompt; ambiguous or damaged cells are incomplete, unrelated intact cells remain complete, and recording policy changes do not alter execution behavior.",
+          "steps": [
+            {
+              "step_id": "step-1",
+              "action_id": "semantic-action:b72a74ad00f5d6bd",
+              "action_name": "index_observed_identifiers_for_freshness",
+              "role": "establish-contract",
+              "required": true,
+              "optional": false,
+              "depends_on": [],
+              "condition": "Always required when identifiers can cross history or recorder-lifetime boundaries.",
+              "validation": "Known historical and repeated identifiers return non-fresh; failed indexing prevents cell start from becoming completion-eligible."
+            },
+            {
+              "step_id": "step-2",
+              "action_id": "semantic-action:3bf25e6e39ffea26",
+              "action_name": "validate_tool_input_output_associations",
+              "role": "reconcile",
+              "required": true,
+              "optional": false,
+              "depends_on": [
+                "index_observed_identifiers_for_freshness"
+              ],
+              "condition": "Apply when attaching recorded evidence to outputs or replaying retained evidence after retry or compaction.",
+              "validation": "Each certified output has exactly one preceding type-correct exec or wait input, matching origin/runtime handle, no direct-call collision, and an intact retained inventory."
+            },
+            {
+              "step_id": "step-3",
+              "action_id": "semantic-action:9eb8cfa77236adb3",
+              "action_name": "localize_metadata_budget_damage",
+              "role": "repair",
+              "required": true,
+              "optional": false,
+              "depends_on": [
+                "validate_tool_input_output_associations"
+              ],
+              "condition": "Apply before sending or storing metadata whenever argument or aggregate limits can truncate recorded evidence.",
+              "validation": "Damaged cells lose completion across their outputs, their omission marker remains local, and unrelated intact cells retain completion under the global budget."
+            },
+            {
+              "step_id": "step-4",
+              "action_id": "semantic-action:a0dabb6a637d761c",
+              "action_name": "refresh_recording_state_without_execution_drift",
+              "role": "implement",
+              "required": true,
+              "optional": false,
+              "depends_on": [
+                "index_observed_identifiers_for_freshness"
+              ],
+              "condition": "Apply when recorder enablement is controlled by runtime rollout or configuration refresh.",
+              "validation": "Runtime enablement changes recorder allocation without changing execution features; late enablement cannot certify unobserved history; legacy reload keeps the live recorder."
+            }
+          ],
+          "edges": [
+            {
+              "from": "step-1",
+              "to": "step-2",
+              "type": "enables"
+            },
+            {
+              "from": "step-2",
+              "to": "step-3",
+              "type": "requires"
+            },
+            {
+              "from": "step-3",
+              "to": "step-2",
+              "type": "repairs"
+            },
+            {
+              "from": "step-1",
+              "to": "step-4",
+              "type": "enables"
+            },
+            {
+              "from": "step-4",
+              "to": "step-2",
+              "type": "requires"
+            }
+          ],
+          "validation_ladder": [
+            "Unit-test bounded identifier tracking, namespace separation, saturation, historical indexing limits, and repeated-ID rejection.",
+            "Test recorder state transitions for lossless completion, duplicate nested IDs, wrapper mismatches, direct-call collisions, forked or resumed waits, retries, and compaction.",
+            "Test protocol serialization budgets to confirm optional metadata is shed before core evidence and completion is revoked only for damaged cells.",
+            "Run end-to-end asynchronous tool scenarios for runtime enablement, configuration refresh, resumed handle reuse, compaction, and unrelated-output truncation."
+          ],
+          "stop_conditions": [
+            "Stop and withhold completeness if initial-history identifiers cannot be indexed within bounds and freshness is required.",
+            "Stop and invalidate the affected cell if an origin, runtime handle, or nested call ID is reused or collides.",
+            "Stop and invalidate retained completion if an output is duplicated, lacks one matching preceding input, changes inventory, or no longer matches its exec/wait wrapper.",
+            "Stop and clear completion for the affected cell when truncation or omission prevents retention of its full call inventory.",
+            "Stop extraction-level validation short of claiming a green build because the evidence bundle contains test sources but no executed status-check or test-command result."
+          ],
+          "unresolved_or_deferred": [
+            "The GitHub bundle lacks PR discussion, reviews, and status-check results.",
+            "No test command was executed as part of this extraction, so repository-wide runtime validation remains unconfirmed.",
+            "The bounded bitmap intentionally permits false-positive collisions that withhold completion; its production collision rate is not established by this episode."
+          ],
+          "evidence_ids": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10",
+            "E11",
+            "E12",
+            "E13",
+            "E14"
+          ],
+          "supporting_repositories": [
+            "openai/codex"
+          ],
+          "source_case": "openai/codex#44472"
+        },
+        {
+          "id": "workflow:c66cbb12e8aecefb",
+          "node_type": "issue_workflow",
+          "category": "structured-tool-contract-integrity",
+          "repository": "QwenLM/qwen-code",
+          "issue": 4695,
+          "episode_id": "QwenLM__qwen-code__4695__3ce46949c",
+          "name": "bound-semantic-tool-call-stagnation",
+          "title": "Add a precise circuit breaker for argument-varying tool stagnation",
+          "description": "A partial-order workflow for detecting repeated tool requests that differ textually but share one non-progressing semantic operation, while preserving productive variants and propagating a structured halt contract.",
+          "goal": "Halt a bounded run of semantically equivalent, non-progressing tool requests even when their raw arguments vary, without stopping productive or targeted operations.",
+          "when_to_use": [
+            "A tool loop evades exact request equality because the model rewrites arguments while repeating the same observable read-only operation.",
+            "The repeated operation has a narrow semantic class with evidence-backed exclusions precise enough for an always-on or high-confidence guard.",
+            "The runtime already has a termination path capable of discarding queued calls and emitting a structured reason."
+          ],
+          "anti_goals": [
+            "Do not classify all repeated uses of one tool name as equivalent.",
+            "Do not stop write-bearing, mixed-purpose, targeted-review, or otherwise progress-bearing operations merely because they contain an inspection segment.",
+            "Do not place the new precise guard behind a broad heuristic-skip setting when the intended contract is always-on, though an explicit session-level disable may remain honored.",
+            "Do not alter unrelated content, thought, read-file, alternating-call, or hard-cap detectors."
+          ],
+          "not_applicable_when": [
+            "No stable semantic equivalence class can be derived from the structured request or command payload.",
+            "The suspected loop includes productive state changes or target-specific narrowing that constitutes progress.",
+            "Only issue-title or similarity evidence exists without an implementation diff and validation oracle.",
+            "The consumer has no safe halt path for cancelling queued operations and reporting the reason."
+          ],
+          "inputs": [
+            "Representative looping request variants",
+            "Counterexamples that must count as progress",
+            "Structured tool name and argument payload",
+            "Consecutive-streak threshold",
+            "Retry, prompt-reset, and session-disable lifecycle semantics",
+            "Typed loop-event, telemetry, and user-message contracts"
+          ],
+          "entry_state": "Exact request equality does not catch a repeated semantic operation because each consecutive request varies its arguments, so the run can continue until a distant generic cap or external failure.",
+          "exit_state": "Only the proven non-progressing request class shares a semantic key; its uninterrupted streak halts at the configured bound, progress and replay boundaries reset it, excluded operations continue, and all consumers receive one structured halt reason.",
+          "steps": [
+            {
+              "step_id": "step-1",
+              "action_id": "semantic-action:b73989fc55362a62",
+              "action_name": "classify-read-only-overview-inspections",
+              "role": "establish-contract",
+              "required": true,
+              "optional": false,
+              "depends_on": [],
+              "condition": "Use only after positive loop variants and productive counterexamples establish a narrow semantic boundary.",
+              "validation": "Positive overview-inspection variants share one key, while write-bearing, mixed, non-repository, and path-specific cases do not."
+            },
+            {
+              "step_id": "step-2",
+              "action_id": "semantic-action:63c71589a3eff240",
+              "action_name": "halt-consecutive-semantic-stagnation",
+              "role": "implement",
+              "required": true,
+              "optional": false,
+              "depends_on": [
+                "classify-read-only-overview-inspections"
+              ],
+              "condition": "Apply when consecutive requests receive the admitted semantic key and detection is not explicitly disabled for the session.",
+              "validation": "The threshold request fires; threshold-minus-one does not; nonmatching requests, retries, and prompt resets restart counting."
+            },
+            {
+              "step_id": "step-3",
+              "action_id": "semantic-action:14958d5f40630517",
+              "action_name": "propagate-structured-halt-reason",
+              "role": "reconcile",
+              "required": true,
+              "optional": false,
+              "depends_on": [
+                "halt-consecutive-semantic-stagnation"
+              ],
+              "condition": "Apply whenever the new circuit breaker reports detection.",
+              "validation": "The production stream clears pending calls, emits the dedicated reason, terminates, logs telemetry, and provides a matching user-facing explanation."
+            }
+          ],
+          "edges": [
+            {
+              "from": "step-1",
+              "to": "step-2",
+              "type": "enables"
+            },
+            {
+              "from": "step-2",
+              "to": "step-3",
+              "type": "requires"
+            },
+            {
+              "from": "step-1",
+              "to": "step-2",
+              "type": "validates"
+            },
+            {
+              "from": "step-3",
+              "to": "step-2",
+              "type": "validates"
+            }
+          ],
+          "validation_ladder": [
+            "Classifier unit boundary: admit distinct overview-style read-only variants and reject productive, mixed-purpose, unrelated, and targeted operations.",
+            "State-machine boundary: verify threshold-minus-one, exact threshold, interruption reset, retry reset, prompt reset, and explicit session disable.",
+            "Integration boundary: confirm the guard executes before configuration-gated heuristics and clears queued requests on detection.",
+            "Contract boundary: confirm one dedicated reason is consistent across detector state, emitted stream event, telemetry, and user-facing text.",
+            "Repository validation: run the focused loop-detection test file in a clean checkout with the repository's declared runtime and package manager."
+          ],
+          "stop_conditions": [
+            "Stop and defer if semantic equivalence cannot be expressed narrowly enough to avoid known productive cases.",
+            "Stop if the detector cannot reset on observable progress or replay boundaries.",
+            "Stop if a firing cannot safely cancel pending requests and terminate the current run.",
+            "Do not claim runtime validation until the focused tests execute successfully in a usable checkout."
+          ],
+          "unresolved_or_deferred": [
+            "The issue and PR bodies, comments, reviews, timeline, and status checks are unavailable in the evidence bundle.",
+            "The focused regression suite was inspected but not executed because this workspace exposes a deleted working tree and lacks the runtime executable.",
+            "No cross-repository resolution pattern is proposed from this single workflow."
+          ],
+          "evidence_ids": [
+            "ev-before-1",
+            "ev-diff-1",
+            "ev-impl-classifier",
+            "ev-impl-state",
+            "ev-callsite-1",
+            "ev-contract-1",
+            "ev-test-positive",
+            "ev-test-reset",
+            "ev-test-exclusions"
+          ],
+          "supporting_repositories": [
+            "QwenLM/qwen-code"
+          ],
+          "source_case": "QwenLM/qwen-code#4695"
+        },
+        {
+          "id": "workflow:ca26a11e0df3317e",
+          "node_type": "issue_workflow",
+          "category": "structured-tool-contract-integrity",
+          "repository": "NousResearch/hermes-agent",
+          "issue": 101899,
+          "episode_id": "NousResearch__hermes-agent__101899__cf8b08edac",
+          "name": "repair-leaking-truncated-structured-call-fragments",
+          "title": "Repair leaked truncated tool-call fragments while preserving ordinary prose",
+          "description": "A bounded workflow for a sanitizer that already removes malformed structured calls but misses a newly observed serialization prefix. It narrows the grammar change to the smallest evidenced prefix class and validates both removal and non-removal behavior across content consumers.",
+          "goal": "Remove unrecoverable name-prefixed structured-call fragments from assistant content at every relevant sanitization boundary without deleting natural-language mentions or later unrelated prose.",
+          "when_to_use": [
+            "A structured-output sanitizer already handles line-leading argument tags, but raw markup leaks when the first tag is directly attached to a bare identifier-like call name.",
+            "The malformed fragment is unrecoverable and should be removed rather than parsed or executed.",
+            "More than one consumer boundary is expected to enforce the same stripping contract."
+          ],
+          "anti_goals": [
+            "Do not interpret, reconstruct, or execute the truncated call.",
+            "Do not accept arbitrary prose before an argument tag as a fragment prefix.",
+            "Do not remove unrelated preceding or subsequent visible prose.",
+            "Do not redesign complete structured-call parsing or unrelated reasoning-tag handling."
+          ],
+          "not_applicable_when": [
+            "The input is a complete, valid structured call that should be parsed through the normal tool-call path.",
+            "The suspected prefix contains spaces or sentence text and cannot be distinguished from an inline prose example by the evidenced identifier-only rule.",
+            "The affected consumer does not use the shared line-oriented stripping contract.",
+            "There is no reproducible malformed input and preservation oracle."
+          ],
+          "inputs": [
+            "A captured malformed assistant-content sample",
+            "The sanitizer's existing line-boundary grammar",
+            "The set of display and storage sanitizer consumers",
+            "Positive removal expectations and negative prose-preservation examples"
+          ],
+          "entry_state": "Raw argument markup from a truncated structured call can survive because a bare call name appears immediately before the first argument tag, while existing behavior already protects ordinary inline prose.",
+          "exit_state": "Identifier-only name-prefixed fragments are removed by all tested sanitizer consumers, preceding visible text is retained, and spaced inline prose plus unrelated trailing prose remain protected.",
+          "steps": [
+            {
+              "step_id": "step-1",
+              "action_id": "semantic-action:37e686c433d50c12",
+              "action_name": "bound-name-prefixed-structured-fragment-matching",
+              "role": "implement",
+              "required": true,
+              "optional": false,
+              "depends_on": [],
+              "condition": "The failing sample has a line-boundary identifier-like prefix directly glued to an arg_key or arg_value tag.",
+              "validation": "The matcher admits the observed complete and value-truncated prefixed shapes, while its prefix character class cannot span spaces into ordinary prose."
+            },
+            {
+              "step_id": "step-2",
+              "action_id": "semantic-action:3a4bf7119becf5a2",
+              "action_name": "verify-fragment-removal-across-content-boundaries",
+              "role": "validate",
+              "required": true,
+              "optional": false,
+              "depends_on": [
+                "bound-name-prefixed-structured-fragment-matching"
+              ],
+              "condition": "Display and storage paths are both contractually expected to strip tool-call markup.",
+              "validation": "Parameterized cases produce only the visible prefix for both sanitizer variants, and prose-preservation cases remain unchanged."
+            }
+          ],
+          "edges": [
+            {
+              "from": "step-1",
+              "to": "step-2",
+              "type": "enables"
+            },
+            {
+              "from": "step-2",
+              "to": "step-1",
+              "type": "validates"
+            }
+          ],
+          "validation_ladder": [
+            "Confirm the parent matcher excludes the captured name-prefixed shape.",
+            "Check the revised grammar admits only the evidenced identifier-like attached prefix.",
+            "Verify complete and value-truncated name-prefixed fragments are removed while their preceding visible lines remain.",
+            "Run the same cases against display and storage sanitizers.",
+            "Verify inline prose containing argument tags and subsequent unrelated prose survive."
+          ],
+          "stop_conditions": [
+            "Stop if the prefix requires whitespace or arbitrary sentence text; the evidenced bounded grammar no longer distinguishes it safely from prose.",
+            "Stop if the fragment is recoverable through the normal complete-call parser rather than an unrecoverable sanitization case.",
+            "Stop if any preservation oracle shows deletion of ordinary prose or unrelated trailing content.",
+            "Stop before claiming runtime test success when the test runner is unavailable."
+          ],
+          "unresolved_or_deferred": [
+            "The checkout environment does not provide the pytest executable, so the regression suite could not be executed during extraction.",
+            "The GitHub bundle contains no PR body, review discussion, or status-check results; no CI outcome is claimed."
+          ],
+          "evidence_ids": [
+            "E1-parent-boundary-rule",
+            "E2-implementation-prefix-extension",
+            "E3-sanitizer-use",
+            "E4-dual-consumer-contract",
+            "E5-name-prefixed-regressions",
+            "E6-prose-preservation-oracle",
+            "E7-commit-intent"
+          ],
+          "supporting_repositories": [
+            "NousResearch/hermes-agent"
+          ],
+          "source_case": "NousResearch/hermes-agent#101899"
+        },
+        {
+          "id": "workflow:d47ed29bdc49ca8f",
+          "node_type": "issue_workflow",
+          "category": "structured-tool-contract-integrity",
+          "repository": "earendil-works/pi",
+          "issue": 7494,
+          "episode_id": "earendil-works__pi__7494__cbaca603",
+          "name": "restore-versioned-tool-call-correlation",
+          "title": "Restore tool-call correlation at a versioned protocol boundary",
+          "description": "Repair structured history conversion when a newer protocol generation requires explicit identifiers on both tool calls and their responses, without changing older-version wire behavior.",
+          "goal": "Ensure every tool call and corresponding tool result retain a matching explicit identifier when the target protocol version requires correlation IDs.",
+          "when_to_use": [
+            "A conversation adapter receives internally correlated tool calls and results but emits structured history without their identifiers.",
+            "The requirement begins at an identifiable model or protocol version boundary.",
+            "One shared capability predicate already controls both call-side and response-side ID serialization."
+          ],
+          "anti_goals": [
+            "Do not add IDs unconditionally to older protocol versions whose established wire representation omits them.",
+            "Do not create separate provider-specific conversion paths when both adapters consume the shared converter.",
+            "Do not alter thought-signature handling, tool payloads, or result content while repairing identifier correlation."
+          ],
+          "not_applicable_when": [
+            "The internal history lacks stable identifiers linking tool results to tool calls.",
+            "Only one side of the external protocol accepts an identifier and paired call-response equality is not its contract.",
+            "The affected adapters do not share the capability predicate or serialization boundary."
+          ],
+          "inputs": [
+            "Target model or protocol identifier",
+            "Version parser or equivalent capability metadata",
+            "Conversation history with tool calls and matching tool results",
+            "Shared message-conversion entry point",
+            "Representative older and newer version cases"
+          ],
+          "entry_state": "A newer protocol generation is routed through a shared converter, but the capability predicate excludes it, so call and response IDs are dropped during replay.",
+          "exit_state": "The required protocol generation emits matching IDs on every serialized function call and function response through each shared adapter, while the tested older generation continues omitting IDs.",
+          "steps": [
+            {
+              "step_id": "step-1",
+              "action_id": "semantic-action:a1e8557e4baf8f87",
+              "action_name": "classify-explicit-tool-id-requirement",
+              "role": "establish-contract",
+              "required": true,
+              "optional": false,
+              "depends_on": [],
+              "condition": "The ID requirement can be expressed as a stable family or major-version capability boundary.",
+              "validation": "Direct boundary cases return the expected capability result without regressing previously supported families."
+            },
+            {
+              "step_id": "step-2",
+              "action_id": "semantic-action:5b09dc142435db0f",
+              "action_name": "preserve-paired-tool-correlation-ids",
+              "role": "reconcile",
+              "required": true,
+              "optional": false,
+              "depends_on": [
+                "classify-explicit-tool-id-requirement"
+              ],
+              "condition": "Both function-call and function-response serialization consult the shared capability decision.",
+              "validation": "A multi-call history produces equal ordered IDs on call and response parts for every consuming adapter, and produces no IDs for the excluded older version."
+            }
+          ],
+          "edges": [
+            {
+              "from": "step-1",
+              "to": "step-2",
+              "type": "enables"
+            },
+            {
+              "from": "step-2",
+              "to": "step-1",
+              "type": "validates"
+            }
+          ],
+          "validation_ladder": [
+            "Unit-check the capability predicate immediately below and above the version boundary.",
+            "Serialize at least two tool calls and matching results to detect missing, duplicated, or reordered correlation IDs.",
+            "Assert equality of call-side and response-side identifier sequences.",
+            "Run the same history through every adapter that consumes the shared converter.",
+            "Assert an older protocol version preserves its prior omission behavior.",
+            "Retain unrelated structured-message assertions, including thought-signature behavior."
+          ],
+          "stop_conditions": [
+            "Stop if the protocol's explicit-ID requirement cannot be established from implementation or tests.",
+            "Stop if internal tool results cannot be mapped to their originating calls.",
+            "Stop if enabling the capability changes older-version serialization.",
+            "Stop if only call IDs or only response IDs survive the conversion."
+          ],
+          "unresolved_or_deferred": [
+            "The GitHub bundle contains no PR body, issue discussion, review rationale, or status-check results.",
+            "No independent test execution result was supplied; validation is grounded in the committed test oracle."
+          ],
+          "evidence_ids": [
+            "ev-before-01",
+            "ev-diff-01",
+            "ev-callsite-01",
+            "ev-callsite-02",
+            "ev-callsite-03",
+            "ev-test-01",
+            "ev-test-02",
+            "ev-test-03",
+            "ev-validation-01"
+          ],
+          "supporting_repositories": [
+            "earendil-works/pi"
+          ],
+          "source_case": "earendil-works/pi#7494"
+        }
+      ],
+      "actions": [
+        {
+          "id": "semantic-action:14958d5f40630517",
+          "node_type": "change_action",
+          "category": "structured-tool-contract-integrity",
+          "intent": "Ensure a detector firing produces an actionable, consistently typed halt rather than allowing queued work to continue or reporting an ambiguous failure.",
+          "module_role": "tool-stream termination and reporting boundary",
+          "operation": "reconcile",
+          "pre_state": "The always-on detector has returned true and recorded the semantic stagnation loop type while pending tool requests may exist.",
+          "post_state": "Pending requests are discarded, a typed loop event is emitted, the turn terminates through the existing cleanup path, telemetry can distinguish the reason, and headless output explains the halt and configuration behavior.",
+          "validation": "Inspect the production call site and reporting mappings to confirm the same loop type drives cleanup, stream output, telemetry, and the human-readable message.",
+          "parameters": [
+            "loop_type",
+            "pending_tool_calls",
+            "stream_event",
+            "telemetry_event",
+            "user_message"
+          ],
+          "evidence_ids": [
+            "ev-callsite-1",
+            "ev-contract-1"
+          ],
+          "source_name": "propagate-structured-halt-reason",
+          "description": "Carry the newly detected reason through telemetry, stream termination, pending-call cleanup, and user-facing reporting so consumers observe a consistent contract.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "QwenLM__qwen-code__4695__3ce46949c"
+          ],
+          "supporting_repositories": [
+            "QwenLM/qwen-code"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:37e686c433d50c12",
+          "node_type": "change_action",
+          "category": "structured-tool-contract-integrity",
+          "intent": "Prevent raw structured-call argument markup from reaching visible or stored assistant text when a truncated serialization begins with a bare tool name.",
+          "module_role": "Malformed structured-output sanitizer shared by assistant-content consumers",
+          "operation": "guard",
+          "pre_state": "A line contains a truncated argument-tag serialization whose first tag is glued to a bare identifier-like call name, and the sanitizer only recognizes tags that directly begin the line.",
+          "post_state": "The name-prefixed fragment is classified as unrecoverable structured output and removed, while prefixes containing prose-separating spaces remain outside this new match shape.",
+          "validation": "Apply the sanitizer to complete and cut name-prefixed fragments and verify that only the preceding visible text remains; also verify that spaced inline prose examples survive.",
+          "parameters": [
+            "assistant content string",
+            "line-boundary fragment",
+            "optional identifier-like call-name prefix",
+            "argument key/value tag vocabulary"
+          ],
+          "evidence_ids": [
+            "E1-parent-boundary-rule",
+            "E2-implementation-prefix-extension",
+            "E3-sanitizer-use",
+            "E5-name-prefixed-regressions",
+            "E6-prose-preservation-oracle"
+          ],
+          "source_name": "bound-name-prefixed-structured-fragment-matching",
+          "description": "Extend a line-oriented malformed-call detector to admit only an identifier-like prefix attached directly to an argument tag, preserving its existing line boundary and prose-safety constraints.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "NousResearch__hermes-agent__101899__cf8b08edac"
+          ],
+          "supporting_repositories": [
+            "NousResearch/hermes-agent"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:3a4bf7119becf5a2",
+          "node_type": "change_action",
+          "category": "structured-tool-contract-integrity",
+          "intent": "Establish a regression oracle showing that every relevant assistant-content boundary removes the newly recognized malformed fragments without broadening deletion into ordinary prose.",
+          "module_role": "Cross-boundary structured-output contract test",
+          "operation": "validate",
+          "pre_state": "Multiple content sanitizers are expected to provide equivalent tool-call tag coverage, but the name-prefixed truncated-fragment shape lacks an explicit shared regression case.",
+          "post_state": "Both display and storage sanitizer variants are checked against complete and cut name-prefixed fragments, and preservation tests constrain false-positive removal.",
+          "validation": "Run the parameterized fragment test for both sanitizer variants and the adjacent prose-preservation tests; the expected outputs retain visible prefixes and remove malformed markup.",
+          "parameters": [
+            "display sanitizer",
+            "storage sanitizer",
+            "complete name-prefixed fragment",
+            "value-truncated name-prefixed fragment",
+            "prose-preservation examples"
+          ],
+          "evidence_ids": [
+            "E4-dual-consumer-contract",
+            "E5-name-prefixed-regressions",
+            "E6-prose-preservation-oracle"
+          ],
+          "source_name": "verify-fragment-removal-across-content-boundaries",
+          "description": "Encode the malformed inputs and preservation expectations once, then exercise both consumer-facing sanitizers to prevent their structured-output contracts from diverging.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "NousResearch__hermes-agent__101899__cf8b08edac"
+          ],
+          "supporting_repositories": [
+            "NousResearch/hermes-agent"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:3bf25e6e39ffea26",
+          "node_type": "change_action",
+          "category": "structured-tool-contract-integrity",
+          "intent": "Withhold completeness when wrappers, outputs, retries, or resumed runtime handles are ambiguous or inconsistent.",
+          "module_role": "Prompt evidence reconciler",
+          "operation": "reconcile",
+          "pre_state": "Recorded calls may be attached to duplicated outputs, mismatched wrappers, reused origins, colliding direct calls, resumed waits, or retry history whose association evidence has changed.",
+          "post_state": "Only a unique, ordered, type-correct association can retain completeness, and once the associated inventory or mapping is invalidated all retained outputs for that runtime cell remain incomplete.",
+          "validation": "Recorder regressions cover mismatched wrappers, reused origins, duplicate IDs, forked waits, and retry/compaction loss; end-to-end tests cover resumed runtime-cell reuse and compaction.",
+          "parameters": [
+            "prompt_items",
+            "output_call_id",
+            "originating_call_id",
+            "runtime_cell_id",
+            "retained_inventory",
+            "initial_history_kind"
+          ],
+          "evidence_ids": [
+            "E5",
+            "E6",
+            "E7",
+            "E11",
+            "E12"
+          ],
+          "source_name": "validate_tool_input_output_associations",
+          "description": "Verify that every completion-bearing output has one preceding, type-correct exec or wait input with the expected origin and runtime handle, and make any loss of that evidence irreversible for the affected cell.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "openai-codex-44472-03f014564"
+          ],
+          "supporting_repositories": [
+            "openai/codex"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:5b09dc142435db0f",
+          "node_type": "change_action",
+          "category": "structured-tool-contract-integrity",
+          "intent": "Keep each serialized tool result unambiguously correlated with the tool call that produced it.",
+          "module_role": "Conversation-history adapter at the structured tool-call boundary",
+          "operation": "reconcile",
+          "pre_state": "Internal assistant tool calls and tool results contain matching identifiers, but serialization omits both identifiers because the capability predicate is false.",
+          "post_state": "For protocols classified as requiring IDs, each serialized function call and corresponding function response carries the same normalized identifier; protocols outside that class retain the prior omission behavior.",
+          "validation": "Serialize histories containing multiple calls and matching results, assert ordered ID equality on both sides for each supported adapter, and assert IDs remain absent for an older protocol version.",
+          "parameters": [
+            "conversation history",
+            "target model identifier",
+            "tool-call identifier",
+            "tool-result correlation identifier",
+            "provider adapter"
+          ],
+          "evidence_ids": [
+            "ev-callsite-01",
+            "ev-callsite-02",
+            "ev-callsite-03",
+            "ev-normalization-01",
+            "ev-test-01",
+            "ev-test-02"
+          ],
+          "source_name": "preserve-paired-tool-correlation-ids",
+          "description": "Use the shared capability decision to serialize the same correlated identifier on both the function call and its response while retaining omission for protocols that do not require it.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "earendil-works__pi__7494__cbaca603"
+          ],
+          "supporting_repositories": [
+            "earendil-works/pi"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:63c71589a3eff240",
+          "node_type": "change_action",
+          "category": "structured-tool-contract-integrity",
+          "intent": "Bound a loop whose tool arguments vary while its observable read-only operation remains unchanged.",
+          "module_role": "always-on tool-loop circuit breaker",
+          "operation": "guard",
+          "pre_state": "No loop has fired, detection is enabled for the session, and incoming tool requests may repeatedly map to the same semantic inspection key.",
+          "post_state": "At the threshold the loop is marked detected with a dedicated reason and logged; before the threshold processing continues, while nonmatching calls, retries, and prompt resets clear the streak.",
+          "validation": "Verify no detection through threshold minus one, detection and telemetry at the threshold, streak restart after nonmatching calls and retries, and suppression after session disable.",
+          "parameters": [
+            "semantic_inspection_key",
+            "consecutive_streak",
+            "stagnation_threshold",
+            "retry_event",
+            "prompt_boundary",
+            "session_disable"
+          ],
+          "evidence_ids": [
+            "ev-impl-state",
+            "ev-test-positive",
+            "ev-test-reset"
+          ],
+          "source_name": "halt-consecutive-semantic-stagnation",
+          "description": "Track consecutive requests sharing the semantic inspection key, reset on progress or replay boundaries, and halt at the bounded threshold while respecting the explicit session override.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "QwenLM__qwen-code__4695__3ce46949c"
+          ],
+          "supporting_repositories": [
+            "QwenLM/qwen-code"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:9eb8cfa77236adb3",
+          "node_type": "change_action",
+          "category": "structured-tool-contract-integrity",
+          "intent": "Keep unrelated complete tool-call inventories trustworthy when another output exceeds the metadata budget.",
+          "module_role": "Structured metadata budget enforcer",
+          "operation": "normalize",
+          "pre_state": "Serialized tool-call metadata exceeds argument, per-output, or request limits, so some evidence must be truncated or omitted.",
+          "post_state": "Optional result metadata and sources are shed first; an over-budget output carries its own omission marker; completion is cleared for every output sharing the damaged cell but remains available to intact unrelated cells.",
+          "validation": "Protocol tests exercise budget priority and fail-closed completion, recorder tests preserve an unrelated complete exec under overflow, and an end-to-end Code Mode test verifies the same behavior.",
+          "parameters": [
+            "response_items",
+            "metadata_byte_budget",
+            "argument_byte_budget",
+            "cell_id",
+            "executed_tool_calls",
+            "tool_result_metadata",
+            "tool_result_sources"
+          ],
+          "evidence_ids": [
+            "E8",
+            "E11",
+            "E12",
+            "E13"
+          ],
+          "source_name": "localize_metadata_budget_damage",
+          "description": "Apply request-size limits per output, preserve stronger evidence before optional metadata, and revoke completion only where truncation or omission damaged the recorded inventory.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "openai-codex-44472-03f014564"
+          ],
+          "supporting_repositories": [
+            "openai/codex"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:a0dabb6a637d761c",
+          "node_type": "change_action",
+          "category": "structured-tool-contract-integrity",
+          "intent": "Keep metadata recording aligned with current runtime policy without altering which tools can execute or falsely certifying calls made before recording began.",
+          "module_role": "Runtime configuration owner",
+          "operation": "adapt",
+          "pre_state": "A session's recording rollout may change after construction, or a legacy reload may carry the session's original feature snapshot rather than current host policy.",
+          "post_state": "Normal runtime refresh atomically creates or removes recorder state without changing execution gates; late-created state marks prior history unobserved, and legacy reload preserves the existing recorder.",
+          "validation": "Recorder and end-to-end tests verify runtime enablement, absence of completeness when earlier history was unobserved, and preservation of prepared call bindings across refresh.",
+          "parameters": [
+            "current_recorder_state",
+            "next_feature_snapshot",
+            "refresh_recording_flag",
+            "execution_feature_state"
+          ],
+          "evidence_ids": [
+            "E10",
+            "E11",
+            "E12"
+          ],
+          "source_name": "refresh_recording_state_without_execution_drift",
+          "description": "Allow runtime rollout configuration to enable or disable evidence recording independently from tool dispatch, while preventing stale legacy snapshots from replacing a valid live recorder.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "openai-codex-44472-03f014564"
+          ],
+          "supporting_repositories": [
+            "openai/codex"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:a1e8557e4baf8f87",
+          "node_type": "change_action",
+          "category": "structured-tool-contract-integrity",
+          "intent": "Identify histories whose external structured-tool protocol requires explicit correlation identifiers.",
+          "module_role": "Protocol capability classifier shared by message serialization",
+          "operation": "classify",
+          "pre_state": "The classifier recognizes existing model families but returns false for a newer protocol generation whose tool interactions require explicit IDs.",
+          "post_state": "The classifier returns true for the newer major-version boundary and existing required families, and false for the verified older version.",
+          "validation": "Evaluate representative identifiers immediately below and above the version boundary plus existing true cases; expect Gemini 2.5 false and Gemini 3.6, Claude, and GPT-OSS true.",
+          "parameters": [
+            "model identifier",
+            "parsed protocol major version",
+            "minimum major version requiring explicit IDs"
+          ],
+          "evidence_ids": [
+            "ev-before-01",
+            "ev-diff-01",
+            "ev-test-03"
+          ],
+          "source_name": "classify-explicit-tool-id-requirement",
+          "description": "Extend the shared capability predicate at the version boundary while preserving existing model-family behavior and excluding older versions.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "earendil-works__pi__7494__cbaca603"
+          ],
+          "supporting_repositories": [
+            "earendil-works/pi"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:b72a74ad00f5d6bd",
+          "node_type": "change_action",
+          "category": "structured-tool-contract-integrity",
+          "intent": "Prevent identifier reuse or unavailable history from producing a false tool-call completion claim.",
+          "module_role": "Session-scoped evidence freshness tracker",
+          "operation": "guard",
+          "pre_state": "A recorder may encounter call origins or runtime handles that were already present in initial history, reused during the session, or unavailable because historical indexing exceeded a safety bound.",
+          "post_state": "Completion can begin only for identifiers proven fresh against bounded historical and live observations; collisions, oversized identifiers, and incomplete history indexing fail closed.",
+          "validation": "Bounded-filter tests verify namespace separation and saturation behavior; recorder tests verify that paginated known IDs and reused origins are rejected while genuinely fresh origins remain usable.",
+          "parameters": [
+            "initial_history",
+            "call_id",
+            "runtime_cell_id",
+            "history_entry_limit",
+            "history_id_byte_limit",
+            "identifier_byte_limit"
+          ],
+          "evidence_ids": [
+            "E3",
+            "E4",
+            "E11"
+          ],
+          "source_name": "index_observed_identifiers_for_freshness",
+          "description": "Maintain bounded, monotonic knowledge of historical and live identifiers so reused or unindexable identifiers cannot be treated as fresh evidence for completion.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "openai-codex-44472-03f014564"
+          ],
+          "supporting_repositories": [
+            "openai/codex"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:b73989fc55362a62",
+          "node_type": "change_action",
+          "category": "structured-tool-contract-integrity",
+          "intent": "Recognize repeated operations that are semantically equivalent despite argument variation without misclassifying productive shell work.",
+          "module_role": "tool-request semantic classifier",
+          "operation": "normalize",
+          "pre_state": "A shell tool request contains an unclassified command string that may have multiple chained segments.",
+          "post_state": "The request has either one stable overview-inspection key or no stagnation key; write-bearing, mixed-purpose, non-repository, and path-specific review commands have no key.",
+          "validation": "Feed positive command variants and negative boundary cases through the always-on checker; only complete chains of overview-style read-only inspections may contribute to the common streak.",
+          "parameters": [
+            "tool_name",
+            "command_text",
+            "shell_chain_segments",
+            "allowed_read_only_operations",
+            "diff_revision_tokens",
+            "diff_pathspec"
+          ],
+          "evidence_ids": [
+            "ev-impl-classifier",
+            "ev-test-positive",
+            "ev-test-exclusions"
+          ],
+          "source_name": "classify-read-only-overview-inspections",
+          "description": "Normalize syntactically varied shell requests into one stagnation class only when every command segment performs repository-wide read-only inspection, while treating productive or narrowly targeted commands as progress.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "QwenLM__qwen-code__4695__3ce46949c"
+          ],
+          "supporting_repositories": [
+            "QwenLM/qwen-code"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        }
+      ],
+      "factorization_audit": {
+        "schema_version": "action-factorization-audit-v1",
+        "policy": {
+          "merge_requires": [
+            "same semantic owner",
+            "same finite operation",
+            "same pre-state",
+            "same post-state",
+            "same validation oracle"
+          ],
+          "role_skeleton_is_not_action_reuse": true,
+          "split_is_review_signal_only": true
+        },
+        "scope": {
+          "action_ids": [
+            "semantic-action:14958d5f40630517",
+            "semantic-action:37e686c433d50c12",
+            "semantic-action:3a4bf7119becf5a2",
+            "semantic-action:3bf25e6e39ffea26",
+            "semantic-action:5b09dc142435db0f",
+            "semantic-action:63c71589a3eff240",
+            "semantic-action:9eb8cfa77236adb3",
+            "semantic-action:a0dabb6a637d761c",
+            "semantic-action:a1e8557e4baf8f87",
+            "semantic-action:b72a74ad00f5d6bd",
+            "semantic-action:b73989fc55362a62"
+          ],
+          "workflow_ids": [
+            "workflow:adc49622fb3d239f",
+            "workflow:c66cbb12e8aecefb",
+            "workflow:ca26a11e0df3317e",
+            "workflow:d47ed29bdc49ca8f"
+          ],
+          "global_audit_rows_omitted": true
+        },
+        "action_grain": [
+          {
+            "id": "semantic-action:14958d5f40630517",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "reconcile",
+            "operation_signals": [],
+            "description_operation_signals": [],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 1
+          },
+          {
+            "id": "semantic-action:37e686c433d50c12",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "guard",
+            "operation_signals": [],
+            "description_operation_signals": [],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 1
+          },
+          {
+            "id": "semantic-action:3a4bf7119becf5a2",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "validate",
+            "operation_signals": [],
+            "description_operation_signals": [],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 2
+          },
+          {
+            "id": "semantic-action:3bf25e6e39ffea26",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "reconcile",
+            "operation_signals": [
+              "retry"
+            ],
+            "description_operation_signals": [],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 2
+          },
+          {
+            "id": "semantic-action:5b09dc142435db0f",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "reconcile",
+            "operation_signals": [
+              "serialize"
+            ],
+            "description_operation_signals": [
+              "serialize"
+            ],
+            "secondary_operation_signals": [
+              "serialize"
+            ],
+            "clause_signal_count": 2
+          },
+          {
+            "id": "semantic-action:63c71589a3eff240",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "guard",
+            "operation_signals": [
+              "bound",
+              "map"
+            ],
+            "description_operation_signals": [
+              "bound"
+            ],
+            "secondary_operation_signals": [
+              "bound"
+            ],
+            "clause_signal_count": 2
+          },
+          {
+            "id": "semantic-action:9eb8cfa77236adb3",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "normalize",
+            "operation_signals": [
+              "preserve"
+            ],
+            "description_operation_signals": [
+              "preserve"
+            ],
+            "secondary_operation_signals": [
+              "preserve"
+            ],
+            "clause_signal_count": 1
+          },
+          {
+            "id": "semantic-action:a0dabb6a637d761c",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "adapt",
+            "operation_signals": [
+              "preserve",
+              "reload"
+            ],
+            "description_operation_signals": [],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 1
+          },
+          {
+            "id": "semantic-action:a1e8557e4baf8f87",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "classify",
+            "operation_signals": [],
+            "description_operation_signals": [],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 2
+          },
+          {
+            "id": "semantic-action:b72a74ad00f5d6bd",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "guard",
+            "operation_signals": [
+              "bound"
+            ],
+            "description_operation_signals": [
+              "bound"
+            ],
+            "secondary_operation_signals": [
+              "bound"
+            ],
+            "clause_signal_count": 1
+          },
+          {
+            "id": "semantic-action:b73989fc55362a62",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "normalize",
+            "operation_signals": [
+              "normalize"
+            ],
+            "description_operation_signals": [
+              "normalize"
+            ],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 2
+          }
+        ],
+        "coarse_action_groups": [
+          {
+            "module_role": "always-on tool-loop circuit breaker",
+            "operation": "guard",
+            "action_ids": [
+              "semantic-action:63c71589a3eff240"
+            ],
+            "repositories": [
+              "QwenLM/qwen-code"
+            ]
+          },
+          {
+            "module_role": "conversation-history adapter at the structured tool-call boundary",
+            "operation": "reconcile",
+            "action_ids": [
+              "semantic-action:5b09dc142435db0f"
+            ],
+            "repositories": [
+              "earendil-works/pi"
+            ]
+          },
+          {
+            "module_role": "cross-boundary structured-output contract test",
+            "operation": "validate",
+            "action_ids": [
+              "semantic-action:3a4bf7119becf5a2"
+            ],
+            "repositories": [
+              "NousResearch/hermes-agent"
+            ]
+          },
+          {
+            "module_role": "malformed structured-output sanitizer shared by assistant-content consumers",
+            "operation": "guard",
+            "action_ids": [
+              "semantic-action:37e686c433d50c12"
+            ],
+            "repositories": [
+              "NousResearch/hermes-agent"
+            ]
+          },
+          {
+            "module_role": "prompt evidence reconciler",
+            "operation": "reconcile",
+            "action_ids": [
+              "semantic-action:3bf25e6e39ffea26"
+            ],
+            "repositories": [
+              "openai/codex"
+            ]
+          },
+          {
+            "module_role": "protocol capability classifier shared by message serialization",
+            "operation": "classify",
+            "action_ids": [
+              "semantic-action:a1e8557e4baf8f87"
+            ],
+            "repositories": [
+              "earendil-works/pi"
+            ]
+          },
+          {
+            "module_role": "runtime configuration owner",
+            "operation": "adapt",
+            "action_ids": [
+              "semantic-action:a0dabb6a637d761c"
+            ],
+            "repositories": [
+              "openai/codex"
+            ]
+          },
+          {
+            "module_role": "session-scoped evidence freshness tracker",
+            "operation": "guard",
+            "action_ids": [
+              "semantic-action:b72a74ad00f5d6bd"
+            ],
+            "repositories": [
+              "openai/codex"
+            ]
+          },
+          {
+            "module_role": "structured metadata budget enforcer",
+            "operation": "normalize",
+            "action_ids": [
+              "semantic-action:9eb8cfa77236adb3"
+            ],
+            "repositories": [
+              "openai/codex"
+            ]
+          },
+          {
+            "module_role": "tool-request semantic classifier",
+            "operation": "normalize",
+            "action_ids": [
+              "semantic-action:b73989fc55362a62"
+            ],
+            "repositories": [
+              "QwenLM/qwen-code"
+            ]
+          },
+          {
+            "module_role": "tool-stream termination and reporting boundary",
+            "operation": "reconcile",
+            "action_ids": [
+              "semantic-action:14958d5f40630517"
+            ],
+            "repositories": [
+              "QwenLM/qwen-code"
+            ]
+          }
+        ],
+        "cross_repository_pair_analysis": [
+          {
+            "left": "semantic-action:14958d5f40630517",
+            "right": "semantic-action:37e686c433d50c12",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:14958d5f40630517",
+            "right": "semantic-action:3a4bf7119becf5a2",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:14958d5f40630517",
+            "right": "semantic-action:3bf25e6e39ffea26",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "same-operation-different-owner",
+            "reasons": [
+              "semantic-owner-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:14958d5f40630517",
+            "right": "semantic-action:5b09dc142435db0f",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "same-operation-different-owner",
+            "reasons": [
+              "semantic-owner-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:14958d5f40630517",
+            "right": "semantic-action:9eb8cfa77236adb3",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:14958d5f40630517",
+            "right": "semantic-action:a0dabb6a637d761c",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:14958d5f40630517",
+            "right": "semantic-action:a1e8557e4baf8f87",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:14958d5f40630517",
+            "right": "semantic-action:b72a74ad00f5d6bd",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:37e686c433d50c12",
+            "right": "semantic-action:3bf25e6e39ffea26",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:37e686c433d50c12",
+            "right": "semantic-action:5b09dc142435db0f",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:37e686c433d50c12",
+            "right": "semantic-action:63c71589a3eff240",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "decision": "same-operation-different-owner",
+            "reasons": [
+              "semantic-owner-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:37e686c433d50c12",
+            "right": "semantic-action:9eb8cfa77236adb3",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:37e686c433d50c12",
+            "right": "semantic-action:a0dabb6a637d761c",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:37e686c433d50c12",
+            "right": "semantic-action:a1e8557e4baf8f87",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:37e686c433d50c12",
+            "right": "semantic-action:b72a74ad00f5d6bd",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "same-operation-different-owner",
+            "reasons": [
+              "semantic-owner-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:37e686c433d50c12",
+            "right": "semantic-action:b73989fc55362a62",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3a4bf7119becf5a2",
+            "right": "semantic-action:3bf25e6e39ffea26",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3a4bf7119becf5a2",
+            "right": "semantic-action:5b09dc142435db0f",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3a4bf7119becf5a2",
+            "right": "semantic-action:63c71589a3eff240",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3a4bf7119becf5a2",
+            "right": "semantic-action:9eb8cfa77236adb3",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3a4bf7119becf5a2",
+            "right": "semantic-action:a0dabb6a637d761c",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3a4bf7119becf5a2",
+            "right": "semantic-action:a1e8557e4baf8f87",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3a4bf7119becf5a2",
+            "right": "semantic-action:b72a74ad00f5d6bd",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3a4bf7119becf5a2",
+            "right": "semantic-action:b73989fc55362a62",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3bf25e6e39ffea26",
+            "right": "semantic-action:5b09dc142435db0f",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "same-operation-different-owner",
+            "reasons": [
+              "semantic-owner-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3bf25e6e39ffea26",
+            "right": "semantic-action:63c71589a3eff240",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3bf25e6e39ffea26",
+            "right": "semantic-action:a1e8557e4baf8f87",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3bf25e6e39ffea26",
+            "right": "semantic-action:b73989fc55362a62",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:5b09dc142435db0f",
+            "right": "semantic-action:63c71589a3eff240",
+            "left_repositories": [
+              "earendil-works/pi"
+            ],
+            "right_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:5b09dc142435db0f",
+            "right": "semantic-action:9eb8cfa77236adb3",
+            "left_repositories": [
+              "earendil-works/pi"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:5b09dc142435db0f",
+            "right": "semantic-action:a0dabb6a637d761c",
+            "left_repositories": [
+              "earendil-works/pi"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:5b09dc142435db0f",
+            "right": "semantic-action:b72a74ad00f5d6bd",
+            "left_repositories": [
+              "earendil-works/pi"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:5b09dc142435db0f",
+            "right": "semantic-action:b73989fc55362a62",
+            "left_repositories": [
+              "earendil-works/pi"
+            ],
+            "right_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:63c71589a3eff240",
+            "right": "semantic-action:9eb8cfa77236adb3",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:63c71589a3eff240",
+            "right": "semantic-action:a0dabb6a637d761c",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:63c71589a3eff240",
+            "right": "semantic-action:a1e8557e4baf8f87",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:63c71589a3eff240",
+            "right": "semantic-action:b72a74ad00f5d6bd",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "same-operation-different-owner",
+            "reasons": [
+              "semantic-owner-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:9eb8cfa77236adb3",
+            "right": "semantic-action:a1e8557e4baf8f87",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:9eb8cfa77236adb3",
+            "right": "semantic-action:b73989fc55362a62",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "decision": "same-operation-different-owner",
+            "reasons": [
+              "semantic-owner-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:a0dabb6a637d761c",
+            "right": "semantic-action:a1e8557e4baf8f87",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:a0dabb6a637d761c",
+            "right": "semantic-action:b73989fc55362a62",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:a1e8557e4baf8f87",
+            "right": "semantic-action:b72a74ad00f5d6bd",
+            "left_repositories": [
+              "earendil-works/pi"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:a1e8557e4baf8f87",
+            "right": "semantic-action:b73989fc55362a62",
+            "left_repositories": [
+              "earendil-works/pi"
+            ],
+            "right_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:b72a74ad00f5d6bd",
+            "right": "semantic-action:b73989fc55362a62",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          }
+        ],
+        "workflow_role_segments": [
+          {
+            "segment_roles": [
+              "establish-contract",
+              "implement",
+              "reconcile"
+            ],
+            "kind": "workflow-role-skeleton",
+            "supporting_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "supporting_categories": [
+              "structured-tool-contract-integrity"
+            ],
+            "category_repository_support": {
+              "context-budget-and-compaction": [
+                "earendil-works/pi"
+              ],
+              "credential-resolution-and-authentication": [
+                "QwenLM/qwen-code"
+              ],
+              "effect-control-and-isolation": [
+                "openai/codex"
+              ],
+              "provider-interface-adaptation": [
+                "google-gemini/gemini-cli"
+              ],
+              "state-continuity-and-resume": [
+                "earendil-works/pi"
+              ],
+              "structured-tool-contract-integrity": [
+                "QwenLM/qwen-code"
+              ]
+            },
+            "same_category_cross_repository_support": {},
+            "reuse_scope": "cross-category-skeleton",
+            "supporting_workflows": [
+              "workflow:c66cbb12e8aecefb"
+            ],
+            "occurrences": [
+              {
+                "workflow_id": "workflow:c66cbb12e8aecefb",
+                "repository": "QwenLM/qwen-code",
+                "issue": 4695,
+                "category": "structured-tool-contract-integrity",
+                "action_ids": [
+                  "semantic-action:b73989fc55362a62",
+                  "semantic-action:63c71589a3eff240",
+                  "semantic-action:14958d5f40630517"
+                ]
+              }
+            ],
+            "action_reuse": false,
+            "interpretation": "Reusable control-flow skeleton only; each step still needs a repository-specific Action contract."
+          },
+          {
+            "segment_roles": [
+              "establish-contract",
+              "implement"
+            ],
+            "kind": "workflow-role-skeleton",
+            "supporting_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "supporting_categories": [
+              "structured-tool-contract-integrity"
+            ],
+            "category_repository_support": {
+              "context-budget-and-compaction": [
+                "earendil-works/pi"
+              ],
+              "credential-resolution-and-authentication": [
+                "QwenLM/qwen-code",
+                "earendil-works/pi",
+                "google-gemini/gemini-cli"
+              ],
+              "effect-control-and-isolation": [
+                "earendil-works/pi",
+                "openai/codex"
+              ],
+              "failure-recovery-and-streaming": [
+                "QwenLM/qwen-code"
+              ],
+              "provider-interface-adaptation": [
+                "NousResearch/hermes-agent",
+                "google-gemini/gemini-cli"
+              ],
+              "state-continuity-and-resume": [
+                "earendil-works/pi"
+              ],
+              "structured-tool-contract-integrity": [
+                "QwenLM/qwen-code"
+              ]
+            },
+            "same_category_cross_repository_support": {
+              "credential-resolution-and-authentication": [
+                "QwenLM/qwen-code",
+                "earendil-works/pi",
+                "google-gemini/gemini-cli"
+              ],
+              "effect-control-and-isolation": [
+                "earendil-works/pi",
+                "openai/codex"
+              ],
+              "provider-interface-adaptation": [
+                "NousResearch/hermes-agent",
+                "google-gemini/gemini-cli"
+              ]
+            },
+            "reuse_scope": "same-category-cross-repository",
+            "supporting_workflows": [
+              "workflow:c66cbb12e8aecefb"
+            ],
+            "occurrences": [
+              {
+                "workflow_id": "workflow:c66cbb12e8aecefb",
+                "repository": "QwenLM/qwen-code",
+                "issue": 4695,
+                "category": "structured-tool-contract-integrity",
+                "action_ids": [
+                  "semantic-action:b73989fc55362a62",
+                  "semantic-action:63c71589a3eff240"
+                ]
+              }
+            ],
+            "action_reuse": false,
+            "interpretation": "The role sequence recurs within at least one category across repositories, but each step still needs a repository-specific Action contract."
+          },
+          {
+            "segment_roles": [
+              "establish-contract",
+              "reconcile"
+            ],
+            "kind": "workflow-role-skeleton",
+            "supporting_repositories": [
+              "earendil-works/pi",
+              "openai/codex"
+            ],
+            "supporting_categories": [
+              "structured-tool-contract-integrity"
+            ],
+            "category_repository_support": {
+              "failure-recovery-and-streaming": [
+                "openai/codex"
+              ],
+              "provider-interface-adaptation": [
+                "Aider-AI/aider",
+                "QwenLM/qwen-code"
+              ],
+              "structured-tool-contract-integrity": [
+                "earendil-works/pi",
+                "openai/codex"
+              ]
+            },
+            "same_category_cross_repository_support": {
+              "provider-interface-adaptation": [
+                "Aider-AI/aider",
+                "QwenLM/qwen-code"
+              ],
+              "structured-tool-contract-integrity": [
+                "earendil-works/pi",
+                "openai/codex"
+              ]
+            },
+            "reuse_scope": "same-category-cross-repository",
+            "supporting_workflows": [
+              "workflow:adc49622fb3d239f",
+              "workflow:d47ed29bdc49ca8f"
+            ],
+            "occurrences": [
+              {
+                "workflow_id": "workflow:adc49622fb3d239f",
+                "repository": "openai/codex",
+                "issue": 44472,
+                "category": "structured-tool-contract-integrity",
+                "action_ids": [
+                  "semantic-action:b72a74ad00f5d6bd",
+                  "semantic-action:3bf25e6e39ffea26"
+                ]
+              },
+              {
+                "workflow_id": "workflow:d47ed29bdc49ca8f",
+                "repository": "earendil-works/pi",
+                "issue": 7494,
+                "category": "structured-tool-contract-integrity",
+                "action_ids": [
+                  "semantic-action:a1e8557e4baf8f87",
+                  "semantic-action:5b09dc142435db0f"
+                ]
+              }
+            ],
+            "action_reuse": false,
+            "interpretation": "The role sequence recurs within at least one category across repositories, but each step still needs a repository-specific Action contract."
+          },
+          {
+            "segment_roles": [
+              "implement",
+              "reconcile"
+            ],
+            "kind": "workflow-role-skeleton",
+            "supporting_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "supporting_categories": [
+              "structured-tool-contract-integrity"
+            ],
+            "category_repository_support": {
+              "context-budget-and-compaction": [
+                "Aider-AI/aider",
+                "earendil-works/pi"
+              ],
+              "credential-resolution-and-authentication": [
+                "QwenLM/qwen-code"
+              ],
+              "effect-control-and-isolation": [
+                "earendil-works/pi",
+                "openai/codex"
+              ],
+              "provider-interface-adaptation": [
+                "google-gemini/gemini-cli"
+              ],
+              "state-continuity-and-resume": [
+                "Aider-AI/aider",
+                "QwenLM/qwen-code",
+                "earendil-works/pi"
+              ],
+              "structured-tool-contract-integrity": [
+                "QwenLM/qwen-code"
+              ]
+            },
+            "same_category_cross_repository_support": {
+              "context-budget-and-compaction": [
+                "Aider-AI/aider",
+                "earendil-works/pi"
+              ],
+              "effect-control-and-isolation": [
+                "earendil-works/pi",
+                "openai/codex"
+              ],
+              "state-continuity-and-resume": [
+                "Aider-AI/aider",
+                "QwenLM/qwen-code",
+                "earendil-works/pi"
+              ]
+            },
+            "reuse_scope": "same-category-cross-repository",
+            "supporting_workflows": [
+              "workflow:c66cbb12e8aecefb"
+            ],
+            "occurrences": [
+              {
+                "workflow_id": "workflow:c66cbb12e8aecefb",
+                "repository": "QwenLM/qwen-code",
+                "issue": 4695,
+                "category": "structured-tool-contract-integrity",
+                "action_ids": [
+                  "semantic-action:63c71589a3eff240",
+                  "semantic-action:14958d5f40630517"
+                ]
+              }
+            ],
+            "action_reuse": false,
+            "interpretation": "The role sequence recurs within at least one category across repositories, but each step still needs a repository-specific Action contract."
+          },
+          {
+            "segment_roles": [
+              "implement",
+              "validate"
+            ],
+            "kind": "workflow-role-skeleton",
+            "supporting_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "supporting_categories": [
+              "structured-tool-contract-integrity"
+            ],
+            "category_repository_support": {
+              "context-budget-and-compaction": [
+                "QwenLM/qwen-code",
+                "google-gemini/gemini-cli"
+              ],
+              "effect-control-and-isolation": [
+                "NousResearch/hermes-agent"
+              ],
+              "state-continuity-and-resume": [
+                "NousResearch/hermes-agent"
+              ],
+              "structured-tool-contract-integrity": [
+                "NousResearch/hermes-agent"
+              ]
+            },
+            "same_category_cross_repository_support": {
+              "context-budget-and-compaction": [
+                "QwenLM/qwen-code",
+                "google-gemini/gemini-cli"
+              ]
+            },
+            "reuse_scope": "same-category-cross-repository",
+            "supporting_workflows": [
+              "workflow:ca26a11e0df3317e"
+            ],
+            "occurrences": [
+              {
+                "workflow_id": "workflow:ca26a11e0df3317e",
+                "repository": "NousResearch/hermes-agent",
+                "issue": 101899,
+                "category": "structured-tool-contract-integrity",
+                "action_ids": [
+                  "semantic-action:37e686c433d50c12",
+                  "semantic-action:3a4bf7119becf5a2"
+                ]
+              }
+            ],
+            "action_reuse": false,
+            "interpretation": "The role sequence recurs within at least one category across repositories, but each step still needs a repository-specific Action contract."
+          }
+        ],
+        "interpretation": {
+          "action_reuse": "An Action is reusable only when its semantic owner, finite operation, state transition, and validation oracle all survive substitution into the other repository.",
+          "workflow_reuse": "A repeated role sequence such as establish-contract -> reconcile -> validate is a reusable Workflow fragment, but it is a template over new Actions rather than evidence that the Actions themselves are interchangeable.",
+          "granularity": "A split is justified only when a candidate contains independently testable finite operations with separate postconditions or validation oracles. Different paths, providers, or filenames alone are not a reason to split."
+        }
+      },
+      "boundary": {
+        "training_only": true,
+        "holdout_loaded": false,
+        "action_similarity_is_not_equivalence": true,
+        "role_templates_must_bind_to_real_action_ids": true
+      }
+    },
+    "previous_validation_errors": []
+  },
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Human-readable resolution Pattern induction",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "schema_version",
+      "pattern_id",
+      "category",
+      "decision",
+      "title",
+      "summary",
+      "when_to_use",
+      "anti_goals",
+      "not_applicable_when",
+      "invariants",
+      "action_template",
+      "decision_points",
+      "ordering_constraints",
+      "validation_ladder",
+      "known_failure_modes",
+      "exclusions",
+      "supporting_workflow_ids",
+      "workflow_realizations",
+      "confidence",
+      "rationale",
+      "evidence_ids",
+      "missing_probes"
+    ],
+    "properties": {
+      "schema_version": {
+        "const": "resolution-pattern-induction-v1"
+      },
+      "pattern_id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "category": {
+        "type": "string",
+        "minLength": 1
+      },
+      "decision": {
+        "enum": [
+          "candidate_pending_holdout",
+          "defer",
+          "reject"
+        ]
+      },
+      "title": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "summary": {
+        "type": "string",
+        "minLength": 1
+      },
+      "when_to_use": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "anti_goals": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "not_applicable_when": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "invariants": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "action_template": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "role_id",
+            "title",
+            "purpose",
+            "required",
+            "condition",
+            "validation"
+          ],
+          "properties": {
+            "role_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "purpose": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "condition": {
+              "type": "string"
+            },
+            "validation": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "decision_points": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "question",
+            "branches"
+          ],
+          "properties": {
+            "question": {
+              "type": "string",
+              "minLength": 1
+            },
+            "branches": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "condition",
+                  "action_role_ids"
+                ],
+                "properties": {
+                  "condition": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "action_role_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ordering_constraints": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "before_role_id",
+            "after_role_id",
+            "condition"
+          ],
+          "properties": {
+            "before_role_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "after_role_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "condition": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "validation_ladder": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "known_failure_modes": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "failure",
+            "detection",
+            "mitigation"
+          ],
+          "properties": {
+            "failure": {
+              "type": "string",
+              "minLength": 1
+            },
+            "detection": {
+              "type": "string",
+              "minLength": 1
+            },
+            "mitigation": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "exclusions": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "supporting_workflow_ids": {
+        "type": "array",
+        "minItems": 2,
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "workflow_realizations": {
+        "type": "array",
+        "minItems": 2,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "workflow_id",
+            "repository",
+            "role_bindings",
+            "evidence_ids"
+          ],
+          "properties": {
+            "workflow_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "repository": {
+              "type": "string",
+              "minLength": 1
+            },
+            "role_bindings": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "role_id",
+                  "action_ids"
+                ],
+                "properties": {
+                  "role_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "action_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      },
+      "confidence": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "rationale": {
+        "type": "string",
+        "minLength": 1
+      },
+      "evidence_ids": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "missing_probes": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  },
+  "holdout_loaded": false
+}

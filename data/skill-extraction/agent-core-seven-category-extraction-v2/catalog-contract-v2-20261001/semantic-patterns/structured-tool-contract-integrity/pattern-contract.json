@@ -1,0 +1,241 @@
+{
+  "schema_version": "resolution-pattern-induction-v1",
+  "pattern_id": "pattern:b3b85833d21d5a7f",
+  "category": "structured-tool-contract-integrity",
+  "decision": "candidate_pending_holdout",
+  "title": "Establish eligibility before emitting structured tool claims",
+  "summary": "When structured tool history is emitted or certified, first establish a narrow eligibility decision from observable protocol or evidence state, then use that decision to reconcile every correlated artifact consistently. Preserve established behavior outside the eligible class and withhold positive claims when identity, association, or required correlation cannot be proven.",
+  "when_to_use": [
+    "A serializer, recorder, or history adapter emits metadata that downstream consumers interpret as a correlation guarantee, completeness claim, or other positive structured-tool contract.",
+    "Whether the contract is valid depends on an observable capability boundary, identifier-freshness rule, history state, or similarly stable eligibility predicate.",
+    "Multiple structured artifacts must agree, such as a call and its response or an input, output, runtime handle, and retained inventory.",
+    "Retries, replay, resume, compaction, version changes, or identifier reuse can make an apparently successful tool interaction ambiguous."
+  ],
+  "anti_goals": [
+    "Do not infer a positive structured contract merely from successful execution, a terminal wrapper callback, or the presence of one retained marker.",
+    "Do not apply the contract unconditionally to protocol versions or histories outside the established eligibility boundary.",
+    "Do not repair only one side of a correlated pair while leaving its counterpart omitted, mismatched, duplicated, or reordered.",
+    "Do not treat repository-specific mechanisms for capability classification and evidence freshness as interchangeable Actions.",
+    "Do not broaden this Pattern to malformed-content sanitization, semantic loop detection, metadata-budget handling, or runtime rollout refresh without independent cross-repository support for those roles."
+  ],
+  "not_applicable_when": [
+    "No downstream consumer interprets the emitted metadata as a correlation guarantee, completeness claim, or proof.",
+    "The system has no stable identifiers or other evidence capable of linking structured inputs to their corresponding outputs.",
+    "The external protocol guarantees immutable associations through a stronger mechanism and the host does not transform, replay, compact, or truncate them.",
+    "The observed defect is only malformed visible text or repeated tool behavior rather than an unsupported structured-history claim.",
+    "Only one artifact can carry the relevant field and paired or associated consistency is not part of the contract."
+  ],
+  "invariants": [
+    "A positive structured-tool claim is emitted only after its eligibility predicate succeeds.",
+    "Every artifact participating in the claim satisfies the same eligibility decision and preserves the required identity or association.",
+    "Ambiguous, reused, duplicated, missing, reordered, or type-incompatible association evidence cannot produce a positive claim.",
+    "Inputs outside the admitted capability or evidence class preserve their established representation rather than receiving the new claim unconditionally.",
+    "Eligibility classification and downstream reconciliation remain distinct Action contracts even when implemented through shared code."
+  ],
+  "action_template": [
+    {
+      "role_id": "establish-structured-contract-eligibility",
+      "title": "Establish the eligibility boundary",
+      "purpose": "Determine from observable protocol or evidence state whether a structured correlation or completion contract may be asserted.",
+      "required": true,
+      "condition": "Use when the positive contract is conditional on protocol capability, identifier freshness, retained history, or another stable and testable boundary.",
+      "validation": "Exercise admitted, excluded, and ambiguous boundary cases directly; eligible cases must pass, established exclusions must remain excluded, and unavailable or unsafe evidence must fail closed."
+    },
+    {
+      "role_id": "reconcile-correlated-structured-artifacts",
+      "title": "Reconcile all correlated artifacts",
+      "purpose": "Apply the established decision to every participating call, response, input, output, wrapper, or retained inventory so the emitted contract is complete and internally consistent.",
+      "required": true,
+      "condition": "Use after eligibility is established and before emitting, retaining, or certifying the structured history.",
+      "validation": "Verify unique and ordered associations, matching identifiers or runtime handles, type-correct counterparts, and consistent treatment across every adapter or output boundary that emits the contract."
+    }
+  ],
+  "decision_points": [
+    {
+      "question": "Can eligibility for the positive structured contract be established from bounded, observable state?",
+      "branches": [
+        {
+          "condition": "A stable protocol capability, freshness rule, or equivalent boundary can be tested directly.",
+          "action_role_ids": [
+            "establish-structured-contract-eligibility",
+            "reconcile-correlated-structured-artifacts"
+          ]
+        },
+        {
+          "condition": "Eligibility depends on unavailable, unbounded, ambiguous, or unindexable evidence.",
+          "action_role_ids": []
+        }
+      ]
+    },
+    {
+      "question": "What correlated artifacts must be reconciled after eligibility succeeds?",
+      "branches": [
+        {
+          "condition": "The external wire contract requires matching identifiers on tool calls and their responses.",
+          "action_role_ids": [
+            "reconcile-correlated-structured-artifacts"
+          ]
+        },
+        {
+          "condition": "A completion claim depends on a unique preceding input, matching wrapper or runtime handle, and intact retained inventory.",
+          "action_role_ids": [
+            "reconcile-correlated-structured-artifacts"
+          ]
+        }
+      ]
+    },
+    {
+      "question": "What should happen to inputs outside the admitted eligibility boundary?",
+      "branches": [
+        {
+          "condition": "The input is a verified older or otherwise excluded protocol class with an established omission representation.",
+          "action_role_ids": [
+            "establish-structured-contract-eligibility"
+          ]
+        },
+        {
+          "condition": "The input has ambiguous, reused, duplicated, or inconsistent association evidence.",
+          "action_role_ids": [
+            "establish-structured-contract-eligibility",
+            "reconcile-correlated-structured-artifacts"
+          ]
+        }
+      ]
+    }
+  ],
+  "ordering_constraints": [
+    {
+      "before_role_id": "establish-structured-contract-eligibility",
+      "after_role_id": "reconcile-correlated-structured-artifacts",
+      "condition": "Always: reconciliation must consume an established eligibility result rather than independently guessing whether the contract applies."
+    }
+  ],
+  "validation_ladder": [
+    "Focused contract checks: test the eligibility predicate immediately across admitted, excluded, and ambiguous boundaries, including version edges, known historical identifiers, repeated identifiers, and unavailable evidence as applicable.",
+    "Focused reconciliation checks: use multiple correlated interactions to detect missing, duplicated, mismatched, type-incompatible, or reordered associations and verify that every participating side receives the same contract treatment.",
+    "Integration checks: run complete histories through every adapter, recorder, replay, retry, resume, or compaction boundary that consumes the shared eligibility decision and emits the structured claim.",
+    "Regression checks: confirm excluded protocol versions retain prior omission behavior, reused or ambiguous evidence remains uncertified, and unrelated structured fields or message content are unchanged.",
+    "Repository validation: execute the focused and integration suites in usable checkouts before claiming runtime success; committed test oracles alone do not establish a green build."
+  ],
+  "known_failure_modes": [
+    {
+      "failure": "The eligibility boundary is broadened so excluded protocol versions receive fields their established wire representation omits.",
+      "detection": "Boundary tests show the same positive result immediately below and above the required version or capability threshold.",
+      "mitigation": "Keep the capability decision explicit and assert prior omission behavior for representative excluded inputs."
+    },
+    {
+      "failure": "Only the call or only the response retains the correlation identifier.",
+      "detection": "Serialized call-side and response-side identifier sequences differ in value, count, or order.",
+      "mitigation": "Route both sides through the same eligibility decision and compare ordered identifier sequences in multi-call histories."
+    },
+    {
+      "failure": "A completion claim is retained for a duplicated output, mismatched wrapper, reused origin, colliding direct call, or inconsistent runtime handle.",
+      "detection": "Recorder regressions admit more than one candidate association or accept a type, origin, runtime-cell, or inventory mismatch.",
+      "mitigation": "Require one preceding, type-correct association and irreversibly withhold completion for the affected runtime cell when its evidence is invalidated."
+    },
+    {
+      "failure": "Historical or live identifier reuse is treated as fresh evidence.",
+      "detection": "Known historical identifiers, repeated origins, or identifiers unavailable because indexing exceeded a safety bound remain completion-eligible.",
+      "mitigation": "Use bounded monotonic freshness tracking and fail closed on collisions, oversized identifiers, saturation, or incomplete history indexing."
+    },
+    {
+      "failure": "A repository-specific classifier or reconciler is assumed to be reusable in another repository despite different semantic owners and validation oracles.",
+      "detection": "The proposed mapping substitutes one repository's Action id for another repository's role or claims the Actions are peers despite differing pre-states and post-states.",
+      "mitigation": "Reuse only the role sequence and bind each workflow to its own exact Action ids."
+    }
+  ],
+  "exclusions": [
+    "The malformed-fragment sanitizer workflow is excluded because it implements and validates a bounded text-removal grammar rather than establishing eligibility and reconciling a positive structured claim.",
+    "The semantic-stagnation workflow is excluded because its classifier, circuit breaker, and halt propagation form a detection-and-termination policy rather than a structured-history eligibility policy.",
+    "Metadata budget damage localization and runtime recorder refresh remain repository-specific branches; the supplied training graph does not provide a second repository realization for either role.",
+    "No holdout repository or untouched holdout repair is present in the supplied graph."
+  ],
+  "supporting_workflow_ids": [
+    "workflow:adc49622fb3d239f",
+    "workflow:d47ed29bdc49ca8f"
+  ],
+  "workflow_realizations": [
+    {
+      "workflow_id": "workflow:adc49622fb3d239f",
+      "repository": "openai/codex",
+      "role_bindings": [
+        {
+          "role_id": "establish-structured-contract-eligibility",
+          "action_ids": [
+            "semantic-action:b72a74ad00f5d6bd"
+          ]
+        },
+        {
+          "role_id": "reconcile-correlated-structured-artifacts",
+          "action_ids": [
+            "semantic-action:3bf25e6e39ffea26"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E11",
+        "E12"
+      ]
+    },
+    {
+      "workflow_id": "workflow:d47ed29bdc49ca8f",
+      "repository": "earendil-works/pi",
+      "role_bindings": [
+        {
+          "role_id": "establish-structured-contract-eligibility",
+          "action_ids": [
+            "semantic-action:a1e8557e4baf8f87"
+          ]
+        },
+        {
+          "role_id": "reconcile-correlated-structured-artifacts",
+          "action_ids": [
+            "semantic-action:5b09dc142435db0f"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "ev-before-01",
+        "ev-diff-01",
+        "ev-callsite-01",
+        "ev-callsite-02",
+        "ev-callsite-03",
+        "ev-normalization-01",
+        "ev-test-01",
+        "ev-test-02",
+        "ev-test-03"
+      ]
+    }
+  ],
+  "confidence": 0.78,
+  "rationale": "Two independent repositories realize the same required role sequence: establish a narrow eligibility contract, then reconcile correlated structured artifacts under that decision. In one workflow, bounded freshness establishes whether completion evidence may begin and association reconciliation certifies outputs only when their input, origin, runtime handle, and inventory are unique and intact. In the other, a versioned capability predicate establishes whether explicit identifiers are required and serialization applies the same identifier to both calls and responses while preserving older-version omission. The Actions are not interchangeable, but their ordering and decision policy form a coherent cross-project Pattern. Promotion remains pending because the training boundary reports no loaded holdout and no separate untouched holdout repair has validated the policy.",
+  "evidence_ids": [
+    "E3",
+    "E4",
+    "E5",
+    "E6",
+    "E7",
+    "E11",
+    "E12",
+    "ev-before-01",
+    "ev-diff-01",
+    "ev-callsite-01",
+    "ev-callsite-02",
+    "ev-callsite-03",
+    "ev-normalization-01",
+    "ev-test-01",
+    "ev-test-02",
+    "ev-test-03"
+  ],
+  "missing_probes": [
+    "Apply the two-role policy to a separate untouched holdout repair in another repository and verify that both required roles are independently observable.",
+    "Obtain executed focused-test and integration-test results for the completion-evidence workflow rather than relying only on inspected test sources.",
+    "Obtain independent runtime execution results for the versioned correlation workflow in addition to its committed test oracle.",
+    "Probe whether a third structured-history implementation preserves excluded behavior while failing closed on ambiguous associations."
+  ]
+}

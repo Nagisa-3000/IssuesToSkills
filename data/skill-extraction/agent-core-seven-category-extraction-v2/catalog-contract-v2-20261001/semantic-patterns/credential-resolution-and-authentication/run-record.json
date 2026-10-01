@@ -1,0 +1,681 @@
+{
+  "schema_version": "resolution-pattern-induction-run-v1",
+  "model": "openai/gpt-5.6-sol",
+  "base_url": "https://llm.rvnpu.cn/v1",
+  "source_graph": "/home/chenyujia/tritonToLlvm/arex-skill-graph/data/skill-extraction/agent-core-seven-category-extraction-v2/catalog-contract-v2-20261001/training-graph.json",
+  "source_graph_sha256": "7a9cef56f6b6385e21b92a4bac83155bf542fb1db66d249ccd68edeed2e71742",
+  "source_audit": "/home/chenyujia/tritonToLlvm/arex-skill-graph/data/skill-extraction/agent-core-seven-category-extraction-v2/catalog-contract-v2-20261001/action-factorization-audit.json",
+  "source_audit_sha256": "e15e92d89a621e97efdb9b2eaae5908fdc91c79d7386182dd7baf0d6cc10fe85",
+  "prompt_sha256": "3200ac07514b3a156ac4bed88e9da42aa9661d9d1b53014e92a739a7241f6a87",
+  "contract_sha256": "7d9906a459edc8010451316a0f32b102dd9b58d5e410d791daa0c032b9d6efeb",
+  "holdout_loaded": false,
+  "api_key_persisted": false,
+  "calls": [
+    {
+      "model": "openai/gpt-5.6-sol",
+      "endpoint": "https://llm.rvnpu.cn/v1/chat/completions",
+      "attempt": 1,
+      "elapsed_ms": 69077.38,
+      "usage": {
+        "completion_tokens": 3822,
+        "prompt_tokens": 21552,
+        "total_tokens": 25374,
+        "completion_tokens_details": {
+          "reasoning_tokens": 813
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "cache_creation_tokens": 0,
+          "cached_creation_tokens": 0
+        }
+      },
+      "response_id": "resp_072043800dd2ef28016abe8032feb887d093caa992ad719d67"
+    }
+  ],
+  "transcripts": [
+    {
+      "system": "You are the independent Pattern inducer for an evidence-grounded resolution graph. Use only the supplied training Workflows and Actions. A Pattern is a plain-language cross-project decision policy, not a category label, repository recipe, or claim that different Actions are interchangeable. Preserve distinct Action contracts. Express the reusable structure as role-level action_template entries and bind each supporting Workflow to the exact Action ids that realize those roles. State when to use the Pattern, anti-goals, exclusions, decision branches, ordering, and validation. Use candidate_pending_holdout only when at least two repositories support every required role; it still requires a separate untouched holdout repair. Never invent holdout facts, solution refs, tests, evidence ids, Action ids, or Workflow ids. Return JSON only.",
+      "user": "{\"instructions\": [\"Give the Pattern a short title a software engineer can understand without knowing AREX.\", \"Describe observable applicability signals, not product names or issue numbers.\", \"Do not merge Actions. Use workflow_realizations to map generic roles to existing ids.\", \"A required role must be independently realized in at least two repositories.\", \"Keep repository-specific branches conditional rather than universally mandatory.\", \"The validation ladder must distinguish focused contract checks, integration checks, and regressions.\", \"If the evidence supports only fragments rather than one coherent policy, return defer.\"], \"operation\": \"induce_human_resolution_pattern\", \"previous_validation_errors\": [], \"training_graph\": {\"actions\": [{\"aliases\": [], \"category\": \"credential-resolution-and-authentication\", \"description\": \"Resolve configured credential sources into a priority-preserving candidate list while isolating source-specific read, parse, and storage failures.\", \"evidence_ids\": [\"E2\", \"E3\", \"E9\"], \"grounded_semantics\": true, \"id\": \"semantic-action:0988516672c6f923\", \"intent\": \"Make every configured fallback credential available to authentication while preserving source precedence.\", \"module_role\": \"credential source resolver\", \"node_type\": \"change_action\", \"operation\": \"normalize\", \"parameters\": [\"encrypted credential storage\", \"default cached credential path\", \"environment-selected credential path\", \"encrypted-storage mode flag\", \"ordered credential candidates\"], \"post_state\": \"Every successfully loaded credential is represented in priority order, and failure to load one source does not prevent later configured sources from being collected.\", \"pre_state\": \"Credential sources have an established priority, but resolution returns a single credential and can therefore hide later fallbacks once an earlier source parses successfully.\", \"source_name\": \"collect-ordered-credential-candidates\", \"status\": \"candidate\", \"supporting_episodes\": [\"google-gemini__gemini-cli__28472__f743ab5790\"], \"supporting_repositories\": [\"google-gemini/gemini-cli\"], \"validation\": \"Exercise valid-primary, missing-primary, invalid-source, and secondary-source cases; assert ordering and that later candidates remain reachable.\"}, {\"aliases\": [], \"category\": \"credential-resolution-and-authentication\", \"description\": \"Conditionally omit direct access-key credentials when an explicit or stored/scoped profile should control SDK credential resolution, while preserving access-key and skip-auth fallback behavior outside that condition.\", \"evidence_ids\": [\"ev-before-1\", \"ev-diff-1\", \"ev-test-1\", \"ev-test-2\", \"ev-test-3\", \"ev-validation-1\"], \"grounded_semantics\": true, \"id\": \"semantic-action:0ed4df7cdd031b8d\", \"intent\": \"Prevent ambient access keys from silently overriding a deliberately selected credential profile without disabling valid access-key fallback.\", \"module_role\": \"Runtime client authentication configuration builder\", \"node_type\": \"change_action\", \"operation\": \"guard\", \"parameters\": [\"authentication_skip_flag\", \"resolved_access_key_pair\", \"authoritative_profile_marker\", \"client_configuration\"], \"post_state\": \"Explicit client credentials are assigned only when authentication is enabled, a complete access-key pair exists, and no authoritative profile marker exists; otherwise the selected profile remains available to the SDK credential chain.\", \"pre_state\": \"A complete access-key pair is always assigned as explicit client credentials when authentication is enabled, even when an authoritative profile has been selected.\", \"source_name\": \"guard-lower-priority-credential-injection\", \"status\": \"candidate\", \"supporting_episodes\": [\"earendil-works__pi__7176__b63403a5\"], \"supporting_repositories\": [\"earendil-works/pi\"], \"validation\": \"Inspect the mocked client constructor configuration: explicit or scoped profile plus ambient keys must omit credentials; keys without an authoritative profile must remain populated, including the ambient-profile-plus-keys case.\"}, {\"aliases\": [], \"category\": \"credential-resolution-and-authentication\", \"description\": \"Attempt each credential candidate with its appropriate authentication client, accepting the first verified candidate and treating an individual rejection as a recoverable fallback condition.\", \"evidence_ids\": [\"E4\", \"E5\", \"E6\", \"E7\", \"E8\"], \"grounded_semantics\": true, \"id\": \"semantic-action:44169da62485357a\", \"intent\": \"Authenticate with the highest-priority usable credential instead of forcing reauthentication when a higher-priority cached credential is expired, revoked, or incompatible.\", \"module_role\": \"authentication candidate selector\", \"node_type\": \"change_action\", \"operation\": \"reconcile\", \"parameters\": [\"ordered credential candidates\", \"credential type discriminator\", \"OAuth client factory\", \"application-default credential adapter\", \"access-token verifier\", \"token-info verifier\"], \"post_state\": \"The first candidate that successfully produces a usable token is returned; a failed candidate is logged and does not block verification of the next candidate.\", \"pre_state\": \"An ordered set of credential candidates exists, but one candidate may fail token acquisition or server-side token validation.\", \"source_name\": \"verify-credential-candidates-sequentially\", \"status\": \"candidate\", \"supporting_episodes\": [\"google-gemini__gemini-cli__28472__f743ab5790\"], \"supporting_repositories\": [\"google-gemini/gemini-cli\"], \"validation\": \"Make the first candidate fail token acquisition or token-info validation and make the next candidate succeed; assert that the succeeding credential is applied and returned through the public client-acquisition boundary.\"}, {\"aliases\": [], \"category\": \"credential-resolution-and-authentication\", \"description\": \"Make CLI preflight and core configuration validation accept the same eligible project-only state while retaining errors for all excluded states.\", \"evidence_ids\": [\"E2\", \"E5\", \"E7\", \"E10\", \"E11\"], \"grounded_semantics\": true, \"id\": \"semantic-action:53211921400b2acf\", \"intent\": \"Prevent an authentication method accepted at one startup boundary from being rejected at another.\", \"module_role\": \"startup credential validation\", \"node_type\": \"change_action\", \"operation\": \"reconcile\", \"parameters\": [\"authentication method\", \"resolved model configuration\", \"settings environment\", \"strict-provider flag\", \"credential error result\"], \"post_state\": \"Each gate accepts a missing key only under the shared keyless eligibility contract and continues to reject missing credentials otherwise.\", \"pre_state\": \"Multiple startup gates independently treat absence of an API key as a credential failure.\", \"source_name\": \"reconcile_authentication_gates\", \"status\": \"candidate\", \"supporting_episodes\": [\"QwenLM__qwen-code__9016__fd9c452dc889\"], \"supporting_repositories\": [\"QwenLM/qwen-code\"], \"validation\": \"Run focused CLI and core validation cases for eligible keyless configuration, missing project, strict validation, explicit key-variable configuration, and unrelated auth modes.\"}, {\"aliases\": [], \"category\": \"credential-resolution-and-authentication\", \"description\": \"Guard the precedence correction with an oracle proving that installations which only provide the generic OpenAI-compatible credential continue to resolve a usable key.\", \"evidence_ids\": [\"E6\", \"E10\"], \"grounded_semantics\": true, \"id\": \"semantic-action:60a3a6dfb73ac8c2\", \"intent\": \"Correct conflicting-credential selection without breaking configurations that rely on a generic compatible credential because no endpoint-specific credential is configured.\", \"module_role\": \"Credential-resolution compatibility guard\", \"node_type\": \"change_action\", \"operation\": \"validate\", \"parameters\": [\"selected_endpoint\", \"endpoint_specific_credential_variable\", \"generic_compatible_credential_variable\", \"resolved_credential\"], \"post_state\": \"The resolver returns the generic compatible credential after exhausting the explicit and endpoint-specific slots.\", \"pre_state\": \"The endpoint-specific credential is absent while a generic credential accepted by the selected compatible endpoint is present.\", \"source_name\": \"preserve-compatible-credential-fallback\", \"status\": \"candidate\", \"supporting_episodes\": [\"NousResearch__hermes-agent__289__221e4228\"], \"supporting_repositories\": [\"NousResearch/hermes-agent\"], \"validation\": \"Run the fallback regression test with OPENROUTER_API_KEY removed and OPENAI_API_KEY set; it asserts the returned api_key equals the generic fallback value.\"}, {\"aliases\": [], \"category\": \"credential-resolution-and-authentication\", \"description\": \"Determine whether the selected authentication mode may use ambient default credentials without overriding a provider entry that explicitly declares a key source.\", \"evidence_ids\": [\"E3\", \"E4\", \"E10\", \"E11\"], \"grounded_semantics\": true, \"id\": \"semantic-action:6131245bcf396066\", \"intent\": \"Permit an ambient credential resolver only when routing context is present and no explicit secret contract would be bypassed.\", \"module_role\": \"credential-policy classifier\", \"node_type\": \"change_action\", \"operation\": \"guard\", \"parameters\": [\"selected auth type\", \"selected model-provider entry\", \"declared key-variable name\", \"project identifier lookup\", \"resolved API key\"], \"post_state\": \"The configuration is classified as keyless-eligible only for the supported auth mode, with no declared key variable and a nonblank project identifier.\", \"pre_state\": \"A selected provider configuration has no resolved API key and may or may not declare its own key variable or contain a usable project identifier.\", \"source_name\": \"classify_keyless_credential_eligibility\", \"status\": \"candidate\", \"supporting_episodes\": [\"QwenLM__qwen-code__9016__fd9c452dc889\"], \"supporting_repositories\": [\"QwenLM/qwen-code\"], \"validation\": \"Exercise project-present, project-absent, whitespace-only, alternate-auth-type, and explicit-key-variable cases; only the eligible project-only cases may pass.\"}, {\"aliases\": [], \"category\": \"credential-resolution-and-authentication\", \"description\": \"Select the cloud endpoint directly from the resolved auth type and preserve an absent API key so the SDK can resolve ambient credentials.\", \"evidence_ids\": [\"E6\", \"E12\"], \"grounded_semantics\": true, \"id\": \"semantic-action:749f3224f4b0f0f6\", \"intent\": \"Route requests to the intended cloud endpoint without converting a keyless configuration into a conflicting key-based mode.\", \"module_role\": \"provider client factory\", \"node_type\": \"change_action\", \"operation\": \"adapt\", \"parameters\": [\"resolved auth type\", \"optional explicit endpoint-mode flag\", \"resolved API key\", \"SDK client options\"], \"post_state\": \"The selected cloud auth type produces explicit cloud mode with no API key supplied; other auth types retain SDK environment fallback unless explicitly configured.\", \"pre_state\": \"Client construction may depend on an earlier environment mutation, and a placeholder or empty key can alter SDK authentication semantics.\", \"source_name\": \"construct_client_for_selected_auth_mode\", \"status\": \"candidate\", \"supporting_episodes\": [\"QwenLM__qwen-code__9016__fd9c452dc889\"], \"supporting_repositories\": [\"QwenLM/qwen-code\"], \"validation\": \"Construct the client with the cloud auth type, a configured project, no mode-selection environment value, and no API key; assert cloud mode is true and the key is undefined.\"}, {\"aliases\": [], \"category\": \"credential-resolution-and-authentication\", \"description\": \"Keep a declared secret source mandatory instead of silently authenticating through ambient credentials when that secret is missing.\", \"evidence_ids\": [\"E3\", \"E8\", \"E10\", \"E11\"], \"grounded_semantics\": true, \"id\": \"semantic-action:7c87047d5fc8835e\", \"intent\": \"Avoid silently changing the authenticated principal after a configured secret fails to resolve.\", \"module_role\": \"credential precedence enforcement\", \"node_type\": \"change_action\", \"operation\": \"guard\", \"parameters\": [\"declared key-variable name\", \"resolved key value\", \"ambient project configuration\", \"credential error\"], \"post_state\": \"Validation continues to fail on the declared key variable and does not offer or activate the ambient credential path.\", \"pre_state\": \"A provider entry declares a key variable, the variable is unset, and ambient credentials might otherwise be available.\", \"source_name\": \"preserve_explicit_credential_authority\", \"status\": \"candidate\", \"supporting_episodes\": [\"QwenLM__qwen-code__9016__fd9c452dc889\"], \"supporting_repositories\": [\"QwenLM/qwen-code\"], \"validation\": \"Configure a declared key variable plus a project while leaving the variable unset; assert validation fails on that variable in both CLI and core and omits the keyless hint.\"}, {\"aliases\": [], \"category\": \"credential-resolution-and-authentication\", \"description\": \"Derive a profile marker only from request-explicit or stored/scoped configuration, while retaining ambient profile discovery solely as the client profile fallback. This preserves source provenance for the later credential-precedence decision.\", \"evidence_ids\": [\"ev-diff-1\", \"ev-callsite-1\", \"ev-callsite-2\", \"ev-test-1\", \"ev-test-3\"], \"grounded_semantics\": true, \"id\": \"semantic-action:8e99fdc4c5a44619\", \"intent\": \"Identify when a profile represents a deliberate request or stored authentication choice that must outrank ambient access keys.\", \"module_role\": \"Credential-source precedence resolver at the provider client boundary\", \"node_type\": \"change_action\", \"operation\": \"classify\", \"parameters\": [\"explicit_profile_option\", \"scoped_profile_environment\", \"ambient_profile_environment\"], \"post_state\": \"An authoritative-profile marker is present only for an explicit option or scoped request environment; the client may still receive an ambient profile through the fallback lookup without marking it authoritative.\", \"pre_state\": \"Profile lookup collapses explicit, stored/scoped, and ambient profile sources into one client field, so later credential injection cannot tell whether the profile is authoritative.\", \"source_name\": \"classify-authoritative-profile-source\", \"status\": \"candidate\", \"supporting_episodes\": [\"earendil-works__pi__7176__b63403a5\"], \"supporting_repositories\": [\"earendil-works/pi\"], \"validation\": \"Capture client configuration for explicit, scoped, and ambient-only profiles; explicit and scoped inputs must be recognized as precedence-bearing, while ambient-only profile discovery must retain the distinct behavior demonstrated by the access-key fallback test.\"}, {\"aliases\": [], \"category\": \"credential-resolution-and-authentication\", \"description\": \"Reconcile every credential-resolution path so an explicitly supplied credential remains strongest, the credential dedicated to the selected endpoint wins over a generic compatible credential, and the generic credential remains a fallback.\", \"evidence_ids\": [\"E3\", \"E4\", \"E5\", \"E6\", \"E7\", \"E8\", \"E9\"], \"grounded_semantics\": true, \"id\": \"semantic-action:8fd73e4a5fb9392c\", \"intent\": \"Prevent authentication failures caused by sending a credential for one service to a different selected endpoint when multiple compatible credential variables coexist.\", \"module_role\": \"Credential precedence policy shared by eager client state and runtime provider resolution\", \"node_type\": \"change_action\", \"operation\": \"reconcile\", \"parameters\": [\"selected_endpoint\", \"explicit_credential\", \"endpoint_specific_credential_variable\", \"generic_compatible_credential_variable\", \"eager_initialization_path\", \"runtime_resolution_path\"], \"post_state\": \"All inspected resolution paths use the invariant explicit credential > endpoint-specific credential > generic compatible fallback, so the selected endpoint receives its own credential when available.\", \"pre_state\": \"The selected runtime is OpenRouter-compatible, no explicit credential overrides the environment, and both endpoint-specific and generic compatible credentials may be present; existing paths prioritize the generic credential inconsistently with the selected endpoint.\", \"source_name\": \"align-endpoint-credential-precedence\", \"status\": \"candidate\", \"supporting_episodes\": [\"NousResearch__hermes-agent__289__221e4228\"], \"supporting_repositories\": [\"NousResearch/hermes-agent\"], \"validation\": \"Compare the first-parent diff for both resolution paths and use the preferred-key regression test to prove the shared runtime resolver returns the endpoint-specific credential when both environment variables are populated.\"}, {\"aliases\": [], \"category\": \"credential-resolution-and-authentication\", \"description\": \"Represent routing readiness separately from proof that an ambient credential can actually resolve.\", \"evidence_ids\": [\"E9\", \"E13\"], \"grounded_semantics\": true, \"id\": \"semantic-action:8fe928c89461f4fd\", \"intent\": \"Avoid presenting project configuration as proof of a usable authentication token.\", \"module_role\": \"authentication status reporting\", \"node_type\": \"change_action\", \"operation\": \"map\", \"parameters\": [\"authentication type\", \"project configuration\", \"observed token state\", \"preflight cell status\"], \"post_state\": \"Preflight reports an indeterminate authentication state with no confirmed token and defers credential proof to session startup.\", \"pre_state\": \"No API key is observed, but the configuration is eligible to attempt ambient credential resolution at session start.\", \"source_name\": \"report_unverified_ambient_credentials\", \"status\": \"candidate\", \"supporting_episodes\": [\"QwenLM__qwen-code__9016__fd9c452dc889\"], \"supporting_repositories\": [\"QwenLM/qwen-code\"], \"validation\": \"Request preflight status for an eligible keyless configuration and assert unknown status, unknown token presence, and no immediate missing-key error.\"}, {\"aliases\": [], \"category\": \"credential-resolution-and-authentication\", \"description\": \"Tell users about ambient credentials when that path can work, while retaining precise key-source errors for excluded configurations.\", \"evidence_ids\": [\"E8\", \"E10\", \"E11\"], \"grounded_semantics\": true, \"id\": \"semantic-action:db55f36a551797f7\", \"intent\": \"Direct users toward a valid recovery path without encouraging placeholder credentials or impossible fallbacks.\", \"module_role\": \"credential failure diagnostics\", \"node_type\": \"change_action\", \"operation\": \"map\", \"parameters\": [\"authentication type\", \"explicit key-variable name\", \"default key-variable name\", \"strict-validation mode\", \"error message\"], \"post_state\": \"Eligible keyless configurations mention the project-based alternative; unrelated auth types and explicit-key-variable entries do not.\", \"pre_state\": \"Credential validation fails and the error formatter knows the auth type and whether a key variable was explicitly declared.\", \"source_name\": \"emit_applicable_credential_recovery_guidance\", \"status\": \"candidate\", \"supporting_episodes\": [\"QwenLM__qwen-code__9016__fd9c452dc889\"], \"supporting_repositories\": [\"QwenLM/qwen-code\"], \"validation\": \"Assert project guidance appears for eligible missing-credential errors in normal and strict modes and is absent for unrelated auth types and explicit-key-variable entries.\"}], \"boundary\": {\"action_similarity_is_not_equivalence\": true, \"holdout_loaded\": false, \"role_templates_must_bind_to_real_action_ids\": true, \"training_only\": true}, \"factorization_audit\": {\"action_grain\": [{\"clause_signal_count\": 2, \"declared_operation\": \"normalize\", \"description_operation_signals\": [], \"id\": \"semantic-action:0988516672c6f923\", \"operation_signals\": [\"load\"], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [], \"verdict\": \"atomic-review\"}, {\"clause_signal_count\": 2, \"declared_operation\": \"guard\", \"description_operation_signals\": [], \"id\": \"semantic-action:0ed4df7cdd031b8d\", \"operation_signals\": [], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [], \"verdict\": \"atomic-review\"}, {\"clause_signal_count\": 1, \"declared_operation\": \"reconcile\", \"description_operation_signals\": [], \"id\": \"semantic-action:44169da62485357a\", \"operation_signals\": [], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [], \"verdict\": \"atomic-review\"}, {\"clause_signal_count\": 2, \"declared_operation\": \"reconcile\", \"description_operation_signals\": [], \"id\": \"semantic-action:53211921400b2acf\", \"operation_signals\": [], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [], \"verdict\": \"atomic-review\"}, {\"clause_signal_count\": 0, \"declared_operation\": \"validate\", \"description_operation_signals\": [\"guard\"], \"id\": \"semantic-action:60a3a6dfb73ac8c2\", \"operation_signals\": [\"guard\"], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [\"guard\"], \"verdict\": \"atomic-review\"}, {\"clause_signal_count\": 1, \"declared_operation\": \"guard\", \"description_operation_signals\": [], \"id\": \"semantic-action:6131245bcf396066\", \"operation_signals\": [], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [], \"verdict\": \"atomic-review\"}, {\"clause_signal_count\": 1, \"declared_operation\": \"adapt\", \"description_operation_signals\": [\"preserve\"], \"id\": \"semantic-action:749f3224f4b0f0f6\", \"operation_signals\": [\"preserve\", \"route\"], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [\"preserve\"], \"verdict\": \"atomic-review\"}, {\"clause_signal_count\": 0, \"declared_operation\": \"guard\", \"description_operation_signals\": [], \"id\": \"semantic-action:7c87047d5fc8835e\", \"operation_signals\": [], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [], \"verdict\": \"atomic-review\"}, {\"clause_signal_count\": 1, \"declared_operation\": \"classify\", \"description_operation_signals\": [\"preserve\"], \"id\": \"semantic-action:8e99fdc4c5a44619\", \"operation_signals\": [\"preserve\"], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [\"preserve\"], \"verdict\": \"atomic-review\"}, {\"clause_signal_count\": 1, \"declared_operation\": \"reconcile\", \"description_operation_signals\": [\"reconcile\"], \"id\": \"semantic-action:8fd73e4a5fb9392c\", \"operation_signals\": [\"reconcile\"], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [], \"verdict\": \"atomic-review\"}, {\"clause_signal_count\": 0, \"declared_operation\": \"map\", \"description_operation_signals\": [], \"id\": \"semantic-action:8fe928c89461f4fd\", \"operation_signals\": [], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [], \"verdict\": \"atomic-review\"}, {\"clause_signal_count\": 1, \"declared_operation\": \"map\", \"description_operation_signals\": [], \"id\": \"semantic-action:db55f36a551797f7\", \"operation_signals\": [], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [], \"verdict\": \"atomic-review\"}], \"coarse_action_groups\": [{\"action_ids\": [\"semantic-action:44169da62485357a\"], \"module_role\": \"authentication candidate selector\", \"operation\": \"reconcile\", \"repositories\": [\"google-gemini/gemini-cli\"]}, {\"action_ids\": [\"semantic-action:8fe928c89461f4fd\"], \"module_role\": \"authentication status reporting\", \"operation\": \"map\", \"repositories\": [\"QwenLM/qwen-code\"]}, {\"action_ids\": [\"semantic-action:db55f36a551797f7\"], \"module_role\": \"credential failure diagnostics\", \"operation\": \"map\", \"repositories\": [\"QwenLM/qwen-code\"]}, {\"action_ids\": [\"semantic-action:7c87047d5fc8835e\"], \"module_role\": \"credential precedence enforcement\", \"operation\": \"guard\", \"repositories\": [\"QwenLM/qwen-code\"]}, {\"action_ids\": [\"semantic-action:8fd73e4a5fb9392c\"], \"module_role\": \"credential precedence policy shared by eager client state and runtime provider resolution\", \"operation\": \"reconcile\", \"repositories\": [\"NousResearch/hermes-agent\"]}, {\"action_ids\": [\"semantic-action:0988516672c6f923\"], \"module_role\": \"credential source resolver\", \"operation\": \"normalize\", \"repositories\": [\"google-gemini/gemini-cli\"]}, {\"action_ids\": [\"semantic-action:6131245bcf396066\"], \"module_role\": \"credential-policy classifier\", \"operation\": \"guard\", \"repositories\": [\"QwenLM/qwen-code\"]}, {\"action_ids\": [\"semantic-action:60a3a6dfb73ac8c2\"], \"module_role\": \"credential-resolution compatibility guard\", \"operation\": \"validate\", \"repositories\": [\"NousResearch/hermes-agent\"]}, {\"action_ids\": [\"semantic-action:8e99fdc4c5a44619\"], \"module_role\": \"credential-source precedence resolver at the provider client boundary\", \"operation\": \"classify\", \"repositories\": [\"earendil-works/pi\"]}, {\"action_ids\": [\"semantic-action:749f3224f4b0f0f6\"], \"module_role\": \"provider client factory\", \"operation\": \"adapt\", \"repositories\": [\"QwenLM/qwen-code\"]}, {\"action_ids\": [\"semantic-action:0ed4df7cdd031b8d\"], \"module_role\": \"runtime client authentication configuration builder\", \"operation\": \"guard\", \"repositories\": [\"earendil-works/pi\"]}, {\"action_ids\": [\"semantic-action:53211921400b2acf\"], \"module_role\": \"startup credential validation\", \"operation\": \"reconcile\", \"repositories\": [\"QwenLM/qwen-code\"]}], \"cross_repository_pair_analysis\": [{\"decision\": \"not-a-peer\", \"left\": \"semantic-action:0988516672c6f923\", \"left_repositories\": [\"google-gemini/gemini-cli\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:0ed4df7cdd031b8d\", \"right_repositories\": [\"earendil-works/pi\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:0988516672c6f923\", \"left_repositories\": [\"google-gemini/gemini-cli\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:53211921400b2acf\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:0988516672c6f923\", \"left_repositories\": [\"google-gemini/gemini-cli\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:60a3a6dfb73ac8c2\", \"right_repositories\": [\"NousResearch/hermes-agent\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:0988516672c6f923\", \"left_repositories\": [\"google-gemini/gemini-cli\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:6131245bcf396066\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:0988516672c6f923\", \"left_repositories\": [\"google-gemini/gemini-cli\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:749f3224f4b0f0f6\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:0988516672c6f923\", \"left_repositories\": [\"google-gemini/gemini-cli\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:7c87047d5fc8835e\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:0988516672c6f923\", \"left_repositories\": [\"google-gemini/gemini-cli\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:8e99fdc4c5a44619\", \"right_repositories\": [\"earendil-works/pi\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:0988516672c6f923\", \"left_repositories\": [\"google-gemini/gemini-cli\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:8fd73e4a5fb9392c\", \"right_repositories\": [\"NousResearch/hermes-agent\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:0988516672c6f923\", \"left_repositories\": [\"google-gemini/gemini-cli\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:8fe928c89461f4fd\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:0988516672c6f923\", \"left_repositories\": [\"google-gemini/gemini-cli\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:db55f36a551797f7\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:0ed4df7cdd031b8d\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:44169da62485357a\", \"right_repositories\": [\"google-gemini/gemini-cli\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:0ed4df7cdd031b8d\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:53211921400b2acf\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:0ed4df7cdd031b8d\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:60a3a6dfb73ac8c2\", \"right_repositories\": [\"NousResearch/hermes-agent\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"same-operation-different-owner\", \"left\": \"semantic-action:0ed4df7cdd031b8d\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:6131245bcf396066\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:0ed4df7cdd031b8d\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:749f3224f4b0f0f6\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"same-operation-different-owner\", \"left\": \"semantic-action:0ed4df7cdd031b8d\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:7c87047d5fc8835e\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:0ed4df7cdd031b8d\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:8fd73e4a5fb9392c\", \"right_repositories\": [\"NousResearch/hermes-agent\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:0ed4df7cdd031b8d\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:8fe928c89461f4fd\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:0ed4df7cdd031b8d\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:db55f36a551797f7\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"same-operation-different-owner\", \"left\": \"semantic-action:44169da62485357a\", \"left_repositories\": [\"google-gemini/gemini-cli\"], \"reasons\": [\"semantic-owner-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:53211921400b2acf\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:44169da62485357a\", \"left_repositories\": [\"google-gemini/gemini-cli\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:60a3a6dfb73ac8c2\", \"right_repositories\": [\"NousResearch/hermes-agent\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:44169da62485357a\", \"left_repositories\": [\"google-gemini/gemini-cli\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:6131245bcf396066\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:44169da62485357a\", \"left_repositories\": [\"google-gemini/gemini-cli\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:749f3224f4b0f0f6\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:44169da62485357a\", \"left_repositories\": [\"google-gemini/gemini-cli\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:7c87047d5fc8835e\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:44169da62485357a\", \"left_repositories\": [\"google-gemini/gemini-cli\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:8e99fdc4c5a44619\", \"right_repositories\": [\"earendil-works/pi\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"same-operation-different-owner\", \"left\": \"semantic-action:44169da62485357a\", \"left_repositories\": [\"google-gemini/gemini-cli\"], \"reasons\": [\"semantic-owner-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:8fd73e4a5fb9392c\", \"right_repositories\": [\"NousResearch/hermes-agent\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:44169da62485357a\", \"left_repositories\": [\"google-gemini/gemini-cli\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:8fe928c89461f4fd\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:44169da62485357a\", \"left_repositories\": [\"google-gemini/gemini-cli\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:db55f36a551797f7\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:53211921400b2acf\", \"left_repositories\": [\"QwenLM/qwen-code\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:60a3a6dfb73ac8c2\", \"right_repositories\": [\"NousResearch/hermes-agent\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:53211921400b2acf\", \"left_repositories\": [\"QwenLM/qwen-code\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:8e99fdc4c5a44619\", \"right_repositories\": [\"earendil-works/pi\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"same-operation-different-owner\", \"left\": \"semantic-action:53211921400b2acf\", \"left_repositories\": [\"QwenLM/qwen-code\"], \"reasons\": [\"semantic-owner-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:8fd73e4a5fb9392c\", \"right_repositories\": [\"NousResearch/hermes-agent\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:60a3a6dfb73ac8c2\", \"left_repositories\": [\"NousResearch/hermes-agent\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:6131245bcf396066\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:60a3a6dfb73ac8c2\", \"left_repositories\": [\"NousResearch/hermes-agent\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:749f3224f4b0f0f6\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:60a3a6dfb73ac8c2\", \"left_repositories\": [\"NousResearch/hermes-agent\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:7c87047d5fc8835e\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:60a3a6dfb73ac8c2\", \"left_repositories\": [\"NousResearch/hermes-agent\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:8e99fdc4c5a44619\", \"right_repositories\": [\"earendil-works/pi\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:60a3a6dfb73ac8c2\", \"left_repositories\": [\"NousResearch/hermes-agent\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:8fe928c89461f4fd\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:60a3a6dfb73ac8c2\", \"left_repositories\": [\"NousResearch/hermes-agent\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:db55f36a551797f7\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:6131245bcf396066\", \"left_repositories\": [\"QwenLM/qwen-code\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:8e99fdc4c5a44619\", \"right_repositories\": [\"earendil-works/pi\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:6131245bcf396066\", \"left_repositories\": [\"QwenLM/qwen-code\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:8fd73e4a5fb9392c\", \"right_repositories\": [\"NousResearch/hermes-agent\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:749f3224f4b0f0f6\", \"left_repositories\": [\"QwenLM/qwen-code\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:8e99fdc4c5a44619\", \"right_repositories\": [\"earendil-works/pi\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:749f3224f4b0f0f6\", \"left_repositories\": [\"QwenLM/qwen-code\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:8fd73e4a5fb9392c\", \"right_repositories\": [\"NousResearch/hermes-agent\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:7c87047d5fc8835e\", \"left_repositories\": [\"QwenLM/qwen-code\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:8e99fdc4c5a44619\", \"right_repositories\": [\"earendil-works/pi\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:7c87047d5fc8835e\", \"left_repositories\": [\"QwenLM/qwen-code\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:8fd73e4a5fb9392c\", \"right_repositories\": [\"NousResearch/hermes-agent\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:8e99fdc4c5a44619\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:8fd73e4a5fb9392c\", \"right_repositories\": [\"NousResearch/hermes-agent\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:8e99fdc4c5a44619\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:8fe928c89461f4fd\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:8e99fdc4c5a44619\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:db55f36a551797f7\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:8fd73e4a5fb9392c\", \"left_repositories\": [\"NousResearch/hermes-agent\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:8fe928c89461f4fd\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:8fd73e4a5fb9392c\", \"left_repositories\": [\"NousResearch/hermes-agent\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:db55f36a551797f7\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}], \"interpretation\": {\"action_reuse\": \"An Action is reusable only when its semantic owner, finite operation, state transition, and validation oracle all survive substitution into the other repository.\", \"granularity\": \"A split is justified only when a candidate contains independently testable finite operations with separate postconditions or validation oracles. Different paths, providers, or filenames alone are not a reason to split.\", \"workflow_reuse\": \"A repeated role sequence such as establish-contract -> reconcile -> validate is a reusable Workflow fragment, but it is a template over new Actions rather than evidence that the Actions themselves are interchangeable.\"}, \"policy\": {\"merge_requires\": [\"same semantic owner\", \"same finite operation\", \"same pre-state\", \"same post-state\", \"same validation oracle\"], \"role_skeleton_is_not_action_reuse\": true, \"split_is_review_signal_only\": true}, \"schema_version\": \"action-factorization-audit-v1\", \"scope\": {\"action_ids\": [\"semantic-action:0988516672c6f923\", \"semantic-action:0ed4df7cdd031b8d\", \"semantic-action:44169da62485357a\", \"semantic-action:53211921400b2acf\", \"semantic-action:60a3a6dfb73ac8c2\", \"semantic-action:6131245bcf396066\", \"semantic-action:749f3224f4b0f0f6\", \"semantic-action:7c87047d5fc8835e\", \"semantic-action:8e99fdc4c5a44619\", \"semantic-action:8fd73e4a5fb9392c\", \"semantic-action:8fe928c89461f4fd\", \"semantic-action:db55f36a551797f7\"], \"global_audit_rows_omitted\": true, \"workflow_ids\": [\"workflow:69a62ada5b9d2fa3\", \"workflow:93b8d079bb756671\", \"workflow:d223ffc3e21b4fac\", \"workflow:ec991aae270f5400\"]}, \"workflow_role_segments\": [{\"action_reuse\": false, \"category_repository_support\": {\"context-budget-and-compaction\": [\"earendil-works/pi\"], \"credential-resolution-and-authentication\": [\"QwenLM/qwen-code\"], \"effect-control-and-isolation\": [\"openai/codex\"], \"provider-interface-adaptation\": [\"google-gemini/gemini-cli\"], \"state-continuity-and-resume\": [\"earendil-works/pi\"], \"structured-tool-contract-integrity\": [\"QwenLM/qwen-code\"]}, \"interpretation\": \"Reusable control-flow skeleton only; each step still needs a repository-specific Action contract.\", \"kind\": \"workflow-role-skeleton\", \"occurrences\": [{\"action_ids\": [\"semantic-action:6131245bcf396066\", \"semantic-action:7c87047d5fc8835e\", \"semantic-action:53211921400b2acf\"], \"category\": \"credential-resolution-and-authentication\", \"issue\": 9016, \"repository\": \"QwenLM/qwen-code\", \"workflow_id\": \"workflow:69a62ada5b9d2fa3\"}], \"reuse_scope\": \"cross-category-skeleton\", \"same_category_cross_repository_support\": {}, \"segment_roles\": [\"establish-contract\", \"implement\", \"reconcile\"], \"supporting_categories\": [\"credential-resolution-and-authentication\"], \"supporting_repositories\": [\"QwenLM/qwen-code\"], \"supporting_workflows\": [\"workflow:69a62ada5b9d2fa3\"]}, {\"action_reuse\": false, \"category_repository_support\": {\"credential-resolution-and-authentication\": [\"QwenLM/qwen-code\"], \"effect-control-and-isolation\": [\"earendil-works/pi\"]}, \"interpretation\": \"Reusable control-flow skeleton only; each step still needs a repository-specific Action contract.\", \"kind\": \"workflow-role-skeleton\", \"occurrences\": [{\"action_ids\": [\"semantic-action:7c87047d5fc8835e\", \"semantic-action:53211921400b2acf\", \"semantic-action:749f3224f4b0f0f6\"], \"category\": \"credential-resolution-and-authentication\", \"issue\": 9016, \"repository\": \"QwenLM/qwen-code\", \"workflow_id\": \"workflow:69a62ada5b9d2fa3\"}], \"reuse_scope\": \"cross-category-skeleton\", \"same_category_cross_repository_support\": {}, \"segment_roles\": [\"implement\", \"reconcile\", \"implement\"], \"supporting_categories\": [\"credential-resolution-and-authentication\"], \"supporting_repositories\": [\"QwenLM/qwen-code\"], \"supporting_workflows\": [\"workflow:69a62ada5b9d2fa3\"]}, {\"action_reuse\": false, \"category_repository_support\": {\"context-budget-and-compaction\": [\"earendil-works/pi\"], \"credential-resolution-and-authentication\": [\"QwenLM/qwen-code\", \"earendil-works/pi\", \"google-gemini/gemini-cli\"], \"effect-control-and-isolation\": [\"earendil-works/pi\", \"openai/codex\"], \"failure-recovery-and-streaming\": [\"QwenLM/qwen-code\"], \"provider-interface-adaptation\": [\"NousResearch/hermes-agent\", \"google-gemini/gemini-cli\"], \"state-continuity-and-resume\": [\"earendil-works/pi\"], \"structured-tool-contract-integrity\": [\"QwenLM/qwen-code\"]}, \"interpretation\": \"The role sequence recurs within at least one category across repositories, but each step still needs a repository-specific Action contract.\", \"kind\": \"workflow-role-skeleton\", \"occurrences\": [{\"action_ids\": [\"semantic-action:6131245bcf396066\", \"semantic-action:7c87047d5fc8835e\"], \"category\": \"credential-resolution-and-authentication\", \"issue\": 9016, \"repository\": \"QwenLM/qwen-code\", \"workflow_id\": \"workflow:69a62ada5b9d2fa3\"}, {\"action_ids\": [\"semantic-action:8e99fdc4c5a44619\", \"semantic-action:0ed4df7cdd031b8d\"], \"category\": \"credential-resolution-and-authentication\", \"issue\": 7176, \"repository\": \"earendil-works/pi\", \"workflow_id\": \"workflow:93b8d079bb756671\"}, {\"action_ids\": [\"semantic-action:0988516672c6f923\", \"semantic-action:44169da62485357a\"], \"category\": \"credential-resolution-and-authentication\", \"issue\": 28472, \"repository\": \"google-gemini/gemini-cli\", \"workflow_id\": \"workflow:ec991aae270f5400\"}], \"reuse_scope\": \"same-category-cross-repository\", \"same_category_cross_repository_support\": {\"credential-resolution-and-authentication\": [\"QwenLM/qwen-code\", \"earendil-works/pi\", \"google-gemini/gemini-cli\"], \"effect-control-and-isolation\": [\"earendil-works/pi\", \"openai/codex\"], \"provider-interface-adaptation\": [\"NousResearch/hermes-agent\", \"google-gemini/gemini-cli\"]}, \"segment_roles\": [\"establish-contract\", \"implement\"], \"supporting_categories\": [\"credential-resolution-and-authentication\"], \"supporting_repositories\": [\"QwenLM/qwen-code\", \"earendil-works/pi\", \"google-gemini/gemini-cli\"], \"supporting_workflows\": [\"workflow:69a62ada5b9d2fa3\", \"workflow:93b8d079bb756671\", \"workflow:ec991aae270f5400\"]}, {\"action_reuse\": false, \"category_repository_support\": {\"context-budget-and-compaction\": [\"Aider-AI/aider\", \"earendil-works/pi\"], \"credential-resolution-and-authentication\": [\"QwenLM/qwen-code\"], \"effect-control-and-isolation\": [\"earendil-works/pi\", \"openai/codex\"], \"provider-interface-adaptation\": [\"google-gemini/gemini-cli\"], \"state-continuity-and-resume\": [\"Aider-AI/aider\", \"QwenLM/qwen-code\", \"earendil-works/pi\"], \"structured-tool-contract-integrity\": [\"QwenLM/qwen-code\"]}, \"interpretation\": \"The role sequence recurs within at least one category across repositories, but each step still needs a repository-specific Action contract.\", \"kind\": \"workflow-role-skeleton\", \"occurrences\": [{\"action_ids\": [\"semantic-action:7c87047d5fc8835e\", \"semantic-action:53211921400b2acf\"], \"category\": \"credential-resolution-and-authentication\", \"issue\": 9016, \"repository\": \"QwenLM/qwen-code\", \"workflow_id\": \"workflow:69a62ada5b9d2fa3\"}], \"reuse_scope\": \"same-category-cross-repository\", \"same_category_cross_repository_support\": {\"context-budget-and-compaction\": [\"Aider-AI/aider\", \"earendil-works/pi\"], \"effect-control-and-isolation\": [\"earendil-works/pi\", \"openai/codex\"], \"state-continuity-and-resume\": [\"Aider-AI/aider\", \"QwenLM/qwen-code\", \"earendil-works/pi\"]}, \"segment_roles\": [\"implement\", \"reconcile\"], \"supporting_categories\": [\"credential-resolution-and-authentication\"], \"supporting_repositories\": [\"QwenLM/qwen-code\"], \"supporting_workflows\": [\"workflow:69a62ada5b9d2fa3\"]}, {\"action_reuse\": false, \"category_repository_support\": {\"credential-resolution-and-authentication\": [\"QwenLM/qwen-code\"], \"effect-control-and-isolation\": [\"earendil-works/pi\"], \"failure-recovery-and-streaming\": [\"openai/codex\"], \"provider-interface-adaptation\": [\"Aider-AI/aider\"]}, \"interpretation\": \"Reusable control-flow skeleton only; each step still needs a repository-specific Action contract.\", \"kind\": \"workflow-role-skeleton\", \"occurrences\": [{\"action_ids\": [\"semantic-action:53211921400b2acf\", \"semantic-action:749f3224f4b0f0f6\"], \"category\": \"credential-resolution-and-authentication\", \"issue\": 9016, \"repository\": \"QwenLM/qwen-code\", \"workflow_id\": \"workflow:69a62ada5b9d2fa3\"}], \"reuse_scope\": \"cross-category-skeleton\", \"same_category_cross_repository_support\": {}, \"segment_roles\": [\"reconcile\", \"implement\"], \"supporting_categories\": [\"credential-resolution-and-authentication\"], \"supporting_repositories\": [\"QwenLM/qwen-code\"], \"supporting_workflows\": [\"workflow:69a62ada5b9d2fa3\"]}, {\"action_reuse\": false, \"category_repository_support\": {\"credential-resolution-and-authentication\": [\"NousResearch/hermes-agent\"], \"state-continuity-and-resume\": [\"Aider-AI/aider\"]}, \"interpretation\": \"Reusable control-flow skeleton only; each step still needs a repository-specific Action contract.\", \"kind\": \"workflow-role-skeleton\", \"occurrences\": [{\"action_ids\": [\"semantic-action:8fd73e4a5fb9392c\", \"semantic-action:60a3a6dfb73ac8c2\"], \"category\": \"credential-resolution-and-authentication\", \"issue\": 289, \"repository\": \"NousResearch/hermes-agent\", \"workflow_id\": \"workflow:d223ffc3e21b4fac\"}], \"reuse_scope\": \"cross-category-skeleton\", \"same_category_cross_repository_support\": {}, \"segment_roles\": [\"reconcile\", \"validate\"], \"supporting_categories\": [\"credential-resolution-and-authentication\"], \"supporting_repositories\": [\"NousResearch/hermes-agent\"], \"supporting_workflows\": [\"workflow:d223ffc3e21b4fac\"]}]}, \"pattern_candidate\": {\"category\": \"credential-resolution-and-authentication\", \"confidence\": 0.0, \"counterexamples\": [], \"decision_points\": [], \"extraction_method\": \"structural-action-fingerprint-v1; semantic judge required before promotion\", \"held_out_results\": [], \"id\": \"pattern:12e363c8192ed215\", \"intent\": \"Resolve credential resolution and authentication through a contract-first, evidence-validated change chain.\", \"invariants\": [], \"known_failure_modes\": [], \"mandatory_actions\": [], \"node_type\": \"resolution_pattern\", \"optional_actions\": [], \"ordering_constraints\": [], \"promotion_status\": \"insufficient-structural-support\", \"supporting_repositories\": [\"NousResearch/hermes-agent\", \"QwenLM/qwen-code\", \"earendil-works/pi\", \"google-gemini/gemini-cli\"], \"supporting_workflows\": [\"workflow:69a62ada5b9d2fa3\", \"workflow:93b8d079bb756671\", \"workflow:d223ffc3e21b4fac\", \"workflow:ec991aae270f5400\"], \"validation_ladder\": [], \"workflow_template\": []}, \"workflows\": [{\"anti_goals\": [\"Do not fabricate, inject, or pass a placeholder API key to satisfy validation.\", \"Do not silently fall back to ambient credentials when the selected provider entry declares a specific key source.\", \"Do not infer the selected authentication mode from project configuration alone when explicit mode selection is required.\", \"Do not report a configured project as proof that a usable credential has resolved.\", \"Do not broaden the keyless path to unrelated authentication modes.\"], \"category\": \"credential-resolution-and-authentication\", \"description\": \"A partial-order resolution chain for adding a keyless ambient authentication path across validation, client construction, diagnostics, and status reporting while preventing silent principal changes.\", \"edges\": [{\"from\": \"step-1\", \"to\": \"step-2\", \"type\": \"enables\"}, {\"from\": \"step-1\", \"to\": \"step-3\", \"type\": \"enables\"}, {\"from\": \"step-2\", \"to\": \"step-3\", \"type\": \"requires\"}, {\"from\": \"step-1\", \"to\": \"step-4\", \"type\": \"enables\"}, {\"from\": \"step-3\", \"to\": \"step-5\", \"type\": \"enables\"}, {\"from\": \"step-2\", \"to\": \"step-5\", \"type\": \"requires\"}, {\"from\": \"step-3\", \"to\": \"step-6\", \"type\": \"enables\"}, {\"from\": \"step-6\", \"to\": \"step-3\", \"type\": \"validates\"}, {\"from\": \"step-4\", \"to\": \"step-3\", \"type\": \"validates\"}], \"entry_state\": \"The intended provider mode is selected and ambient credentials may exist, but missing-key checks prevent startup or a placeholder key changes SDK behavior; validation, construction, and status surfaces may disagree.\", \"episode_id\": \"QwenLM__qwen-code__9016__fd9c452dc889\", \"evidence_ids\": [\"E1\", \"E2\", \"E3\", \"E4\", \"E5\", \"E6\", \"E7\", \"E8\", \"E9\", \"E10\", \"E11\", \"E12\", \"E13\", \"E14\"], \"exit_state\": \"Eligible project-only configurations pass every startup validation gate, construct the SDK client in the intended mode with no key, preserve explicit secret contracts, provide applicable recovery guidance, and leave actual ambient credential resolution unconfirmed until session startup.\", \"goal\": \"Allow a supported provider mode to resolve ambient default credentials from a project-scoped configuration while preserving explicit secret precedence, correct endpoint routing, truthful status, and actionable failures.\", \"id\": \"workflow:69a62ada5b9d2fa3\", \"inputs\": [\"selected authentication type\", \"resolved provider/model entry\", \"resolved API key and its source\", \"optional declared key-variable name\", \"project or routing identifier from process and settings\", \"SDK client construction options\", \"startup validation and preflight entry points\"], \"issue\": 9016, \"name\": \"enable_safe_ambient_credential_resolution\", \"node_type\": \"issue_workflow\", \"not_applicable_when\": [\"The provider SDK does not support ambient credential resolution.\", \"No routing context required by the ambient resolver is configured.\", \"The selected provider entry explicitly requires a key source that must remain authoritative.\", \"The authentication mode cannot be selected independently of credential presence.\"], \"repository\": \"QwenLM/qwen-code\", \"source_case\": \"QwenLM/qwen-code#9016\", \"steps\": [{\"action_id\": \"semantic-action:6131245bcf396066\", \"action_name\": \"classify_keyless_credential_eligibility\", \"condition\": \"Always establish the exact boundary before relaxing any missing-key check.\", \"depends_on\": [], \"optional\": false, \"required\": true, \"role\": \"establish-contract\", \"step_id\": \"step-1\", \"validation\": \"Boundary tests distinguish nonblank routing context from blank or whitespace values and exclude unrelated auth modes and declared key sources.\"}, {\"action_id\": \"semantic-action:7c87047d5fc8835e\", \"action_name\": \"preserve_explicit_credential_authority\", \"condition\": \"Apply whenever configurations may declare their own credential source.\", \"depends_on\": [\"classify_keyless_credential_eligibility\"], \"optional\": false, \"required\": true, \"role\": \"implement\", \"step_id\": \"step-2\", \"validation\": \"An unset declared key remains an error even when ambient routing context is present.\"}, {\"action_id\": \"semantic-action:53211921400b2acf\", \"action_name\": \"reconcile_authentication_gates\", \"condition\": \"Apply to every gate that can reject the resolved authentication configuration before client use.\", \"depends_on\": [\"classify_keyless_credential_eligibility\", \"preserve_explicit_credential_authority\"], \"optional\": false, \"required\": true, \"role\": \"reconcile\", \"step_id\": \"step-3\", \"validation\": \"CLI and core validators agree on eligible, ineligible, strict, and explicit-key configurations.\"}, {\"action_id\": \"semantic-action:749f3224f4b0f0f6\", \"action_name\": \"construct_client_for_selected_auth_mode\", \"condition\": \"Apply when the SDK's endpoint or authentication behavior depends on mode flags or key presence.\", \"depends_on\": [\"classify_keyless_credential_eligibility\"], \"optional\": false, \"required\": true, \"role\": \"implement\", \"step_id\": \"step-4\", \"validation\": \"The constructed client receives the intended mode flag and no API key without relying on a prior environment mutation.\"}, {\"action_id\": \"semantic-action:db55f36a551797f7\", \"action_name\": \"emit_applicable_credential_recovery_guidance\", \"condition\": \"Apply to missing-credential errors exposed by the affected validation gates.\", \"depends_on\": [\"classify_keyless_credential_eligibility\", \"preserve_explicit_credential_authority\", \"reconcile_authentication_gates\"], \"optional\": false, \"required\": true, \"role\": \"repair\", \"step_id\": \"step-5\", \"validation\": \"The ambient-credential hint appears only where the classifier says the path is applicable.\"}, {\"action_id\": \"semantic-action:8fe928c89461f4fd\", \"action_name\": \"report_unverified_ambient_credentials\", \"condition\": \"Apply when a preflight or status surface reports token availability before the SDK attempts ambient resolution.\", \"depends_on\": [\"classify_keyless_credential_eligibility\", \"reconcile_authentication_gates\"], \"optional\": false, \"required\": true, \"role\": \"validate\", \"step_id\": \"step-6\", \"validation\": \"Eligible project-only status is indeterminate rather than authenticated or missing-key failed.\"}], \"stop_conditions\": [\"Stop if project or routing configuration cannot be distinguished from proof of credential availability.\", \"Stop if a declared credential source would be bypassed or the authenticated principal could change silently.\", \"Stop if any startup validator still rejects an otherwise eligible configuration.\", \"Stop if client construction sends any placeholder key or selects the wrong endpoint mode.\", \"Stop if tests cannot demonstrate exclusion of unrelated auth types and explicit-key configurations.\"], \"supporting_repositories\": [\"QwenLM/qwen-code\"], \"title\": \"Enable ambient credentials without weakening credential precedence\", \"unresolved_or_deferred\": [\"Actual external default-credential resolution is delegated to the provider SDK and is not proven by the unit tests in the pinned change.\", \"Focused tests were not executed during extraction because the supplied checkout's tracked worktree files are staged as deleted; test contracts were inspected directly from the pinned Git objects.\", \"GitHub issue body, PR discussion, reviews, and status-check results are unavailable in the evidence bundle.\"], \"validation_ladder\": [\"Predicate-level cases: nonblank, absent, and whitespace-only routing identifiers.\", \"Precedence cases: declared key source remains mandatory despite available ambient context.\", \"Cross-gate cases: CLI and core validators accept and reject the same configurations, including strict mode.\", \"Construction case: selected mode reaches the SDK explicitly and the key remains undefined.\", \"Diagnostic cases: recovery guidance is present only for eligible failures.\", \"Status case: routing readiness is reported as unknown credential availability.\", \"Runtime follow-up: start a session in an environment with valid ambient credentials and separately verify failure with unavailable ambient credentials.\"], \"when_to_use\": [\"A provider SDK supports ambient or application-default credentials, but application validation currently requires an explicit API key.\", \"Passing a placeholder credential changes SDK mode or disables the intended ambient credential resolver.\", \"The same authentication decision is enforced at multiple startup or configuration boundaries.\"]}, {\"anti_goals\": [\"Do not disable ambient access-key authentication when no authoritative profile was selected.\", \"Do not treat a merely ambient profile as equivalent to a request-explicit or stored/scoped selection.\", \"Do not alter bearer-token selection, skip-auth dummy credentials, region selection, endpoint selection, or proxy behavior.\"], \"category\": \"credential-resolution-and-authentication\", \"description\": \"Trace the provenance of a selected profile into the runtime client, preserve that provenance as an authoritative marker, and use it to prevent lower-priority ambient keys from becoming explicit client credentials. Validate both the repaired conflict and unaffected fallback cases.\", \"edges\": [{\"from\": \"step-1\", \"to\": \"step-2\", \"type\": \"enables\"}, {\"from\": \"step-2\", \"to\": \"step-1\", \"type\": \"validates\"}], \"entry_state\": \"A deliberate profile can reach the runtime, but a complete ambient access-key pair is independently injected as explicit credentials and can override that profile.\", \"episode_id\": \"earendil-works__pi__7176__b63403a5\", \"evidence_ids\": [\"ev-commit-1\", \"ev-before-1\", \"ev-diff-1\", \"ev-callsite-1\", \"ev-callsite-2\", \"ev-test-1\", \"ev-test-2\", \"ev-test-3\", \"ev-validation-1\"], \"exit_state\": \"Explicit or stored/scoped profiles suppress lower-priority direct access-key injection; access keys remain injected when no authoritative profile exists, including when the profile value is only ambient.\", \"goal\": \"Ensure a deliberately selected credential profile controls authentication when ambient access keys coexist, while retaining ambient credential behavior when no deliberate profile selection exists.\", \"id\": \"workflow:93b8d079bb756671\", \"inputs\": [\"Explicit profile option, if supplied\", \"Provider-resolved scoped environment, including any stored profile\", \"Ambient profile and access-key environment values\", \"Runtime client's credential precedence contract\", \"Captured client-configuration test oracle\"], \"issue\": 7176, \"name\": \"restore-explicit-credential-source-precedence\", \"node_type\": \"issue_workflow\", \"not_applicable_when\": [\"Credential sources cannot coexist or the downstream client does not give directly supplied credentials precedence over profile-based resolution.\", \"The failure concerns bearer-token authentication, disabled signing, incomplete access-key pairs, or credential-store persistence rather than profile-versus-key precedence.\", \"There is no evidence that the selected profile reaches the provider request options.\"], \"repository\": \"earendil-works/pi\", \"source_case\": \"earendil-works/pi#7176\", \"steps\": [{\"action_id\": \"semantic-action:8e99fdc4c5a44619\", \"action_name\": \"classify-authoritative-profile-source\", \"condition\": \"Apply when profile values may originate from request-explicit, stored/scoped, or ambient sources.\", \"depends_on\": [], \"optional\": false, \"required\": true, \"role\": \"establish-contract\", \"step_id\": \"step-1\", \"validation\": \"Confirm that explicit options and scoped request environment produce the authoritative marker, while ambient lookup remains only a fallback for the client profile field.\"}, {\"action_id\": \"semantic-action:0ed4df7cdd031b8d\", \"action_name\": \"guard-lower-priority-credential-injection\", \"condition\": \"Apply when authentication is enabled and a complete access-key pair is available alongside possible profile configuration.\", \"depends_on\": [\"classify-authoritative-profile-source\"], \"optional\": false, \"required\": true, \"role\": \"implement\", \"step_id\": \"step-2\", \"validation\": \"Captured client config omits credentials for explicit/scoped profiles and retains them for no-profile and ambient-profile-only cases.\"}], \"stop_conditions\": [\"Stop if profile provenance cannot be preserved through the authentication and request-option call path.\", \"Stop if omitting direct credentials would leave the client without a usable profile or another SDK credential-chain source.\", \"Stop if regression coverage does not include both the repaired precedence conflict and the unaffected ambient fallback cases.\"], \"supporting_repositories\": [\"earendil-works/pi\"], \"title\": \"Restore deliberate credential selection without breaking ambient fallback\", \"unresolved_or_deferred\": [\"The focused test suite was inspected but not independently executed in this extraction environment because the Node.js executable was unavailable.\", \"The repository evidence states the downstream SDK precedence behavior, but the SDK implementation itself was not inspected.\"], \"validation_ladder\": [\"Verify the authentication call path stores a selected profile in scoped credential environment and merges it into request options.\", \"Verify the implementation distinguishes explicit/scoped profile provenance from ambient profile discovery before building client credentials.\", \"Run the focused mocked-client tests for explicit profile plus keys and scoped profile plus keys; both must omit direct credentials.\", \"Run fallback cases with keys and no profile, then keys with only an ambient profile; both must retain direct credentials.\"], \"when_to_use\": [\"A client configuration can contain both a profile selector and directly injected credentials, and the SDK gives the direct credentials higher precedence.\", \"Authentication resolution carries a request-explicit or stored/scoped profile into the provider runtime while ambient access keys may also be visible.\"]}, {\"anti_goals\": [\"Do not remove explicit caller-supplied credential precedence.\", \"Do not change provider selection, base-URL selection, client protocol, or token-refresh behavior unless separate evidence requires it.\", \"Do not delete the generic compatible fallback when existing configurations depend on it.\", \"Do not log, compare by value in diagnostics, or expose secret credential contents.\"], \"category\": \"credential-resolution-and-authentication\", \"description\": \"Establish endpoint-aware credential precedence across every path that can seed or refresh client authentication, then verify both the conflict case and the backward-compatible fallback case.\", \"edges\": [{\"from\": \"step-1\", \"to\": \"step-2\", \"type\": \"validates\"}], \"entry_state\": \"At least one path chooses a generic compatible credential before the selected endpoint's dedicated credential, allowing a valid dedicated credential to be shadowed when both exist.\", \"episode_id\": \"NousResearch__hermes-agent__289__221e4228\", \"evidence_ids\": [\"E1\", \"E2\", \"E3\", \"E4\", \"E5\", \"E6\", \"E7\", \"E8\", \"E9\", \"E10\", \"E11\"], \"exit_state\": \"Every inspected path applies explicit > endpoint-specific > generic-compatible precedence; conflict and fallback regression oracles encode the contract; unrelated routing behavior remains unchanged.\", \"goal\": \"Ensure a selected endpoint receives its dedicated credential when multiple compatible credentials coexist, while retaining a documented fallback when the dedicated credential is unavailable.\", \"id\": \"workflow:d223ffc3e21b4fac\", \"inputs\": [\"selected endpoint or provider\", \"explicit credential input, if any\", \"endpoint-specific credential source\", \"generic compatible credential source\", \"inventory of eager and runtime credential-resolution paths\", \"tests capable of isolating environment variables\"], \"issue\": 289, \"name\": \"repair-conflicting-compatible-credential-resolution\", \"node_type\": \"issue_workflow\", \"not_applicable_when\": [\"The endpoint accepts only one credential source and no compatible fallback is supported.\", \"The failure is caused by provider selection, base-URL routing, expired credentials, or token refresh rather than precedence.\", \"The supposedly generic credential is not valid for the selected endpoint and therefore must be rejected instead of retained as a fallback.\"], \"repository\": \"NousResearch/hermes-agent\", \"source_case\": \"NousResearch/hermes-agent#289\", \"steps\": [{\"action_id\": \"semantic-action:8fd73e4a5fb9392c\", \"action_name\": \"align-endpoint-credential-precedence\", \"condition\": \"Apply when the selected endpoint has a dedicated credential source and one or more resolution paths currently prefer a generic compatible source.\", \"depends_on\": [], \"optional\": false, \"required\": true, \"role\": \"reconcile\", \"step_id\": \"step-1\", \"validation\": \"Inspect each changed resolution path and run the both-present regression case; the resolved credential must be the endpoint-specific value.\"}, {\"action_id\": \"semantic-action:60a3a6dfb73ac8c2\", \"action_name\": \"preserve-compatible-credential-fallback\", \"condition\": \"Apply when the generic credential is intentionally supported as a fallback for the selected endpoint.\", \"depends_on\": [\"align-endpoint-credential-precedence\"], \"optional\": false, \"required\": true, \"role\": \"validate\", \"step_id\": \"step-2\", \"validation\": \"Remove the endpoint-specific variable, retain the generic variable, and verify that runtime resolution returns the generic value.\"}], \"stop_conditions\": [\"Stop if the selected endpoint and accepted credential types cannot be established from implementation evidence.\", \"Stop if another uninspected credential-resolution path can still shadow the endpoint-specific credential.\", \"Stop and split the work if correcting precedence requires changing provider or endpoint routing semantics.\", \"Do not claim dynamic validation complete until the focused regression tests run in an environment with pytest and project dependencies.\"], \"supporting_repositories\": [\"NousResearch/hermes-agent\"], \"title\": \"Repair credential selection when compatible providers share environment variables\", \"unresolved_or_deferred\": [\"A fresh focused test run is deferred because pytest is unavailable in the checkout environment.\", \"GitHub discussion, review, and status-check evidence is unavailable in the supplied issue bundle.\", \"No direct constructor-level regression test was added for the CLI eager initialization assignment; its alignment is supported by the implementation diff and subsequent runtime re-resolution call path.\"], \"validation_ladder\": [\"Static diff check: confirm every identified eager and runtime path has the same explicit > endpoint-specific > generic-compatible ordering.\", \"Conflict regression: set both environment credentials and assert the endpoint-specific value wins.\", \"Fallback regression: unset the endpoint-specific credential and assert the generic compatible value is still returned.\", \"Call-site check: confirm resolved credentials are propagated to client construction or trigger client recreation when changed.\", \"Focused test execution in a dependency-complete environment; this extraction could not perform that final rung because pytest is absent.\"], \"when_to_use\": [\"Authentication fails only when credentials for multiple API-compatible services are simultaneously configured.\", \"A runtime supports an endpoint-specific credential plus a generic compatible fallback.\", \"Credential state can be initialized or refreshed through more than one code path.\"]}, {\"anti_goals\": [\"Do not reorder explicit credential precedence, including access-token overrides and the relative priority of local cache versus environment-selected credentials.\", \"Do not accept a credential merely because its file parsed successfully.\", \"Do not remove compute, interactive, or manual authentication paths used after cached candidates are exhausted.\", \"Do not persist compute-provided credentials or broadly redesign the login flow.\"], \"category\": \"credential-resolution-and-authentication\", \"description\": \"Convert credential resolution from first-readable-source selection into ordered discovery followed by sequential, type-aware verification, without changing explicit overrides or downstream interactive authentication.\", \"edges\": [{\"from\": \"step-1\", \"to\": \"step-2\", \"type\": \"enables\"}, {\"from\": \"step-2\", \"to\": \"step-1\", \"type\": \"validates\"}], \"entry_state\": \"At least two credential sources may be configured, but the resolver exposes only the first loaded credential, so an unusable primary can mask a usable fallback.\", \"episode_id\": \"google-gemini__gemini-cli__28472__f743ab5790\", \"evidence_ids\": [\"E1\", \"E2\", \"E3\", \"E4\", \"E5\", \"E7\", \"E8\", \"E9\", \"E10\", \"E11\"], \"exit_state\": \"Configured candidates are loaded in documented priority order, verified one at a time with the appropriate client, and the first verified candidate is returned; isolated loading or verification failures permit fallback, and existing override and post-exhaustion paths retain their positions.\", \"goal\": \"Return the highest-priority configured credential that can actually authenticate, while allowing a rejected cached credential to fall through to the next source.\", \"id\": \"workflow:ec991aae270f5400\", \"inputs\": [\"Ordered credential-source policy\", \"Source loaders for secure storage and credential files\", \"Credential-type discriminator\", \"Type-appropriate client constructors\", \"Token acquisition and server-side validation oracles\", \"Existing override and post-exhaustion authentication behavior\"], \"issue\": 28472, \"name\": \"restore-authentication-fallback-across-credential-sources\", \"node_type\": \"issue_workflow\", \"not_applicable_when\": [\"Only one credential source can exist and there is no supported fallback.\", \"Credential validity can only be established by destructive use with no safe token-acquisition or validation oracle.\", \"The requested behavior is to fail closed on the first configured credential rather than attempt lower-priority sources.\"], \"repository\": \"google-gemini/gemini-cli\", \"source_case\": \"google-gemini/gemini-cli#28472\", \"steps\": [{\"action_id\": \"semantic-action:0988516672c6f923\", \"action_name\": \"collect-ordered-credential-candidates\", \"condition\": \"Run when two or more supported credential sources may coexist or a secure-storage source has a file-based fallback.\", \"depends_on\": [], \"optional\": false, \"required\": true, \"role\": \"establish-contract\", \"step_id\": \"step-1\", \"validation\": \"Confirm that a valid primary precedes the fallback, a missing or unreadable source does not abort collection, and the environment-selected credential remains present after a parseable primary.\"}, {\"action_id\": \"semantic-action:44169da62485357a\", \"action_name\": \"verify-credential-candidates-sequentially\", \"condition\": \"Run for each collected candidate until one verifies or the list is exhausted.\", \"depends_on\": [\"collect-ordered-credential-candidates\"], \"optional\": false, \"required\": true, \"role\": \"implement\", \"step_id\": \"step-2\", \"validation\": \"Simulate an expired or revoked first candidate and a valid second candidate; assert that verification continues and the public acquisition call uses the second credential.\"}], \"stop_conditions\": [\"Stop and defer if credential-source precedence cannot be established from implementation or tests.\", \"Stop and reject the workflow if no non-destructive credential verification oracle exists.\", \"Stop when the first verified candidate is found; do not continue into lower-priority credentials.\", \"If every candidate fails, leave control to the repository's existing post-exhaustion authentication path instead of inventing a new recovery mechanism.\"], \"supporting_repositories\": [\"google-gemini/gemini-cli\"], \"title\": \"Restore authentication fallback across prioritized credential sources\", \"unresolved_or_deferred\": [\"The evidence bundle contains no PR body, review discussion, status checks, or recorded test-run result.\", \"The regression test directly proves fallback after ordinary OAuth token-acquisition failure; equivalent failure-path coverage for every structured application-default credential subtype is not shown.\", \"The classifier treats every typed credential except authorized_user as an application-default credential; the complete intended type taxonomy is not documented in the available evidence.\"], \"validation_ladder\": [\"Source-level checks: unreadable, malformed, or absent sources are isolated while valid candidates retain priority order.\", \"Selection checks: a valid primary wins and the fallback is not applied.\", \"Fallback checks: a missing primary selects the secondary source.\", \"Verification-failure regression: an expired or revoked primary is rejected and the valid secondary credential is applied.\", \"Type-adaptation checks: structured application-default credentials use their specialized client while ordinary user credentials use the OAuth client.\", \"Boundary checks: the public memoized client-acquisition entry point returns the selected client, explicit overrides remain first, and compute or interactive authentication remains after candidate exhaustion.\"], \"when_to_use\": [\"Multiple credential sources have defined precedence and an earlier source can be present but expired, revoked, malformed, or otherwise unusable.\", \"Authentication currently chooses the first readable credential rather than the first credential that passes its real verification oracle.\"]}]}}",
+      "response_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "Human-readable resolution Pattern induction",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schema_version",
+          "pattern_id",
+          "category",
+          "decision",
+          "title",
+          "summary",
+          "when_to_use",
+          "anti_goals",
+          "not_applicable_when",
+          "invariants",
+          "action_template",
+          "decision_points",
+          "ordering_constraints",
+          "validation_ladder",
+          "known_failure_modes",
+          "exclusions",
+          "supporting_workflow_ids",
+          "workflow_realizations",
+          "confidence",
+          "rationale",
+          "evidence_ids",
+          "missing_probes"
+        ],
+        "properties": {
+          "schema_version": {
+            "const": "resolution-pattern-induction-v1"
+          },
+          "pattern_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "category": {
+            "type": "string",
+            "minLength": 1
+          },
+          "decision": {
+            "enum": [
+              "candidate_pending_holdout",
+              "defer",
+              "reject"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "when_to_use": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "anti_goals": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "not_applicable_when": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "invariants": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "action_template": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "role_id",
+                "title",
+                "purpose",
+                "required",
+                "condition",
+                "validation"
+              ],
+              "properties": {
+                "role_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "purpose": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "condition": {
+                  "type": "string"
+                },
+                "validation": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "decision_points": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "question",
+                "branches"
+              ],
+              "properties": {
+                "question": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "branches": {
+                  "type": "array",
+                  "minItems": 2,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "condition",
+                      "action_role_ids"
+                    ],
+                    "properties": {
+                      "condition": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "action_role_ids": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "ordering_constraints": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "before_role_id",
+                "after_role_id",
+                "condition"
+              ],
+              "properties": {
+                "before_role_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "after_role_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "condition": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "validation_ladder": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "known_failure_modes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "failure",
+                "detection",
+                "mitigation"
+              ],
+              "properties": {
+                "failure": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "detection": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "mitigation": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "exclusions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "supporting_workflow_ids": {
+            "type": "array",
+            "minItems": 2,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "workflow_realizations": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "workflow_id",
+                "repository",
+                "role_bindings",
+                "evidence_ids"
+              ],
+              "properties": {
+                "workflow_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "repository": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "role_bindings": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "role_id",
+                      "action_ids"
+                    ],
+                    "properties": {
+                      "role_id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "action_ids": {
+                        "type": "array",
+                        "minItems": 1,
+                        "uniqueItems": true,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  }
+                },
+                "evidence_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "missing_probes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "response": {
+        "schema_version": "resolution-pattern-induction-v1",
+        "pattern_id": "pattern:12e363c8192ed215",
+        "category": "credential-resolution-and-authentication",
+        "decision": "candidate_pending_holdout",
+        "title": "Preserve credential intent before applying fallback",
+        "summary": "First establish which credential sources are authoritative, ordered, or eligible for fallback; then enforce that contract at the authentication boundary. Deliberately selected sources must not be overridden by lower-priority ambient credentials, while non-authoritative or unusable sources must not prevent supported fallbacks from being attempted.",
+        "when_to_use": [
+          "Multiple credential sources can coexist and the current implementation loses their provenance, priority, or fallback relationship before authentication.",
+          "A deliberate credential selection can be overridden by ambient credentials that the downstream client treats as higher priority.",
+          "The first readable credential can be invalid, expired, or revoked while a later configured credential remains usable.",
+          "A missing explicit credential may permit an ambient path only under a narrowly observable eligibility contract."
+        ],
+        "anti_goals": [
+          "Do not treat all credential sources as interchangeable merely because they can authenticate the same client.",
+          "Do not silently bypass a declared or deliberately selected credential source with ambient credentials.",
+          "Do not disable valid ambient or secondary fallback when no authoritative source excludes it.",
+          "Do not equate successful loading or parsing with successful authentication.",
+          "Do not reorder unrelated explicit overrides or redesign downstream interactive, compute, bearer-token, routing, or persistence behavior."
+        ],
+        "not_applicable_when": [
+          "Only one credential source can exist and no supported fallback or precedence conflict is possible.",
+          "The intended policy is to fail closed on the first configured source rather than attempt a lower-priority source.",
+          "Source provenance cannot be retained until the authentication decision is made.",
+          "There is no safe validation oracle for determining whether a candidate credential is usable.",
+          "The defect concerns endpoint routing, token refresh, credential persistence, or provider selection rather than source authority, precedence, or fallback."
+        ],
+        "invariants": [
+          "Credential provenance and configured priority are established before credentials are injected, omitted, or attempted.",
+          "A request-explicit, stored, scoped, or otherwise declared authoritative source is not silently displaced by a lower-priority ambient source.",
+          "When fallback is part of the contract, an isolated load, parse, token-acquisition, or verification failure does not hide later eligible candidates.",
+          "The first candidate accepted by the repository's real authentication oracle wins; lower-priority candidates are not attempted afterward.",
+          "Existing explicit overrides remain stronger than the repaired source-selection policy.",
+          "If all eligible candidates fail, control returns to the repository's existing post-exhaustion behavior rather than inventing a new authentication path."
+        ],
+        "action_template": [
+          {
+            "role_id": "establish-credential-source-contract",
+            "title": "Establish source authority and fallback order",
+            "purpose": "Preserve enough source provenance to distinguish deliberate or declared credential choices from ambient discovery, and define which remaining sources are eligible fallbacks and in what order.",
+            "required": true,
+            "condition": "Apply whenever two or more credential sources may coexist, or when a missing explicit credential may conditionally enable an ambient resolver.",
+            "validation": "Focused contract cases must distinguish authoritative from non-authoritative sources, preserve documented ordering, reject excluded configurations, and show that an unreadable or absent non-authoritative source does not erase later eligible candidates."
+          },
+          {
+            "role_id": "enforce-credential-source-contract",
+            "title": "Enforce the contract at authentication",
+            "purpose": "Apply the established authority and ordering where client credentials are constructed or candidates are authenticated, preventing lower-priority overrides while retaining supported fallback.",
+            "required": true,
+            "condition": "Apply at every consuming boundary that injects credentials, omits credentials for SDK resolution, or attempts candidate authentication.",
+            "validation": "Focused checks must prove that authoritative sources suppress conflicting lower-priority injection, while eligible fallback sources remain usable when no authoritative source exists or a higher-priority candidate fails its actual authentication oracle."
+          }
+        ],
+        "decision_points": [
+          {
+            "question": "Does configuration identify an authoritative credential source whose absence or failure must remain visible?",
+            "branches": [
+              {
+                "condition": "Yes; a source is request-explicit, stored or scoped, or declared by the selected configuration.",
+                "action_role_ids": [
+                  "establish-credential-source-contract",
+                  "enforce-credential-source-contract"
+                ]
+              },
+              {
+                "condition": "No; available sources are ordered alternatives and repository policy permits fallback between them.",
+                "action_role_ids": [
+                  "establish-credential-source-contract",
+                  "enforce-credential-source-contract"
+                ]
+              }
+            ]
+          },
+          {
+            "question": "Can source usability be decided before the downstream authentication attempt?",
+            "branches": [
+              {
+                "condition": "Yes; source provenance and downstream precedence are sufficient to prevent a known lower-priority credential from being injected.",
+                "action_role_ids": [
+                  "enforce-credential-source-contract"
+                ]
+              },
+              {
+                "condition": "No; a candidate must acquire and validate a token before it can be accepted.",
+                "action_role_ids": [
+                  "establish-credential-source-contract",
+                  "enforce-credential-source-contract"
+                ]
+              }
+            ]
+          },
+          {
+            "question": "Is ambient authentication conditionally supported when no explicit secret resolves?",
+            "branches": [
+              {
+                "condition": "Yes; require the supported authentication mode, usable routing context, and absence of a declared secret source before permitting the ambient path.",
+                "action_role_ids": [
+                  "establish-credential-source-contract",
+                  "enforce-credential-source-contract"
+                ]
+              },
+              {
+                "condition": "No; retain the missing-credential failure and do not broaden fallback eligibility.",
+                "action_role_ids": [
+                  "establish-credential-source-contract"
+                ]
+              }
+            ]
+          }
+        ],
+        "ordering_constraints": [
+          {
+            "before_role_id": "establish-credential-source-contract",
+            "after_role_id": "enforce-credential-source-contract",
+            "condition": "Source authority, eligibility, and ordering must be observable before changing client construction or candidate authentication."
+          }
+        ],
+        "validation_ladder": [
+          "Focused contract checks: exercise explicit or scoped sources, ambient-only sources, absent and malformed sources, blank routing context, declared-but-missing secrets, and documented priority ordering.",
+          "Focused enforcement checks: inspect constructed client options or candidate-selection results to prove that authoritative sources prevent conflicting lower-priority injection and that permitted fallback remains reachable.",
+          "Integration checks: invoke the public client-acquisition or startup boundary and verify that the selected credential or SDK credential chain is the one actually used, not merely the one returned by an internal helper.",
+          "Regression checks: cover both the repaired conflict or rejected-primary case and unaffected fallback cases, including no authoritative source, ambient-only discovery, and valid secondary credentials.",
+          "Broader regressions: confirm explicit overrides retain priority and existing post-exhaustion authentication paths, unrelated authentication modes, endpoint selection, and token handling remain unchanged."
+        ],
+        "known_failure_modes": [
+          {
+            "failure": "Credential provenance is collapsed into a single value before precedence is decided.",
+            "detection": "Explicit, scoped, and ambient inputs produce indistinguishable state at the client-construction boundary.",
+            "mitigation": "Preserve a separate authority marker or ordered candidate representation until the consuming authentication boundary."
+          },
+          {
+            "failure": "A parseable but unusable credential blocks a valid fallback.",
+            "detection": "The resolver stops after loading the first source without exercising token acquisition or server-side verification.",
+            "mitigation": "Collect eligible candidates in priority order and continue after an isolated candidate rejection until one verifies or the list is exhausted."
+          },
+          {
+            "failure": "A lower-priority ambient credential silently changes the authenticated principal.",
+            "detection": "Client configuration contains directly injected ambient credentials alongside a deliberate profile or declared secret source.",
+            "mitigation": "Omit or reject the lower-priority injection whenever the established source contract marks the deliberate source as authoritative."
+          },
+          {
+            "failure": "The repair disables valid ambient fallback.",
+            "detection": "Configurations with no authoritative source stop receiving previously supported access keys or SDK-chain credentials.",
+            "mitigation": "Add regression cases for no-profile, ambient-profile-only, missing-primary, and valid-secondary configurations."
+          },
+          {
+            "failure": "Successful source discovery is reported as successful authentication.",
+            "detection": "Tests assert only that a file, profile, or project identifier exists rather than that the authentication oracle accepted it.",
+            "mitigation": "Keep discovery and authentication outcomes distinct and validate through the public acquisition boundary."
+          }
+        ],
+        "exclusions": [
+          "Endpoint-specific versus generic compatible environment-variable precedence is not included because workflow:d223ffc3e21b4fac does not independently realize the required source-contract establishment role.",
+          "Client mode construction, cross-gate startup reconciliation, diagnostics, and preflight status reporting from workflow:69a62ada5b9d2fa3 are repository-specific branches rather than mandatory parts of this pattern.",
+          "Interactive login, compute credentials, bearer-token selection, skip-auth behavior, credential persistence, proxy configuration, and endpoint routing are outside this pattern unless separately evidenced."
+        ],
+        "supporting_workflow_ids": [
+          "workflow:69a62ada5b9d2fa3",
+          "workflow:93b8d079bb756671",
+          "workflow:ec991aae270f5400"
+        ],
+        "workflow_realizations": [
+          {
+            "workflow_id": "workflow:69a62ada5b9d2fa3",
+            "repository": "QwenLM/qwen-code",
+            "role_bindings": [
+              {
+                "role_id": "establish-credential-source-contract",
+                "action_ids": [
+                  "semantic-action:6131245bcf396066"
+                ]
+              },
+              {
+                "role_id": "enforce-credential-source-contract",
+                "action_ids": [
+                  "semantic-action:7c87047d5fc8835e"
+                ]
+              }
+            ],
+            "evidence_ids": [
+              "E1",
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E10",
+              "E11",
+              "E12",
+              "E13",
+              "E14"
+            ]
+          },
+          {
+            "workflow_id": "workflow:93b8d079bb756671",
+            "repository": "earendil-works/pi",
+            "role_bindings": [
+              {
+                "role_id": "establish-credential-source-contract",
+                "action_ids": [
+                  "semantic-action:8e99fdc4c5a44619"
+                ]
+              },
+              {
+                "role_id": "enforce-credential-source-contract",
+                "action_ids": [
+                  "semantic-action:0ed4df7cdd031b8d"
+                ]
+              }
+            ],
+            "evidence_ids": [
+              "ev-commit-1",
+              "ev-before-1",
+              "ev-diff-1",
+              "ev-callsite-1",
+              "ev-callsite-2",
+              "ev-test-1",
+              "ev-test-2",
+              "ev-test-3",
+              "ev-validation-1"
+            ]
+          },
+          {
+            "workflow_id": "workflow:ec991aae270f5400",
+            "repository": "google-gemini/gemini-cli",
+            "role_bindings": [
+              {
+                "role_id": "establish-credential-source-contract",
+                "action_ids": [
+                  "semantic-action:0988516672c6f923"
+                ]
+              },
+              {
+                "role_id": "enforce-credential-source-contract",
+                "action_ids": [
+                  "semantic-action:44169da62485357a"
+                ]
+              }
+            ],
+            "evidence_ids": [
+              "E1",
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E7",
+              "E8",
+              "E9",
+              "E10",
+              "E11"
+            ]
+          }
+        ],
+        "confidence": 0.84,
+        "rationale": "Three repositories independently realize the same required sequence: establish an explicit contract for credential-source authority or ordering, then enforce that contract at the authentication boundary. Their Actions remain distinct: one classifies keyless eligibility and preserves declared secrets, one preserves profile provenance and guards direct key injection, and one collects ordered candidates and verifies them sequentially. The shared policy is therefore a role-level decision structure rather than a claim that these Actions are interchangeable. Promotion remains pending because no untouched holdout repair was supplied.",
+        "evidence_ids": [
+          "E1",
+          "E2",
+          "E3",
+          "E4",
+          "E5",
+          "E6",
+          "E7",
+          "E8",
+          "E9",
+          "E10",
+          "E11",
+          "E12",
+          "E13",
+          "E14",
+          "ev-commit-1",
+          "ev-before-1",
+          "ev-diff-1",
+          "ev-callsite-1",
+          "ev-callsite-2",
+          "ev-test-1",
+          "ev-test-2",
+          "ev-test-3",
+          "ev-validation-1"
+        ],
+        "missing_probes": [
+          "Apply the role sequence to a separate untouched holdout repair and verify that both required roles map to new repository-specific Actions without changing their contracts.",
+          "Run the focused tests that were unavailable in the supplied extraction environments.",
+          "Verify on the holdout that the public authentication boundary, not only an internal resolver, observes the intended source authority and fallback behavior.",
+          "Check whether any holdout contains a counterexample where a declared source is intentionally allowed to fall through after authentication rejection."
+        ]
+      },
+      "response_id": "resp_072043800dd2ef28016abe8032feb887d093caa992ad719d67",
+      "usage": {
+        "completion_tokens": 3822,
+        "prompt_tokens": 21552,
+        "total_tokens": 25374,
+        "completion_tokens_details": {
+          "reasoning_tokens": 813
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "cache_creation_tokens": 0,
+          "cached_creation_tokens": 0
+        }
+      }
+    }
+  ],
+  "validation": {
+    "valid": true,
+    "attempts": 1,
+    "errors": []
+  }
+}

@@ -10,6 +10,11 @@ SPEC = importlib.util.spec_from_file_location("pattern_induction_contract", SCRI
 assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
+MERGE_SCRIPT = ROOT / "experiments" / "merge_resolution_pattern_contracts.py"
+MERGE_SPEC = importlib.util.spec_from_file_location("pattern_contract_merge", MERGE_SCRIPT)
+assert MERGE_SPEC and MERGE_SPEC.loader
+MERGE_MODULE = importlib.util.module_from_spec(MERGE_SPEC)
+MERGE_SPEC.loader.exec_module(MERGE_MODULE)
 SCHEMA = json.loads(
     (ROOT / "schemas" / "resolution-pattern-induction-v1.schema.json").read_text()
 )
@@ -159,3 +164,60 @@ def test_realization_evidence_must_belong_to_its_workflow() -> None:
     value["workflow_realizations"][0]["evidence_ids"] = ["a2-test"]
     errors = MODULE.validate_contract(value, source, source["patterns"][0], SCHEMA)
     assert any("outside its Workflow" in error for error in errors)
+
+
+def test_training_payload_bounds_factorization_audit_to_selected_pattern() -> None:
+    source = graph()
+    source["actions"].append({"id": "unrelated", "evidence_ids": ["other"]})
+    audit = {
+        "schema_version": "action-factorization-audit-v1",
+        "action_grain": [
+            {"id": "a1", "verdict": "atomic-review"},
+            {"id": "unrelated", "verdict": "split-review"},
+        ],
+        "coarse_action_groups": [
+            {"action_ids": ["a1"], "operation": "adapt"},
+            {"action_ids": ["unrelated"], "operation": "repair"},
+        ],
+        "cross_repository_pair_analysis": [
+            {"left": "a1", "right": "a2", "decision": "not-a-peer"},
+            {"left": "a1", "right": "unrelated", "decision": "not-a-peer"},
+        ],
+        "workflow_role_segments": [
+            {
+                "segment_roles": ["implement", "validate"],
+                "supporting_workflows": ["w1", "outside"],
+                "occurrences": [
+                    {"workflow_id": "w1", "repository": "org/one", "category": "cat"},
+                    {
+                        "workflow_id": "outside",
+                        "repository": "org/three",
+                        "category": "other",
+                    },
+                ],
+            }
+        ],
+    }
+
+    payload = MODULE.bounded_training_payload(source, source["patterns"][0], audit)
+    bounded = payload["factorization_audit"]
+
+    assert [item["id"] for item in bounded["action_grain"]] == ["a1"]
+    assert [item["action_ids"] for item in bounded["coarse_action_groups"]] == [["a1"]]
+    assert len(bounded["cross_repository_pair_analysis"]) == 1
+    assert bounded["workflow_role_segments"][0]["supporting_workflows"] == ["w1"]
+    assert bounded["workflow_role_segments"][0]["supporting_repositories"] == ["org/one"]
+
+
+def test_merge_contracts_preserves_validated_decision_and_requires_unique_pattern() -> None:
+    source = graph()
+    merged, report = MERGE_MODULE.merge_contracts(
+        source,
+        [contract()],
+        SCHEMA,
+        require_complete=True,
+    )
+
+    assert merged["patterns"][0]["promotion_status"] == "candidate_pending_holdout"
+    assert merged["semantic_pattern_induction"]["merged_pattern_ids"] == ["pattern:one"]
+    assert report["decision_counts"]["candidate_pending_holdout"] == 1

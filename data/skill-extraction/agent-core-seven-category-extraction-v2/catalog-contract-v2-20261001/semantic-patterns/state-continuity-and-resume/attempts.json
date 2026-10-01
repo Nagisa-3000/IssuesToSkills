@@ -1,0 +1,292 @@
+[
+  {
+    "attempt": 1,
+    "valid": true,
+    "errors": [],
+    "response": {
+      "schema_version": "resolution-pattern-induction-v1",
+      "pattern_id": "pattern:d76767e2a3d6e867",
+      "category": "state-continuity-and-resume",
+      "decision": "candidate_pending_holdout",
+      "title": "Preserve caller-owned state during resume",
+      "summary": "At a resume or continuation boundary, treat explicitly supplied in-memory state as authoritative and caller-owned. Do not replace it with persisted state or structurally mutate its container unless the API explicitly transfers ownership. When no authoritative live state exists, restoration from persistence is a conditional branch; when continuation must append state, extend a distinct working container and return that extended result.",
+      "when_to_use": [
+        "A resume, startup, or continuation API accepts existing in-memory state and may also restore or append historical state.",
+        "The supplied state is mutable or otherwise observable by the caller after the operation returns.",
+        "A persisted history source could displace explicitly supplied state, or continuation logic could append directly to the caller's container.",
+        "The intended contract is to preserve caller state while still allowing a restored or extended working result."
+      ],
+      "anti_goals": [
+        "Do not merge explicitly supplied live state with persisted state unless merging is a separately specified contract.",
+        "Do not assume that preserving an outer sequence also isolates mutable objects nested inside that sequence.",
+        "Do not suppress new-turn additions from the returned continuation state merely to avoid mutating the input.",
+        "Do not make transcript reconstruction or history compaction mandatory for continuation paths that do not use persisted transcripts.",
+        "Do not treat the repository-specific Actions as interchangeable implementations; each retains its own preconditions, postconditions, and validation oracle."
+      ],
+      "not_applicable_when": [
+        "The API explicitly documents transfer of ownership and permits in-place mutation of supplied state.",
+        "No caller-supplied state crosses the resume or continuation boundary.",
+        "The supplied state is immutable and no persisted source can replace it.",
+        "The defect concerns atomic publication, torn-log repair, runtime storage scoping, or derived-session construction rather than caller-state authority or ownership.",
+        "The required behavior is to merge live and persisted state rather than giving explicit live state precedence."
+      ],
+      "invariants": [
+        "Explicitly supplied state remains authoritative over optional persisted state unless the API contract explicitly says otherwise.",
+        "A continuation operation that promises input preservation performs structural additions on a distinct working container.",
+        "Preserving the input must not prevent the operation from returning the restored or newly extended state required by its contract.",
+        "Persisted-state reconstruction, filtering, and compaction are conditional branches and are not universal requirements of state-preserving continuation.",
+        "Validation must observe both preservation of caller-visible input and successful continuity of the resulting session or turn."
+      ],
+      "action_template": [
+        {
+          "role_id": "preserve-supplied-state-boundary",
+          "title": "Establish state authority and ownership",
+          "purpose": "At the resume boundary, preserve explicitly supplied state from replacement or caller-visible structural mutation while allowing the operation to create the state it needs to continue.",
+          "required": true,
+          "condition": "Apply when a resume or continuation path receives caller-visible in-memory state and can either replace that state from persistence or structurally extend it.",
+          "validation": "Exercise the repository-specific ownership contract and verify that supplied state remains unchanged or authoritative while the operation still produces the required restored or extended state."
+        },
+        {
+          "role_id": "reconstruct-persisted-state",
+          "title": "Reconstruct usable persisted state",
+          "purpose": "Convert a persisted artifact into ordered application state while excluding records that are not part of the resumable conversation.",
+          "required": false,
+          "condition": "Use only when authoritative live state is absent and the persisted representation can be deterministically mapped to resumable state.",
+          "validation": "Check ordering and role reconstruction with representative records, including exclusions for recognized metadata, commands, operational output, and empty prompts."
+        },
+        {
+          "role_id": "bound-restored-state",
+          "title": "Bound oversized restored state",
+          "purpose": "Keep restored history within the configured retained-history budget and any downstream model input capacity.",
+          "required": false,
+          "condition": "Use only when restored state can exceed a configured history budget or a summarizer's request capacity.",
+          "validation": "Check behavior immediately below and above the retained-history threshold and verify that summarizer requests remain within the model input limit after the required reserve."
+        },
+        {
+          "role_id": "validate-preservation-and-continuity",
+          "title": "Verify preservation and successful continuation",
+          "purpose": "Provide a regression oracle that checks both halves of the contract: caller state is preserved and the operation still returns or installs the continued state.",
+          "required": false,
+          "condition": "Use when a deterministic startup or completed-turn fixture can observe both the original state and the resulting state.",
+          "validation": "Assert the repository-specific preservation property, then separately assert that restored or newly appended state is present in the result."
+        }
+      ],
+      "decision_points": [
+        {
+          "question": "Is authoritative in-memory state explicitly supplied at the resume boundary?",
+          "branches": [
+            {
+              "condition": "Yes; preserve it and do not replace it with optional persisted state.",
+              "action_role_ids": [
+                "preserve-supplied-state-boundary"
+              ]
+            },
+            {
+              "condition": "No; a deterministic persisted artifact is available and restoration is part of the contract.",
+              "action_role_ids": [
+                "reconstruct-persisted-state",
+                "preserve-supplied-state-boundary"
+              ]
+            },
+            {
+              "condition": "No; no usable persisted artifact is available.",
+              "action_role_ids": [
+                "preserve-supplied-state-boundary"
+              ]
+            }
+          ]
+        },
+        {
+          "question": "Will continuation structurally append to a caller-supplied mutable container?",
+          "branches": [
+            {
+              "condition": "Yes; establish a distinct working container before the first append and validate input preservation plus output growth.",
+              "action_role_ids": [
+                "preserve-supplied-state-boundary",
+                "validate-preservation-and-continuity"
+              ]
+            },
+            {
+              "condition": "No; enforce the applicable state-precedence contract without introducing an unnecessary copy requirement.",
+              "action_role_ids": [
+                "preserve-supplied-state-boundary"
+              ]
+            }
+          ]
+        },
+        {
+          "question": "Can newly restored history exceed a configured or downstream input budget?",
+          "branches": [
+            {
+              "condition": "Yes; apply bounded compaction after restoration has established the completed state.",
+              "action_role_ids": [
+                "bound-restored-state"
+              ]
+            },
+            {
+              "condition": "No; retain the restored state without starting compaction.",
+              "action_role_ids": []
+            }
+          ]
+        }
+      ],
+      "ordering_constraints": [
+        {
+          "before_role_id": "reconstruct-persisted-state",
+          "after_role_id": "preserve-supplied-state-boundary",
+          "condition": "When restoration is selected because authoritative live state is absent, reconstruct the persisted representation before installing it through the lifecycle ownership boundary."
+        },
+        {
+          "before_role_id": "preserve-supplied-state-boundary",
+          "after_role_id": "bound-restored-state",
+          "condition": "When restored history requires compaction, first establish which state is authoritative and subject to compaction."
+        },
+        {
+          "before_role_id": "preserve-supplied-state-boundary",
+          "after_role_id": "validate-preservation-and-continuity",
+          "condition": "Run the preservation and continuity oracle after the ownership boundary has been implemented."
+        }
+      ],
+      "validation_ladder": [
+        "Focused contract checks: exercise explicit-state and mutable-input branches, verifying that explicit state is not displaced and that caller-owned sequence structure remains unchanged.",
+        "Focused result checks: verify that preservation does not discard continuity—the restored lifecycle state is populated when eligible, or the returned continuation history contains the new turn.",
+        "Integration checks: restart against a representative persisted transcript or complete a deterministic new turn through the public entry point, then confirm the resulting session can continue from the expected state.",
+        "Capacity integration checks, when applicable: exercise histories immediately below and above the configured budget and confirm that summarizer input stays within its model capacity and reserve.",
+        "Regression checks: retain automated branch-specific tests for state precedence, caller-input preservation, and successful restoration or output extension, including representative side-effect isolation."
+      ],
+      "known_failure_modes": [
+        {
+          "failure": "Persisted history overwrites explicitly supplied live state.",
+          "detection": "Initialize with nonempty explicit state and an available persisted artifact, then observe that the resulting state differs from the supplied state.",
+          "mitigation": "Enforce explicit-state precedence at lifecycle initialization and skip file-based restoration for that branch."
+        },
+        {
+          "failure": "Continuation appends directly to the caller's mutable history container.",
+          "detection": "Save the input length, execute a completed turn, and observe that the caller's original sequence length increases.",
+          "mitigation": "Create a distinct working outer sequence before any structural append and return the extended working result."
+        },
+        {
+          "failure": "Input preservation is achieved by dropping the new turn from the result.",
+          "detection": "The caller input remains unchanged, but the returned or installed state does not contain additional restored or newly generated messages.",
+          "mitigation": "Validate preservation and continuity separately: the input remains unchanged while the result reflects the completed restoration or turn."
+        },
+        {
+          "failure": "Operational transcript records are replayed as dialogue.",
+          "detection": "Reconstructed messages contain recognized session headings, tool output, commands, blockquoted operational records, or empty prompts.",
+          "mitigation": "Use a format-aware persisted-state adapter and focused fixtures covering every supported record type."
+        },
+        {
+          "failure": "A shallow outer-container copy is assumed to protect nested mutable entries.",
+          "detection": "The outer input sequence retains its size, but existing nested message objects change during continuation.",
+          "mitigation": "Stop and define a separate nested-object ownership contract; do not infer deep isolation from the outer-sequence pattern."
+        },
+        {
+          "failure": "Oversized restored history produces an unbounded summarizer request.",
+          "detection": "Token counting shows that selected summarizer input exceeds the model's maximum input tokens minus its reserve.",
+          "mitigation": "Apply the repository-specific bounded-compaction Action after restoration and validate threshold and capacity boundaries."
+        }
+      ],
+      "exclusions": [
+        "Atomic publication of newly derived persistent sessions.",
+        "Repair of syntactically incomplete final log records.",
+        "Propagation of workspace-specific ambient storage roots through asynchronous restore callbacks.",
+        "Session fork planning, lane reconstruction, and filesystem replacement capabilities.",
+        "Nested-message deep-copy requirements not demonstrated by the supporting workflows."
+      ],
+      "supporting_workflow_ids": [
+        "workflow:2d6914cde47f2982",
+        "workflow:6b1cbfeb86a31d38"
+      ],
+      "workflow_realizations": [
+        {
+          "workflow_id": "workflow:2d6914cde47f2982",
+          "repository": "Aider-AI/aider",
+          "role_bindings": [
+            {
+              "role_id": "reconstruct-persisted-state",
+              "action_ids": [
+                "semantic-action:aefedabd00d7f317"
+              ]
+            },
+            {
+              "role_id": "preserve-supplied-state-boundary",
+              "action_ids": [
+                "semantic-action:55d6cc954e7c9c40"
+              ]
+            },
+            {
+              "role_id": "bound-restored-state",
+              "action_ids": [
+                "semantic-action:bd4ee5e1418df3f3"
+              ]
+            }
+          ],
+          "evidence_ids": [
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10",
+            "E11",
+            "E12"
+          ]
+        },
+        {
+          "workflow_id": "workflow:6b1cbfeb86a31d38",
+          "repository": "NousResearch/hermes-agent",
+          "role_bindings": [
+            {
+              "role_id": "preserve-supplied-state-boundary",
+              "action_ids": [
+                "semantic-action:47a46ce46ab53083"
+              ]
+            },
+            {
+              "role_id": "validate-preservation-and-continuity",
+              "action_ids": [
+                "semantic-action:78079ec47df5d374"
+              ]
+            }
+          ],
+          "evidence_ids": [
+            "ev-before-alias",
+            "ev-after-copy",
+            "ev-working-list-mutations",
+            "ev-regression-test",
+            "ev-test-isolation"
+          ]
+        }
+      ],
+      "confidence": 0.74,
+      "rationale": "Two independent repositories support the required policy role: preserve explicitly supplied, caller-visible state at a resume boundary while still allowing the operation to establish continued state. One realization enforces precedence between explicit lifecycle state and persisted history; the other isolates a caller-owned mutable sequence before extension. These Actions are not merged or claimed to be interchangeable. Persisted transcript reconstruction, compaction, and the dedicated ownership regression oracle remain conditional roles because they are not independently realized across both repositories. The pattern is eligible only as candidate_pending_holdout because every required role has two-repository support, but no untouched holdout repair has been supplied.",
+      "evidence_ids": [
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9",
+        "E10",
+        "E11",
+        "E12",
+        "ev-before-alias",
+        "ev-after-copy",
+        "ev-working-list-mutations",
+        "ev-regression-test",
+        "ev-test-isolation"
+      ],
+      "missing_probes": [
+        "Apply the required ownership-and-authority role to a separate untouched holdout repository and verify its repository-specific contract.",
+        "Add automated parser, precedence, startup restoration, and bounded-compaction tests for the persisted-transcript workflow.",
+        "Run the continuation regression test in an environment with the required test runner and dependencies.",
+        "Probe exact preserved contents and object identity in addition to outer-sequence length.",
+        "Probe nested mutable message objects to determine whether a separate deep-isolation policy is required.",
+        "Cover a persisted transcript ending directly in assistant content to determine whether the final accumulated segment is preserved."
+      ]
+    }
+  }
+]

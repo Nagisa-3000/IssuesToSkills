@@ -1,0 +1,676 @@
+{
+  "schema_version": "resolution-pattern-induction-run-v1",
+  "model": "openai/gpt-5.6-sol",
+  "base_url": "https://llm.rvnpu.cn/v1",
+  "source_graph": "/home/chenyujia/tritonToLlvm/arex-skill-graph/data/skill-extraction/agent-core-seven-category-extraction-v2/catalog-contract-v2-20261001/training-graph.json",
+  "source_graph_sha256": "7a9cef56f6b6385e21b92a4bac83155bf542fb1db66d249ccd68edeed2e71742",
+  "source_audit": "/home/chenyujia/tritonToLlvm/arex-skill-graph/data/skill-extraction/agent-core-seven-category-extraction-v2/catalog-contract-v2-20261001/action-factorization-audit.json",
+  "source_audit_sha256": "e15e92d89a621e97efdb9b2eaae5908fdc91c79d7386182dd7baf0d6cc10fe85",
+  "prompt_sha256": "7cf4a3e5cf8a1f731771717fd15532816bbd57bfc0a678a181beb958f48e7e1a",
+  "contract_sha256": "0ecbbac37b7f1a37503b4d6b57761ab228b59f55e992eb179d7d154836a06a22",
+  "holdout_loaded": false,
+  "api_key_persisted": false,
+  "calls": [
+    {
+      "model": "openai/gpt-5.6-sol",
+      "endpoint": "https://llm.rvnpu.cn/v1/chat/completions",
+      "attempt": 1,
+      "elapsed_ms": 91746.94,
+      "usage": {
+        "completion_tokens": 5113,
+        "prompt_tokens": 20899,
+        "total_tokens": 26012,
+        "completion_tokens_details": {
+          "reasoning_tokens": 1973
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "cache_creation_tokens": 0,
+          "cached_creation_tokens": 0
+        }
+      },
+      "response_id": "resp_0bdeaf6c6ede5944016abe807a732887d0b0015afe9c03a9ca"
+    }
+  ],
+  "transcripts": [
+    {
+      "system": "You are the independent Pattern inducer for an evidence-grounded resolution graph. Use only the supplied training Workflows and Actions. A Pattern is a plain-language cross-project decision policy, not a category label, repository recipe, or claim that different Actions are interchangeable. Preserve distinct Action contracts. Express the reusable structure as role-level action_template entries and bind each supporting Workflow to the exact Action ids that realize those roles. State when to use the Pattern, anti-goals, exclusions, decision branches, ordering, and validation. Use candidate_pending_holdout only when at least two repositories support every required role; it still requires a separate untouched holdout repair. Never invent holdout facts, solution refs, tests, evidence ids, Action ids, or Workflow ids. Return JSON only.",
+      "user": "{\"instructions\": [\"Give the Pattern a short title a software engineer can understand without knowing AREX.\", \"Describe observable applicability signals, not product names or issue numbers.\", \"Do not merge Actions. Use workflow_realizations to map generic roles to existing ids.\", \"A required role must be independently realized in at least two repositories.\", \"Keep repository-specific branches conditional rather than universally mandatory.\", \"The validation ladder must distinguish focused contract checks, integration checks, and regressions.\", \"If the evidence supports only fragments rather than one coherent policy, return defer.\"], \"operation\": \"induce_human_resolution_pattern\", \"previous_validation_errors\": [], \"training_graph\": {\"actions\": [{\"aliases\": [], \"category\": \"state-continuity-and-resume\", \"description\": \"Stage the valid JSONL prefix separately and replace the damaged session only after the repaired file is complete.\", \"evidence_ids\": [\"E-PUBLISH-001\", \"E-REPAIR-CALL-001\", \"E-REPAIR-FAILURE-TEST-001\"], \"grounded_semantics\": true, \"id\": \"semantic-action:121536d8524094f2\", \"intent\": \"Recover replayable state from an incomplete final record without destroying the original session if repair is interrupted.\", \"module_role\": \"persistent session recovery boundary\", \"node_type\": \"change_action\", \"operation\": \"repair\", \"parameters\": [\"session_path\", \"valid_prefix\", \"filesystem\"], \"post_state\": \"On successful publication the session contains the valid prefix; on staging or rename failure the original bytes remain unchanged and the staging file is removed.\", \"pre_state\": \"Replay has accepted all preceding mutations and identified a parse failure confined to the final physical line with an underlying parse cause.\", \"source_name\": \"repair-torn-tail-with-atomic-replacement\", \"status\": \"candidate\", \"supporting_episodes\": [\"earendil-works__pi__7707__a838c069\"], \"supporting_repositories\": [\"earendil-works/pi\"], \"validation\": \"Inject a failure after damaging the staged repair file, then assert open reports a storage error, the original session bytes are unchanged, and no .tmp file remains.\"}, {\"aliases\": [], \"category\": \"state-continuity-and-resume\", \"description\": \"Convert fork selection options and current session state into one ordered mutation plan shared by persistent and in-memory backends.\", \"evidence_ids\": [\"E-FORK-PLAN-001\", \"E-FORK-PARITY-001\", \"E-FORK-SUCCESS-TEST-001\"], \"grounded_semantics\": true, \"id\": \"semantic-action:25c7dba8a704cc63\", \"intent\": \"Determine and validate all state required by a session fork before any destination is published.\", \"module_role\": \"session state transition planner\", \"node_type\": \"change_action\", \"operation\": \"normalize\", \"parameters\": [\"source_session_state\", \"fork_scope\", \"selected_entry_id\", \"fork_position\"], \"post_state\": \"A consecutively sequenced mutation list represents the selected entries, resulting lanes, optional session name, and labels; an invalid fork target fails before destination publication.\", \"pre_state\": \"A valid source session state and fork scope, target entry, and position options are available.\", \"source_name\": \"derive-complete-fork-mutation-plan\", \"status\": \"candidate\", \"supporting_episodes\": [\"earendil-works__pi__7707__a838c069\"], \"supporting_repositories\": [\"earendil-works/pi\"], \"validation\": \"Create and reopen branch and tree forks, then compare message counts, entries, lanes, name, labels, and excluded records with the selected source state.\"}, {\"aliases\": [], \"category\": \"state-continuity-and-resume\", \"description\": \"Bind the full asynchronous HTTP load/resume critical section—not only its SessionService instance—to the selected workspace runtime’s storage root so nested restoration code observes the correct persisted state.\", \"evidence_ids\": [\"E2\", \"E3\", \"E4\", \"E8\"], \"grounded_semantics\": true, \"id\": \"semantic-action:3df9b41b184d2208\", \"intent\": \"Prevent cold HTTP load and resume operations from reading or continuing session state under a process-default runtime root when a different workspace runtime was selected.\", \"module_role\": \"Workspace-qualified HTTP session restoration boundary\", \"node_type\": \"change_action\", \"operation\": \"scope\", \"parameters\": [\"selected_workspace_runtime\", \"session_runtime_base_directory\", \"requested_session_id\", \"restore_action: load|resume\", \"archive_coordinator\", \"workspace_bridge\"], \"post_state\": \"The archive-coordinated restore, persisted-session resolution, metadata reads, and selected bridge load/resume call execute with the ambient Storage runtime base directory equal to the selected workspace runtime’s sessionRuntimeBaseDir.\", \"pre_state\": \"A restore request has selected a workspace runtime whose sessionRuntimeBaseDir may differ from the ambient Storage runtime base directory, while the archive-coordinated asynchronous restore operation is still invoked without an ambient runtime binding.\", \"source_name\": \"scope-http-session-restore-to-selected-runtime\", \"status\": \"candidate\", \"supporting_episodes\": [\"QwenLM__qwen-code__9050__e0b8bea9\"], \"supporting_repositories\": [\"QwenLM/qwen-code\"], \"validation\": \"For both load and resume, persist the target session under a secondary runtime root, invoke the HTTP restore route for that workspace, assert success, and assert the selected bridge observes that secondary root through Storage.getRuntimeBaseDir().\"}, {\"aliases\": [], \"category\": \"state-continuity-and-resume\", \"description\": \"Create a distinct working sequence at the continuation boundary so additions for the new turn do not alter the caller's historical-state container.\", \"evidence_ids\": [\"ev-before-alias\", \"ev-after-copy\", \"ev-working-list-mutations\", \"ev-regression-test\"], \"grounded_semantics\": true, \"id\": \"semantic-action:47a46ce46ab53083\", \"intent\": \"Allow a resumed operation to extend prior state and return the extended state without changing the caller-owned input sequence.\", \"module_role\": \"conversation continuation state owner\", \"node_type\": \"change_action\", \"operation\": \"isolate\", \"parameters\": [\"caller_owned_history_sequence\", \"new_turn_input\", \"working_history_sequence\", \"returned_extended_history\"], \"post_state\": \"The continuation routine's outer working sequence is distinct from the supplied sequence; new-turn appends appear in the returned sequence but not in the caller's input list.\", \"pre_state\": \"A caller may supply a non-empty mutable sequence of prior messages, and the continuation routine will append new-turn messages to its working sequence.\", \"source_name\": \"isolate-caller-owned-sequence-before-extension\", \"status\": \"candidate\", \"supporting_episodes\": [\"NousResearch__hermes-agent#228@56b53bff6e42a534c7b9558b09aa28a6876e37d3\"], \"supporting_repositories\": [\"NousResearch/hermes-agent\"], \"validation\": \"Provide a non-empty history, execute a completed new turn, then verify that the input sequence retains its original length while the returned sequence contains additional messages.\"}, {\"aliases\": [], \"category\": \"state-continuity-and-resume\", \"description\": \"At lifecycle initialization, preserve caller-provided completed messages; otherwise load and reconstruct the configured transcript and expose restoration to the user.\", \"evidence_ids\": [\"E3\", \"E5\", \"E7\", \"E11\", \"E12\"], \"grounded_semantics\": true, \"id\": \"semantic-action:55d6cc954e7c9c40\", \"intent\": \"Resume a prior conversation automatically without overwriting authoritative in-memory state supplied by the current caller.\", \"module_role\": \"session lifecycle owner\", \"node_type\": \"change_action\", \"operation\": \"reconcile\", \"parameters\": [\"explicit completed messages\", \"configured history file\", \"input/output adapter\", \"reconstructed messages\"], \"post_state\": \"Explicit state remains authoritative; otherwise a nonempty persisted transcript becomes the session's completed-message state, and restored state is announced when present.\", \"pre_state\": \"A new session has either explicit completed-message state, or an empty completed-message state plus an optional configured persisted transcript.\", \"source_name\": \"restore-state-with-precedence\", \"status\": \"candidate\", \"supporting_episodes\": [\"Aider-AI__aider__591__45b2ba8a\"], \"supporting_repositories\": [\"Aider-AI/aider\"], \"validation\": \"Initialize once with explicit completed messages and once with an empty state plus a populated transcript; verify the first state is unchanged, the second contains reconstructed history, and the restoration announcement appears only for nonempty completed state. These branches are present in the pinned code but lack an automated regression test.\"}, {\"aliases\": [], \"category\": \"state-continuity-and-resume\", \"description\": \"Exercise the continuation boundary with controlled side effects and check both halves of the ownership contract: unchanged caller state and an independently extended result.\", \"evidence_ids\": [\"ev-regression-test\", \"ev-test-isolation\"], \"grounded_semantics\": true, \"id\": \"semantic-action:78079ec47df5d374\", \"intent\": \"Prevent regression to input-list aliasing while confirming that conversation continuation still records the new turn.\", \"module_role\": \"state-ownership regression oracle\", \"node_type\": \"change_action\", \"operation\": \"validate\", \"parameters\": [\"continuation_entry_point\", \"seed_history\", \"mock_completion\", \"input_length_baseline\", \"returned_history\"], \"post_state\": \"The regression oracle demonstrates that the supplied history's outer length is unchanged and the returned history is longer than the original.\", \"pre_state\": \"A continuation API accepts an existing mutable history and returns a message history after processing another turn.\", \"source_name\": \"verify-input-preservation-and-output-extension\", \"status\": \"candidate\", \"supporting_episodes\": [\"NousResearch__hermes-agent#228@56b53bff6e42a534c7b9558b09aa28a6876e37d3\"], \"supporting_repositories\": [\"NousResearch/hermes-agent\"], \"validation\": \"Use a deterministic mocked completion, suppress persistence and cleanup side effects, call the continuation API, assert input length equality with the saved baseline, and assert returned length exceeds that baseline.\"}, {\"aliases\": [], \"category\": \"state-continuity-and-resume\", \"description\": \"Expose a filesystem operation that commits a fully prepared sibling file by atomically replacing the destination and returns structured path-aware failures.\", \"evidence_ids\": [\"E-RENAME-001\", \"E-RENAME-TEST-001\"], \"grounded_semantics\": true, \"id\": \"semantic-action:79988f0cf3a9158e\", \"intent\": \"Make a prepared file become visible as one replacement event without exposing intermediate destination content.\", \"module_role\": \"filesystem capability boundary\", \"node_type\": \"change_action\", \"operation\": \"adapt\", \"parameters\": [\"source_path\", \"destination_path\", \"abort_signal\"], \"post_state\": \"On success the source no longer exists and the destination contains the source content; on rename failure the existing destination remains unchanged and the error identifies the failing source when available.\", \"pre_state\": \"A complete source file and a destination path on a filesystem that supports same-filesystem atomic rename are available.\", \"source_name\": \"provide-atomic-file-replacement\", \"status\": \"candidate\", \"supporting_episodes\": [\"earendil-works__pi__7707__a838c069\"], \"supporting_repositories\": [\"earendil-works/pi\"], \"validation\": \"Replace an existing destination and assert the source disappears and new content is visible; inject a missing-source failure and assert the prior destination content remains.\"}, {\"aliases\": [], \"category\": \"state-continuity-and-resume\", \"description\": \"Convert the application's append-only Markdown transcript into model-facing user and assistant messages while excluding session metadata, tool output, commands, and empty prompts.\", \"evidence_ids\": [\"E4\", \"E6\", \"E12\"], \"grounded_semantics\": true, \"id\": \"semantic-action:aefedabd00d7f317\", \"intent\": \"Recover reusable conversational state from a human-readable persisted transcript without replaying operational noise as dialogue.\", \"module_role\": \"persisted-conversation adapter\", \"node_type\": \"change_action\", \"operation\": \"normalize\", \"parameters\": [\"persisted transcript text\", \"user-message heading marker\", \"ignored session-heading marker\", \"ignored tool-output marker\", \"ignored command marker\"], \"post_state\": \"The transcript is represented as an ordered list of user and assistant message objects, with recognized non-conversational records excluded.\", \"pre_state\": \"A configured transcript contains interleaved session headings, user headings, assistant text, commands, and blockquoted operational output.\", \"source_name\": \"reconstruct-persisted-conversation\", \"status\": \"candidate\", \"supporting_episodes\": [\"Aider-AI__aider__591__45b2ba8a\"], \"supporting_repositories\": [\"Aider-AI/aider\"], \"validation\": \"Use a transcript containing each supported record type and verify that ordinary user headings and intervening assistant text are emitted in order while session headings, blockquotes, slash commands, and <blank> prompts are absent. The pinned implementation directly establishes these parsing rules, but the change supplies no automated test oracle.\"}, {\"aliases\": [], \"category\": \"state-continuity-and-resume\", \"description\": \"Apply a configurable retained-history budget and bound each summarizer request to the summarizer model's input capacity before background compaction.\", \"evidence_ids\": [\"E8\", \"E9\", \"E10\", \"E12\"], \"grounded_semantics\": true, \"id\": \"semantic-action:bd4ee5e1418df3f3\", \"intent\": \"Keep resumed state usable when persisted history is larger than either the desired conversation budget or the summarizer model's request context.\", \"module_role\": \"conversation compaction controller\", \"node_type\": \"change_action\", \"operation\": \"guard\", \"parameters\": [\"completed messages\", \"history token budget\", \"summarizer model\", \"summarizer maximum input tokens\", \"reserved input tokens\"], \"post_state\": \"History within the configured budget is left intact; oversized history starts compaction, and the summarizer receives the newest portion of the selected head that fits its input limit with a reserve.\", \"pre_state\": \"Reconstructed completed messages may exceed the configured history budget, and the portion selected for summarization may exceed the summarizer model's maximum input context.\", \"source_name\": \"compact-restored-state-within-budgets\", \"status\": \"candidate\", \"supporting_episodes\": [\"Aider-AI__aider__591__45b2ba8a\"], \"supporting_repositories\": [\"Aider-AI/aider\"], \"validation\": \"Exercise histories below and above the configured budget and use a model with a known max_input_tokens value; verify no worker starts below the threshold, a worker starts above it, and the messages passed to summarization do not exceed max_input_tokens minus 512 according to the implementation's token counter. No such automated test was included in the change.\"}, {\"aliases\": [], \"category\": \"state-continuity-and-resume\", \"description\": \"Bind the complete asynchronous ACP load/resume critical section to the selected or replacement workspace runtime so bridge restoration and nested storage access remain aligned with runtime selection.\", \"evidence_ids\": [\"E5\", \"E6\", \"E7\", \"E8\"], \"grounded_semantics\": true, \"id\": \"semantic-action:ce60f541d4b53730\", \"intent\": \"Prevent ACP load and resume operations from restoring session state under a stale or default storage root after workspace-runtime selection or replacement.\", \"module_role\": \"Workspace-qualified protocol session restoration boundary\", \"node_type\": \"change_action\", \"operation\": \"scope\", \"parameters\": [\"selected_session_runtime\", \"session_runtime_base_directory\", \"requested_session_id\", \"protocol_method: session/load|session/resume\", \"archive_coordinator\", \"runtime_bridge\"], \"post_state\": \"Persisted-session lookup, metadata recovery, and the selected runtime bridge’s load/resume operation execute while Storage resolves paths from sessionRuntime.sessionRuntimeBaseDir.\", \"pre_state\": \"An ACP restore request has resolved a sessionRuntime with its own sessionRuntimeBaseDir, but the asynchronous archive-coordinated restore callback is invoked outside that runtime’s ambient Storage context.\", \"source_name\": \"scope-acp-session-restore-to-selected-runtime\", \"status\": \"candidate\", \"supporting_episodes\": [\"QwenLM__qwen-code__9050__e0b8bea9\"], \"supporting_repositories\": [\"QwenLM/qwen-code\"], \"validation\": \"For both protocol load and resume, activate a replacement runtime with a distinct storage root, store the session there, issue the request, and assert no protocol error, one restore call, and observation of the replacement root inside the bridge callback.\"}, {\"aliases\": [], \"category\": \"state-continuity-and-resume\", \"description\": \"Build the fork header and all planned mutations in a sibling temporary file, then expose the fork through one atomic replacement and clean up failed staging artifacts.\", \"evidence_ids\": [\"E-PUBLISH-001\", \"E-FORK-CALL-001\", \"E-FORK-FAILURE-TEST-001\", \"E-FORK-SUCCESS-TEST-001\"], \"grounded_semantics\": true, \"id\": \"semantic-action:fd43531fc4b604d8\", \"intent\": \"Prevent incomplete derived sessions from becoming discoverable after interrupted or failed fork creation.\", \"module_role\": \"persistent session publication boundary\", \"node_type\": \"change_action\", \"operation\": \"reconcile\", \"parameters\": [\"destination_path\", \"session_header\", \"fork_mutations\", \"filesystem\"], \"post_state\": \"Either a complete reopenable fork is present at the destination, or no fork and no staging file is visible after a reported failure.\", \"pre_state\": \"A destination header, destination path, and complete validated fork mutation plan exist while the final destination is not yet published.\", \"source_name\": \"publish-complete-fork-atomically\", \"status\": \"candidate\", \"supporting_episodes\": [\"earendil-works__pi__7707__a838c069\"], \"supporting_repositories\": [\"earendil-works/pi\"], \"validation\": \"Inject failures during mutation staging and final rename and assert the fork is absent from repository listing with no .tmp residue; on success reopen and verify all selected state.\"}], \"boundary\": {\"action_similarity_is_not_equivalence\": true, \"holdout_loaded\": false, \"role_templates_must_bind_to_real_action_ids\": true, \"training_only\": true}, \"factorization_audit\": {\"action_grain\": [{\"clause_signal_count\": 1, \"declared_operation\": \"repair\", \"description_operation_signals\": [\"repair\"], \"id\": \"semantic-action:121536d8524094f2\", \"operation_signals\": [\"repair\"], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [], \"verdict\": \"atomic-review\"}, {\"clause_signal_count\": 2, \"declared_operation\": \"normalize\", \"description_operation_signals\": [], \"id\": \"semantic-action:25c7dba8a704cc63\", \"operation_signals\": [\"validate\"], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [], \"verdict\": \"atomic-review\"}, {\"clause_signal_count\": 0, \"declared_operation\": \"scope\", \"description_operation_signals\": [\"load\"], \"id\": \"semantic-action:3df9b41b184d2208\", \"operation_signals\": [\"load\", \"restore\"], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [\"load\"], \"verdict\": \"atomic-review\"}, {\"clause_signal_count\": 0, \"declared_operation\": \"isolate\", \"description_operation_signals\": [], \"id\": \"semantic-action:47a46ce46ab53083\", \"operation_signals\": [], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [], \"verdict\": \"atomic-review\"}, {\"clause_signal_count\": 3, \"declared_operation\": \"reconcile\", \"description_operation_signals\": [\"load\", \"preserve\"], \"id\": \"semantic-action:55d6cc954e7c9c40\", \"operation_signals\": [\"load\", \"preserve\"], \"reason\": \"description contains multiple finite-operation signals; inspect independent postconditions/oracles\", \"secondary_operation_signals\": [\"load\", \"preserve\"], \"verdict\": \"split-review\"}, {\"clause_signal_count\": 2, \"declared_operation\": \"validate\", \"description_operation_signals\": [], \"id\": \"semantic-action:78079ec47df5d374\", \"operation_signals\": [], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [], \"verdict\": \"atomic-review\"}, {\"clause_signal_count\": 1, \"declared_operation\": \"adapt\", \"description_operation_signals\": [], \"id\": \"semantic-action:79988f0cf3a9158e\", \"operation_signals\": [], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [], \"verdict\": \"atomic-review\"}, {\"clause_signal_count\": 3, \"declared_operation\": \"normalize\", \"description_operation_signals\": [], \"id\": \"semantic-action:aefedabd00d7f317\", \"operation_signals\": [], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [], \"verdict\": \"atomic-review\"}, {\"clause_signal_count\": 1, \"declared_operation\": \"guard\", \"description_operation_signals\": [\"bound\"], \"id\": \"semantic-action:bd4ee5e1418df3f3\", \"operation_signals\": [\"bound\"], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [\"bound\"], \"verdict\": \"atomic-review\"}, {\"clause_signal_count\": 1, \"declared_operation\": \"scope\", \"description_operation_signals\": [\"load\"], \"id\": \"semantic-action:ce60f541d4b53730\", \"operation_signals\": [\"load\", \"restore\"], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [\"load\"], \"verdict\": \"atomic-review\"}, {\"clause_signal_count\": 3, \"declared_operation\": \"reconcile\", \"description_operation_signals\": [], \"id\": \"semantic-action:fd43531fc4b604d8\", \"operation_signals\": [], \"reason\": \"one declared operation with one explicit semantic contract; no independent split is proven\", \"secondary_operation_signals\": [], \"verdict\": \"atomic-review\"}], \"coarse_action_groups\": [{\"action_ids\": [\"semantic-action:bd4ee5e1418df3f3\"], \"module_role\": \"conversation compaction controller\", \"operation\": \"guard\", \"repositories\": [\"Aider-AI/aider\"]}, {\"action_ids\": [\"semantic-action:47a46ce46ab53083\"], \"module_role\": \"conversation continuation state owner\", \"operation\": \"isolate\", \"repositories\": [\"NousResearch/hermes-agent\"]}, {\"action_ids\": [\"semantic-action:79988f0cf3a9158e\"], \"module_role\": \"filesystem capability boundary\", \"operation\": \"adapt\", \"repositories\": [\"earendil-works/pi\"]}, {\"action_ids\": [\"semantic-action:aefedabd00d7f317\"], \"module_role\": \"persisted-conversation adapter\", \"operation\": \"normalize\", \"repositories\": [\"Aider-AI/aider\"]}, {\"action_ids\": [\"semantic-action:fd43531fc4b604d8\"], \"module_role\": \"persistent session publication boundary\", \"operation\": \"reconcile\", \"repositories\": [\"earendil-works/pi\"]}, {\"action_ids\": [\"semantic-action:121536d8524094f2\"], \"module_role\": \"persistent session recovery boundary\", \"operation\": \"repair\", \"repositories\": [\"earendil-works/pi\"]}, {\"action_ids\": [\"semantic-action:55d6cc954e7c9c40\"], \"module_role\": \"session lifecycle owner\", \"operation\": \"reconcile\", \"repositories\": [\"Aider-AI/aider\"]}, {\"action_ids\": [\"semantic-action:25c7dba8a704cc63\"], \"module_role\": \"session state transition planner\", \"operation\": \"normalize\", \"repositories\": [\"earendil-works/pi\"]}, {\"action_ids\": [\"semantic-action:78079ec47df5d374\"], \"module_role\": \"state-ownership regression oracle\", \"operation\": \"validate\", \"repositories\": [\"NousResearch/hermes-agent\"]}, {\"action_ids\": [\"semantic-action:3df9b41b184d2208\"], \"module_role\": \"workspace-qualified http session restoration boundary\", \"operation\": \"scope\", \"repositories\": [\"QwenLM/qwen-code\"]}, {\"action_ids\": [\"semantic-action:ce60f541d4b53730\"], \"module_role\": \"workspace-qualified protocol session restoration boundary\", \"operation\": \"scope\", \"repositories\": [\"QwenLM/qwen-code\"]}], \"cross_repository_pair_analysis\": [{\"decision\": \"not-a-peer\", \"left\": \"semantic-action:121536d8524094f2\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:3df9b41b184d2208\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:121536d8524094f2\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:47a46ce46ab53083\", \"right_repositories\": [\"NousResearch/hermes-agent\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:121536d8524094f2\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:55d6cc954e7c9c40\", \"right_repositories\": [\"Aider-AI/aider\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:121536d8524094f2\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:78079ec47df5d374\", \"right_repositories\": [\"NousResearch/hermes-agent\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:121536d8524094f2\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:aefedabd00d7f317\", \"right_repositories\": [\"Aider-AI/aider\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:121536d8524094f2\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:bd4ee5e1418df3f3\", \"right_repositories\": [\"Aider-AI/aider\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:121536d8524094f2\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:ce60f541d4b53730\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:25c7dba8a704cc63\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:3df9b41b184d2208\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:25c7dba8a704cc63\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:47a46ce46ab53083\", \"right_repositories\": [\"NousResearch/hermes-agent\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:25c7dba8a704cc63\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:55d6cc954e7c9c40\", \"right_repositories\": [\"Aider-AI/aider\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:25c7dba8a704cc63\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:78079ec47df5d374\", \"right_repositories\": [\"NousResearch/hermes-agent\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"same-operation-different-owner\", \"left\": \"semantic-action:25c7dba8a704cc63\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:aefedabd00d7f317\", \"right_repositories\": [\"Aider-AI/aider\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:25c7dba8a704cc63\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:bd4ee5e1418df3f3\", \"right_repositories\": [\"Aider-AI/aider\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:25c7dba8a704cc63\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:ce60f541d4b53730\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:3df9b41b184d2208\", \"left_repositories\": [\"QwenLM/qwen-code\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:47a46ce46ab53083\", \"right_repositories\": [\"NousResearch/hermes-agent\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:3df9b41b184d2208\", \"left_repositories\": [\"QwenLM/qwen-code\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:55d6cc954e7c9c40\", \"right_repositories\": [\"Aider-AI/aider\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:3df9b41b184d2208\", \"left_repositories\": [\"QwenLM/qwen-code\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:78079ec47df5d374\", \"right_repositories\": [\"NousResearch/hermes-agent\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:3df9b41b184d2208\", \"left_repositories\": [\"QwenLM/qwen-code\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:79988f0cf3a9158e\", \"right_repositories\": [\"earendil-works/pi\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:3df9b41b184d2208\", \"left_repositories\": [\"QwenLM/qwen-code\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:aefedabd00d7f317\", \"right_repositories\": [\"Aider-AI/aider\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:3df9b41b184d2208\", \"left_repositories\": [\"QwenLM/qwen-code\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:bd4ee5e1418df3f3\", \"right_repositories\": [\"Aider-AI/aider\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:3df9b41b184d2208\", \"left_repositories\": [\"QwenLM/qwen-code\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:fd43531fc4b604d8\", \"right_repositories\": [\"earendil-works/pi\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:47a46ce46ab53083\", \"left_repositories\": [\"NousResearch/hermes-agent\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:55d6cc954e7c9c40\", \"right_repositories\": [\"Aider-AI/aider\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:47a46ce46ab53083\", \"left_repositories\": [\"NousResearch/hermes-agent\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:79988f0cf3a9158e\", \"right_repositories\": [\"earendil-works/pi\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:47a46ce46ab53083\", \"left_repositories\": [\"NousResearch/hermes-agent\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:aefedabd00d7f317\", \"right_repositories\": [\"Aider-AI/aider\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:47a46ce46ab53083\", \"left_repositories\": [\"NousResearch/hermes-agent\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:bd4ee5e1418df3f3\", \"right_repositories\": [\"Aider-AI/aider\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:47a46ce46ab53083\", \"left_repositories\": [\"NousResearch/hermes-agent\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:ce60f541d4b53730\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:47a46ce46ab53083\", \"left_repositories\": [\"NousResearch/hermes-agent\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:fd43531fc4b604d8\", \"right_repositories\": [\"earendil-works/pi\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:55d6cc954e7c9c40\", \"left_repositories\": [\"Aider-AI/aider\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:78079ec47df5d374\", \"right_repositories\": [\"NousResearch/hermes-agent\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:55d6cc954e7c9c40\", \"left_repositories\": [\"Aider-AI/aider\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:79988f0cf3a9158e\", \"right_repositories\": [\"earendil-works/pi\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:55d6cc954e7c9c40\", \"left_repositories\": [\"Aider-AI/aider\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:ce60f541d4b53730\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"same-operation-different-owner\", \"left\": \"semantic-action:55d6cc954e7c9c40\", \"left_repositories\": [\"Aider-AI/aider\"], \"reasons\": [\"semantic-owner-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:fd43531fc4b604d8\", \"right_repositories\": [\"earendil-works/pi\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:78079ec47df5d374\", \"left_repositories\": [\"NousResearch/hermes-agent\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:79988f0cf3a9158e\", \"right_repositories\": [\"earendil-works/pi\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:78079ec47df5d374\", \"left_repositories\": [\"NousResearch/hermes-agent\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:aefedabd00d7f317\", \"right_repositories\": [\"Aider-AI/aider\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:78079ec47df5d374\", \"left_repositories\": [\"NousResearch/hermes-agent\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:bd4ee5e1418df3f3\", \"right_repositories\": [\"Aider-AI/aider\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:78079ec47df5d374\", \"left_repositories\": [\"NousResearch/hermes-agent\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:ce60f541d4b53730\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:78079ec47df5d374\", \"left_repositories\": [\"NousResearch/hermes-agent\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:fd43531fc4b604d8\", \"right_repositories\": [\"earendil-works/pi\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:79988f0cf3a9158e\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:aefedabd00d7f317\", \"right_repositories\": [\"Aider-AI/aider\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:79988f0cf3a9158e\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:bd4ee5e1418df3f3\", \"right_repositories\": [\"Aider-AI/aider\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:79988f0cf3a9158e\", \"left_repositories\": [\"earendil-works/pi\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:ce60f541d4b53730\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:aefedabd00d7f317\", \"left_repositories\": [\"Aider-AI/aider\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:ce60f541d4b53730\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:aefedabd00d7f317\", \"left_repositories\": [\"Aider-AI/aider\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:fd43531fc4b604d8\", \"right_repositories\": [\"earendil-works/pi\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:bd4ee5e1418df3f3\", \"left_repositories\": [\"Aider-AI/aider\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:ce60f541d4b53730\", \"right_repositories\": [\"QwenLM/qwen-code\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:bd4ee5e1418df3f3\", \"left_repositories\": [\"Aider-AI/aider\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:fd43531fc4b604d8\", \"right_repositories\": [\"earendil-works/pi\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}, {\"decision\": \"not-a-peer\", \"left\": \"semantic-action:ce60f541d4b53730\", \"left_repositories\": [\"QwenLM/qwen-code\"], \"reasons\": [\"semantic-owner-differs\", \"finite-operation-differs\", \"precondition-differs\", \"postcondition-differs\", \"oracle-differs\"], \"right\": \"semantic-action:fd43531fc4b604d8\", \"right_repositories\": [\"earendil-works/pi\"], \"same_contract_fields\": {\"post_state\": false, \"pre_state\": false, \"validation\": false}}], \"interpretation\": {\"action_reuse\": \"An Action is reusable only when its semantic owner, finite operation, state transition, and validation oracle all survive substitution into the other repository.\", \"granularity\": \"A split is justified only when a candidate contains independently testable finite operations with separate postconditions or validation oracles. Different paths, providers, or filenames alone are not a reason to split.\", \"workflow_reuse\": \"A repeated role sequence such as establish-contract -> reconcile -> validate is a reusable Workflow fragment, but it is a template over new Actions rather than evidence that the Actions themselves are interchangeable.\"}, \"policy\": {\"merge_requires\": [\"same semantic owner\", \"same finite operation\", \"same pre-state\", \"same post-state\", \"same validation oracle\"], \"role_skeleton_is_not_action_reuse\": true, \"split_is_review_signal_only\": true}, \"schema_version\": \"action-factorization-audit-v1\", \"scope\": {\"action_ids\": [\"semantic-action:121536d8524094f2\", \"semantic-action:25c7dba8a704cc63\", \"semantic-action:3df9b41b184d2208\", \"semantic-action:47a46ce46ab53083\", \"semantic-action:55d6cc954e7c9c40\", \"semantic-action:78079ec47df5d374\", \"semantic-action:79988f0cf3a9158e\", \"semantic-action:aefedabd00d7f317\", \"semantic-action:bd4ee5e1418df3f3\", \"semantic-action:ce60f541d4b53730\", \"semantic-action:fd43531fc4b604d8\"], \"global_audit_rows_omitted\": true, \"workflow_ids\": [\"workflow:2d6914cde47f2982\", \"workflow:6b1cbfeb86a31d38\", \"workflow:b40e338a21f0bbcd\", \"workflow:be2221b80fde0658\", \"workflow:e9811457f13dfec6\"]}, \"workflow_role_segments\": [{\"action_reuse\": false, \"category_repository_support\": {\"context-budget-and-compaction\": [\"earendil-works/pi\"], \"credential-resolution-and-authentication\": [\"QwenLM/qwen-code\"], \"effect-control-and-isolation\": [\"openai/codex\"], \"provider-interface-adaptation\": [\"google-gemini/gemini-cli\"], \"state-continuity-and-resume\": [\"earendil-works/pi\"], \"structured-tool-contract-integrity\": [\"QwenLM/qwen-code\"]}, \"interpretation\": \"Reusable control-flow skeleton only; each step still needs a repository-specific Action contract.\", \"kind\": \"workflow-role-skeleton\", \"occurrences\": [{\"action_ids\": [\"semantic-action:79988f0cf3a9158e\", \"semantic-action:25c7dba8a704cc63\", \"semantic-action:fd43531fc4b604d8\"], \"category\": \"state-continuity-and-resume\", \"issue\": 7707, \"repository\": \"earendil-works/pi\", \"workflow_id\": \"workflow:b40e338a21f0bbcd\"}], \"reuse_scope\": \"cross-category-skeleton\", \"same_category_cross_repository_support\": {}, \"segment_roles\": [\"establish-contract\", \"implement\", \"reconcile\"], \"supporting_categories\": [\"state-continuity-and-resume\"], \"supporting_repositories\": [\"earendil-works/pi\"], \"supporting_workflows\": [\"workflow:b40e338a21f0bbcd\"]}, {\"action_reuse\": false, \"category_repository_support\": {\"context-budget-and-compaction\": [\"earendil-works/pi\"], \"credential-resolution-and-authentication\": [\"QwenLM/qwen-code\", \"earendil-works/pi\", \"google-gemini/gemini-cli\"], \"effect-control-and-isolation\": [\"earendil-works/pi\", \"openai/codex\"], \"failure-recovery-and-streaming\": [\"QwenLM/qwen-code\"], \"provider-interface-adaptation\": [\"NousResearch/hermes-agent\", \"google-gemini/gemini-cli\"], \"state-continuity-and-resume\": [\"earendil-works/pi\"], \"structured-tool-contract-integrity\": [\"QwenLM/qwen-code\"]}, \"interpretation\": \"The role sequence recurs within at least one category across repositories, but each step still needs a repository-specific Action contract.\", \"kind\": \"workflow-role-skeleton\", \"occurrences\": [{\"action_ids\": [\"semantic-action:79988f0cf3a9158e\", \"semantic-action:25c7dba8a704cc63\"], \"category\": \"state-continuity-and-resume\", \"issue\": 7707, \"repository\": \"earendil-works/pi\", \"workflow_id\": \"workflow:b40e338a21f0bbcd\"}], \"reuse_scope\": \"same-category-cross-repository\", \"same_category_cross_repository_support\": {\"credential-resolution-and-authentication\": [\"QwenLM/qwen-code\", \"earendil-works/pi\", \"google-gemini/gemini-cli\"], \"effect-control-and-isolation\": [\"earendil-works/pi\", \"openai/codex\"], \"provider-interface-adaptation\": [\"NousResearch/hermes-agent\", \"google-gemini/gemini-cli\"]}, \"segment_roles\": [\"establish-contract\", \"implement\"], \"supporting_categories\": [\"state-continuity-and-resume\"], \"supporting_repositories\": [\"earendil-works/pi\"], \"supporting_workflows\": [\"workflow:b40e338a21f0bbcd\"]}, {\"action_reuse\": false, \"category_repository_support\": {\"context-budget-and-compaction\": [\"Aider-AI/aider\", \"earendil-works/pi\"], \"credential-resolution-and-authentication\": [\"QwenLM/qwen-code\"], \"effect-control-and-isolation\": [\"earendil-works/pi\", \"openai/codex\"], \"provider-interface-adaptation\": [\"google-gemini/gemini-cli\"], \"state-continuity-and-resume\": [\"Aider-AI/aider\", \"QwenLM/qwen-code\", \"earendil-works/pi\"], \"structured-tool-contract-integrity\": [\"QwenLM/qwen-code\"]}, \"interpretation\": \"The role sequence recurs within at least one category across repositories, but each step still needs a repository-specific Action contract.\", \"kind\": \"workflow-role-skeleton\", \"occurrences\": [{\"action_ids\": [\"semantic-action:aefedabd00d7f317\", \"semantic-action:55d6cc954e7c9c40\"], \"category\": \"state-continuity-and-resume\", \"issue\": 591, \"repository\": \"Aider-AI/aider\", \"workflow_id\": \"workflow:2d6914cde47f2982\"}, {\"action_ids\": [\"semantic-action:25c7dba8a704cc63\", \"semantic-action:fd43531fc4b604d8\"], \"category\": \"state-continuity-and-resume\", \"issue\": 7707, \"repository\": \"earendil-works/pi\", \"workflow_id\": \"workflow:b40e338a21f0bbcd\"}, {\"action_ids\": [\"semantic-action:3df9b41b184d2208\", \"semantic-action:ce60f541d4b53730\"], \"category\": \"state-continuity-and-resume\", \"issue\": 9050, \"repository\": \"QwenLM/qwen-code\", \"workflow_id\": \"workflow:e9811457f13dfec6\"}], \"reuse_scope\": \"same-category-cross-repository\", \"same_category_cross_repository_support\": {\"context-budget-and-compaction\": [\"Aider-AI/aider\", \"earendil-works/pi\"], \"effect-control-and-isolation\": [\"earendil-works/pi\", \"openai/codex\"], \"state-continuity-and-resume\": [\"Aider-AI/aider\", \"QwenLM/qwen-code\", \"earendil-works/pi\"]}, \"segment_roles\": [\"implement\", \"reconcile\"], \"supporting_categories\": [\"state-continuity-and-resume\"], \"supporting_repositories\": [\"Aider-AI/aider\", \"QwenLM/qwen-code\", \"earendil-works/pi\"], \"supporting_workflows\": [\"workflow:2d6914cde47f2982\", \"workflow:b40e338a21f0bbcd\", \"workflow:e9811457f13dfec6\"]}, {\"action_reuse\": false, \"category_repository_support\": {\"context-budget-and-compaction\": [\"QwenLM/qwen-code\", \"google-gemini/gemini-cli\"], \"effect-control-and-isolation\": [\"NousResearch/hermes-agent\"], \"state-continuity-and-resume\": [\"NousResearch/hermes-agent\"], \"structured-tool-contract-integrity\": [\"NousResearch/hermes-agent\"]}, \"interpretation\": \"The role sequence recurs within at least one category across repositories, but each step still needs a repository-specific Action contract.\", \"kind\": \"workflow-role-skeleton\", \"occurrences\": [{\"action_ids\": [\"semantic-action:47a46ce46ab53083\", \"semantic-action:78079ec47df5d374\"], \"category\": \"state-continuity-and-resume\", \"issue\": 228, \"repository\": \"NousResearch/hermes-agent\", \"workflow_id\": \"workflow:6b1cbfeb86a31d38\"}], \"reuse_scope\": \"same-category-cross-repository\", \"same_category_cross_repository_support\": {\"context-budget-and-compaction\": [\"QwenLM/qwen-code\", \"google-gemini/gemini-cli\"]}, \"segment_roles\": [\"implement\", \"validate\"], \"supporting_categories\": [\"state-continuity-and-resume\"], \"supporting_repositories\": [\"NousResearch/hermes-agent\"], \"supporting_workflows\": [\"workflow:6b1cbfeb86a31d38\"]}, {\"action_reuse\": false, \"category_repository_support\": {\"credential-resolution-and-authentication\": [\"NousResearch/hermes-agent\"], \"state-continuity-and-resume\": [\"Aider-AI/aider\"]}, \"interpretation\": \"Reusable control-flow skeleton only; each step still needs a repository-specific Action contract.\", \"kind\": \"workflow-role-skeleton\", \"occurrences\": [{\"action_ids\": [\"semantic-action:55d6cc954e7c9c40\", \"semantic-action:bd4ee5e1418df3f3\"], \"category\": \"state-continuity-and-resume\", \"issue\": 591, \"repository\": \"Aider-AI/aider\", \"workflow_id\": \"workflow:2d6914cde47f2982\"}], \"reuse_scope\": \"cross-category-skeleton\", \"same_category_cross_repository_support\": {}, \"segment_roles\": [\"reconcile\", \"validate\"], \"supporting_categories\": [\"state-continuity-and-resume\"], \"supporting_repositories\": [\"Aider-AI/aider\"], \"supporting_workflows\": [\"workflow:2d6914cde47f2982\"]}]}, \"pattern_candidate\": {\"category\": \"state-continuity-and-resume\", \"confidence\": 0.0, \"counterexamples\": [], \"decision_points\": [], \"extraction_method\": \"structural-action-fingerprint-v1; semantic judge required before promotion\", \"held_out_results\": [], \"id\": \"pattern:d76767e2a3d6e867\", \"intent\": \"Resolve state continuity and resume through a contract-first, evidence-validated change chain.\", \"invariants\": [], \"known_failure_modes\": [], \"mandatory_actions\": [], \"node_type\": \"resolution_pattern\", \"optional_actions\": [\"semantic-action:79988f0cf3a9158e\"], \"ordering_constraints\": [], \"promotion_status\": \"insufficient-structural-support\", \"supporting_repositories\": [\"Aider-AI/aider\", \"NousResearch/hermes-agent\", \"QwenLM/qwen-code\", \"earendil-works/pi\"], \"supporting_workflows\": [\"workflow:2d6914cde47f2982\", \"workflow:6b1cbfeb86a31d38\", \"workflow:b40e338a21f0bbcd\", \"workflow:be2221b80fde0658\", \"workflow:e9811457f13dfec6\"], \"validation_ladder\": [], \"workflow_template\": []}, \"workflows\": [{\"anti_goals\": [\"Do not replace explicitly supplied in-memory conversation state with disk contents.\", \"Do not replay tool output, session metadata, commands, or blank prompts as conversational messages.\", \"Do not summarize history that already fits the configured retained-history budget.\", \"Do not send an unbounded restored transcript to the summarizer model.\"], \"category\": \"state-continuity-and-resume\", \"description\": \"A partial-order startup workflow that reconstructs a persisted transcript only when authoritative live state is absent, then conditionally compacts oversized restored state under both session and model context limits.\", \"edges\": [{\"from\": \"step-1\", \"to\": \"step-2\", \"type\": \"enables\"}, {\"from\": \"step-2\", \"to\": \"step-3\", \"type\": \"enables\"}, {\"from\": \"step-3\", \"to\": \"step-2\", \"type\": \"validates\"}], \"entry_state\": \"Session initialization has begun; completed-message state is either explicitly supplied or empty, and a configured transcript may contain earlier conversation plus operational records.\", \"episode_id\": \"Aider-AI__aider__591__45b2ba8a\", \"evidence_ids\": [\"E1\", \"E3\", \"E4\", \"E5\", \"E6\", \"E7\", \"E8\", \"E9\", \"E10\", \"E11\", \"E12\"], \"exit_state\": \"Explicit completed-message state has been preserved, or persisted conversational messages have been restored; any restored state exceeding its budget has entered bounded compaction, and nonempty restored state is visible through the startup announcement.\", \"goal\": \"Start a session with usable prior conversational context while preserving explicit caller state and keeping restored history within configured and model-imposed token limits.\", \"id\": \"workflow:2d6914cde47f2982\", \"inputs\": [\"optional explicit completed-message state\", \"configured persisted transcript location\", \"transcript-format markers\", \"history token budget or model default\", \"summarizer model and token counter\"], \"issue\": 591, \"name\": \"resume-persisted-conversation-safely\", \"node_type\": \"issue_workflow\", \"not_applicable_when\": [\"The application has no persisted conversation artifact to resume.\", \"The persisted artifact cannot be deterministically mapped to ordered conversational roles.\", \"A caller requires explicit supplied state and persisted state to be merged rather than using explicit state as authoritative.\", \"No reliable token counter or summarizer input limit is available for safe compaction.\"], \"repository\": \"Aider-AI/aider\", \"source_case\": \"Aider-AI/aider#591\", \"steps\": [{\"action_id\": \"semantic-action:aefedabd00d7f317\", \"action_name\": \"reconstruct-persisted-conversation\", \"condition\": \"Run when completed-message state is empty and the configured transcript contains text.\", \"depends_on\": [], \"optional\": false, \"required\": true, \"role\": \"implement\", \"step_id\": \"step-1\", \"validation\": \"Verify ordered user/assistant reconstruction and exclusion of recognized metadata, tool output, commands, and blank prompts.\"}, {\"action_id\": \"semantic-action:55d6cc954e7c9c40\", \"action_name\": \"restore-state-with-precedence\", \"condition\": \"Always enforce precedence; file loading and reconstruction are conditional on the absence of explicit completed-message state.\", \"depends_on\": [\"reconstruct-persisted-conversation\"], \"optional\": false, \"required\": true, \"role\": \"reconcile\", \"step_id\": \"step-2\", \"validation\": \"Verify explicit state is unchanged, while empty state with a populated transcript becomes restored state and produces the restoration announcement.\"}, {\"action_id\": \"semantic-action:bd4ee5e1418df3f3\", \"action_name\": \"compact-restored-state-within-budgets\", \"condition\": \"Evaluate every restored state; start compaction only when its token count exceeds the selected history budget.\", \"depends_on\": [\"restore-state-with-precedence\"], \"optional\": false, \"required\": true, \"role\": \"validate\", \"step_id\": \"step-3\", \"validation\": \"Verify threshold behavior and confirm that any summarizer request is restricted to content fitting within the summarizer input limit minus its reserve.\"}], \"stop_conditions\": [\"Stop restoration and retain explicit state when completed messages were supplied by the caller.\", \"Stop file-based restoration when the configured transcript is absent, unreadable through the input adapter, or empty.\", \"Stop promotion as a fully validated resolution until automated parser, precedence, and compaction tests exist.\", \"Stop or repair if transcript reconstruction cannot preserve conversational ordering or if bounded summarization fails.\"], \"supporting_repositories\": [\"Aider-AI/aider\"], \"title\": \"Resume a persisted conversation without displacing live state or overflowing context\", \"unresolved_or_deferred\": [\"The pinned change includes no automated tests for transcript parsing, state precedence, startup restoration, token override propagation, or bounded compaction.\", \"The parser does not flush a final accumulated assistant segment at end-of-file, so preservation of a transcript ending directly in assistant content is unresolved.\", \"The standalone aider/history.py entry point calls an undefined summarize_chat_history_markdown method at the pinned ref and therefore is not a usable validation path.\", \"The changed compaction calculation reverses and truncates the sized head before later slicing it with split_index; the exact tail-token accounting should be covered by focused boundary tests before treating it as a proven invariant.\"], \"validation_ladder\": [\"Unit-check transcript reconstruction with representative user, assistant, session-heading, blockquote, command, and blank-prompt records.\", \"Lifecycle-check precedence using both explicit completed messages and an empty state backed by a populated transcript.\", \"Boundary-check compaction immediately below and above the configured history-token threshold.\", \"Capacity-check that a large selected head is trimmed to the summarizer model's input capacity minus the reserved tokens.\", \"Integration-check that a restarted session reports restoration and can continue using the restored completed-message state.\"], \"when_to_use\": [\"A stateful interactive application persists a transcript across process lifetimes and a new session should continue the prior conversation.\", \"The persisted representation contains both conversational content and operational metadata that must not be replayed as model dialogue.\", \"Restored state can be large enough to require compaction before continued use.\"]}, {\"anti_goals\": [\"Do not remove prior history from the working continuation state.\", \"Do not suppress recording of the new user or assistant messages in the returned state.\", \"Do not deep-copy or transform individual history entries unless nested-entry mutation is separately demonstrated and specified.\"], \"category\": \"state-continuity-and-resume\", \"description\": \"Establish an ownership boundary for a mutable history passed into a continuation routine, extend only a copied working sequence, and validate both preservation of the input and growth of the returned state.\", \"edges\": [{\"from\": \"step-1\", \"to\": \"step-2\", \"type\": \"enables\"}, {\"from\": \"step-2\", \"to\": \"step-1\", \"type\": \"validates\"}], \"entry_state\": \"A non-empty caller-owned history can be bound directly to the routine's working sequence, and later append operations can therefore corrupt the caller's preserved state.\", \"episode_id\": \"NousResearch__hermes-agent#228@56b53bff6e42a534c7b9558b09aa28a6876e37d3\", \"evidence_ids\": [\"ev-before-alias\", \"ev-after-copy\", \"ev-working-list-mutations\", \"ev-diff-focused\", \"ev-regression-test\", \"ev-test-isolation\"], \"exit_state\": \"The routine operates on a distinct outer sequence, preserves all supplied history entries for continuation, appends the new turn to the working result, and leaves the caller's input sequence structurally unchanged.\", \"goal\": \"Continue an operation from existing history while returning the newly extended history and preserving the caller's original history container.\", \"id\": \"workflow:6b1cbfeb86a31d38\", \"inputs\": [\"continuation entry point that accepts prior history\", \"caller-owned mutable history sequence\", \"new turn input\", \"deterministic completion or equivalent response fixture\"], \"issue\": 228, \"name\": \"preserve-caller-state-during-resume\", \"node_type\": \"issue_workflow\", \"not_applicable_when\": [\"The API explicitly documents in-place mutation as part of its contract.\", \"The supplied history is immutable or the routine never mutates the sequence structure.\", \"The defect concerns mutation of nested message objects rather than append operations on the outer sequence.\"], \"repository\": \"NousResearch/hermes-agent\", \"source_case\": \"NousResearch/hermes-agent#228\", \"steps\": [{\"action_id\": \"semantic-action:47a46ce46ab53083\", \"action_name\": \"isolate-caller-owned-sequence-before-extension\", \"condition\": \"Apply when the continuation routine performs structural mutations such as append on a caller-supplied mutable sequence.\", \"depends_on\": [], \"optional\": false, \"required\": true, \"role\": \"implement\", \"step_id\": \"step-1\", \"validation\": \"Inspect the initialization boundary and confirm that supplied history is copied into a distinct working sequence before any new-turn append occurs.\"}, {\"action_id\": \"semantic-action:78079ec47df5d374\", \"action_name\": \"verify-input-preservation-and-output-extension\", \"condition\": \"Run after the ownership boundary is changed and a deterministic completed-turn fixture is available.\", \"depends_on\": [\"isolate-caller-owned-sequence-before-extension\"], \"optional\": false, \"required\": true, \"role\": \"validate\", \"step_id\": \"step-2\", \"validation\": \"Confirm that the caller's sequence length equals its pre-call baseline and that the returned sequence length exceeds that baseline.\"}], \"stop_conditions\": [\"Stop if the API contract intentionally transfers ownership and permits in-place mutation.\", \"Stop and broaden the investigation if individual pre-existing message objects are mutated, because a shallow sequence copy does not isolate nested objects.\", \"Defer runtime confirmation if the repository's test runner or required dependencies are unavailable.\"], \"supporting_repositories\": [\"NousResearch/hermes-agent\"], \"title\": \"Resume from history without corrupting caller-owned state\", \"unresolved_or_deferred\": [\"The committed test checks outer-list length, not object identity, exact preserved contents, or mutation of nested message dictionaries.\", \"A fresh test execution is deferred because pytest is not installed in the supplied environment.\"], \"validation_ladder\": [\"Static boundary check: the working outer sequence is constructed separately from a supplied mutable history.\", \"Behavioral preservation check: after a completed new turn, the caller's history retains its original length.\", \"Behavioral continuity check: the returned history is longer than the original, proving that isolation did not discard the new turn.\", \"Focused automated regression test when the test runner and dependencies are available.\"], \"when_to_use\": [\"A continuation or resume API accepts a caller-supplied mutable sequence and appends new state during processing.\", \"Inspection or regression behavior shows that the routine aliases and mutates the caller's non-empty sequence.\"]}, {\"anti_goals\": [\"Do not publish the destination header before all derived mutations are staged.\", \"Do not change which entries, lanes, name, or labels the fork operation selects.\", \"Do not treat deletion of a partially published destination as equivalent to never publishing it.\"], \"category\": \"state-continuity-and-resume\", \"description\": \"Plan the entire derived state first, stage it outside the visible destination, and publish it with one atomic filesystem operation.\", \"edges\": [{\"from\": \"step-1\", \"to\": \"step-3\", \"type\": \"enables\"}, {\"from\": \"step-2\", \"to\": \"step-3\", \"type\": \"requires\"}, {\"from\": \"step-3\", \"to\": \"step-2\", \"type\": \"validates\"}], \"entry_state\": \"The source session is loadable, the destination is not published, and fork selection has not yet been materialized as one complete persistence plan.\", \"episode_id\": \"earendil-works__pi__7707__a838c069\", \"evidence_ids\": [\"E-BEFORE-FORK-001\", \"E-RENAME-001\", \"E-PUBLISH-001\", \"E-FORK-PLAN-001\", \"E-FORK-CALL-001\", \"E-FORK-SUCCESS-TEST-001\", \"E-FORK-FAILURE-TEST-001\"], \"exit_state\": \"The destination contains a complete validated fork that reopens with the selected state, or failure leaves neither a visible destination nor a staging artifact.\", \"goal\": \"A derived persistent session is either complete and reopenable or entirely absent after any reported staging or publication failure.\", \"id\": \"workflow:b40e338a21f0bbcd\", \"inputs\": [\"source session state\", \"fork scope and optional target position\", \"destination header and path\", \"filesystem atomic replacement capability\"], \"issue\": 7707, \"name\": \"crash-safe-derived-session-publication\", \"node_type\": \"issue_workflow\", \"not_applicable_when\": [\"The operation is a normal append to an already published log rather than publication of a new complete artifact.\", \"The filesystem cannot provide same-filesystem atomic rename-with-replacement semantics.\", \"The destination is intentionally designed to expose incremental construction.\"], \"repository\": \"earendil-works/pi\", \"source_case\": \"earendil-works/pi#7707\", \"steps\": [{\"action_id\": \"semantic-action:79988f0cf3a9158e\", \"action_name\": \"provide-atomic-file-replacement\", \"condition\": \"The persistent backend publishes files through an injected filesystem abstraction.\", \"depends_on\": [], \"optional\": false, \"required\": true, \"role\": \"establish-contract\", \"step_id\": \"step-1\", \"validation\": \"Replacing an existing file is atomic at the abstraction boundary, and failed rename preserves its destination.\"}, {\"action_id\": \"semantic-action:25c7dba8a704cc63\", \"action_name\": \"derive-complete-fork-mutation-plan\", \"condition\": \"The derived artifact is a session fork selected by tree or branch options.\", \"depends_on\": [], \"optional\": false, \"required\": true, \"role\": \"implement\", \"step_id\": \"step-2\", \"validation\": \"The plan has consecutive sequence numbers and reconstitutes selected entries, lane pointers, name, and labels while rejecting invalid targets.\"}, {\"action_id\": \"semantic-action:fd43531fc4b604d8\", \"action_name\": \"publish-complete-fork-atomically\", \"condition\": \"A validated plan and destination header are available.\", \"depends_on\": [\"provide-atomic-file-replacement\", \"derive-complete-fork-mutation-plan\"], \"optional\": false, \"required\": true, \"role\": \"reconcile\", \"step_id\": \"step-3\", \"validation\": \"Injected staging and rename failures expose no fork and leave no temporary file; successful publication reopens with complete state.\"}], \"stop_conditions\": [\"Stop if the complete derived state cannot be determined before writing the destination.\", \"Stop if source and destination cannot reside on a filesystem supporting atomic rename.\", \"Stop and report failure if staging or rename fails; do not expose or continue using the destination.\"], \"supporting_repositories\": [\"earendil-works/pi\"], \"title\": \"Create a derived session without exposing partial state\", \"unresolved_or_deferred\": [\"Concurrent publications to the same destination require caller serialization because the implementation uses a deterministic sibling .tmp path.\"], \"validation_ladder\": [\"Verify atomic replacement semantics and path-aware failure reporting at the filesystem boundary.\", \"Verify successful reopened forks preserve message counts, entries, lanes, name, and labels.\", \"Inject failure during staged mutation writing and verify the fork is not listed and no temporary file remains.\", \"Inject failure during final rename and verify the same absence and cleanup invariants.\"], \"when_to_use\": [\"Creating a new persistent state artifact requires copying multiple entries, pointers, or metadata from an existing session.\", \"The destination can be observed by repository listing or opened while multi-step construction failures are possible.\"]}, {\"anti_goals\": [\"Do not truncate the original file before a complete repaired replacement is ready.\", \"Do not silently repair malformed interior records or semantically invalid complete records.\", \"Do not discard the original error when temporary cleanup runs.\"], \"category\": \"state-continuity-and-resume\", \"description\": \"Identify a recoverable incomplete final record, stage the accepted prefix separately, and atomically replace the damaged log only after staging succeeds.\", \"edges\": [{\"from\": \"step-1\", \"to\": \"step-2\", \"type\": \"enables\"}, {\"from\": \"step-2\", \"to\": \"step-1\", \"type\": \"validates\"}], \"entry_state\": \"The original log remains present, replay has accepted its prefix, and the final physical line has a parse failure with an underlying cause.\", \"episode_id\": \"earendil-works__pi__7707__a838c069\", \"evidence_ids\": [\"E-BEFORE-REPAIR-001\", \"E-RENAME-001\", \"E-PUBLISH-001\", \"E-REPAIR-CALL-001\", \"E-REPAIR-FAILURE-TEST-001\"], \"exit_state\": \"The destination contains the valid replayable prefix, or a reported failure leaves the original damaged bytes unchanged and removes the staging file.\", \"goal\": \"Restore a replayable log prefix while preserving the original bytes whenever repair publication fails.\", \"id\": \"workflow:be2221b80fde0658\", \"inputs\": [\"damaged session path\", \"accepted physical lines forming the valid prefix\", \"parse failure classification\", \"filesystem atomic replacement capability\"], \"issue\": 7707, \"name\": \"failure-safe-torn-log-recovery\", \"node_type\": \"issue_workflow\", \"not_applicable_when\": [\"The malformed record is not the final physical line.\", \"The final record is complete but violates replay invariants.\", \"The only defect is a valid final line missing its terminating newline and append-only repair is sufficient.\"], \"repository\": \"earendil-works/pi\", \"source_case\": \"earendil-works/pi#7707\", \"steps\": [{\"action_id\": \"semantic-action:79988f0cf3a9158e\", \"action_name\": \"provide-atomic-file-replacement\", \"condition\": \"Recovery can stage a sibling file on the same filesystem as the session.\", \"depends_on\": [], \"optional\": false, \"required\": true, \"role\": \"establish-contract\", \"step_id\": \"step-1\", \"validation\": \"Atomic replacement succeeds as one rename event and rename failure leaves existing destination content unchanged.\"}, {\"action_id\": \"semantic-action:121536d8524094f2\", \"action_name\": \"repair-torn-tail-with-atomic-replacement\", \"condition\": \"The parse failure is confined to the final physical line and prior mutations have replayed successfully.\", \"depends_on\": [\"provide-atomic-file-replacement\"], \"optional\": false, \"required\": true, \"role\": \"repair\", \"step_id\": \"step-2\", \"validation\": \"A failed staged repair preserves the original byte sequence and removes the .tmp file; successful repair returns storage representing the accepted prefix.\"}], \"stop_conditions\": [\"Stop without repair if corruption is not confined to the final physical line.\", \"Stop without repair if replay of any complete preceding mutation fails.\", \"Stop and preserve the original if staging or atomic rename fails.\"], \"supporting_repositories\": [\"earendil-works/pi\"], \"title\": \"Recover a torn persistent log without overwriting the original in place\", \"unresolved_or_deferred\": [\"The evidence bundle contains no CI status or reviewer discussion, so validation is grounded in committed tests rather than recorded test-run results.\"], \"validation_ladder\": [\"Classify the corruption and reject malformed interior or complete semantically invalid mutations.\", \"Verify the computed repair content is exactly the accepted prefix plus a terminating newline.\", \"Inject a staging failure after modifying the temporary file and verify the original bytes remain unchanged.\", \"Verify cleanup removes the sibling temporary file on failure.\"], \"when_to_use\": [\"Sequential replay succeeds through a valid prefix and only the final physical record is syntactically incomplete.\", \"Repair requires replacing persisted content rather than merely appending a missing newline.\"]}, {\"anti_goals\": [\"Do not merge or relocate session stores between workspace runtimes.\", \"Do not change session identifiers, restore metadata, archive-lock semantics, bridge ownership, or load/resume response shapes.\", \"Do not replace workspace selection logic; preserve the already selected runtime and propagate its storage context.\", \"Do not globally mutate a process-wide storage root when a callback-scoped binding is available.\"], \"category\": \"state-continuity-and-resume\", \"description\": \"A partial-order resolution workflow for restore paths that select the correct workspace runtime explicitly but lose that selection through an ambient storage API during asynchronous load or resume work.\", \"edges\": [{\"from\": \"step-1\", \"to\": \"step-2\", \"type\": \"enables\"}], \"entry_state\": \"Workspace selection returns the intended runtime, and direct service construction may use its root, but the enclosing asynchronous restoration chain can still observe a different ambient storage root.\", \"episode_id\": \"QwenLM__qwen-code__9050__e0b8bea9\", \"evidence_ids\": [\"E1\", \"E2\", \"E3\", \"E4\", \"E5\", \"E6\", \"E7\", \"E8\", \"E9\"], \"exit_state\": \"Every affected load/resume entry point scopes its complete restore critical section to the selected runtime root, and regression tests prove the selected or replacement root is visible at the bridge boundary for both actions.\", \"goal\": \"Ensure every supported cold session load/resume entry point restores persisted state and invokes its bridge under the storage root owned by the selected workspace runtime.\", \"id\": \"workflow:e9811457f13dfec6\", \"inputs\": [\"Restore entry points and their load/resume branches\", \"Selected workspace runtime and sessionRuntimeBaseDir\", \"Ambient storage-context API with asynchronous callback propagation\", \"Persisted-session resolver and metadata readers\", \"Selected runtime bridge\", \"Tests capable of creating distinct runtime roots\"], \"issue\": 9050, \"name\": \"preserve-selected-runtime-context-across-session-restore\", \"node_type\": \"issue_workflow\", \"not_applicable_when\": [\"All session storage access is explicitly parameterized and no restore dependency consults ambient runtime state.\", \"The requested session is absent from the correctly selected runtime store rather than hidden by a context mismatch.\", \"The operation creates a new session and does not restore persisted state.\", \"Only one immutable runtime root exists and runtime selection or replacement cannot occur.\"], \"repository\": \"QwenLM/qwen-code\", \"source_case\": \"QwenLM/qwen-code#9050\", \"steps\": [{\"action_id\": \"semantic-action:3df9b41b184d2208\", \"action_name\": \"scope-http-session-restore-to-selected-runtime\", \"condition\": \"The product exposes an HTTP session load/resume route that selects among workspace runtimes.\", \"depends_on\": [], \"optional\": false, \"required\": true, \"role\": \"implement\", \"step_id\": \"step-1\", \"validation\": \"A session stored only beneath a secondary runtime root can be loaded and resumed through HTTP, and the selected bridge observes that root.\"}, {\"action_id\": \"semantic-action:ce60f541d4b53730\", \"action_name\": \"scope-acp-session-restore-to-selected-runtime\", \"condition\": \"The product also exposes ACP or another protocol restore entry point with an independent dispatch path.\", \"depends_on\": [\"scope-http-session-restore-to-selected-runtime\"], \"optional\": false, \"required\": true, \"role\": \"reconcile\", \"step_id\": \"step-2\", \"validation\": \"After activating a runtime replacement with a distinct root, both protocol load and resume complete without error and the replacement bridge observes its own root.\"}], \"stop_conditions\": [\"Stop if the selected runtime does not expose a stable session storage root.\", \"Stop and diagnose runtime-selection logic if the wrong runtime or bridge is chosen before storage scoping begins.\", \"Stop if correct behavior requires moving or sharing persisted state across runtime boundaries; that is a different migration or ownership problem.\", \"Stop if scoping only a synchronous prefix does not propagate through awaited restore work; the context mechanism must support the complete asynchronous callback.\"], \"supporting_repositories\": [\"QwenLM/qwen-code\"], \"title\": \"Preserve workspace runtime context throughout session restoration\", \"unresolved_or_deferred\": [\"The evidence bundle does not include CI status checks or review discussion.\", \"Tests were inspected as committed regression oracles; no clean test execution result is available from the provided checkout.\", \"ACP is a repository-specific transport instance; applicability to another project requires an equivalent independent restore entry point rather than the same protocol.\"], \"validation_ladder\": [\"Inspect each restore entry point to confirm runtime selection and ambient storage binding cover the same complete asynchronous critical section.\", \"For the HTTP path, store sessions only under a non-default secondary root and verify both load and resume return success while the bridge observes that root.\", \"For the protocol path, activate a replacement runtime with a distinct root and verify both load and resume use the replacement bridge under that root.\", \"Retain existing restore locking, session-resolution, metadata, isolation, ownership, and response behavior inside the scoped callback.\"], \"when_to_use\": [\"A service supports multiple workspace runtimes or runtime replacement, with separate persisted-session roots.\", \"The restore path passes an explicit runtime root to one service but nested asynchronous restore code also consults an ambient or context-local storage root.\", \"Restoration succeeds in the primary/default workspace but fails, misses state, or observes the wrong root for a secondary or replacement runtime.\"]}]}}",
+      "response_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "Human-readable resolution Pattern induction",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schema_version",
+          "pattern_id",
+          "category",
+          "decision",
+          "title",
+          "summary",
+          "when_to_use",
+          "anti_goals",
+          "not_applicable_when",
+          "invariants",
+          "action_template",
+          "decision_points",
+          "ordering_constraints",
+          "validation_ladder",
+          "known_failure_modes",
+          "exclusions",
+          "supporting_workflow_ids",
+          "workflow_realizations",
+          "confidence",
+          "rationale",
+          "evidence_ids",
+          "missing_probes"
+        ],
+        "properties": {
+          "schema_version": {
+            "const": "resolution-pattern-induction-v1"
+          },
+          "pattern_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "category": {
+            "type": "string",
+            "minLength": 1
+          },
+          "decision": {
+            "enum": [
+              "candidate_pending_holdout",
+              "defer",
+              "reject"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "when_to_use": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "anti_goals": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "not_applicable_when": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "invariants": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "action_template": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "role_id",
+                "title",
+                "purpose",
+                "required",
+                "condition",
+                "validation"
+              ],
+              "properties": {
+                "role_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "purpose": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "condition": {
+                  "type": "string"
+                },
+                "validation": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "decision_points": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "question",
+                "branches"
+              ],
+              "properties": {
+                "question": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "branches": {
+                  "type": "array",
+                  "minItems": 2,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "condition",
+                      "action_role_ids"
+                    ],
+                    "properties": {
+                      "condition": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "action_role_ids": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "ordering_constraints": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "before_role_id",
+                "after_role_id",
+                "condition"
+              ],
+              "properties": {
+                "before_role_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "after_role_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "condition": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "validation_ladder": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "known_failure_modes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "failure",
+                "detection",
+                "mitigation"
+              ],
+              "properties": {
+                "failure": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "detection": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "mitigation": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "exclusions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "supporting_workflow_ids": {
+            "type": "array",
+            "minItems": 2,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "workflow_realizations": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "workflow_id",
+                "repository",
+                "role_bindings",
+                "evidence_ids"
+              ],
+              "properties": {
+                "workflow_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "repository": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "role_bindings": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "role_id",
+                      "action_ids"
+                    ],
+                    "properties": {
+                      "role_id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "action_ids": {
+                        "type": "array",
+                        "minItems": 1,
+                        "uniqueItems": true,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  }
+                },
+                "evidence_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "missing_probes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "response": {
+        "schema_version": "resolution-pattern-induction-v1",
+        "pattern_id": "pattern:d76767e2a3d6e867",
+        "category": "state-continuity-and-resume",
+        "decision": "candidate_pending_holdout",
+        "title": "Preserve caller-owned state during resume",
+        "summary": "At a resume or continuation boundary, treat explicitly supplied in-memory state as authoritative and caller-owned. Do not replace it with persisted state or structurally mutate its container unless the API explicitly transfers ownership. When no authoritative live state exists, restoration from persistence is a conditional branch; when continuation must append state, extend a distinct working container and return that extended result.",
+        "when_to_use": [
+          "A resume, startup, or continuation API accepts existing in-memory state and may also restore or append historical state.",
+          "The supplied state is mutable or otherwise observable by the caller after the operation returns.",
+          "A persisted history source could displace explicitly supplied state, or continuation logic could append directly to the caller's container.",
+          "The intended contract is to preserve caller state while still allowing a restored or extended working result."
+        ],
+        "anti_goals": [
+          "Do not merge explicitly supplied live state with persisted state unless merging is a separately specified contract.",
+          "Do not assume that preserving an outer sequence also isolates mutable objects nested inside that sequence.",
+          "Do not suppress new-turn additions from the returned continuation state merely to avoid mutating the input.",
+          "Do not make transcript reconstruction or history compaction mandatory for continuation paths that do not use persisted transcripts.",
+          "Do not treat the repository-specific Actions as interchangeable implementations; each retains its own preconditions, postconditions, and validation oracle."
+        ],
+        "not_applicable_when": [
+          "The API explicitly documents transfer of ownership and permits in-place mutation of supplied state.",
+          "No caller-supplied state crosses the resume or continuation boundary.",
+          "The supplied state is immutable and no persisted source can replace it.",
+          "The defect concerns atomic publication, torn-log repair, runtime storage scoping, or derived-session construction rather than caller-state authority or ownership.",
+          "The required behavior is to merge live and persisted state rather than giving explicit live state precedence."
+        ],
+        "invariants": [
+          "Explicitly supplied state remains authoritative over optional persisted state unless the API contract explicitly says otherwise.",
+          "A continuation operation that promises input preservation performs structural additions on a distinct working container.",
+          "Preserving the input must not prevent the operation from returning the restored or newly extended state required by its contract.",
+          "Persisted-state reconstruction, filtering, and compaction are conditional branches and are not universal requirements of state-preserving continuation.",
+          "Validation must observe both preservation of caller-visible input and successful continuity of the resulting session or turn."
+        ],
+        "action_template": [
+          {
+            "role_id": "preserve-supplied-state-boundary",
+            "title": "Establish state authority and ownership",
+            "purpose": "At the resume boundary, preserve explicitly supplied state from replacement or caller-visible structural mutation while allowing the operation to create the state it needs to continue.",
+            "required": true,
+            "condition": "Apply when a resume or continuation path receives caller-visible in-memory state and can either replace that state from persistence or structurally extend it.",
+            "validation": "Exercise the repository-specific ownership contract and verify that supplied state remains unchanged or authoritative while the operation still produces the required restored or extended state."
+          },
+          {
+            "role_id": "reconstruct-persisted-state",
+            "title": "Reconstruct usable persisted state",
+            "purpose": "Convert a persisted artifact into ordered application state while excluding records that are not part of the resumable conversation.",
+            "required": false,
+            "condition": "Use only when authoritative live state is absent and the persisted representation can be deterministically mapped to resumable state.",
+            "validation": "Check ordering and role reconstruction with representative records, including exclusions for recognized metadata, commands, operational output, and empty prompts."
+          },
+          {
+            "role_id": "bound-restored-state",
+            "title": "Bound oversized restored state",
+            "purpose": "Keep restored history within the configured retained-history budget and any downstream model input capacity.",
+            "required": false,
+            "condition": "Use only when restored state can exceed a configured history budget or a summarizer's request capacity.",
+            "validation": "Check behavior immediately below and above the retained-history threshold and verify that summarizer requests remain within the model input limit after the required reserve."
+          },
+          {
+            "role_id": "validate-preservation-and-continuity",
+            "title": "Verify preservation and successful continuation",
+            "purpose": "Provide a regression oracle that checks both halves of the contract: caller state is preserved and the operation still returns or installs the continued state.",
+            "required": false,
+            "condition": "Use when a deterministic startup or completed-turn fixture can observe both the original state and the resulting state.",
+            "validation": "Assert the repository-specific preservation property, then separately assert that restored or newly appended state is present in the result."
+          }
+        ],
+        "decision_points": [
+          {
+            "question": "Is authoritative in-memory state explicitly supplied at the resume boundary?",
+            "branches": [
+              {
+                "condition": "Yes; preserve it and do not replace it with optional persisted state.",
+                "action_role_ids": [
+                  "preserve-supplied-state-boundary"
+                ]
+              },
+              {
+                "condition": "No; a deterministic persisted artifact is available and restoration is part of the contract.",
+                "action_role_ids": [
+                  "reconstruct-persisted-state",
+                  "preserve-supplied-state-boundary"
+                ]
+              },
+              {
+                "condition": "No; no usable persisted artifact is available.",
+                "action_role_ids": [
+                  "preserve-supplied-state-boundary"
+                ]
+              }
+            ]
+          },
+          {
+            "question": "Will continuation structurally append to a caller-supplied mutable container?",
+            "branches": [
+              {
+                "condition": "Yes; establish a distinct working container before the first append and validate input preservation plus output growth.",
+                "action_role_ids": [
+                  "preserve-supplied-state-boundary",
+                  "validate-preservation-and-continuity"
+                ]
+              },
+              {
+                "condition": "No; enforce the applicable state-precedence contract without introducing an unnecessary copy requirement.",
+                "action_role_ids": [
+                  "preserve-supplied-state-boundary"
+                ]
+              }
+            ]
+          },
+          {
+            "question": "Can newly restored history exceed a configured or downstream input budget?",
+            "branches": [
+              {
+                "condition": "Yes; apply bounded compaction after restoration has established the completed state.",
+                "action_role_ids": [
+                  "bound-restored-state"
+                ]
+              },
+              {
+                "condition": "No; retain the restored state without starting compaction.",
+                "action_role_ids": []
+              }
+            ]
+          }
+        ],
+        "ordering_constraints": [
+          {
+            "before_role_id": "reconstruct-persisted-state",
+            "after_role_id": "preserve-supplied-state-boundary",
+            "condition": "When restoration is selected because authoritative live state is absent, reconstruct the persisted representation before installing it through the lifecycle ownership boundary."
+          },
+          {
+            "before_role_id": "preserve-supplied-state-boundary",
+            "after_role_id": "bound-restored-state",
+            "condition": "When restored history requires compaction, first establish which state is authoritative and subject to compaction."
+          },
+          {
+            "before_role_id": "preserve-supplied-state-boundary",
+            "after_role_id": "validate-preservation-and-continuity",
+            "condition": "Run the preservation and continuity oracle after the ownership boundary has been implemented."
+          }
+        ],
+        "validation_ladder": [
+          "Focused contract checks: exercise explicit-state and mutable-input branches, verifying that explicit state is not displaced and that caller-owned sequence structure remains unchanged.",
+          "Focused result checks: verify that preservation does not discard continuity—the restored lifecycle state is populated when eligible, or the returned continuation history contains the new turn.",
+          "Integration checks: restart against a representative persisted transcript or complete a deterministic new turn through the public entry point, then confirm the resulting session can continue from the expected state.",
+          "Capacity integration checks, when applicable: exercise histories immediately below and above the configured budget and confirm that summarizer input stays within its model capacity and reserve.",
+          "Regression checks: retain automated branch-specific tests for state precedence, caller-input preservation, and successful restoration or output extension, including representative side-effect isolation."
+        ],
+        "known_failure_modes": [
+          {
+            "failure": "Persisted history overwrites explicitly supplied live state.",
+            "detection": "Initialize with nonempty explicit state and an available persisted artifact, then observe that the resulting state differs from the supplied state.",
+            "mitigation": "Enforce explicit-state precedence at lifecycle initialization and skip file-based restoration for that branch."
+          },
+          {
+            "failure": "Continuation appends directly to the caller's mutable history container.",
+            "detection": "Save the input length, execute a completed turn, and observe that the caller's original sequence length increases.",
+            "mitigation": "Create a distinct working outer sequence before any structural append and return the extended working result."
+          },
+          {
+            "failure": "Input preservation is achieved by dropping the new turn from the result.",
+            "detection": "The caller input remains unchanged, but the returned or installed state does not contain additional restored or newly generated messages.",
+            "mitigation": "Validate preservation and continuity separately: the input remains unchanged while the result reflects the completed restoration or turn."
+          },
+          {
+            "failure": "Operational transcript records are replayed as dialogue.",
+            "detection": "Reconstructed messages contain recognized session headings, tool output, commands, blockquoted operational records, or empty prompts.",
+            "mitigation": "Use a format-aware persisted-state adapter and focused fixtures covering every supported record type."
+          },
+          {
+            "failure": "A shallow outer-container copy is assumed to protect nested mutable entries.",
+            "detection": "The outer input sequence retains its size, but existing nested message objects change during continuation.",
+            "mitigation": "Stop and define a separate nested-object ownership contract; do not infer deep isolation from the outer-sequence pattern."
+          },
+          {
+            "failure": "Oversized restored history produces an unbounded summarizer request.",
+            "detection": "Token counting shows that selected summarizer input exceeds the model's maximum input tokens minus its reserve.",
+            "mitigation": "Apply the repository-specific bounded-compaction Action after restoration and validate threshold and capacity boundaries."
+          }
+        ],
+        "exclusions": [
+          "Atomic publication of newly derived persistent sessions.",
+          "Repair of syntactically incomplete final log records.",
+          "Propagation of workspace-specific ambient storage roots through asynchronous restore callbacks.",
+          "Session fork planning, lane reconstruction, and filesystem replacement capabilities.",
+          "Nested-message deep-copy requirements not demonstrated by the supporting workflows."
+        ],
+        "supporting_workflow_ids": [
+          "workflow:2d6914cde47f2982",
+          "workflow:6b1cbfeb86a31d38"
+        ],
+        "workflow_realizations": [
+          {
+            "workflow_id": "workflow:2d6914cde47f2982",
+            "repository": "Aider-AI/aider",
+            "role_bindings": [
+              {
+                "role_id": "reconstruct-persisted-state",
+                "action_ids": [
+                  "semantic-action:aefedabd00d7f317"
+                ]
+              },
+              {
+                "role_id": "preserve-supplied-state-boundary",
+                "action_ids": [
+                  "semantic-action:55d6cc954e7c9c40"
+                ]
+              },
+              {
+                "role_id": "bound-restored-state",
+                "action_ids": [
+                  "semantic-action:bd4ee5e1418df3f3"
+                ]
+              }
+            ],
+            "evidence_ids": [
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E10",
+              "E11",
+              "E12"
+            ]
+          },
+          {
+            "workflow_id": "workflow:6b1cbfeb86a31d38",
+            "repository": "NousResearch/hermes-agent",
+            "role_bindings": [
+              {
+                "role_id": "preserve-supplied-state-boundary",
+                "action_ids": [
+                  "semantic-action:47a46ce46ab53083"
+                ]
+              },
+              {
+                "role_id": "validate-preservation-and-continuity",
+                "action_ids": [
+                  "semantic-action:78079ec47df5d374"
+                ]
+              }
+            ],
+            "evidence_ids": [
+              "ev-before-alias",
+              "ev-after-copy",
+              "ev-working-list-mutations",
+              "ev-regression-test",
+              "ev-test-isolation"
+            ]
+          }
+        ],
+        "confidence": 0.74,
+        "rationale": "Two independent repositories support the required policy role: preserve explicitly supplied, caller-visible state at a resume boundary while still allowing the operation to establish continued state. One realization enforces precedence between explicit lifecycle state and persisted history; the other isolates a caller-owned mutable sequence before extension. These Actions are not merged or claimed to be interchangeable. Persisted transcript reconstruction, compaction, and the dedicated ownership regression oracle remain conditional roles because they are not independently realized across both repositories. The pattern is eligible only as candidate_pending_holdout because every required role has two-repository support, but no untouched holdout repair has been supplied.",
+        "evidence_ids": [
+          "E3",
+          "E4",
+          "E5",
+          "E6",
+          "E7",
+          "E8",
+          "E9",
+          "E10",
+          "E11",
+          "E12",
+          "ev-before-alias",
+          "ev-after-copy",
+          "ev-working-list-mutations",
+          "ev-regression-test",
+          "ev-test-isolation"
+        ],
+        "missing_probes": [
+          "Apply the required ownership-and-authority role to a separate untouched holdout repository and verify its repository-specific contract.",
+          "Add automated parser, precedence, startup restoration, and bounded-compaction tests for the persisted-transcript workflow.",
+          "Run the continuation regression test in an environment with the required test runner and dependencies.",
+          "Probe exact preserved contents and object identity in addition to outer-sequence length.",
+          "Probe nested mutable message objects to determine whether a separate deep-isolation policy is required.",
+          "Cover a persisted transcript ending directly in assistant content to determine whether the final accumulated segment is preserved."
+        ]
+      },
+      "response_id": "resp_0bdeaf6c6ede5944016abe807a732887d0b0015afe9c03a9ca",
+      "usage": {
+        "completion_tokens": 5113,
+        "prompt_tokens": 20899,
+        "total_tokens": 26012,
+        "completion_tokens_details": {
+          "reasoning_tokens": 1973
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "cache_creation_tokens": 0,
+          "cached_creation_tokens": 0
+        }
+      }
+    }
+  ],
+  "validation": {
+    "valid": true,
+    "attempts": 1,
+    "errors": []
+  }
+}

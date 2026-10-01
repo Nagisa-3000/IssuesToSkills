@@ -1,0 +1,2878 @@
+{
+  "system": "You are the independent Pattern inducer for an evidence-grounded resolution graph. Use only the supplied training Workflows and Actions. A Pattern is a plain-language cross-project decision policy, not a category label, repository recipe, or claim that different Actions are interchangeable. Preserve distinct Action contracts. Express the reusable structure as role-level action_template entries and bind each supporting Workflow to the exact Action ids that realize those roles. State when to use the Pattern, anti-goals, exclusions, decision branches, ordering, and validation. Use candidate_pending_holdout only when at least two repositories support every required role; it still requires a separate untouched holdout repair. Never invent holdout facts, solution refs, tests, evidence ids, Action ids, or Workflow ids. Return JSON only.",
+  "user": {
+    "operation": "induce_human_resolution_pattern",
+    "instructions": [
+      "Give the Pattern a short title a software engineer can understand without knowing AREX.",
+      "Describe observable applicability signals, not product names or issue numbers.",
+      "Do not merge Actions. Use workflow_realizations to map generic roles to existing ids.",
+      "A required role must be independently realized in at least two repositories.",
+      "Keep repository-specific branches conditional rather than universally mandatory.",
+      "The validation ladder must distinguish focused contract checks, integration checks, and regressions.",
+      "If the evidence supports only fragments rather than one coherent policy, return defer."
+    ],
+    "training_graph": {
+      "pattern_candidate": {
+        "id": "pattern:331e9fe7c100003e",
+        "node_type": "resolution_pattern",
+        "category": "effect-control-and-isolation",
+        "intent": "Resolve effect control and isolation through a contract-first, evidence-validated change chain.",
+        "mandatory_actions": [],
+        "optional_actions": [],
+        "workflow_template": [],
+        "ordering_constraints": [],
+        "decision_points": [],
+        "invariants": [],
+        "validation_ladder": [],
+        "known_failure_modes": [],
+        "supporting_workflows": [
+          "workflow:006719c822ba21ae",
+          "workflow:2331dbe1b9917d43",
+          "workflow:d3f024d363790b52",
+          "workflow:ed74bb1786137da3"
+        ],
+        "supporting_repositories": [
+          "NousResearch/hermes-agent",
+          "earendil-works/pi",
+          "google-gemini/gemini-cli",
+          "openai/codex"
+        ],
+        "counterexamples": [],
+        "confidence": 0.0,
+        "promotion_status": "insufficient-structural-support",
+        "held_out_results": [],
+        "extraction_method": "structural-action-fingerprint-v1; semantic judge required before promotion"
+      },
+      "workflows": [
+        {
+          "id": "workflow:006719c822ba21ae",
+          "node_type": "issue_workflow",
+          "category": "effect-control-and-isolation",
+          "repository": "earendil-works/pi",
+          "issue": 5549,
+          "episode_id": "earendil-works__pi__5549__d041b5c",
+          "name": "isolate-project-effects-behind-layered-authorization",
+          "title": "Resolve project authorization before activating local effects",
+          "description": "A partial-order workflow for separating passive context from effect-bearing project inputs, safely loading non-project policy hooks, resolving one hierarchical authorization decision, and enforcing it across runtime and administrative command paths.",
+          "goal": "Ensure project-local effects execute or mutate state only after one consistently resolved authorization decision, while passive context remains available and headless ambiguity fails closed.",
+          "when_to_use": [
+            "A tool discovers project-local configuration, packages, plugins, scripts, skills, prompts, themes, or similar resources that can execute code or change runtime behavior.",
+            "Multiple entry points such as the main runtime, package commands, and configuration commands must share the same project authorization semantics.",
+            "Authorization may be supplied by explicit overrides, extension hooks, persisted directory policy, global defaults, or an interactive user decision."
+          ],
+          "anti_goals": [
+            "Do not execute project-local hooks or install project packages to determine whether that same project is trusted.",
+            "Do not treat passive instruction files as equivalent to executable or configuration-driven effects unless repository evidence establishes that they execute effects.",
+            "Do not let a permissive default override an explicit persisted denial.",
+            "Do not silently authorize unresolved effect-bearing projects merely because the caller is non-interactive.",
+            "Do not require exact-directory duplication when an explicit parent-scope authorization is intended."
+          ],
+          "not_applicable_when": [
+            "The project exposes no local input capable of executing code, installing dependencies, mutating configuration, or injecting runtime resources.",
+            "The caller has no project-local resource loading or mutation boundary to protect.",
+            "Authorization must not be inherited across directory ancestry for the target security model."
+          ],
+          "inputs": [
+            "Canonical working directory and its ancestor chain",
+            "Inventory of passive context and effect-bearing project inputs",
+            "Explicit per-invocation authorization override, if present",
+            "Non-project policy-hook sources and hook result, if any",
+            "Persisted directory-scoped authorization entries",
+            "Global default authorization policy",
+            "Interactive UI availability",
+            "Resource loaders and project-local mutation operations to gate"
+          ],
+          "entry_state": "Project trust is unresolved; project-local effect-bearing resources and settings must be considered unavailable, while non-project configuration is readable.",
+          "exit_state": "Exactly one authorization result has been installed before effect-bearing resolution: denied projects cannot load or mutate gated project state, authorized projects can be reloaded normally, passive context follows its separate classification, and any remembered scope is queryable with its source path.",
+          "steps": [
+            {
+              "step_id": "step-1",
+              "action_id": "semantic-action:3709667575b779bd",
+              "action_name": "classify-trust-gated-project-effects",
+              "role": "establish-contract",
+              "required": true,
+              "optional": false,
+              "depends_on": [],
+              "condition": "Always, before deciding whether authorization is required.",
+              "validation": "The trust-input predicate is false for passive instruction files alone and true for the configured effect-bearing project markers."
+            },
+            {
+              "step_id": "step-2",
+              "action_id": "semantic-action:90d88971b074b27d",
+              "action_name": "bootstrap-policy-hooks-under-denied-project-trust",
+              "role": "implement",
+              "required": false,
+              "optional": true,
+              "depends_on": [
+                "classify-trust-gated-project-effects"
+              ],
+              "condition": "Run only when no explicit override was supplied, gated inputs exist, and non-project policy hooks are supported.",
+              "validation": "Bootstrap settings report untrusted state and the loaded hook set excludes project-local packages and extensions."
+            },
+            {
+              "step_id": "step-3",
+              "action_id": "semantic-action:c266a7e217298d97",
+              "action_name": "inherit-nearest-directory-authorization",
+              "role": "implement",
+              "required": true,
+              "optional": false,
+              "depends_on": [
+                "classify-trust-gated-project-effects"
+              ],
+              "condition": "Use when consulting or updating persisted authorization state.",
+              "validation": "Lookup returns the closest ancestor entry and deletion of a child entry restores the parent's effective decision."
+            },
+            {
+              "step_id": "step-4",
+              "action_id": "semantic-action:9088181dec15453b",
+              "action_name": "resolve-layered-project-trust",
+              "role": "reconcile",
+              "required": true,
+              "optional": false,
+              "depends_on": [
+                "classify-trust-gated-project-effects",
+                "inherit-nearest-directory-authorization"
+              ],
+              "condition": "Always when effect-bearing trust inputs exist; consume the bootstrap hook result when that optional step ran.",
+              "validation": "Precedence is override, hook, nearest persisted decision, global default, interactive decision, then denial; a stored false decision beats a global always default."
+            },
+            {
+              "step_id": "step-5",
+              "action_id": "semantic-action:875feb45cc3c017a",
+              "action_name": "enforce-authorization-at-effect-boundaries",
+              "role": "implement",
+              "required": true,
+              "optional": false,
+              "depends_on": [
+                "resolve-layered-project-trust"
+              ],
+              "condition": "Before resolving project packages/resources or mutating project-local settings.",
+              "validation": "Denied execution exposes no gated project resources or install effects and refuses local writes; authorized execution reloads and exposes configured project resources."
+            }
+          ],
+          "edges": [
+            {
+              "from": "step-1",
+              "to": "step-2",
+              "type": "enables"
+            },
+            {
+              "from": "step-1",
+              "to": "step-3",
+              "type": "enables"
+            },
+            {
+              "from": "step-2",
+              "to": "step-4",
+              "type": "enables"
+            },
+            {
+              "from": "step-3",
+              "to": "step-4",
+              "type": "requires"
+            },
+            {
+              "from": "step-4",
+              "to": "step-5",
+              "type": "enables"
+            },
+            {
+              "from": "step-5",
+              "to": "step-4",
+              "type": "validates"
+            }
+          ],
+          "validation_ladder": [
+            "Unit-test the trust-input classifier, including passive-only and effect-bearing fixtures.",
+            "Unit-test hierarchical storage with parent inheritance, closer overrides, override deletion, malformed-store preservation, and source-path reporting.",
+            "Unit-test global default parsing and confirm project-local settings cannot set the default policy.",
+            "Integration-test decision precedence through package or resource call sites, including hook authorization and persisted denial over a permissive default.",
+            "Integration-test resource isolation so denied projects cannot supply executable/configuration resources while separately classified passive context remains available.",
+            "Spawn a non-interactive command and verify unresolved trust produces no project package-install side effects or structured-output contamination."
+          ],
+          "stop_conditions": [
+            "Stop and deny project effects if trust remains unresolved and no interactive UI is available.",
+            "Stop and surface an error if the persisted trust store is malformed; do not overwrite it with a guessed decision.",
+            "Stop before project-local package installation, extension execution, or settings mutation if the resolved decision is false.",
+            "Defer hierarchical authorization if canonical ancestry or the intended inheritance boundary cannot be established safely."
+          ],
+          "unresolved_or_deferred": [
+            "The available bundle contains no PR body, review discussion, or status-check results, so design intent beyond code, tests, and commit metadata is unavailable.",
+            "No test command was executed during this extraction; validation claims describe the checked-in test oracles at the pinned commit.",
+            "The change deliberately leaves passive project instructions outside the trust gate; whether instruction content itself should be treated as an effect in other systems is a project-specific policy decision, not established universally by this episode."
+          ],
+          "evidence_ids": [
+            "ev-diff-1",
+            "ev-before-1",
+            "ev-impl-policy-1",
+            "ev-impl-scope-1",
+            "ev-impl-boundary-1",
+            "ev-impl-bootstrap-1",
+            "ev-callsite-1",
+            "ev-callsite-2",
+            "ev-test-scope-1",
+            "ev-test-policy-1",
+            "ev-test-settings-1",
+            "ev-test-boundary-1",
+            "ev-test-noninteractive-1",
+            "ev-test-ui-1"
+          ],
+          "supporting_repositories": [
+            "earendil-works/pi"
+          ],
+          "source_case": "earendil-works/pi#5549"
+        },
+        {
+          "id": "workflow:2331dbe1b9917d43",
+          "node_type": "issue_workflow",
+          "category": "effect-control-and-isolation",
+          "repository": "openai/codex",
+          "issue": 48155,
+          "episode_id": "openai__codex__48155__645b683",
+          "name": "broaden-approved-effects-with-explicit-denial-isolation",
+          "title": "Broaden approved filesystem effects while preserving denial boundaries",
+          "description": "A partial-order workflow for granting broad write effects to an approved command without inheriting unrelated grants or allowing mount translation, devices, aliases, or metadata symlinks to weaken explicit read denials.",
+          "goal": "Run an approved command with broad filesystem write authority while preserving every enforceable explicit read denial and making the platform guarantee discoverable to clients.",
+          "when_to_use": [
+            "An approval transition must broaden a restricted command from scoped writes to filesystem-root or volume-root writes.",
+            "The sandbox represents explicit denied paths or globs that must survive the approval transition.",
+            "The platform implements broad access through bind mounts, volume expansion, or comparable remapping that can shadow devices or reopen aliased targets."
+          ],
+          "anti_goals": [
+            "Do not retain unrelated read or write grants from the pre-approval policy.",
+            "Do not silently drop, weaken, or reinterpret an explicit denial to make broad approval succeed.",
+            "Do not bind aliases or protected metadata paths redundantly when doing so can undo an already-applied denial mask.",
+            "Do not advertise a safety guarantee on platforms or executors that do not implement it."
+          ],
+          "not_applicable_when": [
+            "Approval does not broaden filesystem effects.",
+            "The policy has no restricted-mode transformation or no explicit denial semantics to preserve.",
+            "The execution backend does not remap roots, volumes, aliases, or device trees and cannot exhibit the documented reopening or shadowing failure modes.",
+            "Required denials are intentionally revoked by a separately authorized policy decision rather than preserved through approval."
+          ],
+          "inputs": [
+            "original restricted filesystem policy",
+            "approval decision",
+            "working directory and workspace roots",
+            "platform root or volume model",
+            "explicit path and glob denials",
+            "sandbox mount or remapping backend",
+            "executor capability document"
+          ],
+          "entry_state": "The command's current policy limits writes and may explicitly deny reads; approval requires broader writes, but no safe broadened policy or advertised execution guarantee has yet been established.",
+          "exit_state": "The approved command can perform intended broad writes and use required standard devices, explicit denials remain effective through aliases and metadata symlinks, unsafe transformations fall back instead of widening access, and compatible clients can detect the implemented guarantee.",
+          "steps": [
+            {
+              "step_id": "step-1",
+              "action_id": "semantic-action:e5146086b20a5590",
+              "action_name": "derive-broadened-policy-with-denial-retention",
+              "role": "establish-contract",
+              "required": true,
+              "optional": false,
+              "depends_on": [],
+              "condition": "Run when approval requires broader filesystem writes under a restricted policy.",
+              "validation": "Policy-level tests prove retained path and glob denials, removed unrelated grants, allowed root and metadata writes, cross-platform root materialization, and unchanged-policy fallback for unsafe inputs."
+            },
+            {
+              "step_id": "step-2",
+              "action_id": "semantic-action:061cca90b2fef939",
+              "action_name": "compile-root-write-policy-with-isolated-denials",
+              "role": "implement",
+              "required": true,
+              "optional": false,
+              "depends_on": [
+                "derive-broadened-policy-with-denial-retention"
+              ],
+              "condition": "Run for a backend whose root, volume, alias, metadata, or device remapping can change the effective policy.",
+              "validation": "Mount-plan and integration tests prove device restoration occurs after the root bind and before explicit masks, aliases do not rebind the root, metadata symlinks cannot reopen denied targets, and explicit carveouts behave narrowly."
+            },
+            {
+              "step_id": "step-3",
+              "action_id": "semantic-action:2b0ce906696cac13",
+              "action_name": "advertise-opt-in-isolation-guarantees",
+              "role": "reconcile",
+              "required": true,
+              "optional": false,
+              "depends_on": [
+                "compile-root-write-policy-with-isolated-denials"
+              ],
+              "condition": "Run when clients or remote peers choose behavior based on executor support.",
+              "validation": "Wire tests prove default omission, false-on-absence compatibility, independent partial support, full round-trip behavior, and platform-correct local advertisement."
+            }
+          ],
+          "edges": [
+            {
+              "from": "step-1",
+              "to": "step-2",
+              "type": "enables"
+            },
+            {
+              "from": "step-2",
+              "to": "step-3",
+              "type": "enables"
+            },
+            {
+              "from": "step-3",
+              "to": "step-2",
+              "type": "validates"
+            }
+          ],
+          "validation_ladder": [
+            "Policy transformation: assert exact approved entries, resolved access, deny matching, removal of prior grants, and fail-closed fallback.",
+            "Platform projection: assert writable roots, protected-metadata handling, literal denial retention, volume expansion, alias suppression, and mount ordering.",
+            "Sandbox integration: execute device reads, allowed writes, denied reads, metadata-symlink attempts, writable-symlink crossings, and narrow nested carveouts.",
+            "Protocol compatibility: verify absent, partial, and full capability serialization and platform-specific advertisement.",
+            "Run the relevant Rust unit and Linux integration test targets in an environment with bubblewrap/user-namespace support; the bundle does not provide an execution result."
+          ],
+          "stop_conditions": [
+            "Stop and keep the original policy if a workspace-relative denial lacks workspace roots, denial materialization or matching fails, the filesystem root cannot be identified, or the root is explicitly denied.",
+            "Stop promotion if broad root writes can shadow required devices or any alias or metadata mount can reopen a denied target.",
+            "Stop capability advertisement unless the corresponding device and denial-preservation behaviors are implemented and validated.",
+            "Defer execution-level confirmation when the host cannot run bubblewrap or create the required user namespace."
+          ],
+          "unresolved_or_deferred": [
+            "The evidence bundle has no CI status, review record, or recorded test-run result; validation is grounded in added test oracles rather than observed execution.",
+            "The pinned change introduces and directly tests approved-policy derivation, but the inspected evidence does not establish a non-test production caller that invokes the new transformation.",
+            "Client-side consumption of the two new capability fields is outside this commit and remains deferred."
+          ],
+          "evidence_ids": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10",
+            "E11",
+            "E12",
+            "E13",
+            "E14"
+          ],
+          "supporting_repositories": [
+            "openai/codex"
+          ],
+          "source_case": "openai/codex#48155"
+        },
+        {
+          "id": "workflow:d3f024d363790b52",
+          "node_type": "issue_workflow",
+          "category": "effect-control-and-isolation",
+          "repository": "NousResearch/hermes-agent",
+          "issue": 232,
+          "episode_id": "NousResearch__hermes-agent__232__7166647ca1",
+          "name": "close-multiline-policy-bypass",
+          "title": "Close newline-based bypasses in a pre-execution command policy",
+          "description": "A bounded workflow for repairing a regex-driven effect gate when dangerous constructs are recognized on one line but evade classification after newline insertion.",
+          "goal": "Ensure commands covered by an existing dangerous-pattern policy cannot bypass its pre-execution approval path merely by inserting newlines.",
+          "when_to_use": [
+            "A pre-execution policy classifier uses regular expressions containing dot expressions over complete command text.",
+            "A known dangerous construct is detected in single-line form but is not detected when semantically connected tokens are separated by a newline."
+          ],
+          "anti_goals": [
+            "Do not broaden or replace the dangerous-command pattern catalog when changing match traversal alone is sufficient.",
+            "Do not alter approval scopes, prompting behavior, environment exemptions, force semantics, or command execution behavior.",
+            "Do not normalize away arbitrary whitespace or rewrite the command that will actually be executed."
+          ],
+          "not_applicable_when": [
+            "The policy intentionally evaluates each line as an independent command with no cross-line constructs.",
+            "The bypass is caused by missing dangerous-operation coverage rather than newline-sensitive matching.",
+            "The matcher already spans newlines and the failure originates in parsing, canonicalization, shell semantics, or a downstream approval-state defect."
+          ],
+          "inputs": [
+            "The exact command text reaching the classifier",
+            "The existing dangerous-pattern catalog and matching flags",
+            "The pre-execution call path that consumes the classifier result",
+            "Representative single-line and newline-separated dangerous commands",
+            "Existing benign-command and classification regression cases"
+          ],
+          "entry_state": "A dangerous effect is gated by a shared classifier, but at least one covered construct can receive a non-dangerous result after newline insertion and consequently avoid the intended approval decision.",
+          "exit_state": "Existing policy patterns retain their intended single-line behavior and representative covered constructs split across newlines are classified as dangerous before terminal execution.",
+          "steps": [
+            {
+              "step_id": "step-1",
+              "action_id": "semantic-action:3c97337772d127d0",
+              "action_name": "enable-multiline-policy-matching",
+              "role": "implement",
+              "required": true,
+              "optional": false,
+              "depends_on": [],
+              "condition": "Use when inspection confirms the affected patterns rely on dot expressions over whole-command input and the current flags do not allow dot to cross newlines.",
+              "validation": "Confirm the shared search operation enables newline-spanning dot semantics without modifying the pattern catalog or approval orchestration."
+            },
+            {
+              "step_id": "step-2",
+              "action_id": "semantic-action:c20c735a913a87b4",
+              "action_name": "lock-multiline-bypass-regressions",
+              "role": "validate",
+              "required": true,
+              "optional": false,
+              "depends_on": [
+                "enable-multiline-policy-matching"
+              ],
+              "condition": "Add cases for each evidenced bypass family fixed by the matching change.",
+              "validation": "Require newline-separated remote-content pipelines, disk-copy syntax, and recursive-permission syntax to return a dangerous classification; also run the existing detector cases."
+            }
+          ],
+          "edges": [
+            {
+              "from": "step-1",
+              "to": "step-2",
+              "type": "enables"
+            },
+            {
+              "from": "step-2",
+              "to": "step-1",
+              "type": "validates"
+            }
+          ],
+          "validation_ladder": [
+            "Inspect the classifier and prove that the failing patterns contain dot expressions whose behavior differs at newline boundaries.",
+            "Confirm the production call path passes the complete command to the shared classifier before execution and consumes a dangerous result through the approval boundary.",
+            "Run focused multiline regression cases for multiple pattern families.",
+            "Run the complete command-approval test module to check existing dangerous and benign classifications.",
+            "If dependencies permit, run the broader terminal-tool test suite to detect integration regressions."
+          ],
+          "stop_conditions": [
+            "Stop if the reported command cannot be reproduced as a newline-sensitive mismatch in the shared classifier.",
+            "Stop and select a parsing or pattern-coverage repair if the failure persists when dot already spans newlines.",
+            "Do not complete the workflow if multiline dangerous cases pass but established benign or single-line classification tests regress.",
+            "Defer execution-based validation when the repository's test runner or dependencies are unavailable, and report that limitation explicitly."
+          ],
+          "unresolved_or_deferred": [
+            "Fresh execution of tests/tools/test_approval.py is deferred because pytest is unavailable in the inspection environment.",
+            "The GitHub evidence bundle contains no issue body, review discussion, or status-check results, so the exact upstream reproduction transcript and CI outcome are unavailable."
+          ],
+          "evidence_ids": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9"
+          ],
+          "supporting_repositories": [
+            "NousResearch/hermes-agent"
+          ],
+          "source_case": "NousResearch/hermes-agent#232"
+        },
+        {
+          "id": "workflow:ed74bb1786137da3",
+          "node_type": "issue_workflow",
+          "category": "effect-control-and-isolation",
+          "repository": "google-gemini/gemini-cli",
+          "issue": 25935,
+          "episode_id": "google-gemini__gemini-cli__25935__ed469e492b",
+          "name": "fail_closed_when_restricted_effect_arguments_cannot_be_validated",
+          "title": "Fail closed when restricted effect arguments cannot be validated",
+          "description": "Harden an automatic effect-approval path by coupling parser reliability to argument-restricted authorization: unreliable parsing blocks only approvals whose safety depends on inspecting parsed arguments, with focused regression coverage for each failure representation and preserved behavior for unrelated policy branches.",
+          "goal": "Ensure automatic approval cannot execute an effect under an argument-restricted rule when parser output is insufficient or internally marked erroneous.",
+          "when_to_use": [
+            "An automatic or non-interactive approval path authorizes effects using constraints on parsed arguments.",
+            "The parser can return no details or can return partial details together with an error indicator.",
+            "Proceeding after parse failure would prevent the policy engine from validating the restriction that justified approval."
+          ],
+          "anti_goals": [
+            "Do not convert every parser failure into a blanket denial when no argument-level restriction must be validated.",
+            "Do not override an explicit DENY decision.",
+            "Do not change normal successful-parse evaluation, redirection handling, rule priority, or unrelated heuristic behavior."
+          ],
+          "not_applicable_when": [
+            "Authorization does not depend on parsed argument structure or values.",
+            "Parser output is reliable and ordinary policy validation can complete.",
+            "The desired contract explicitly permits unrestricted execution despite parse failure and no restrictive rule matched."
+          ],
+          "inputs": [
+            "effect request containing the raw command or argument string",
+            "current approval mode",
+            "matched policy rule and decision, if any",
+            "parser result containing details and an error indicator",
+            "configured fallback/default decision"
+          ],
+          "entry_state": "Automatic approval can return ALLOW after unreliable parsing even though the matched approval rule contains an argument restriction that cannot be validated.",
+          "exit_state": "Unreliable parser output causes DENY for matched argument-restricted approvals, while explicit denials, unrestricted automatic approvals, non-automatic fallback behavior, and successful parsing retain their established semantics.",
+          "steps": [
+            {
+              "step_id": "step-1",
+              "action_id": "semantic-action:68abfb493bb4f320",
+              "action_name": "deny_restricted_effect_when_validation_parse_is_unreliable",
+              "role": "implement",
+              "required": true,
+              "optional": false,
+              "depends_on": [],
+              "condition": "Apply when automatic approval is active, parsing yields zero usable details or reports an error, and the matched rule contains an argument restriction.",
+              "validation": "The empty-details/error and nonempty-details/error regression cases both return DENY; existing default-ALLOW and explicit-DENY YOLO cases remain intact."
+            }
+          ],
+          "edges": [],
+          "validation_ladder": [
+            "Inspect the parent implementation to confirm the bypass: empty parse output returns ALLOW in automatic-approval mode without considering argument restrictions, and nonempty error-bearing output is not classified as failure.",
+            "Verify the implementation predicate recognizes both absent details and the parser error flag, and that the restrictive-rule guard precedes the unrestricted automatic-ALLOW return.",
+            "Run or inspect focused unit cases for empty/error and partial/error parse results under a matched argument-restricted ALLOW rule; each oracle is DENY.",
+            "Run or inspect adjacent policy-engine tests confirming no-match automatic approval remains ALLOW and explicit DENY remains DENY."
+          ],
+          "stop_conditions": [
+            "Stop if the matched policy has no argument restriction; this episode does not justify denying that unrestricted automatic-approval branch.",
+            "Stop if parsing is reliable; continue through the existing detailed policy evaluation instead of applying the failure guard.",
+            "Defer extraction if the parser has no observable reliability signal and no test can force the relevant failure states."
+          ],
+          "unresolved_or_deferred": [
+            "The GitHub bundle does not include PR discussion, reviews, or status-check results.",
+            "No test execution result was available from the inspected checkout state; validation is grounded in the committed unit-test oracles rather than a recorded local test run.",
+            "Behavior for parser failures under other approval modes was intentionally preserved and is not newly characterized beyond the implementation fallback path."
+          ],
+          "evidence_ids": [
+            "E-COMMIT-25935",
+            "E-BEFORE-EMPTY-PARSE",
+            "E-BEFORE-HASERROR",
+            "E-DIFF-FAIL-CLOSED",
+            "E-CALL-MATCHED-RULE",
+            "E-CALL-NO-RULE",
+            "E-TEST-EMPTY",
+            "E-TEST-PARTIAL",
+            "E-TEST-PRESERVED-YOLO",
+            "E-VALIDATION-ORACLE"
+          ],
+          "supporting_repositories": [
+            "google-gemini/gemini-cli"
+          ],
+          "source_case": "google-gemini/gemini-cli#25935"
+        }
+      ],
+      "actions": [
+        {
+          "id": "semantic-action:061cca90b2fef939",
+          "node_type": "change_action",
+          "category": "effect-control-and-isolation",
+          "intent": "Execute a broad-write policy while keeping standard operating-system devices usable and explicit denial boundaries effective through symlinks and mount aliases.",
+          "module_role": "platform sandbox mount-plan compiler",
+          "operation": "isolate",
+          "pre_state": "The sandbox receives a policy containing a writable filesystem root plus explicit denied carveouts; aliases or protected metadata entries may resolve into the root or denied subtrees.",
+          "post_state": "The root is writable, the minimal device tree is restored, redundant root aliases and metadata remounts do not undo masks, literal and resolved denial paths are enforced, and only explicit nested writable carveouts reopen access.",
+          "validation": "Inspect mount-plan ordering and run sandboxed commands that access standard devices, write allowed outputs and metadata, fail on denied reads, reject writable-symlink crossings, and keep denied sibling paths inaccessible.",
+          "parameters": [
+            "approved filesystem policy",
+            "writable roots",
+            "literal denial paths",
+            "resolved denial targets",
+            "root aliases",
+            "protected metadata paths",
+            "standard device mounts"
+          ],
+          "evidence_ids": [
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E9",
+            "E10"
+          ],
+          "source_name": "compile-root-write-policy-with-isolated-denials",
+          "description": "Translate the broadened policy into mount operations whose ordering preserves standard devices and prevents aliases, metadata symlinks, or resolved-path handling from bypassing explicit denial masks.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "openai__codex__48155__645b683"
+          ],
+          "supporting_repositories": [
+            "openai/codex"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:2b0ce906696cac13",
+          "node_type": "change_action",
+          "category": "effect-control-and-isolation",
+          "intent": "Let clients select broad-root behavior only when the executor declares the required safety guarantees.",
+          "module_role": "execution capability contract",
+          "operation": "adapt",
+          "pre_state": "Clients cannot distinguish executors that safely preserve devices and denial restrictions during Linux root writes from executors lacking those guarantees.",
+          "post_state": "Executors expose two independent opt-in guarantees; absent fields deserialize as false and false values remain absent from legacy-compatible serialization.",
+          "validation": "Serialize default, partial, and full capability values; deserialize each supported form; and compare locally advertised values with the target platform.",
+          "parameters": [
+            "device-preservation support",
+            "approved-root restriction-preservation support",
+            "executor platform",
+            "serialized capability document"
+          ],
+          "evidence_ids": [
+            "E12",
+            "E13"
+          ],
+          "source_name": "advertise-opt-in-isolation-guarantees",
+          "description": "Expose independently detectable support for root-write device preservation and approved-root restriction preservation, with false values omitted for wire compatibility.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "openai__codex__48155__645b683"
+          ],
+          "supporting_repositories": [
+            "openai/codex"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:3709667575b779bd",
+          "node_type": "change_action",
+          "category": "effect-control-and-isolation",
+          "intent": "Avoid prompting for or denying trust merely because passive context exists, without exposing executable or configuration-driven project effects.",
+          "module_role": "project effect-boundary classifier",
+          "operation": "classify",
+          "pre_state": "Passive instruction files and effect-bearing project resources share one trust-triggering classification and are both suppressed when untrusted.",
+          "post_state": "Only effect-bearing configuration and resource locations trigger trust resolution; passive context can load independently while executable and configuration resources remain gated.",
+          "validation": "Create an untrusted project containing both instruction files and effect-bearing resources; assert instruction context loads, effect-bearing resources do not, and instruction files alone do not satisfy the trust-input predicate.",
+          "parameters": [
+            "working directory",
+            "project configuration directory marker",
+            "ancestor skill directory marker",
+            "passive context filenames",
+            "effect-bearing resource categories"
+          ],
+          "evidence_ids": [
+            "ev-impl-boundary-1",
+            "ev-test-scope-1",
+            "ev-test-boundary-1"
+          ],
+          "source_name": "classify-trust-gated-project-effects",
+          "description": "Define trust inputs around resources that can install packages, execute extensions, or alter runtime behavior, while allowing passive instruction files to remain available without forcing a trust decision.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "earendil-works__pi__5549__d041b5c"
+          ],
+          "supporting_repositories": [
+            "earendil-works/pi"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:3c97337772d127d0",
+          "node_type": "change_action",
+          "category": "effect-control-and-isolation",
+          "intent": "Prevent newline insertion from bypassing the command classification that gates potentially dangerous effects.",
+          "module_role": "Shared pre-execution command policy classifier",
+          "operation": "adapt",
+          "pre_state": "The classifier applies dot-based dangerous-command patterns with case-insensitive matching, but dot expressions stop at newlines and may return a non-dangerous classification for split commands.",
+          "post_state": "The same pattern catalog is evaluated with dot matching extended across newlines, so covered dangerous constructs retain their classification when split across lines.",
+          "validation": "Exercise representative dot-based patterns with relevant tokens separated by newlines and require a dangerous result while retaining the existing single-line and benign-command test contract.",
+          "parameters": [
+            "command text",
+            "dangerous-pattern catalog",
+            "regular-expression matching flags"
+          ],
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E7",
+            "E8"
+          ],
+          "source_name": "enable-multiline-policy-matching",
+          "description": "Adjust the shared pattern-matching semantics so dangerous constructs remain recognizable when their relevant tokens are separated by newline characters.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "NousResearch__hermes-agent__232__7166647ca1"
+          ],
+          "supporting_repositories": [
+            "NousResearch/hermes-agent"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:68abfb493bb4f320",
+          "node_type": "change_action",
+          "category": "effect-control-and-isolation",
+          "intent": "Prevent an automatic-approval mode from bypassing argument-level policy constraints when effect arguments cannot be parsed reliably.",
+          "module_role": "effect authorization boundary that reconciles parser confidence with matched policy restrictions",
+          "operation": "guard",
+          "pre_state": "An effect request is being evaluated in automatic-approval mode; a matched rule would allow it but carries an argument restriction, and parsing yields either no usable command details or an error-bearing result.",
+          "post_state": "The request is denied whenever argument-restricted authorization cannot be validated from reliable parse output; explicit denials remain denied, while unrestricted automatic approvals remain eligible for ALLOW.",
+          "validation": "Mock both empty/error and nonempty/error parser results for a request matching an argument-restricted ALLOW rule and assert DENY; retain adjacent tests proving default unrestricted YOLO ALLOW and explicit DENY behavior.",
+          "parameters": [
+            "effect request and raw argument string",
+            "automatic-approval mode",
+            "matched policy decision",
+            "optional argument restriction",
+            "parser details",
+            "parser error indicator",
+            "fallback/default decision"
+          ],
+          "evidence_ids": [
+            "E-DIFF-FAIL-CLOSED",
+            "E-CALL-MATCHED-RULE",
+            "E-CALL-NO-RULE",
+            "E-TEST-EMPTY",
+            "E-TEST-PARTIAL",
+            "E-TEST-PRESERVED-YOLO",
+            "E-VALIDATION-ORACLE"
+          ],
+          "source_name": "deny_restricted_effect_when_validation_parse_is_unreliable",
+          "description": "At an automatic-approval boundary, classify empty or error-bearing parser output as unreliable and deny an otherwise allowed effect when the matched policy depends on argument-level restrictions that can no longer be validated, while preserving behavior for explicit denials and unrestricted approvals.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "google-gemini__gemini-cli__25935__ed469e492b"
+          ],
+          "supporting_repositories": [
+            "google-gemini/gemini-cli"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:875feb45cc3c017a",
+          "node_type": "change_action",
+          "category": "effect-control-and-isolation",
+          "intent": "Prevent denied project configuration from causing package installation, code execution, runtime resource injection, or local settings mutation.",
+          "module_role": "effect-bearing resource and mutation gate",
+          "operation": "guard",
+          "pre_state": "A command is about to resolve project settings, install packages, load executable resources, or write project-local package configuration without a uniformly installed authorization result.",
+          "post_state": "Denied projects contribute no gated resources or package-install effects and cannot receive local package-setting writes; authorized projects are reloaded and processed normally.",
+          "validation": "For an untrusted project, assert project extensions, skills, prompts, themes, system prompt, and package installation output are absent and local configuration mutation is rejected; separately verify authorized package listing succeeds.",
+          "parameters": [
+            "resolved authorization boolean",
+            "settings manager",
+            "package resolver",
+            "extension loader",
+            "skill loader",
+            "prompt loader",
+            "theme loader",
+            "project settings writer"
+          ],
+          "evidence_ids": [
+            "ev-callsite-1",
+            "ev-test-boundary-1",
+            "ev-test-noninteractive-1",
+            "ev-test-policy-1"
+          ],
+          "source_name": "enforce-authorization-at-effect-boundaries",
+          "description": "Apply the resolved trust state to settings and resource resolution before loading project packages or resources, and reject project-local configuration writes when authorization is false.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "earendil-works__pi__5549__d041b5c"
+          ],
+          "supporting_repositories": [
+            "earendil-works/pi"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:9088181dec15453b",
+          "node_type": "change_action",
+          "category": "effect-control-and-isolation",
+          "intent": "Produce one consistent authorization result for every execution surface and deny unresolved effect-bearing projects in non-interactive contexts.",
+          "module_role": "project authorization policy resolver",
+          "operation": "reconcile",
+          "pre_state": "Runtime and administrative commands may apply different trust rules, and no single precedence contract covers overrides, hooks, stored decisions, defaults, and UI availability.",
+          "post_state": "All callers receive a boolean decision from the same precedence order, with persisted decisions overriding defaults and missing UI or cancelled prompts resolving to denial.",
+          "validation": "Exercise explicit overrides, no-input projects, extension results, stored false over default always, valid and invalid global defaults, interactive selection, and headless fallback.",
+          "parameters": [
+            "working directory",
+            "explicit trust override",
+            "trust-input predicate",
+            "policy-hook result",
+            "persisted trust store",
+            "global default policy",
+            "UI availability"
+          ],
+          "evidence_ids": [
+            "ev-impl-policy-1",
+            "ev-callsite-1",
+            "ev-callsite-2",
+            "ev-test-policy-1",
+            "ev-test-settings-1"
+          ],
+          "source_name": "resolve-layered-project-trust",
+          "description": "Centralize trust resolution with explicit precedence across command overrides, absence of gated inputs, policy hooks, persisted decisions, global defaults, and interactive confirmation.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "earendil-works__pi__5549__d041b5c"
+          ],
+          "supporting_repositories": [
+            "earendil-works/pi"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:90d88971b074b27d",
+          "node_type": "change_action",
+          "category": "effect-control-and-isolation",
+          "intent": "Allow extensible trust decisions without executing the untrusted project's own code during the decision process.",
+          "module_role": "pre-authorization resource bootstrapper",
+          "operation": "isolate",
+          "pre_state": "Trust has not been resolved, but extension hooks may participate in the decision and normal loading could include project-local effects.",
+          "post_state": "Decision hooks from non-project sources are available while project settings, packages, and extensions remain excluded until authorization completes.",
+          "validation": "Provide a non-project project_trust hook and project package settings; verify the hook can authorize access and that the bootstrap loader begins with projectTrusted false.",
+          "parameters": [
+            "settings state",
+            "global extension sources",
+            "temporary command-line extension sources",
+            "inline extension factories",
+            "project-local extension sources",
+            "trust callback"
+          ],
+          "evidence_ids": [
+            "ev-impl-bootstrap-1",
+            "ev-callsite-1",
+            "ev-test-policy-1"
+          ],
+          "source_name": "bootstrap-policy-hooks-under-denied-project-trust",
+          "description": "Run a restricted bootstrap pass with project trust disabled so globally supplied or explicit hooks may decide trust before project-local packages and extensions become eligible.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "earendil-works__pi__5549__d041b5c"
+          ],
+          "supporting_repositories": [
+            "earendil-works/pi"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:c20c735a913a87b4",
+          "node_type": "change_action",
+          "category": "effect-control-and-isolation",
+          "intent": "Make future changes detect regressions that reopen newline-based bypasses of the approval boundary.",
+          "module_role": "Command policy regression oracle",
+          "operation": "validate",
+          "pre_state": "The test suite covers dangerous command detection but has no explicit oracle for tokens separated by embedded newlines.",
+          "post_state": "The regression suite explicitly requires remote-content piping, disk-copy, and recursive-permission examples containing newlines to be classified as dangerous.",
+          "validation": "Run the detector test module and require all four multiline cases, together with the pre-existing classification tests, to pass.",
+          "parameters": [
+            "multiline remote-content pipeline cases",
+            "multiline disk-copy case",
+            "multiline recursive-permission case",
+            "expected dangerous classification"
+          ],
+          "evidence_ids": [
+            "E7",
+            "E8",
+            "E9"
+          ],
+          "source_name": "lock-multiline-bypass-regressions",
+          "description": "Encode representative newline-based bypasses as regression tests for the shared classifier.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "NousResearch__hermes-agent__232__7166647ca1"
+          ],
+          "supporting_repositories": [
+            "NousResearch/hermes-agent"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:c266a7e217298d97",
+          "node_type": "change_action",
+          "category": "effect-control-and-isolation",
+          "intent": "Support reusable authorization for a directory tree while retaining explicit, closer overrides and a way to resume inheritance.",
+          "module_role": "hierarchical authorization state store",
+          "operation": "map",
+          "pre_state": "Persisted decisions apply only to an exact working directory, requiring duplicate entries and providing no inherited source metadata.",
+          "post_state": "The nearest saved ancestor decision governs each descendant unless a closer decision exists; deleting the closer entry restores inheritance, and the effective source path is observable.",
+          "validation": "Store a parent true decision, add a child false decision, query descendants, delete the child decision, and assert each effective value and source path.",
+          "parameters": [
+            "normalized working directory",
+            "ancestor directory paths",
+            "boolean decision",
+            "nullable update used to delete an override",
+            "persistent trust file"
+          ],
+          "evidence_ids": [
+            "ev-impl-scope-1",
+            "ev-test-scope-1",
+            "ev-test-ui-1"
+          ],
+          "source_name": "inherit-nearest-directory-authorization",
+          "description": "Resolve persisted decisions hierarchically and update parent and child entries atomically so a parent policy can cover descendants without masking a closer exception.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "earendil-works__pi__5549__d041b5c"
+          ],
+          "supporting_repositories": [
+            "earendil-works/pi"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:e5146086b20a5590",
+          "node_type": "change_action",
+          "category": "effect-control-and-isolation",
+          "intent": "Permit an explicitly approved command to write broadly without allowing it to read paths or globs that the original policy explicitly denied.",
+          "module_role": "filesystem authorization policy transformer",
+          "operation": "reconcile",
+          "pre_state": "A command has a filesystem policy and execution context; approval requires broader writes, while explicit denial entries may contain concrete, workspace-relative, or glob paths.",
+          "post_state": "A restricted root-write policy retains materializable explicit read denials and grants only non-denied protected metadata writes; unsafe or unresolved cases retain the original policy unchanged.",
+          "validation": "Compare resolved access and deny matching across Unix, drive-letter, UNC, project-root, glob, metadata, and multi-volume cases; assert conservative identity fallback for root-level or unresolved denials.",
+          "parameters": [
+            "original filesystem policy",
+            "working directory",
+            "workspace roots",
+            "filesystem root",
+            "protected metadata names",
+            "explicit path denials",
+            "explicit glob denials"
+          ],
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E8",
+            "E11"
+          ],
+          "source_name": "derive-broadened-policy-with-denial-retention",
+          "description": "Construct the least restrictive approved-command policy needed for broad writes, retain explicit read-denial invariants, discard unrelated old grants, and fail closed to the original policy when denials cannot be safely resolved.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "openai__codex__48155__645b683"
+          ],
+          "supporting_repositories": [
+            "openai/codex"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        }
+      ],
+      "factorization_audit": {
+        "schema_version": "action-factorization-audit-v1",
+        "policy": {
+          "merge_requires": [
+            "same semantic owner",
+            "same finite operation",
+            "same pre-state",
+            "same post-state",
+            "same validation oracle"
+          ],
+          "role_skeleton_is_not_action_reuse": true,
+          "split_is_review_signal_only": true
+        },
+        "scope": {
+          "action_ids": [
+            "semantic-action:061cca90b2fef939",
+            "semantic-action:2b0ce906696cac13",
+            "semantic-action:3709667575b779bd",
+            "semantic-action:3c97337772d127d0",
+            "semantic-action:68abfb493bb4f320",
+            "semantic-action:875feb45cc3c017a",
+            "semantic-action:9088181dec15453b",
+            "semantic-action:90d88971b074b27d",
+            "semantic-action:c20c735a913a87b4",
+            "semantic-action:c266a7e217298d97",
+            "semantic-action:e5146086b20a5590"
+          ],
+          "workflow_ids": [
+            "workflow:006719c822ba21ae",
+            "workflow:2331dbe1b9917d43",
+            "workflow:d3f024d363790b52",
+            "workflow:ed74bb1786137da3"
+          ],
+          "global_audit_rows_omitted": true
+        },
+        "action_grain": [
+          {
+            "id": "semantic-action:061cca90b2fef939",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "isolate",
+            "operation_signals": [
+              "preserve"
+            ],
+            "description_operation_signals": [
+              "preserve"
+            ],
+            "secondary_operation_signals": [
+              "preserve"
+            ],
+            "clause_signal_count": 1
+          },
+          {
+            "id": "semantic-action:2b0ce906696cac13",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "adapt",
+            "operation_signals": [
+              "preserve"
+            ],
+            "description_operation_signals": [],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 1
+          },
+          {
+            "id": "semantic-action:3709667575b779bd",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "classify",
+            "operation_signals": [
+              "load"
+            ],
+            "description_operation_signals": [],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 2
+          },
+          {
+            "id": "semantic-action:3c97337772d127d0",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "adapt",
+            "operation_signals": [],
+            "description_operation_signals": [],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 0
+          },
+          {
+            "id": "semantic-action:68abfb493bb4f320",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "guard",
+            "operation_signals": [
+              "classify"
+            ],
+            "description_operation_signals": [
+              "classify"
+            ],
+            "secondary_operation_signals": [
+              "classify"
+            ],
+            "clause_signal_count": 3
+          },
+          {
+            "id": "semantic-action:875feb45cc3c017a",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "guard",
+            "operation_signals": [
+              "load",
+              "reload"
+            ],
+            "description_operation_signals": [
+              "load"
+            ],
+            "secondary_operation_signals": [
+              "load"
+            ],
+            "clause_signal_count": 2
+          },
+          {
+            "id": "semantic-action:9088181dec15453b",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "reconcile",
+            "operation_signals": [],
+            "description_operation_signals": [],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 1
+          },
+          {
+            "id": "semantic-action:90d88971b074b27d",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "isolate",
+            "operation_signals": [
+              "load"
+            ],
+            "description_operation_signals": [],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 1
+          },
+          {
+            "id": "semantic-action:c20c735a913a87b4",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "validate",
+            "operation_signals": [],
+            "description_operation_signals": [],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 0
+          },
+          {
+            "id": "semantic-action:c266a7e217298d97",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "map",
+            "operation_signals": [
+              "restore"
+            ],
+            "description_operation_signals": [],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 3
+          },
+          {
+            "id": "semantic-action:e5146086b20a5590",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "reconcile",
+            "operation_signals": [],
+            "description_operation_signals": [],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 1
+          }
+        ],
+        "coarse_action_groups": [
+          {
+            "module_role": "command policy regression oracle",
+            "operation": "validate",
+            "action_ids": [
+              "semantic-action:c20c735a913a87b4"
+            ],
+            "repositories": [
+              "NousResearch/hermes-agent"
+            ]
+          },
+          {
+            "module_role": "effect authorization boundary that reconciles parser confidence with matched policy restrictions",
+            "operation": "guard",
+            "action_ids": [
+              "semantic-action:68abfb493bb4f320"
+            ],
+            "repositories": [
+              "google-gemini/gemini-cli"
+            ]
+          },
+          {
+            "module_role": "effect-bearing resource and mutation gate",
+            "operation": "guard",
+            "action_ids": [
+              "semantic-action:875feb45cc3c017a"
+            ],
+            "repositories": [
+              "earendil-works/pi"
+            ]
+          },
+          {
+            "module_role": "execution capability contract",
+            "operation": "adapt",
+            "action_ids": [
+              "semantic-action:2b0ce906696cac13"
+            ],
+            "repositories": [
+              "openai/codex"
+            ]
+          },
+          {
+            "module_role": "filesystem authorization policy transformer",
+            "operation": "reconcile",
+            "action_ids": [
+              "semantic-action:e5146086b20a5590"
+            ],
+            "repositories": [
+              "openai/codex"
+            ]
+          },
+          {
+            "module_role": "hierarchical authorization state store",
+            "operation": "map",
+            "action_ids": [
+              "semantic-action:c266a7e217298d97"
+            ],
+            "repositories": [
+              "earendil-works/pi"
+            ]
+          },
+          {
+            "module_role": "platform sandbox mount-plan compiler",
+            "operation": "isolate",
+            "action_ids": [
+              "semantic-action:061cca90b2fef939"
+            ],
+            "repositories": [
+              "openai/codex"
+            ]
+          },
+          {
+            "module_role": "pre-authorization resource bootstrapper",
+            "operation": "isolate",
+            "action_ids": [
+              "semantic-action:90d88971b074b27d"
+            ],
+            "repositories": [
+              "earendil-works/pi"
+            ]
+          },
+          {
+            "module_role": "project authorization policy resolver",
+            "operation": "reconcile",
+            "action_ids": [
+              "semantic-action:9088181dec15453b"
+            ],
+            "repositories": [
+              "earendil-works/pi"
+            ]
+          },
+          {
+            "module_role": "project effect-boundary classifier",
+            "operation": "classify",
+            "action_ids": [
+              "semantic-action:3709667575b779bd"
+            ],
+            "repositories": [
+              "earendil-works/pi"
+            ]
+          },
+          {
+            "module_role": "shared pre-execution command policy classifier",
+            "operation": "adapt",
+            "action_ids": [
+              "semantic-action:3c97337772d127d0"
+            ],
+            "repositories": [
+              "NousResearch/hermes-agent"
+            ]
+          }
+        ],
+        "cross_repository_pair_analysis": [
+          {
+            "left": "semantic-action:061cca90b2fef939",
+            "right": "semantic-action:3709667575b779bd",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:061cca90b2fef939",
+            "right": "semantic-action:3c97337772d127d0",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:061cca90b2fef939",
+            "right": "semantic-action:68abfb493bb4f320",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "google-gemini/gemini-cli"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:061cca90b2fef939",
+            "right": "semantic-action:875feb45cc3c017a",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:061cca90b2fef939",
+            "right": "semantic-action:9088181dec15453b",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:061cca90b2fef939",
+            "right": "semantic-action:90d88971b074b27d",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "same-operation-different-owner",
+            "reasons": [
+              "semantic-owner-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:061cca90b2fef939",
+            "right": "semantic-action:c20c735a913a87b4",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:061cca90b2fef939",
+            "right": "semantic-action:c266a7e217298d97",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:2b0ce906696cac13",
+            "right": "semantic-action:3709667575b779bd",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:2b0ce906696cac13",
+            "right": "semantic-action:3c97337772d127d0",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "same-operation-different-owner",
+            "reasons": [
+              "semantic-owner-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:2b0ce906696cac13",
+            "right": "semantic-action:68abfb493bb4f320",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "google-gemini/gemini-cli"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:2b0ce906696cac13",
+            "right": "semantic-action:875feb45cc3c017a",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:2b0ce906696cac13",
+            "right": "semantic-action:9088181dec15453b",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:2b0ce906696cac13",
+            "right": "semantic-action:90d88971b074b27d",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:2b0ce906696cac13",
+            "right": "semantic-action:c20c735a913a87b4",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:2b0ce906696cac13",
+            "right": "semantic-action:c266a7e217298d97",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3709667575b779bd",
+            "right": "semantic-action:3c97337772d127d0",
+            "left_repositories": [
+              "earendil-works/pi"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3709667575b779bd",
+            "right": "semantic-action:68abfb493bb4f320",
+            "left_repositories": [
+              "earendil-works/pi"
+            ],
+            "right_repositories": [
+              "google-gemini/gemini-cli"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3709667575b779bd",
+            "right": "semantic-action:c20c735a913a87b4",
+            "left_repositories": [
+              "earendil-works/pi"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3709667575b779bd",
+            "right": "semantic-action:e5146086b20a5590",
+            "left_repositories": [
+              "earendil-works/pi"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3c97337772d127d0",
+            "right": "semantic-action:68abfb493bb4f320",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "google-gemini/gemini-cli"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3c97337772d127d0",
+            "right": "semantic-action:875feb45cc3c017a",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3c97337772d127d0",
+            "right": "semantic-action:9088181dec15453b",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3c97337772d127d0",
+            "right": "semantic-action:90d88971b074b27d",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3c97337772d127d0",
+            "right": "semantic-action:c266a7e217298d97",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3c97337772d127d0",
+            "right": "semantic-action:e5146086b20a5590",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:68abfb493bb4f320",
+            "right": "semantic-action:875feb45cc3c017a",
+            "left_repositories": [
+              "google-gemini/gemini-cli"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "same-operation-different-owner",
+            "reasons": [
+              "semantic-owner-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:68abfb493bb4f320",
+            "right": "semantic-action:9088181dec15453b",
+            "left_repositories": [
+              "google-gemini/gemini-cli"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:68abfb493bb4f320",
+            "right": "semantic-action:90d88971b074b27d",
+            "left_repositories": [
+              "google-gemini/gemini-cli"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:68abfb493bb4f320",
+            "right": "semantic-action:c20c735a913a87b4",
+            "left_repositories": [
+              "google-gemini/gemini-cli"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:68abfb493bb4f320",
+            "right": "semantic-action:c266a7e217298d97",
+            "left_repositories": [
+              "google-gemini/gemini-cli"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:68abfb493bb4f320",
+            "right": "semantic-action:e5146086b20a5590",
+            "left_repositories": [
+              "google-gemini/gemini-cli"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:875feb45cc3c017a",
+            "right": "semantic-action:c20c735a913a87b4",
+            "left_repositories": [
+              "earendil-works/pi"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:875feb45cc3c017a",
+            "right": "semantic-action:e5146086b20a5590",
+            "left_repositories": [
+              "earendil-works/pi"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:9088181dec15453b",
+            "right": "semantic-action:c20c735a913a87b4",
+            "left_repositories": [
+              "earendil-works/pi"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:9088181dec15453b",
+            "right": "semantic-action:e5146086b20a5590",
+            "left_repositories": [
+              "earendil-works/pi"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "same-operation-different-owner",
+            "reasons": [
+              "semantic-owner-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:90d88971b074b27d",
+            "right": "semantic-action:c20c735a913a87b4",
+            "left_repositories": [
+              "earendil-works/pi"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:90d88971b074b27d",
+            "right": "semantic-action:e5146086b20a5590",
+            "left_repositories": [
+              "earendil-works/pi"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:c20c735a913a87b4",
+            "right": "semantic-action:c266a7e217298d97",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "earendil-works/pi"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:c20c735a913a87b4",
+            "right": "semantic-action:e5146086b20a5590",
+            "left_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:c266a7e217298d97",
+            "right": "semantic-action:e5146086b20a5590",
+            "left_repositories": [
+              "earendil-works/pi"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          }
+        ],
+        "workflow_role_segments": [
+          {
+            "segment_roles": [
+              "establish-contract",
+              "implement",
+              "reconcile"
+            ],
+            "kind": "workflow-role-skeleton",
+            "supporting_repositories": [
+              "openai/codex"
+            ],
+            "supporting_categories": [
+              "effect-control-and-isolation"
+            ],
+            "category_repository_support": {
+              "context-budget-and-compaction": [
+                "earendil-works/pi"
+              ],
+              "credential-resolution-and-authentication": [
+                "QwenLM/qwen-code"
+              ],
+              "effect-control-and-isolation": [
+                "openai/codex"
+              ],
+              "provider-interface-adaptation": [
+                "google-gemini/gemini-cli"
+              ],
+              "state-continuity-and-resume": [
+                "earendil-works/pi"
+              ],
+              "structured-tool-contract-integrity": [
+                "QwenLM/qwen-code"
+              ]
+            },
+            "same_category_cross_repository_support": {},
+            "reuse_scope": "cross-category-skeleton",
+            "supporting_workflows": [
+              "workflow:2331dbe1b9917d43"
+            ],
+            "occurrences": [
+              {
+                "workflow_id": "workflow:2331dbe1b9917d43",
+                "repository": "openai/codex",
+                "issue": 48155,
+                "category": "effect-control-and-isolation",
+                "action_ids": [
+                  "semantic-action:e5146086b20a5590",
+                  "semantic-action:061cca90b2fef939",
+                  "semantic-action:2b0ce906696cac13"
+                ]
+              }
+            ],
+            "action_reuse": false,
+            "interpretation": "Reusable control-flow skeleton only; each step still needs a repository-specific Action contract."
+          },
+          {
+            "segment_roles": [
+              "implement",
+              "reconcile",
+              "implement"
+            ],
+            "kind": "workflow-role-skeleton",
+            "supporting_repositories": [
+              "earendil-works/pi"
+            ],
+            "supporting_categories": [
+              "effect-control-and-isolation"
+            ],
+            "category_repository_support": {
+              "credential-resolution-and-authentication": [
+                "QwenLM/qwen-code"
+              ],
+              "effect-control-and-isolation": [
+                "earendil-works/pi"
+              ]
+            },
+            "same_category_cross_repository_support": {},
+            "reuse_scope": "cross-category-skeleton",
+            "supporting_workflows": [
+              "workflow:006719c822ba21ae"
+            ],
+            "occurrences": [
+              {
+                "workflow_id": "workflow:006719c822ba21ae",
+                "repository": "earendil-works/pi",
+                "issue": 5549,
+                "category": "effect-control-and-isolation",
+                "action_ids": [
+                  "semantic-action:c266a7e217298d97",
+                  "semantic-action:9088181dec15453b",
+                  "semantic-action:875feb45cc3c017a"
+                ]
+              }
+            ],
+            "action_reuse": false,
+            "interpretation": "Reusable control-flow skeleton only; each step still needs a repository-specific Action contract."
+          },
+          {
+            "segment_roles": [
+              "establish-contract",
+              "implement"
+            ],
+            "kind": "workflow-role-skeleton",
+            "supporting_repositories": [
+              "earendil-works/pi",
+              "openai/codex"
+            ],
+            "supporting_categories": [
+              "effect-control-and-isolation"
+            ],
+            "category_repository_support": {
+              "context-budget-and-compaction": [
+                "earendil-works/pi"
+              ],
+              "credential-resolution-and-authentication": [
+                "QwenLM/qwen-code",
+                "earendil-works/pi",
+                "google-gemini/gemini-cli"
+              ],
+              "effect-control-and-isolation": [
+                "earendil-works/pi",
+                "openai/codex"
+              ],
+              "failure-recovery-and-streaming": [
+                "QwenLM/qwen-code"
+              ],
+              "provider-interface-adaptation": [
+                "NousResearch/hermes-agent",
+                "google-gemini/gemini-cli"
+              ],
+              "state-continuity-and-resume": [
+                "earendil-works/pi"
+              ],
+              "structured-tool-contract-integrity": [
+                "QwenLM/qwen-code"
+              ]
+            },
+            "same_category_cross_repository_support": {
+              "credential-resolution-and-authentication": [
+                "QwenLM/qwen-code",
+                "earendil-works/pi",
+                "google-gemini/gemini-cli"
+              ],
+              "effect-control-and-isolation": [
+                "earendil-works/pi",
+                "openai/codex"
+              ],
+              "provider-interface-adaptation": [
+                "NousResearch/hermes-agent",
+                "google-gemini/gemini-cli"
+              ]
+            },
+            "reuse_scope": "same-category-cross-repository",
+            "supporting_workflows": [
+              "workflow:006719c822ba21ae",
+              "workflow:2331dbe1b9917d43"
+            ],
+            "occurrences": [
+              {
+                "workflow_id": "workflow:006719c822ba21ae",
+                "repository": "earendil-works/pi",
+                "issue": 5549,
+                "category": "effect-control-and-isolation",
+                "action_ids": [
+                  "semantic-action:3709667575b779bd",
+                  "semantic-action:90d88971b074b27d"
+                ]
+              },
+              {
+                "workflow_id": "workflow:2331dbe1b9917d43",
+                "repository": "openai/codex",
+                "issue": 48155,
+                "category": "effect-control-and-isolation",
+                "action_ids": [
+                  "semantic-action:e5146086b20a5590",
+                  "semantic-action:061cca90b2fef939"
+                ]
+              }
+            ],
+            "action_reuse": false,
+            "interpretation": "The role sequence recurs within at least one category across repositories, but each step still needs a repository-specific Action contract."
+          },
+          {
+            "segment_roles": [
+              "implement",
+              "reconcile"
+            ],
+            "kind": "workflow-role-skeleton",
+            "supporting_repositories": [
+              "earendil-works/pi",
+              "openai/codex"
+            ],
+            "supporting_categories": [
+              "effect-control-and-isolation"
+            ],
+            "category_repository_support": {
+              "context-budget-and-compaction": [
+                "Aider-AI/aider",
+                "earendil-works/pi"
+              ],
+              "credential-resolution-and-authentication": [
+                "QwenLM/qwen-code"
+              ],
+              "effect-control-and-isolation": [
+                "earendil-works/pi",
+                "openai/codex"
+              ],
+              "provider-interface-adaptation": [
+                "google-gemini/gemini-cli"
+              ],
+              "state-continuity-and-resume": [
+                "Aider-AI/aider",
+                "QwenLM/qwen-code",
+                "earendil-works/pi"
+              ],
+              "structured-tool-contract-integrity": [
+                "QwenLM/qwen-code"
+              ]
+            },
+            "same_category_cross_repository_support": {
+              "context-budget-and-compaction": [
+                "Aider-AI/aider",
+                "earendil-works/pi"
+              ],
+              "effect-control-and-isolation": [
+                "earendil-works/pi",
+                "openai/codex"
+              ],
+              "state-continuity-and-resume": [
+                "Aider-AI/aider",
+                "QwenLM/qwen-code",
+                "earendil-works/pi"
+              ]
+            },
+            "reuse_scope": "same-category-cross-repository",
+            "supporting_workflows": [
+              "workflow:006719c822ba21ae",
+              "workflow:2331dbe1b9917d43"
+            ],
+            "occurrences": [
+              {
+                "workflow_id": "workflow:006719c822ba21ae",
+                "repository": "earendil-works/pi",
+                "issue": 5549,
+                "category": "effect-control-and-isolation",
+                "action_ids": [
+                  "semantic-action:c266a7e217298d97",
+                  "semantic-action:9088181dec15453b"
+                ]
+              },
+              {
+                "workflow_id": "workflow:2331dbe1b9917d43",
+                "repository": "openai/codex",
+                "issue": 48155,
+                "category": "effect-control-and-isolation",
+                "action_ids": [
+                  "semantic-action:061cca90b2fef939",
+                  "semantic-action:2b0ce906696cac13"
+                ]
+              }
+            ],
+            "action_reuse": false,
+            "interpretation": "The role sequence recurs within at least one category across repositories, but each step still needs a repository-specific Action contract."
+          },
+          {
+            "segment_roles": [
+              "implement",
+              "validate"
+            ],
+            "kind": "workflow-role-skeleton",
+            "supporting_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "supporting_categories": [
+              "effect-control-and-isolation"
+            ],
+            "category_repository_support": {
+              "context-budget-and-compaction": [
+                "QwenLM/qwen-code",
+                "google-gemini/gemini-cli"
+              ],
+              "effect-control-and-isolation": [
+                "NousResearch/hermes-agent"
+              ],
+              "state-continuity-and-resume": [
+                "NousResearch/hermes-agent"
+              ],
+              "structured-tool-contract-integrity": [
+                "NousResearch/hermes-agent"
+              ]
+            },
+            "same_category_cross_repository_support": {
+              "context-budget-and-compaction": [
+                "QwenLM/qwen-code",
+                "google-gemini/gemini-cli"
+              ]
+            },
+            "reuse_scope": "same-category-cross-repository",
+            "supporting_workflows": [
+              "workflow:d3f024d363790b52"
+            ],
+            "occurrences": [
+              {
+                "workflow_id": "workflow:d3f024d363790b52",
+                "repository": "NousResearch/hermes-agent",
+                "issue": 232,
+                "category": "effect-control-and-isolation",
+                "action_ids": [
+                  "semantic-action:3c97337772d127d0",
+                  "semantic-action:c20c735a913a87b4"
+                ]
+              }
+            ],
+            "action_reuse": false,
+            "interpretation": "The role sequence recurs within at least one category across repositories, but each step still needs a repository-specific Action contract."
+          },
+          {
+            "segment_roles": [
+              "reconcile",
+              "implement"
+            ],
+            "kind": "workflow-role-skeleton",
+            "supporting_repositories": [
+              "earendil-works/pi"
+            ],
+            "supporting_categories": [
+              "effect-control-and-isolation"
+            ],
+            "category_repository_support": {
+              "credential-resolution-and-authentication": [
+                "QwenLM/qwen-code"
+              ],
+              "effect-control-and-isolation": [
+                "earendil-works/pi"
+              ],
+              "failure-recovery-and-streaming": [
+                "openai/codex"
+              ],
+              "provider-interface-adaptation": [
+                "Aider-AI/aider"
+              ]
+            },
+            "same_category_cross_repository_support": {},
+            "reuse_scope": "cross-category-skeleton",
+            "supporting_workflows": [
+              "workflow:006719c822ba21ae"
+            ],
+            "occurrences": [
+              {
+                "workflow_id": "workflow:006719c822ba21ae",
+                "repository": "earendil-works/pi",
+                "issue": 5549,
+                "category": "effect-control-and-isolation",
+                "action_ids": [
+                  "semantic-action:9088181dec15453b",
+                  "semantic-action:875feb45cc3c017a"
+                ]
+              }
+            ],
+            "action_reuse": false,
+            "interpretation": "Reusable control-flow skeleton only; each step still needs a repository-specific Action contract."
+          }
+        ],
+        "interpretation": {
+          "action_reuse": "An Action is reusable only when its semantic owner, finite operation, state transition, and validation oracle all survive substitution into the other repository.",
+          "workflow_reuse": "A repeated role sequence such as establish-contract -> reconcile -> validate is a reusable Workflow fragment, but it is a template over new Actions rather than evidence that the Actions themselves are interchangeable.",
+          "granularity": "A split is justified only when a candidate contains independently testable finite operations with separate postconditions or validation oracles. Different paths, providers, or filenames alone are not a reason to split."
+        }
+      },
+      "boundary": {
+        "training_only": true,
+        "holdout_loaded": false,
+        "action_similarity_is_not_equivalence": true,
+        "role_templates_must_bind_to_real_action_ids": true
+      }
+    },
+    "previous_validation_errors": []
+  },
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Human-readable resolution Pattern induction",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "schema_version",
+      "pattern_id",
+      "category",
+      "decision",
+      "title",
+      "summary",
+      "when_to_use",
+      "anti_goals",
+      "not_applicable_when",
+      "invariants",
+      "action_template",
+      "decision_points",
+      "ordering_constraints",
+      "validation_ladder",
+      "known_failure_modes",
+      "exclusions",
+      "supporting_workflow_ids",
+      "workflow_realizations",
+      "confidence",
+      "rationale",
+      "evidence_ids",
+      "missing_probes"
+    ],
+    "properties": {
+      "schema_version": {
+        "const": "resolution-pattern-induction-v1"
+      },
+      "pattern_id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "category": {
+        "type": "string",
+        "minLength": 1
+      },
+      "decision": {
+        "enum": [
+          "candidate_pending_holdout",
+          "defer",
+          "reject"
+        ]
+      },
+      "title": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "summary": {
+        "type": "string",
+        "minLength": 1
+      },
+      "when_to_use": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "anti_goals": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "not_applicable_when": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "invariants": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "action_template": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "role_id",
+            "title",
+            "purpose",
+            "required",
+            "condition",
+            "validation"
+          ],
+          "properties": {
+            "role_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "purpose": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "condition": {
+              "type": "string"
+            },
+            "validation": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "decision_points": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "question",
+            "branches"
+          ],
+          "properties": {
+            "question": {
+              "type": "string",
+              "minLength": 1
+            },
+            "branches": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "condition",
+                  "action_role_ids"
+                ],
+                "properties": {
+                  "condition": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "action_role_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ordering_constraints": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "before_role_id",
+            "after_role_id",
+            "condition"
+          ],
+          "properties": {
+            "before_role_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "after_role_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "condition": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "validation_ladder": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "known_failure_modes": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "failure",
+            "detection",
+            "mitigation"
+          ],
+          "properties": {
+            "failure": {
+              "type": "string",
+              "minLength": 1
+            },
+            "detection": {
+              "type": "string",
+              "minLength": 1
+            },
+            "mitigation": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "exclusions": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "supporting_workflow_ids": {
+        "type": "array",
+        "minItems": 2,
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "workflow_realizations": {
+        "type": "array",
+        "minItems": 2,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "workflow_id",
+            "repository",
+            "role_bindings",
+            "evidence_ids"
+          ],
+          "properties": {
+            "workflow_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "repository": {
+              "type": "string",
+              "minLength": 1
+            },
+            "role_bindings": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "role_id",
+                  "action_ids"
+                ],
+                "properties": {
+                  "role_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "action_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      },
+      "confidence": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "rationale": {
+        "type": "string",
+        "minLength": 1
+      },
+      "evidence_ids": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "missing_probes": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  },
+  "holdout_loaded": false
+}

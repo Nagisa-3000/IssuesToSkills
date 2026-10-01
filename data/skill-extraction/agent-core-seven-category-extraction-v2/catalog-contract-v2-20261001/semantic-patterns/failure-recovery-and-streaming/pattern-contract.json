@@ -1,0 +1,473 @@
+{
+  "schema_version": "resolution-pattern-induction-v1",
+  "pattern_id": "pattern:9cb94d22583f2781",
+  "category": "failure-recovery-and-streaming",
+  "decision": "defer",
+  "title": "Defer a Unified Streaming Recovery Policy",
+  "summary": "The evidence supports four distinct recovery policies: preserving server retry deadlines, continuing a stream after visible output, failing over after consecutive no-progress responses, and admitting one recognized transport code to an existing retry classifier. These policies share a broad recovery theme but do not provide a coherent set of required roles independently realized in at least two repositories.",
+  "when_to_use": [
+    "Use the supported workflow-specific fragment when the observable failure signal exactly matches its preconditions: server retry advice, a retryable stream cut with tracked output state, consecutive incomplete responses with no visible answer or tool call, or a stable premature-close transport code.",
+    "Use this deferred result when considering a common recovery abstraction across repositories and the available implementations differ in semantic owner, state transition, safety boundary, or validation oracle.",
+    "Reconsider induction only after an untouched repository demonstrates the same required role contracts and ordering as one of the supported fragments."
+  ],
+  "anti_goals": [
+    "Do not treat retry timing, retry eligibility, output continuation, and fallback handoff as interchangeable recovery operations.",
+    "Do not infer that all partial stream failures are safe to replay or continue.",
+    "Do not let server timing advice authorize a retry that existing eligibility or budget policy rejects.",
+    "Do not persist request-scoped continuation instructions or protocol-specific replay artifacts as canonical conversation history.",
+    "Do not broaden retry budgets, allocate repeated grace calls, or introduce unbounded recovery.",
+    "Do not promote a cross-project pattern solely because the workflows share a contract-first or classify-then-repair control-flow shape."
+  ],
+  "not_applicable_when": [
+    "The failure is terminal, explicitly cancelled, or unsafe to retry because replay could duplicate external side effects.",
+    "The runtime cannot distinguish caller-visible output, internal reasoning, blank output, and structured calls.",
+    "No stable transport classification, retry-advice boundary, continuation contract, or configured fallback mechanism exists for the observed failure.",
+    "The proposed change concerns only one repository-specific representation and has no independently supported cross-repository role contract."
+  ],
+  "invariants": [
+    "Retry eligibility and retry budgets remain independently authoritative; timing advice or partial progress does not expand them.",
+    "Already visible output must not be silently duplicated, discarded, or represented differently in durable history after successful recovery.",
+    "Temporary recovery metadata must remain scoped to the request or protocol that understands it.",
+    "Recovery stops when its bounded budget is exhausted or when the operation becomes unsafe.",
+    "Error and retry telemetry retain the concrete failure information required by the applicable workflow.",
+    "Distinct Action contracts remain distinct even when their workflows occupy similarly named control-flow roles."
+  ],
+  "action_template": [
+    {
+      "role_id": "capture-retry-deadline",
+      "title": "Capture retry advice once",
+      "purpose": "Normalize valid relative or date-based server retry advice at receipt into a monotonic deadline while distinguishing absent, invalid, expired, and explicit-zero advice.",
+      "required": false,
+      "condition": "Applicable only when an unsuccessful response or streamed error supplies server retry timing.",
+      "validation": "Focused clock-controlled parsing checks cover supported formats, countdown behavior, zero and expired advice, malformed values, and overflow."
+    },
+    {
+      "role_id": "preserve-retry-deadline",
+      "title": "Preserve the deadline across errors",
+      "purpose": "Carry the originally captured deadline through error translation, provider rewriting, protocol boundaries, and retry exhaustion without restarting its countdown.",
+      "required": false,
+      "condition": "Applicable only when the failure crosses one or more error-representation boundaries before scheduling.",
+      "validation": "Mapping checks assert deadline identity, decreasing remaining time after virtual-time advances, and zero rather than absence after expiry."
+    },
+    {
+      "role_id": "schedule-from-retry-deadline",
+      "title": "Schedule against the preserved deadline",
+      "purpose": "For an independently eligible retry within budget, wait until the preserved server deadline or use the established local backoff when no valid deadline exists.",
+      "required": false,
+      "condition": "Applicable only after existing policy declares the failure retryable and confirms remaining budget.",
+      "validation": "Paused-time and end-to-end checks verify original-deadline timing, local-backoff fallback, bounded request count, telemetry, and terminal behavior."
+    },
+    {
+      "role_id": "fold-visible-stream-text",
+      "title": "Fold delivered text without overlap",
+      "purpose": "At each failed stream-attempt boundary, add unique visible text to the accumulated prefix and remove replayed tail overlap.",
+      "required": false,
+      "condition": "Applicable when repeated stream attempts can deliver text before terminating and a continuation lifecycle tracks that text.",
+      "validation": "Repeated-cut checks prove that each visible fragment appears exactly once and that the per-attempt buffer is cleared."
+    },
+    {
+      "role_id": "select-stream-recovery-mode",
+      "title": "Choose replay, continuation, or stop",
+      "purpose": "Select bounded replay only before nonblank visible output, bounded continuation only when visible text exists without an emitted structured call, and propagation otherwise.",
+      "required": false,
+      "condition": "Applicable after a retryable stream cut has been classified and current output and structured-call state are available.",
+      "validation": "Focused boundary checks cover no output, blank output, reasoning-only output, visible text, structured calls, repeated cuts, and exhausted budgets."
+    },
+    {
+      "role_id": "stage-request-scoped-continuation",
+      "title": "Stage continuation context for one request",
+      "purpose": "Place the delivered prefix and overlap-averse resume instruction only in the next request while signaling that the consumer must retain its current output buffer.",
+      "required": false,
+      "condition": "Applicable only when continuation was selected and a nonblank delivered prefix exists.",
+      "validation": "Request-shape and event checks verify the temporary turns, continuation signal, ordered caller chunks, and absence of synthetic turns from durable history."
+    },
+    {
+      "role_id": "reconcile-stream-history",
+      "title": "Reconcile output and durable history",
+      "purpose": "On continuation success, merge the delivered prefix into one complete durable model response; when a fresh restart supersedes continuation, clear all staged state first.",
+      "required": false,
+      "condition": "Applicable after successful continuation or whenever another recovery path replaces staged continuation.",
+      "validation": "History checks cover ordinary text, leading reasoning, reasoning-only completion, deduplication, and clean restart paths."
+    },
+    {
+      "role_id": "detect-consecutive-no-progress",
+      "title": "Detect consecutive no-progress responses",
+      "purpose": "Track a per-turn streak of incomplete responses containing neither visible answer text nor a tool call, resetting the streak whenever observable progress occurs.",
+      "required": false,
+      "condition": "Applicable when incomplete responses are returned as normal protocol results rather than transport exceptions.",
+      "validation": "State checks prove that only consecutive no-answer and no-tool responses increment the streak and that visible progress resets it."
+    },
+    {
+      "role_id": "handoff-stalled-turn",
+      "title": "Hand off a stalled turn with bounded grace",
+      "purpose": "Activate the configured fallback chain after the stall threshold, retain the same turn, and reserve at most one extra call if the normal budget was consumed.",
+      "required": false,
+      "condition": "Applicable when the no-progress threshold is reached and a configured fallback can be activated.",
+      "validation": "Recovery and budget checks verify the typed fallback reason, completed answer, exact call count, counter reset, and one consumed grace flag."
+    },
+    {
+      "role_id": "sanitize-protocol-handoff",
+      "title": "Sanitize a cross-protocol fallback request",
+      "purpose": "Project canonical history into a fallback-compatible request without source-only continuation markers or opaque reasoning replay state, while preserving valid role alternation.",
+      "required": false,
+      "condition": "Applicable only when fallback activation changes to a protocol that cannot consume the source protocol's recovery artifacts.",
+      "validation": "Wire-level checks verify artifact removal and role alternation while confirming canonical stored history remains unchanged."
+    },
+    {
+      "role_id": "admit-recognized-stream-close",
+      "title": "Admit one recognized stream-close code",
+      "purpose": "Add a stable premature-close transport code to an existing bounded network-retry classifier while preserving the concrete code in retry telemetry.",
+      "required": false,
+      "condition": "Applicable only when the exact code is reproduced during stream iteration, is known to be transient, and the existing retry path safely covers the operation.",
+      "validation": "A streaming regression emits partial content, throws the exact code, observes a retry event, receives complete later output, and records the exact telemetry type."
+    }
+  ],
+  "decision_points": [
+    {
+      "question": "What observable condition initiates recovery?",
+      "branches": [
+        {
+          "condition": "The response carries valid server retry timing that must survive layered propagation.",
+          "action_role_ids": [
+            "capture-retry-deadline",
+            "preserve-retry-deadline",
+            "schedule-from-retry-deadline"
+          ]
+        },
+        {
+          "condition": "A retryable stream cut occurs after zero or more chunks may have reached the caller.",
+          "action_role_ids": [
+            "fold-visible-stream-text",
+            "select-stream-recovery-mode",
+            "stage-request-scoped-continuation",
+            "reconcile-stream-history"
+          ]
+        },
+        {
+          "condition": "Consecutive incomplete responses contain neither visible answer text nor a tool call.",
+          "action_role_ids": [
+            "detect-consecutive-no-progress",
+            "handoff-stalled-turn",
+            "sanitize-protocol-handoff"
+          ]
+        },
+        {
+          "condition": "Stream iteration fails with the exact recognized premature-close transport code and an existing bounded retry path applies.",
+          "action_role_ids": [
+            "admit-recognized-stream-close"
+          ]
+        }
+      ]
+    },
+    {
+      "question": "After a retryable stream cut, is replay or continuation safe?",
+      "branches": [
+        {
+          "condition": "No nonblank caller-visible text has accumulated and replay budget remains.",
+          "action_role_ids": [
+            "fold-visible-stream-text",
+            "select-stream-recovery-mode"
+          ]
+        },
+        {
+          "condition": "Nonblank visible text has accumulated, no structured call was emitted, continuation is representable, and continuation budget remains.",
+          "action_role_ids": [
+            "fold-visible-stream-text",
+            "select-stream-recovery-mode",
+            "stage-request-scoped-continuation",
+            "reconcile-stream-history"
+          ]
+        },
+        {
+          "condition": "A structured call was emitted, a required capability is absent, or the applicable budget is exhausted.",
+          "action_role_ids": [
+            "select-stream-recovery-mode"
+          ]
+        }
+      ]
+    },
+    {
+      "question": "Does fallback activation cross an incompatible protocol boundary?",
+      "branches": [
+        {
+          "condition": "The destination cannot consume source-only continuation markers or opaque reasoning replay state.",
+          "action_role_ids": [
+            "handoff-stalled-turn",
+            "sanitize-protocol-handoff"
+          ]
+        },
+        {
+          "condition": "The destination uses the same compatible protocol and no incompatible artifacts are present.",
+          "action_role_ids": [
+            "handoff-stalled-turn"
+          ]
+        }
+      ]
+    }
+  ],
+  "ordering_constraints": [
+    {
+      "before_role_id": "capture-retry-deadline",
+      "after_role_id": "preserve-retry-deadline",
+      "condition": "When server retry advice crosses an error-mapping boundary."
+    },
+    {
+      "before_role_id": "preserve-retry-deadline",
+      "after_role_id": "schedule-from-retry-deadline",
+      "condition": "When an eligible retry is scheduled after one or more error translations."
+    },
+    {
+      "before_role_id": "fold-visible-stream-text",
+      "after_role_id": "select-stream-recovery-mode",
+      "condition": "At every failed stream-attempt boundary."
+    },
+    {
+      "before_role_id": "select-stream-recovery-mode",
+      "after_role_id": "stage-request-scoped-continuation",
+      "condition": "Only when the selected mode is continuation."
+    },
+    {
+      "before_role_id": "stage-request-scoped-continuation",
+      "after_role_id": "reconcile-stream-history",
+      "condition": "When a staged continuation succeeds or is superseded by a fresh restart."
+    },
+    {
+      "before_role_id": "detect-consecutive-no-progress",
+      "after_role_id": "handoff-stalled-turn",
+      "condition": "When the configured consecutive-stall threshold is reached."
+    },
+    {
+      "before_role_id": "handoff-stalled-turn",
+      "after_role_id": "sanitize-protocol-handoff",
+      "condition": "When the activated fallback uses an incompatible destination protocol."
+    }
+  ],
+  "validation_ladder": [
+    "Focused contract checks: test each selected Action contract at its local boundary, including exact error classification, retry-advice parsing, stall-counter reset, recovery-mode selection, overlap removal, request-scoped metadata, and protocol projection.",
+    "Integration checks: exercise the applicable recovery path across its real boundaries, including transport-to-error-to-scheduler propagation, partial-stream failure followed by a successful attempt, or same-turn fallback activation with exact budget accounting.",
+    "Regression checks: verify terminal classifications remain terminal, retry and grace budgets remain bounded, no-advice failures retain local backoff, visible output is neither duplicated nor discarded, canonical history contains no synthetic recovery artifacts, structured-call ordering remains valid, and telemetry retains the concrete failure type.",
+    "Cross-repository promotion check: require at least two repositories to independently realize every proposed required role with matching semantic owner, pre-state, post-state, and validation oracle.",
+    "Holdout check: after training support exists, validate the complete proposed policy on a separate untouched repair before candidate promotion."
+  ],
+  "known_failure_modes": [
+    {
+      "failure": "A relative retry delay is reconstructed after propagation and starts counting down again.",
+      "detection": "Virtual-time checks show the remaining wait resetting or increasing after error translation or notification work.",
+      "mitigation": "Capture one monotonic deadline at receipt, preserve its identity, and schedule from its remaining duration."
+    },
+    {
+      "failure": "A fresh replay duplicates text that was already delivered to the caller.",
+      "detection": "A partial-output regression produces repeated fragments in caller output, the next request, or durable history.",
+      "mitigation": "Select replay only before nonblank visible output; otherwise use bounded continuation with overlap reconciliation or propagate."
+    },
+    {
+      "failure": "Continuation inserts an invalid turn after an emitted structured call.",
+      "detection": "Recovery-mode boundary checks observe a function call before the cut.",
+      "mitigation": "Reject continuation for that attempt and propagate or use another independently safe recovery path."
+    },
+    {
+      "failure": "Protocol-specific recovery artifacts leak into a fallback request or canonical history.",
+      "detection": "Wire or history assertions find synthetic continuation instructions, markers, or opaque reasoning replay fields.",
+      "mitigation": "Keep continuation context request-scoped and sanitize only the outbound fallback projection."
+    },
+    {
+      "failure": "Recovery silently expands retry or iteration budgets.",
+      "detection": "Request-count assertions exceed configured retries or more than one fallback grace call is consumed.",
+      "mitigation": "Retain independent bounded budgets and permit only the explicitly supported single grace call."
+    },
+    {
+      "failure": "A broad exception class is admitted as retryable when only one stable transport code is supported.",
+      "detection": "Static or classifier tests show generic exception matching or unrelated codes entering the retry path.",
+      "mitigation": "Add only the exact reproduced code to the existing bounded classifier and retain it in telemetry."
+    }
+  ],
+  "exclusions": [
+    "Retry exhaustion redesign, unbounded connection retry, and changes to retry-count policy.",
+    "Generic exception retryability without a stable, reproduced transient classification.",
+    "Recovery for caller cancellation, explicit aborts, policy refusals, malformed requests, or non-replayable side effects.",
+    "Provider or protocol fallback when no configured fallback mechanism exists.",
+    "Universal transcript sanitation when the destination protocol is already compatible.",
+    "Claims that the supplied Actions are substitutes for one another merely because they classify, reconcile, adapt, or repair recovery state."
+  ],
+  "supporting_workflow_ids": [
+    "workflow:0363b1166be8f0a5",
+    "workflow:89b7b2ec23563207",
+    "workflow:af5bab3dbb54c7c1",
+    "workflow:bca58288062025eb"
+  ],
+  "workflow_realizations": [
+    {
+      "workflow_id": "workflow:0363b1166be8f0a5",
+      "repository": "openai/codex",
+      "role_bindings": [
+        {
+          "role_id": "capture-retry-deadline",
+          "action_ids": [
+            "semantic-action:51e824964aeedb15"
+          ]
+        },
+        {
+          "role_id": "preserve-retry-deadline",
+          "action_ids": [
+            "semantic-action:3dd9ae24c28fb2e8"
+          ]
+        },
+        {
+          "role_id": "schedule-from-retry-deadline",
+          "action_ids": [
+            "semantic-action:93f459fa906953c4"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9",
+        "E10",
+        "E11",
+        "E12",
+        "E13"
+      ]
+    },
+    {
+      "workflow_id": "workflow:89b7b2ec23563207",
+      "repository": "NousResearch/hermes-agent",
+      "role_bindings": [
+        {
+          "role_id": "detect-consecutive-no-progress",
+          "action_ids": [
+            "semantic-action:9a58cce611178d40"
+          ]
+        },
+        {
+          "role_id": "handoff-stalled-turn",
+          "action_ids": [
+            "semantic-action:97a1b27a0ab7585f"
+          ]
+        },
+        {
+          "role_id": "sanitize-protocol-handoff",
+          "action_ids": [
+            "semantic-action:c854d93b3267fab8"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9",
+        "E10",
+        "E11",
+        "E12"
+      ]
+    },
+    {
+      "workflow_id": "workflow:af5bab3dbb54c7c1",
+      "repository": "QwenLM/qwen-code",
+      "role_bindings": [
+        {
+          "role_id": "fold-visible-stream-text",
+          "action_ids": [
+            "semantic-action:4033f3b4b2226006"
+          ]
+        },
+        {
+          "role_id": "select-stream-recovery-mode",
+          "action_ids": [
+            "semantic-action:5604b0556bc9d6fa"
+          ]
+        },
+        {
+          "role_id": "stage-request-scoped-continuation",
+          "action_ids": [
+            "semantic-action:3cd2c74b91e970d0"
+          ]
+        },
+        {
+          "role_id": "reconcile-stream-history",
+          "action_ids": [
+            "semantic-action:0874d668d855bfa7"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "ev-continuation-contract",
+        "ev-request-only-context",
+        "ev-caller-retry-signal",
+        "ev-attempt-fold",
+        "ev-history-reconciliation",
+        "ev-reset-superseded-state",
+        "ev-primary-tests",
+        "ev-repeated-cut-tests",
+        "ev-boundary-tests",
+        "ev-reconciliation-tests"
+      ]
+    },
+    {
+      "workflow_id": "workflow:bca58288062025eb",
+      "repository": "google-gemini/gemini-cli",
+      "role_bindings": [
+        {
+          "role_id": "admit-recognized-stream-close",
+          "action_ids": [
+            "semantic-action:49a130b1c42db576"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "ev-diff-001",
+        "ev-impl-001",
+        "ev-before-001",
+        "ev-callsite-001",
+        "ev-test-001",
+        "ev-validation-001"
+      ]
+    }
+  ],
+  "confidence": 0.98,
+  "rationale": "No required role can be bound to matching Action contracts in at least two supplied repositories. The retry-deadline workflow controls timing metadata, the stream-continuation workflow controls caller-visible and durable output state, the stalled-turn workflow controls semantic fallback and protocol adaptation, and the premature-close workflow narrowly changes transport classification. The factorization audit explicitly identifies cross-repository comparisons as different owners, preconditions, postconditions, and validation oracles. Combining them would produce a category-level label rather than an evidence-grounded decision policy. Because no holdout is loaded and the training evidence supports only separate fragments, candidate_pending_holdout is not permitted.",
+  "evidence_ids": [
+    "E3",
+    "E4",
+    "E5",
+    "E6",
+    "E7",
+    "E8",
+    "E9",
+    "E10",
+    "E11",
+    "E12",
+    "E13",
+    "ev-continuation-contract",
+    "ev-request-only-context",
+    "ev-caller-retry-signal",
+    "ev-attempt-fold",
+    "ev-history-reconciliation",
+    "ev-reset-superseded-state",
+    "ev-primary-tests",
+    "ev-repeated-cut-tests",
+    "ev-boundary-tests",
+    "ev-reconciliation-tests",
+    "ev-diff-001",
+    "ev-impl-001",
+    "ev-before-001",
+    "ev-callsite-001",
+    "ev-test-001",
+    "ev-validation-001"
+  ],
+  "missing_probes": [
+    "A second repository independently implementing receipt-time retry-deadline capture, cross-layer preservation, and deadline-based scheduling with matching state and timing oracles.",
+    "A second repository independently implementing output-aware replay-versus-continuation selection, request-scoped continuation, overlap reconciliation, and durable-history repair.",
+    "A second repository independently implementing consecutive no-progress detection and same-turn fallback with the same bounded grace-call contract.",
+    "Evidence that a common required role sequence applies across these failure classes without merging timing, classification, continuation, and fallback Action contracts.",
+    "A separate untouched holdout repair validating any future coherent cross-repository policy."
+  ]
+}

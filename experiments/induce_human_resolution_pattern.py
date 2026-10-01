@@ -69,6 +69,78 @@ def select_pattern(graph: Mapping[str, Any], pattern_id: str | None) -> dict[str
     return matches[0]
 
 
+def bounded_factorization_audit(
+    audit: Mapping[str, Any] | None,
+    *,
+    action_ids: set[str],
+    workflow_ids: set[str],
+) -> dict[str, Any]:
+    if audit is None:
+        return {}
+
+    action_grain = [
+        item for item in _rows(audit.get("action_grain")) if str(item.get("id")) in action_ids
+    ]
+    coarse_groups = [
+        item
+        for item in _rows(audit.get("coarse_action_groups"))
+        if action_ids.intersection(_strings(item.get("action_ids")))
+    ]
+    pair_analysis = [
+        item
+        for item in _rows(audit.get("cross_repository_pair_analysis"))
+        if str(item.get("left")) in action_ids and str(item.get("right")) in action_ids
+    ]
+    workflow_segments: list[dict[str, Any]] = []
+    for item in _rows(audit.get("workflow_role_segments")):
+        occurrences = [
+            occurrence
+            for occurrence in _rows(item.get("occurrences"))
+            if str(occurrence.get("workflow_id")) in workflow_ids
+        ]
+        if not occurrences:
+            continue
+        bounded = dict(item)
+        bounded["occurrences"] = occurrences
+        bounded["supporting_workflows"] = sorted(
+            str(occurrence["workflow_id"])
+            for occurrence in occurrences
+            if occurrence.get("workflow_id")
+        )
+        bounded["supporting_repositories"] = sorted(
+            {
+                str(occurrence["repository"])
+                for occurrence in occurrences
+                if occurrence.get("repository")
+            }
+        )
+        bounded["supporting_categories"] = sorted(
+            {
+                str(occurrence["category"])
+                for occurrence in occurrences
+                if occurrence.get("category")
+            }
+        )
+        workflow_segments.append(bounded)
+
+    return {
+        "schema_version": audit.get("schema_version"),
+        "policy": dict(audit.get("policy", {}))
+        if isinstance(audit.get("policy"), Mapping)
+        else {},
+        "scope": {
+            "action_ids": sorted(action_ids),
+            "workflow_ids": sorted(workflow_ids),
+            "global_audit_rows_omitted": True,
+        },
+        "action_grain": action_grain,
+        "coarse_action_groups": coarse_groups,
+        "cross_repository_pair_analysis": pair_analysis,
+        "workflow_role_segments": workflow_segments,
+        "interpretation": audit.get("interpretation"),
+    }
+
+
 def bounded_training_payload(
     graph: Mapping[str, Any], pattern: Mapping[str, Any], audit: Mapping[str, Any] | None
 ) -> dict[str, Any]:
@@ -87,7 +159,11 @@ def bounded_training_payload(
         "pattern_candidate": dict(pattern),
         "workflows": workflows,
         "actions": actions,
-        "factorization_audit": dict(audit or {}),
+        "factorization_audit": bounded_factorization_audit(
+            audit,
+            action_ids=action_ids,
+            workflow_ids=workflow_ids,
+        ),
         "boundary": {
             "training_only": True,
             "holdout_loaded": False,

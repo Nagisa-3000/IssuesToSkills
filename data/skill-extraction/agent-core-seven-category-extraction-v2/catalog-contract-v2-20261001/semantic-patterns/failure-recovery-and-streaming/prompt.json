@@ -1,0 +1,2796 @@
+{
+  "system": "You are the independent Pattern inducer for an evidence-grounded resolution graph. Use only the supplied training Workflows and Actions. A Pattern is a plain-language cross-project decision policy, not a category label, repository recipe, or claim that different Actions are interchangeable. Preserve distinct Action contracts. Express the reusable structure as role-level action_template entries and bind each supporting Workflow to the exact Action ids that realize those roles. State when to use the Pattern, anti-goals, exclusions, decision branches, ordering, and validation. Use candidate_pending_holdout only when at least two repositories support every required role; it still requires a separate untouched holdout repair. Never invent holdout facts, solution refs, tests, evidence ids, Action ids, or Workflow ids. Return JSON only.",
+  "user": {
+    "operation": "induce_human_resolution_pattern",
+    "instructions": [
+      "Give the Pattern a short title a software engineer can understand without knowing AREX.",
+      "Describe observable applicability signals, not product names or issue numbers.",
+      "Do not merge Actions. Use workflow_realizations to map generic roles to existing ids.",
+      "A required role must be independently realized in at least two repositories.",
+      "Keep repository-specific branches conditional rather than universally mandatory.",
+      "The validation ladder must distinguish focused contract checks, integration checks, and regressions.",
+      "If the evidence supports only fragments rather than one coherent policy, return defer."
+    ],
+    "training_graph": {
+      "pattern_candidate": {
+        "id": "pattern:9cb94d22583f2781",
+        "node_type": "resolution_pattern",
+        "category": "failure-recovery-and-streaming",
+        "intent": "Resolve failure recovery and streaming through a contract-first, evidence-validated change chain.",
+        "mandatory_actions": [],
+        "optional_actions": [],
+        "workflow_template": [],
+        "ordering_constraints": [],
+        "decision_points": [],
+        "invariants": [],
+        "validation_ladder": [],
+        "known_failure_modes": [],
+        "supporting_workflows": [
+          "workflow:0363b1166be8f0a5",
+          "workflow:89b7b2ec23563207",
+          "workflow:af5bab3dbb54c7c1",
+          "workflow:bca58288062025eb"
+        ],
+        "supporting_repositories": [
+          "NousResearch/hermes-agent",
+          "QwenLM/qwen-code",
+          "google-gemini/gemini-cli",
+          "openai/codex"
+        ],
+        "counterexamples": [],
+        "confidence": 0.0,
+        "promotion_status": "insufficient-structural-support",
+        "held_out_results": [],
+        "extraction_method": "structural-action-fingerprint-v1; semantic judge required before promotion"
+      },
+      "workflows": [
+        {
+          "id": "workflow:0363b1166be8f0a5",
+          "node_type": "issue_workflow",
+          "category": "failure-recovery-and-streaming",
+          "repository": "openai/codex",
+          "issue": 47641,
+          "episode_id": "openai__codex__47641__9d8de196",
+          "name": "honor-server-retry-deadlines-across-layered-recovery",
+          "title": "Honor server retry deadlines across layered recovery",
+          "description": "A partial-order resolution workflow for systems where retry advice crosses transport, semantic-error, provider, and streaming boundaries before the next attempt is scheduled.",
+          "goal": "Make every eligible retry honor the server's originally requested earliest retry time without restarting the countdown during error propagation and without replacing established retry policy when advice is unavailable.",
+          "when_to_use": [
+            "A client receives retry timing from HTTP headers or streamed errors but currently retries using only local backoff.",
+            "Retry advice passes through multiple error mappings, notifications, provider adapters, or exhausted-retry state before reuse.",
+            "Observed retry waits begin too late because each layer stores or reconstructs a relative duration."
+          ],
+          "anti_goals": [
+            "Do not make terminal failures retryable merely because they carry retry advice.",
+            "Do not expand configured retry budgets or remove existing transport-fallback and unbounded connection-retry policies.",
+            "Do not replace local backoff for failures with missing or invalid server advice.",
+            "Do not treat an expired valid deadline as missing advice and introduce a new backoff delay."
+          ],
+          "not_applicable_when": [
+            "The upstream protocol supplies no retry timing and local backoff is already the intended complete policy.",
+            "The operation is not safely retryable or retry eligibility cannot be established independently of timing advice.",
+            "Retry timing never crosses an asynchronous or abstraction boundary and an existing absolute-deadline representation is already preserved end to end."
+          ],
+          "inputs": [
+            "Raw server retry-advice headers or streamed delay signal",
+            "Clock facilities supporting a monotonic deadline",
+            "Transport and semantic error types crossed by the failure",
+            "Retry eligibility rules and configured retry budgets",
+            "Local fallback-backoff policy",
+            "Request and stream retry call sites",
+            "Deterministic clock-controlled and end-to-end recovery tests"
+          ],
+          "entry_state": "Retryable failures may contain server advice, but request retries ignore it or higher layers carry relative durations that can restart during propagation.",
+          "exit_state": "Valid advice is captured once, preserved unchanged across all relevant error boundaries, and consumed as an absolute deadline by eligible retry schedulers; invalid or absent advice uses local backoff, while zero or expired valid advice produces an immediate eligible retry rather than fallback delay.",
+          "steps": [
+            {
+              "step_id": "step-1",
+              "action_id": "semantic-action:51e824964aeedb15",
+              "action_name": "capture-server-retry-deadline",
+              "role": "establish-contract",
+              "required": true,
+              "optional": false,
+              "depends_on": [],
+              "condition": "Required when the failure source can provide server retry timing.",
+              "validation": "Parser and transport tests establish accepted formats, receipt-time capture, countdown, expiry, and invalid-value behavior."
+            },
+            {
+              "step_id": "step-2",
+              "action_id": "semantic-action:3dd9ae24c28fb2e8",
+              "action_name": "preserve-retry-deadline-through-error-mapping",
+              "role": "reconcile",
+              "required": true,
+              "optional": false,
+              "depends_on": [
+                "capture-server-retry-deadline"
+              ],
+              "condition": "Required for every error translation, reclassification, provider rewrite, or exhausted-retry record between receipt and scheduling.",
+              "validation": "Mapping tests assert the same deadline survives translation and its remaining delay continues to decrease through elapsed virtual time."
+            },
+            {
+              "step_id": "step-3",
+              "action_id": "semantic-action:93f459fa906953c4",
+              "action_name": "schedule-retry-against-preserved-deadline",
+              "role": "implement",
+              "required": true,
+              "optional": false,
+              "depends_on": [
+                "capture-server-retry-deadline",
+                "preserve-retry-deadline-through-error-mapping"
+              ],
+              "condition": "Required only after existing policy independently declares the failure retryable and budget remains; use local backoff when no valid deadline exists.",
+              "validation": "Virtual-time and end-to-end tests prove sleep-until behavior, delayed-notification accounting, local-backoff fallback, bounded attempts, telemetry, and successful recovery."
+            }
+          ],
+          "edges": [
+            {
+              "from": "step-1",
+              "to": "step-2",
+              "type": "enables"
+            },
+            {
+              "from": "step-2",
+              "to": "step-3",
+              "type": "requires"
+            },
+            {
+              "from": "step-1",
+              "to": "step-3",
+              "type": "enables"
+            }
+          ],
+          "validation_ladder": [
+            "Unit-test parsing of delta-seconds, HTTP dates, explicit zero, expired dates, malformed values, and overflow.",
+            "Test transport capture before body processing and verify advice is attached to unsuccessful-response errors.",
+            "Test each error-mapping boundary for deadline identity and decreasing remaining duration.",
+            "Use paused time to prove intervening notification or propagation work consumes the original wait rather than preceding a fresh delay.",
+            "Verify no-advice failures still use bounded jittered backoff and retry eligibility remains independent of advice.",
+            "Run end-to-end recovery with a mock server, retry telemetry, elapsed-time assertion, successful completion, and exact request count.",
+            "Exercise retry exhaustion and confirm the last captured deadline remains available and becomes zero rather than absent after expiry."
+          ],
+          "stop_conditions": [
+            "Stop and defer if the response-arrival boundary cannot be identified reliably enough to capture advice once.",
+            "Stop if retryability or idempotency is unresolved; timing advice alone must not authorize another attempt.",
+            "Stop if an error-mapping boundary drops metadata and cannot be changed or tested without altering a public compatibility contract.",
+            "Stop when retry budget is exhausted or the existing policy classifies the error as terminal, while retaining advice only if downstream recovery state explicitly requires it."
+          ],
+          "unresolved_or_deferred": [
+            "The implementation leaves a TODO for honoring server advice before switching from WebSockets to fallback HTTP transport.",
+            "The buffered execute path notes that retry advice is not preserved when unbounded diagnostic-body reading itself fails with a network or timeout classification.",
+            "Wrapped WebSocket HTTP errors introduced in this change still populate retry_after as None rather than parsing their available headers."
+          ],
+          "evidence_ids": [
+            "E1",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10",
+            "E11",
+            "E12",
+            "E13",
+            "E14"
+          ],
+          "supporting_repositories": [
+            "openai/codex"
+          ],
+          "source_case": "openai/codex#47641"
+        },
+        {
+          "id": "workflow:89b7b2ec23563207",
+          "node_type": "issue_workflow",
+          "category": "failure-recovery-and-streaming",
+          "repository": "NousResearch/hermes-agent",
+          "issue": 115822,
+          "episode_id": "NousResearch__hermes-agent__115822__656eb283",
+          "name": "recover-consecutive-no-answer-response-stall",
+          "title": "Recover a turn stuck producing internal reasoning without an answer",
+          "description": "Detect consecutive incomplete responses with no user-visible progress, escalate the live turn through the configured fallback chain with a strictly bounded budget exception, and adapt the transcript if the fallback speaks a different request protocol.",
+          "goal": "Complete the same user turn through a configured fallback when repeated incomplete responses contain neither an answer nor a tool call, without allowing unbounded retries or leaking source-protocol control state.",
+          "when_to_use": [
+            "A response API repeatedly returns an incomplete status while exposing no visible answer text and no tool call.",
+            "The runtime has an existing fallback chain capable of continuing the same turn.",
+            "Continuation replay or a synthetic nudge has already failed to produce observable progress."
+          ],
+          "anti_goals": [
+            "Do not classify visible partial progress as part of an uninterrupted no-answer streak.",
+            "Do not grant an open-ended iteration-budget extension or repeatedly allocate grace calls.",
+            "Do not mutate canonical conversation history solely to satisfy the fallback protocol.",
+            "Do not send source-protocol continuation markers or opaque replay state to an incompatible destination.",
+            "Do not replace the existing terminal partial-result behavior when no fallback can be activated."
+          ],
+          "not_applicable_when": [
+            "The response contains visible answer content or a tool call and therefore demonstrates progress.",
+            "The failure is a transport exception, policy refusal, malformed request, or another condition already represented by a different recovery reason.",
+            "No fallback is configured or permitted and the caller requires immediate terminal handling.",
+            "The destination uses the same protocol and can safely consume the existing replay and continuation state."
+          ],
+          "inputs": [
+            "Normalized response status, visible content, and tool-call fields",
+            "Per-turn consecutive-stall and aggregate incomplete counters",
+            "Configured fallback chain and typed recovery reason",
+            "API call count and remaining iteration budget",
+            "Current request protocol and fallback request protocol",
+            "Canonical session messages and active system identity"
+          ],
+          "entry_state": "A live turn has received an incomplete response; continuation state and aggregate retry accounting exist, but the runtime must determine whether this response extends a consecutive no-answer stall.",
+          "exit_state": "Either a configured fallback has received a protocol-compatible request and produced a normal turn result using no more than one bounded grace call, or fallback activation was unavailable and the established terminal partial-result path handled the turn.",
+          "steps": [
+            {
+              "step_id": "step-1",
+              "action_id": "semantic-action:9a58cce611178d40",
+              "action_name": "detect-consecutive-nonproductive-responses",
+              "role": "diagnose",
+              "required": true,
+              "optional": false,
+              "depends_on": [],
+              "condition": "For every incomplete response in the active turn.",
+              "validation": "The streak increments only when both visible content and tool calls are absent, and resets on visible progress or a normal response."
+            },
+            {
+              "step_id": "step-2",
+              "action_id": "semantic-action:97a1b27a0ab7585f",
+              "action_name": "handoff-stalled-turn-with-bounded-budget",
+              "role": "repair",
+              "required": true,
+              "optional": false,
+              "depends_on": [
+                "detect-consecutive-nonproductive-responses"
+              ],
+              "condition": "The consecutive-stall threshold is reached and the configured fallback chain can activate; otherwise retain terminal partial handling.",
+              "validation": "The fallback receives incomplete_response, the same turn continues, and an exhausted normal budget yields exactly one additional request opportunity."
+            },
+            {
+              "step_id": "step-3",
+              "action_id": "semantic-action:c854d93b3267fab8",
+              "action_name": "sanitize-transcript-for-protocol-handoff",
+              "role": "reconcile",
+              "required": false,
+              "optional": true,
+              "depends_on": [
+                "handoff-stalled-turn-with-bounded-budget"
+              ],
+              "condition": "Fallback activation changes to a protocol that must not receive the source protocol's continuation marker or opaque reasoning replay state.",
+              "validation": "The fallback wire excludes incompatible recovery artifacts and retains valid role alternation, while stored session history remains intact."
+            }
+          ],
+          "edges": [
+            {
+              "from": "step-1",
+              "to": "step-2",
+              "type": "enables"
+            },
+            {
+              "from": "step-2",
+              "to": "step-3",
+              "type": "requires"
+            },
+            {
+              "from": "step-3",
+              "to": "step-2",
+              "type": "repairs"
+            }
+          ],
+          "validation_ladder": [
+            "Unit-level state oracle: visible progress resets the local stall streak independently of aggregate incomplete-response accounting.",
+            "Recovery integration oracle: three consecutive no-answer responses invoke the typed fallback reason and produce the fallback's completed answer.",
+            "Budget oracle: a stall that consumes the normal three-call budget produces exactly one fallback grace call and leaves the grace flag consumed.",
+            "Protocol-handoff oracle: the fallback wire contains neither source-only continuation text nor opaque reasoning replay state and preserves alternating non-system roles.",
+            "Regression oracle: when fallback activation fails, terminal partial-result behavior remains available; this branch is supported by implementation inspection but has no new focused test in the changed test file."
+          ],
+          "stop_conditions": [
+            "Stop retrying through this workflow once a normal response supplies visible content or a tool call.",
+            "Stop after the fallback consumes the single grace request; do not allocate another grace call for the same stall.",
+            "Stop escalation and use the existing terminal partial result when no fallback can be activated.",
+            "Defer promotion if the runtime cannot reliably distinguish visible output and tool calls or lacks a configured fallback mechanism."
+          ],
+          "unresolved_or_deferred": [
+            "The committed tests could not be executed in the available environment because pytest is not installed.",
+            "The changed focused tests do not directly exercise the no-fallback terminal branch, although the implementation explicitly retains it.",
+            "GitHub discussion, review rationale, and status-check results are unavailable in the supplied evidence bundle."
+          ],
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10",
+            "E11",
+            "E12"
+          ],
+          "supporting_repositories": [
+            "NousResearch/hermes-agent"
+          ],
+          "source_case": "NousResearch/hermes-agent#115822"
+        },
+        {
+          "id": "workflow:af5bab3dbb54c7c1",
+          "node_type": "issue_workflow",
+          "category": "failure-recovery-and-streaming",
+          "repository": "QwenLM/qwen-code",
+          "issue": 7832,
+          "episode_id": "QwenLM__qwen-code__7832__d7c0d4ca",
+          "name": "recover_mid_response_transport_cut",
+          "title": "Recover a response stream cut after output may have reached the caller",
+          "description": "A bounded partial-order workflow for distinguishing safe replay from state-preserving continuation, accumulating repeated attempts, and reconciling caller-visible output with durable conversation history.",
+          "goal": "Complete or safely terminate a streaming response after a retryable connection cut without duplicating delivered output, losing caller-visible text, creating invalid structured-call ordering, or corrupting durable history.",
+          "when_to_use": [
+            "A response stream can terminate because of a retryable socket or transport failure after streaming has begun.",
+            "The stream owner can distinguish visible answer text from internal reasoning or blank output.",
+            "The request layer can issue a new attempt and the consumer supports distinct fresh-retry and continuation-retry semantics.",
+            "The conversation owner can reconcile the successful resumed response with text delivered before the final attempt."
+          ],
+          "anti_goals": [
+            "Do not blindly replay a request after nonblank answer text has reached the caller.",
+            "Do not persist synthetic model-prefix or resume-instruction turns as real conversation history.",
+            "Do not continue across an emitted function call when doing so would insert a user turn before its required response.",
+            "Do not retry indefinitely or merge replayed overlap more than once.",
+            "Do not retain continuation state after a fresh restart has instructed the caller to discard prior output."
+          ],
+          "not_applicable_when": [
+            "The transport error is not classified as retryable.",
+            "No mechanism exists to preserve the caller's output buffer across a retry event.",
+            "The streamed protocol cannot safely represent prior output plus a resume instruction in a subsequent request.",
+            "The interrupted output contains a structured call that requires an immediate paired response.",
+            "A continuation attempt would exceed its bounded retry budget."
+          ],
+          "inputs": [
+            "classified stream error and transport code",
+            "original request contents",
+            "streamed response parts with thought and function-call metadata",
+            "caller retry-event contract",
+            "replay and continuation budgets",
+            "durable conversation history",
+            "overlap-suffix reconciliation function"
+          ],
+          "entry_state": "A streaming attempt has ended with an error; zero or more chunks may already have reached the caller, while text-only partial output is not yet guaranteed to exist in durable history.",
+          "exit_state": "The response either completes with caller output and durable history representing the same deduplicated answer, restarts cleanly with all stale continuation state removed, or stops by propagating the error when recovery is unsafe or exhausted.",
+          "steps": [
+            {
+              "step_id": "step-1",
+              "action_id": "semantic-action:4033f3b4b2226006",
+              "action_name": "fold_stream_attempt_text_without_overlap",
+              "role": "reconcile",
+              "required": true,
+              "optional": false,
+              "depends_on": [],
+              "condition": "Run at each transport-cut boundary before recovery policy reads accumulated visible text.",
+              "validation": "The accumulated prefix contains every unique visible fragment from completed failed attempts and the current-attempt buffer is cleared."
+            },
+            {
+              "step_id": "step-2",
+              "action_id": "semantic-action:5604b0556bc9d6fa",
+              "action_name": "select_stream_cut_recovery_mode",
+              "role": "establish-contract",
+              "required": true,
+              "optional": false,
+              "depends_on": [
+                "fold_stream_attempt_text_without_overlap"
+              ],
+              "condition": "Run after classifying the failure and folding the failed attempt's text.",
+              "validation": "Blank or thought-only output selects bounded replay; nonblank text without a function call selects bounded continuation; unsafe or exhausted cases propagate."
+            },
+            {
+              "step_id": "step-3",
+              "action_id": "semantic-action:3cd2c74b91e970d0",
+              "action_name": "stage_request_scoped_stream_continuation",
+              "role": "implement",
+              "required": false,
+              "optional": true,
+              "depends_on": [
+                "select_stream_cut_recovery_mode"
+              ],
+              "condition": "Run only when continuation is selected.",
+              "validation": "The next request carries the accumulated prefix and resume instruction, RETRY is marked as continuation, and synthetic turns are absent from durable history."
+            },
+            {
+              "step_id": "step-4",
+              "action_id": "semantic-action:0874d668d855bfa7",
+              "action_name": "reconcile_continuation_with_durable_state",
+              "role": "repair",
+              "required": true,
+              "optional": false,
+              "depends_on": [
+                "select_stream_cut_recovery_mode",
+                "stage_request_scoped_stream_continuation"
+              ],
+              "condition": "On successful continuation, merge the prefix into history; whenever another path supersedes staged continuation, reset it before the fresh request.",
+              "validation": "Success produces one complete deduplicated model turn with correct thought/text ordering; supersession produces a clean request and history with no discarded prefix."
+            }
+          ],
+          "edges": [
+            {
+              "from": "step-1",
+              "to": "step-2",
+              "type": "enables"
+            },
+            {
+              "from": "step-2",
+              "to": "step-3",
+              "type": "enables"
+            },
+            {
+              "from": "step-3",
+              "to": "step-4",
+              "type": "requires"
+            },
+            {
+              "from": "step-2",
+              "to": "step-4",
+              "type": "repairs"
+            }
+          ],
+          "validation_ladder": [
+            "Unit-test recovery-mode boundaries: no output, thought-only, blank text, visible text, function call, and exhausted budgets.",
+            "Verify continuation request construction and consumer event semantics after one visible-text cut.",
+            "Verify repeated cuts, including attempts that replay an earlier tail, yield only continuation retries and carry one deduplicated accumulated prefix.",
+            "Verify successful history reconciliation for ordinary text, leading thought plus text, and thought-only final attempts; confirm synthetic recovery turns never persist.",
+            "Verify fresh-restart and reactive-compression supersession clears staged continuation state and aligns final history with the caller-visible restarted answer.",
+            "Run the focused stream-controller test suite, then static type checking and linting."
+          ],
+          "stop_conditions": [
+            "Propagate immediately when the error is not retryable.",
+            "Propagate rather than continue when a function call was emitted during the cut attempt.",
+            "Stop continuation when its independent retry budget is exhausted.",
+            "Stop and surface an invariant failure if a successful resumed response has no trailing model turn into which delivered text can be reconciled.",
+            "Switching to any fresh-restart path terminates the current continuation lifecycle and requires its staged state to be cleared."
+          ],
+          "unresolved_or_deferred": [
+            "The checkout worktree was entirely staged as deleted, so validation commands were not rerun; reported test, TypeScript, and lint results come from the pinned commit message in the evidence bundle.",
+            "GitHub issue body, comments, reviews, timeline, and status-check details were unavailable in the supplied bundle.",
+            "The consumer implementation that interprets isContinuation was not needed by the two-file implementation diff and was not established as changed by this episode; its behavior is supported here by the existing event contract and regression assertions."
+          ],
+          "evidence_ids": [
+            "ev-before-replay-boundary",
+            "ev-continuation-contract",
+            "ev-request-only-context",
+            "ev-caller-retry-signal",
+            "ev-attempt-fold",
+            "ev-history-reconciliation",
+            "ev-reset-superseded-state",
+            "ev-primary-tests",
+            "ev-repeated-cut-tests",
+            "ev-boundary-tests",
+            "ev-reconciliation-tests"
+          ],
+          "supporting_repositories": [
+            "QwenLM/qwen-code"
+          ],
+          "source_case": "QwenLM/qwen-code#7832"
+        },
+        {
+          "id": "workflow:bca58288062025eb",
+          "node_type": "issue_workflow",
+          "category": "failure-recovery-and-streaming",
+          "repository": "google-gemini/gemini-cli",
+          "issue": 26519,
+          "episode_id": "google-gemini__gemini-cli__26519__f5c0977e96",
+          "name": "recover-recognized-premature-stream-termination",
+          "title": "Recover a streamed operation after a recognized premature transport close",
+          "description": "Extend an existing bounded network-retry policy with a narrowly identified premature-close code, then validate recovery at the streaming boundary, including retry signaling, completed output, and failure classification telemetry.",
+          "goal": "Convert a reproducible, coded premature stream closure from an immediate terminal failure into a bounded retry that can deliver a complete subsequent response while retaining observable retry diagnostics.",
+          "when_to_use": [
+            "A streaming API can yield partial data and then fail with a stable transport error code that is known to represent premature connection closure.",
+            "An existing retry framework already classifies transient network codes and wraps or governs stream recovery.",
+            "A regression can reproduce failure during stream iteration and supply a successful later attempt."
+          ],
+          "anti_goals": [
+            "Do not make every stream exception retryable.",
+            "Do not alter retry counts, backoff timing, jitter, abort handling, or quota/server-status policies when only one transport classification is missing.",
+            "Do not treat the partial response from the failed attempt as proof of successful completion.",
+            "Do not suppress the concrete failure type from retry telemetry."
+          ],
+          "not_applicable_when": [
+            "The failure has no stable evidence that it is transient or safe to retry.",
+            "The operation is non-replayable or retrying could duplicate externally visible side effects.",
+            "Cancellation or abort requested by the caller caused the stream termination.",
+            "The retry framework does not cover failures raised during stream iteration.",
+            "The task requires changing retry exhaustion, delay, or response-reconciliation semantics rather than admitting a missing error classification."
+          ],
+          "inputs": [
+            "A reproducible mid-stream failure and its concrete error object/code",
+            "The existing transient-network-error classifier and retry policy",
+            "The streaming operation's retry configuration",
+            "A successful subsequent-stream fixture or equivalent integration oracle",
+            "Retry event and telemetry observability"
+          ],
+          "entry_state": "A stream may emit incomplete content and then terminate with ERR_STREAM_PREMATURE_CLOSE; the shared exact-code classifier does not recognize that code, so the established recovery path cannot select it for retry.",
+          "exit_state": "The premature-close code is narrowly classified as retryable, and a streaming regression proves that the failure produces a retry signal, a complete response from the next attempt, and telemetry containing the concrete error type.",
+          "steps": [
+            {
+              "step_id": "step-1",
+              "action_id": "semantic-action:49a130b1c42db576",
+              "action_name": "classify-premature-stream-closure-as-retryable",
+              "role": "repair",
+              "required": true,
+              "optional": false,
+              "depends_on": [],
+              "condition": "Apply only after reproducing a stream-iteration failure carrying the stable premature-close transport code and confirming the operation is covered by the existing bounded retry path.",
+              "validation": "The regression stream first yields incomplete content and throws ERR_STREAM_PREMATURE_CLOSE, then the consumed event stream contains RETRY and the completed second-attempt chunk; retry telemetry reports error_type ERR_STREAM_PREMATURE_CLOSE."
+            }
+          ],
+          "edges": [],
+          "validation_ladder": [
+            "Static diff check: verify the exact transport code is added to the bounded retryable-code set without broadening generic exception matching.",
+            "Classifier-path check: verify code extraction feeds both retry eligibility and retry error-type reporting.",
+            "Streaming regression: fail after a partial chunk, then require an explicit retry event and completed output from the subsequent stream.",
+            "Observability check: require retry telemetry to retain the exact premature-close code.",
+            "Broader automated test or CI execution is desirable but is not established by the available evidence bundle."
+          ],
+          "stop_conditions": [
+            "Stop if the observed error code differs from the proposed exact classification and no equivalence is established.",
+            "Stop if replaying the streaming operation is not safe.",
+            "Stop if the failure is an explicit abort or cancellation.",
+            "Stop if the stream layer cannot route iteration-time failures through the existing retry mechanism.",
+            "Stop after bounded retries are exhausted; this change does not authorize infinite retrying."
+          ],
+          "unresolved_or_deferred": [
+            "Dynamic test execution and CI status are not available in the inspected evidence.",
+            "Issue/PR body, discussion, review rationale, and status-check metadata are unavailable, so the safety rationale is inferred only from implementation and regression-test behavior.",
+            "Behavior after retry exhaustion and reconciliation of already-emitted partial chunks are unchanged by this commit and are outside the extracted action."
+          ],
+          "evidence_ids": [
+            "ev-commit-001",
+            "ev-diff-001",
+            "ev-impl-001",
+            "ev-before-001",
+            "ev-callsite-001",
+            "ev-test-001",
+            "ev-validation-001",
+            "ev-scope-001"
+          ],
+          "supporting_repositories": [
+            "google-gemini/gemini-cli"
+          ],
+          "source_case": "google-gemini/gemini-cli#26519"
+        }
+      ],
+      "actions": [
+        {
+          "id": "semantic-action:0874d668d855bfa7",
+          "node_type": "change_action",
+          "category": "failure-recovery-and-streaming",
+          "intent": "Keep caller-visible output, subsequent conversation context, and durable history consistent across continuation success or recovery-mode replacement.",
+          "module_role": "conversation history and recovery lifecycle owner",
+          "operation": "reconcile",
+          "pre_state": "Continuation state is staged and either the resumed attempt has succeeded or another recovery path is replacing it with a fresh restart.",
+          "post_state": "After success, durable history contains one complete model response with no duplicate overlap or synthetic recovery turn; after supersession, stale delivered text and continuation metadata are absent from both the next request and final history.",
+          "validation": "Assert complete history for normal, leading-thought, and thought-only completion shapes; assert invalid-stream and compression restarts omit the discarded prefix and store only the clean restarted answer.",
+          "parameters": [
+            "delivered-text prefix",
+            "trailing model history turn",
+            "response parts and thought markers",
+            "overlap-suffix resolver",
+            "continuation counters and buffers",
+            "fresh-restart trigger"
+          ],
+          "evidence_ids": [
+            "ev-history-reconciliation",
+            "ev-reset-superseded-state",
+            "ev-primary-tests",
+            "ev-reconciliation-tests"
+          ],
+          "source_name": "reconcile_continuation_with_durable_state",
+          "description": "On success, merge the delivered prefix into the final model turn with overlap and part ordering preserved; when a fresh restart supersedes continuation, clear all staged state before resending.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "QwenLM__qwen-code__7832__d7c0d4ca"
+          ],
+          "supporting_repositories": [
+            "QwenLM/qwen-code"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:3cd2c74b91e970d0",
+          "node_type": "change_action",
+          "category": "failure-recovery-and-streaming",
+          "intent": "Continue generation after visible output has been delivered without replaying the original response or persisting synthetic recovery turns.",
+          "module_role": "stream attempt request builder and retry-event producer",
+          "operation": "adapt",
+          "pre_state": "Continuation recovery has been selected and a nonblank delivered-text prefix has been accumulated.",
+          "post_state": "The next attempt contains a temporary model prefix and user resume instruction, the caller receives a continuation retry signal, and durable conversation history remains free of synthetic recovery turns.",
+          "validation": "Assert the next request's final two turns contain the delivered model prefix and resume instruction, RETRY carries isContinuation true, caller-visible chunks concatenate in order, and history contains no synthetic instruction.",
+          "parameters": [
+            "base request contents",
+            "delivered-text prefix",
+            "resume instruction",
+            "retry event continuation flag",
+            "continuation delay"
+          ],
+          "evidence_ids": [
+            "ev-request-only-context",
+            "ev-caller-retry-signal",
+            "ev-primary-tests"
+          ],
+          "source_name": "stage_request_scoped_stream_continuation",
+          "description": "Resume an interrupted answer by adding the already delivered response and an overlap-averse resume instruction only to the next request while signaling the consumer to retain its current output buffer.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "QwenLM__qwen-code__7832__d7c0d4ca"
+          ],
+          "supporting_repositories": [
+            "QwenLM/qwen-code"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:3dd9ae24c28fb2e8",
+          "node_type": "change_action",
+          "category": "failure-recovery-and-streaming",
+          "intent": "Keep retry timing stable while errors cross abstraction and provider boundaries.",
+          "module_role": "cross-layer error contract adapter",
+          "operation": "reconcile",
+          "pre_state": "A lower-layer error contains a captured retry deadline and must be translated, reclassified, reworded, or retained after a retry budget is exhausted.",
+          "post_state": "The translated or retained error exposes the identical original deadline; its remaining duration decreases with elapsed time and reaches zero without becoming absent.",
+          "validation": "Map errors after virtual time advances and assert deadline identity, decreasing remaining delay, zero-after-expiry behavior, and preservation through provider-specific rewriting and exhausted retry state.",
+          "parameters": [
+            "source error",
+            "target semantic error details",
+            "captured retry deadline",
+            "retry exhaustion state",
+            "turn identity"
+          ],
+          "evidence_ids": [
+            "E6",
+            "E7",
+            "E8",
+            "E12",
+            "E13"
+          ],
+          "source_name": "preserve-retry-deadline-through-error-mapping",
+          "description": "Carry the same captured deadline through transport, API, provider, protocol, and exhausted-retry representations even when the semantic error type or user-facing message changes.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "openai__codex__47641__9d8de196"
+          ],
+          "supporting_repositories": [
+            "openai/codex"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:4033f3b4b2226006",
+          "node_type": "change_action",
+          "category": "failure-recovery-and-streaming",
+          "intent": "Preserve all unique response fragments across multiple interrupted continuation attempts without duplicating replayed text.",
+          "module_role": "continuation text accumulator",
+          "operation": "reconcile",
+          "pre_state": "A continuation or initial attempt has ended in a cut after delivering zero or more text chunks, and an earlier accumulated prefix may exist.",
+          "post_state": "The accumulated prefix contains the unique ordered response produced through the failed attempt, and the per-attempt buffer is empty for the next attempt.",
+          "validation": "Simulate an intermediate continuation that repeats the previous tail and is cut again; assert the following request and durable history contain each fragment exactly once.",
+          "parameters": [
+            "accumulated continuation text",
+            "current-attempt text",
+            "overlap-suffix resolver",
+            "attempt boundary"
+          ],
+          "evidence_ids": [
+            "ev-attempt-fold",
+            "ev-repeated-cut-tests"
+          ],
+          "source_name": "fold_stream_attempt_text_without_overlap",
+          "description": "Fold each failed attempt's visible text into the running prefix at the attempt boundary, removing any tail replay before that prefix is reused.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "QwenLM__qwen-code__7832__d7c0d4ca"
+          ],
+          "supporting_repositories": [
+            "QwenLM/qwen-code"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:49a130b1c42db576",
+          "node_type": "change_action",
+          "category": "failure-recovery-and-streaming",
+          "intent": "Allow a streamed operation interrupted by a recognized premature-close transport error to recover through the existing retry mechanism instead of terminating immediately.",
+          "module_role": "Shared transient-network-failure classifier used by retry execution and retry telemetry",
+          "operation": "classify",
+          "pre_state": "A streaming attempt has failed with an error carrying code ERR_STREAM_PREMATURE_CLOSE, but that code is absent from the exact retryable network-code set.",
+          "post_state": "The existing network-error predicate recognizes ERR_STREAM_PREMATURE_CLOSE as retryable, and retry telemetry preserves that code as the failure type.",
+          "validation": "Simulate a stream that emits partial content and throws the coded error, then provide a successful subsequent stream; require a retry event, completed response content, and telemetry labeled with the exact error code.",
+          "parameters": [
+            "failure error object",
+            "transport error code",
+            "retryable network-code policy",
+            "stream retry configuration",
+            "subsequent stream attempt",
+            "retry telemetry event"
+          ],
+          "evidence_ids": [
+            "ev-diff-001",
+            "ev-impl-001",
+            "ev-before-001",
+            "ev-callsite-001",
+            "ev-test-001",
+            "ev-validation-001"
+          ],
+          "source_name": "classify-premature-stream-closure-as-retryable",
+          "description": "Admit a specific premature-stream-termination code to an existing bounded network-error retry policy so interrupted streaming requests can use the established retry and telemetry path.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "google-gemini__gemini-cli__26519__f5c0977e96"
+          ],
+          "supporting_repositories": [
+            "google-gemini/gemini-cli"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:51e824964aeedb15",
+          "node_type": "change_action",
+          "category": "failure-recovery-and-streaming",
+          "intent": "Prevent server-requested retry timing from being restarted or lengthened by subsequent processing.",
+          "module_role": "transport-boundary retry-advice normalizer",
+          "operation": "normalize",
+          "pre_state": "An unsuccessful response has arrived with optional raw retry-advice headers or an equivalent streamed delay signal.",
+          "post_state": "Valid advice is represented by one monotonic deadline captured at receipt; expired or zero advice remains present with zero remaining delay, while invalid or absent advice produces no deadline.",
+          "validation": "Use paused-time parser tests to verify delta-seconds countdown, HTTP-date conversion, zero and expired values, and rejection of malformed or overflowing values.",
+          "parameters": [
+            "raw retry-advice value",
+            "response headers",
+            "wall-clock sample",
+            "monotonic receipt instant"
+          ],
+          "evidence_ids": [
+            "E3",
+            "E4",
+            "E9"
+          ],
+          "source_name": "capture-server-retry-deadline",
+          "description": "Normalize valid relative-seconds or HTTP-date retry advice at receipt time into one monotonic deadline, while preserving the distinction between missing, invalid, expired, and explicit-zero advice.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "openai__codex__47641__9d8de196"
+          ],
+          "supporting_repositories": [
+            "openai/codex"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:5604b0556bc9d6fa",
+          "node_type": "change_action",
+          "category": "failure-recovery-and-streaming",
+          "intent": "Choose a recovery mode that preserves already observed output while avoiding invalid structured-call sequences and unbounded retries.",
+          "module_role": "stream failure recovery policy",
+          "operation": "guard",
+          "pre_state": "A streaming attempt ended with a classified retryable transport error, with per-send accumulated visible text and per-attempt structured-call observations available.",
+          "post_state": "Exactly one applicable outcome is selected: replay when no nonblank visible text has accumulated and replay budget remains; continue when visible text exists, no function call was emitted, and continuation budget remains; otherwise propagate the error.",
+          "validation": "Exercise text, blank-text, thought-only, function-call, repeated-cut, and exhausted-budget cases; assert request shape, retry-event mode, attempt count, and final error behavior.",
+          "parameters": [
+            "transport error classification",
+            "accumulated visible response text",
+            "current-attempt content observation",
+            "current-attempt function-call observation",
+            "replay attempt count and limit",
+            "continuation attempt count and limit"
+          ],
+          "evidence_ids": [
+            "ev-continuation-contract",
+            "ev-boundary-tests",
+            "ev-repeated-cut-tests"
+          ],
+          "source_name": "select_stream_cut_recovery_mode",
+          "description": "Classify a retryable stream cut using accumulated caller-visible output, structured-call state, and separate recovery budgets so a request is replayed only when doing so cannot duplicate or discard visible answer text.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "QwenLM__qwen-code__7832__d7c0d4ca"
+          ],
+          "supporting_repositories": [
+            "QwenLM/qwen-code"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:93f459fa906953c4",
+          "node_type": "change_action",
+          "category": "failure-recovery-and-streaming",
+          "intent": "Honor upstream timing without changing retry eligibility, retry budgets, fallback behavior, or the no-advice backoff policy.",
+          "module_role": "request and stream retry scheduler",
+          "operation": "adapt",
+          "pre_state": "A failure is independently classified as retryable, retry budget remains, and the error may or may not contain a server deadline.",
+          "post_state": "Advice-bearing retries resume no earlier than the original deadline despite propagation or notification time; retries without advice use local backoff; terminal errors and exhausted budgets remain terminal under existing policy.",
+          "validation": "Verify end-to-end HTTP recovery and request count, paused-time fallback backoff, delayed stream notification against the original deadline, and retained advice after HTTP retry exhaustion.",
+          "parameters": [
+            "retryable error",
+            "captured retry deadline",
+            "retry attempt count",
+            "maximum retries",
+            "local backoff policy",
+            "retry operation",
+            "notification work"
+          ],
+          "evidence_ids": [
+            "E5",
+            "E7",
+            "E8",
+            "E10",
+            "E11",
+            "E12"
+          ],
+          "source_name": "schedule-retry-against-preserved-deadline",
+          "description": "For retryable failures within budget, wait until the server's absolute deadline when present and otherwise retain the established local-backoff policy; compute telemetry from the remaining wait after intervening work.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "openai__codex__47641__9d8de196"
+          ],
+          "supporting_repositories": [
+            "openai/codex"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:97a1b27a0ab7585f",
+          "node_type": "change_action",
+          "category": "failure-recovery-and-streaming",
+          "intent": "Recover a live turn that repeatedly produces no usable answer instead of terminating it as an incomplete partial result before a fallback is tried.",
+          "module_role": "Turn recovery and fallback controller",
+          "operation": "handoff",
+          "pre_state": "The consecutive no-answer response threshold has been reached during an incomplete turn, and a configured fallback may be available; the triggering response may have consumed the remaining iteration budget.",
+          "post_state": "If fallback activation succeeds, recovery counters are reset, the same turn continues under the fallback identity, and at most one budget-grace call permits the fallback request. If no fallback is available, the existing terminal partial-result path remains in force.",
+          "validation": "Supply three consecutive reasoning-only responses at a three-call budget followed by a successful fallback response; assert the typed failover reason, completed answer, exactly four calls, and a consumed grace flag.",
+          "parameters": [
+            "stall threshold",
+            "typed failover reason",
+            "configured fallback chain",
+            "API call count",
+            "iteration budget",
+            "budget-grace flag",
+            "active system identity"
+          ],
+          "evidence_ids": [
+            "E4",
+            "E5",
+            "E7",
+            "E9",
+            "E12"
+          ],
+          "source_name": "handoff-stalled-turn-with-bounded-budget",
+          "description": "After the configured consecutive-stall threshold, activate the existing fallback chain with a typed failure reason and reserve one call when the ordinary turn budget has already been consumed.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "NousResearch__hermes-agent__115822__656eb283"
+          ],
+          "supporting_repositories": [
+            "NousResearch/hermes-agent"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:9a58cce611178d40",
+          "node_type": "change_action",
+          "category": "failure-recovery-and-streaming",
+          "intent": "Distinguish a persistent nonproductive response loop from ordinary incomplete responses that make visible progress.",
+          "module_role": "Turn-level response-progress monitor",
+          "operation": "classify",
+          "pre_state": "The turn receives an incomplete response and already maintains aggregate continuation accounting, but consecutive responses with no visible answer or tool call are not independently represented.",
+          "post_state": "Each incomplete response has updated consecutive-stall state: a no-answer/no-tool response increments the streak, while observable progress resets it; the state is reset at normal completion and turn boundaries.",
+          "validation": "Drive a visible partial followed by three reasoning-only incomplete responses and verify that failover occurs only after the three consecutive nonproductive responses.",
+          "parameters": [
+            "normalized assistant response",
+            "visible content predicate",
+            "tool-call presence",
+            "per-turn consecutive-stall counter",
+            "aggregate incomplete-response counter"
+          ],
+          "evidence_ids": [
+            "E3",
+            "E6",
+            "E10"
+          ],
+          "source_name": "detect-consecutive-nonproductive-responses",
+          "description": "Track a local consecutive streak for incomplete responses that contain neither visible answer text nor a tool call, resetting it when observable progress occurs so nonconsecutive failures do not trigger recovery.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "NousResearch__hermes-agent__115822__656eb283"
+          ],
+          "supporting_repositories": [
+            "NousResearch/hermes-agent"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        },
+        {
+          "id": "semantic-action:c854d93b3267fab8",
+          "node_type": "change_action",
+          "category": "failure-recovery-and-streaming",
+          "intent": "Prevent protocol-specific recovery artifacts from leaking into a fallback request that cannot interpret them.",
+          "module_role": "Outbound conversation projection and protocol adapter",
+          "operation": "sanitize",
+          "pre_state": "Fallback activation changes the request protocol while stored session history contains thinking-only replay rows and a synthetic continuation marker used by the prior protocol.",
+          "post_state": "The outbound fallback request excludes the incompatible marker and replay state, adjacent user rows are reconciled to preserve role alternation, and canonical stored session history remains available unchanged.",
+          "validation": "Capture the fallback wire request after a three-response stall and assert absence of the marker and opaque reasoning items plus alternating non-system roles.",
+          "parameters": [
+            "source protocol",
+            "destination protocol",
+            "canonical session messages",
+            "outbound message copy",
+            "synthetic continuation marker",
+            "opaque reasoning replay fields"
+          ],
+          "evidence_ids": [
+            "E8",
+            "E11"
+          ],
+          "source_name": "sanitize-transcript-for-protocol-handoff",
+          "description": "Build the fallback request from a copy of conversation history that excludes the prior protocol's synthetic continuation instruction and opaque reasoning replay state while restoring valid role alternation.",
+          "grounded_semantics": true,
+          "supporting_episodes": [
+            "NousResearch__hermes-agent__115822__656eb283"
+          ],
+          "supporting_repositories": [
+            "NousResearch/hermes-agent"
+          ],
+          "aliases": [],
+          "status": "candidate"
+        }
+      ],
+      "factorization_audit": {
+        "schema_version": "action-factorization-audit-v1",
+        "policy": {
+          "merge_requires": [
+            "same semantic owner",
+            "same finite operation",
+            "same pre-state",
+            "same post-state",
+            "same validation oracle"
+          ],
+          "role_skeleton_is_not_action_reuse": true,
+          "split_is_review_signal_only": true
+        },
+        "scope": {
+          "action_ids": [
+            "semantic-action:0874d668d855bfa7",
+            "semantic-action:3cd2c74b91e970d0",
+            "semantic-action:3dd9ae24c28fb2e8",
+            "semantic-action:4033f3b4b2226006",
+            "semantic-action:49a130b1c42db576",
+            "semantic-action:51e824964aeedb15",
+            "semantic-action:5604b0556bc9d6fa",
+            "semantic-action:93f459fa906953c4",
+            "semantic-action:97a1b27a0ab7585f",
+            "semantic-action:9a58cce611178d40",
+            "semantic-action:c854d93b3267fab8"
+          ],
+          "workflow_ids": [
+            "workflow:0363b1166be8f0a5",
+            "workflow:89b7b2ec23563207",
+            "workflow:af5bab3dbb54c7c1",
+            "workflow:bca58288062025eb"
+          ],
+          "global_audit_rows_omitted": true
+        },
+        "action_grain": [
+          {
+            "id": "semantic-action:0874d668d855bfa7",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "reconcile",
+            "operation_signals": [],
+            "description_operation_signals": [],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 2
+          },
+          {
+            "id": "semantic-action:3cd2c74b91e970d0",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "adapt",
+            "operation_signals": [
+              "retry"
+            ],
+            "description_operation_signals": [],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 2
+          },
+          {
+            "id": "semantic-action:3dd9ae24c28fb2e8",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "reconcile",
+            "operation_signals": [
+              "retry"
+            ],
+            "description_operation_signals": [
+              "retry"
+            ],
+            "secondary_operation_signals": [
+              "retry"
+            ],
+            "clause_signal_count": 1
+          },
+          {
+            "id": "semantic-action:4033f3b4b2226006",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "reconcile",
+            "operation_signals": [
+              "preserve"
+            ],
+            "description_operation_signals": [],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 0
+          },
+          {
+            "id": "semantic-action:49a130b1c42db576",
+            "verdict": "split-review",
+            "reason": "description contains multiple finite-operation signals; inspect independent postconditions/oracles",
+            "declared_operation": "classify",
+            "operation_signals": [
+              "bound",
+              "preserve",
+              "retry"
+            ],
+            "description_operation_signals": [
+              "bound",
+              "retry"
+            ],
+            "secondary_operation_signals": [
+              "bound",
+              "retry"
+            ],
+            "clause_signal_count": 1
+          },
+          {
+            "id": "semantic-action:51e824964aeedb15",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "normalize",
+            "operation_signals": [
+              "normalize",
+              "retry"
+            ],
+            "description_operation_signals": [
+              "normalize",
+              "retry"
+            ],
+            "secondary_operation_signals": [
+              "retry"
+            ],
+            "clause_signal_count": 2
+          },
+          {
+            "id": "semantic-action:5604b0556bc9d6fa",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "guard",
+            "operation_signals": [
+              "classify",
+              "preserve",
+              "propagate"
+            ],
+            "description_operation_signals": [
+              "classify"
+            ],
+            "secondary_operation_signals": [
+              "classify"
+            ],
+            "clause_signal_count": 2
+          },
+          {
+            "id": "semantic-action:93f459fa906953c4",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "adapt",
+            "operation_signals": [
+              "retry"
+            ],
+            "description_operation_signals": [],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 2
+          },
+          {
+            "id": "semantic-action:97a1b27a0ab7585f",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "handoff",
+            "operation_signals": [],
+            "description_operation_signals": [],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 1
+          },
+          {
+            "id": "semantic-action:9a58cce611178d40",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "classify",
+            "operation_signals": [
+              "aggregate"
+            ],
+            "description_operation_signals": [],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 0
+          },
+          {
+            "id": "semantic-action:c854d93b3267fab8",
+            "verdict": "atomic-review",
+            "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+            "declared_operation": "sanitize",
+            "operation_signals": [
+              "preserve"
+            ],
+            "description_operation_signals": [],
+            "secondary_operation_signals": [],
+            "clause_signal_count": 2
+          }
+        ],
+        "coarse_action_groups": [
+          {
+            "module_role": "continuation text accumulator",
+            "operation": "reconcile",
+            "action_ids": [
+              "semantic-action:4033f3b4b2226006"
+            ],
+            "repositories": [
+              "QwenLM/qwen-code"
+            ]
+          },
+          {
+            "module_role": "conversation history and recovery lifecycle owner",
+            "operation": "reconcile",
+            "action_ids": [
+              "semantic-action:0874d668d855bfa7"
+            ],
+            "repositories": [
+              "QwenLM/qwen-code"
+            ]
+          },
+          {
+            "module_role": "cross-layer error contract adapter",
+            "operation": "reconcile",
+            "action_ids": [
+              "semantic-action:3dd9ae24c28fb2e8"
+            ],
+            "repositories": [
+              "openai/codex"
+            ]
+          },
+          {
+            "module_role": "outbound conversation projection and protocol adapter",
+            "operation": "sanitize",
+            "action_ids": [
+              "semantic-action:c854d93b3267fab8"
+            ],
+            "repositories": [
+              "NousResearch/hermes-agent"
+            ]
+          },
+          {
+            "module_role": "request and stream retry scheduler",
+            "operation": "adapt",
+            "action_ids": [
+              "semantic-action:93f459fa906953c4"
+            ],
+            "repositories": [
+              "openai/codex"
+            ]
+          },
+          {
+            "module_role": "shared transient-network-failure classifier used by retry execution and retry telemetry",
+            "operation": "classify",
+            "action_ids": [
+              "semantic-action:49a130b1c42db576"
+            ],
+            "repositories": [
+              "google-gemini/gemini-cli"
+            ]
+          },
+          {
+            "module_role": "stream attempt request builder and retry-event producer",
+            "operation": "adapt",
+            "action_ids": [
+              "semantic-action:3cd2c74b91e970d0"
+            ],
+            "repositories": [
+              "QwenLM/qwen-code"
+            ]
+          },
+          {
+            "module_role": "stream failure recovery policy",
+            "operation": "guard",
+            "action_ids": [
+              "semantic-action:5604b0556bc9d6fa"
+            ],
+            "repositories": [
+              "QwenLM/qwen-code"
+            ]
+          },
+          {
+            "module_role": "transport-boundary retry-advice normalizer",
+            "operation": "normalize",
+            "action_ids": [
+              "semantic-action:51e824964aeedb15"
+            ],
+            "repositories": [
+              "openai/codex"
+            ]
+          },
+          {
+            "module_role": "turn recovery and fallback controller",
+            "operation": "handoff",
+            "action_ids": [
+              "semantic-action:97a1b27a0ab7585f"
+            ],
+            "repositories": [
+              "NousResearch/hermes-agent"
+            ]
+          },
+          {
+            "module_role": "turn-level response-progress monitor",
+            "operation": "classify",
+            "action_ids": [
+              "semantic-action:9a58cce611178d40"
+            ],
+            "repositories": [
+              "NousResearch/hermes-agent"
+            ]
+          }
+        ],
+        "cross_repository_pair_analysis": [
+          {
+            "left": "semantic-action:0874d668d855bfa7",
+            "right": "semantic-action:3dd9ae24c28fb2e8",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "same-operation-different-owner",
+            "reasons": [
+              "semantic-owner-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:0874d668d855bfa7",
+            "right": "semantic-action:49a130b1c42db576",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "google-gemini/gemini-cli"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:0874d668d855bfa7",
+            "right": "semantic-action:51e824964aeedb15",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:0874d668d855bfa7",
+            "right": "semantic-action:93f459fa906953c4",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:0874d668d855bfa7",
+            "right": "semantic-action:97a1b27a0ab7585f",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:0874d668d855bfa7",
+            "right": "semantic-action:9a58cce611178d40",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:0874d668d855bfa7",
+            "right": "semantic-action:c854d93b3267fab8",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3cd2c74b91e970d0",
+            "right": "semantic-action:3dd9ae24c28fb2e8",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3cd2c74b91e970d0",
+            "right": "semantic-action:49a130b1c42db576",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "google-gemini/gemini-cli"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3cd2c74b91e970d0",
+            "right": "semantic-action:51e824964aeedb15",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3cd2c74b91e970d0",
+            "right": "semantic-action:93f459fa906953c4",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "same-operation-different-owner",
+            "reasons": [
+              "semantic-owner-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3cd2c74b91e970d0",
+            "right": "semantic-action:97a1b27a0ab7585f",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3cd2c74b91e970d0",
+            "right": "semantic-action:9a58cce611178d40",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3cd2c74b91e970d0",
+            "right": "semantic-action:c854d93b3267fab8",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3dd9ae24c28fb2e8",
+            "right": "semantic-action:4033f3b4b2226006",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "decision": "same-operation-different-owner",
+            "reasons": [
+              "semantic-owner-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3dd9ae24c28fb2e8",
+            "right": "semantic-action:49a130b1c42db576",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "google-gemini/gemini-cli"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3dd9ae24c28fb2e8",
+            "right": "semantic-action:5604b0556bc9d6fa",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3dd9ae24c28fb2e8",
+            "right": "semantic-action:97a1b27a0ab7585f",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3dd9ae24c28fb2e8",
+            "right": "semantic-action:9a58cce611178d40",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:3dd9ae24c28fb2e8",
+            "right": "semantic-action:c854d93b3267fab8",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:4033f3b4b2226006",
+            "right": "semantic-action:49a130b1c42db576",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "google-gemini/gemini-cli"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:4033f3b4b2226006",
+            "right": "semantic-action:51e824964aeedb15",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:4033f3b4b2226006",
+            "right": "semantic-action:93f459fa906953c4",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:4033f3b4b2226006",
+            "right": "semantic-action:97a1b27a0ab7585f",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:4033f3b4b2226006",
+            "right": "semantic-action:9a58cce611178d40",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:4033f3b4b2226006",
+            "right": "semantic-action:c854d93b3267fab8",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:49a130b1c42db576",
+            "right": "semantic-action:51e824964aeedb15",
+            "left_repositories": [
+              "google-gemini/gemini-cli"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:49a130b1c42db576",
+            "right": "semantic-action:5604b0556bc9d6fa",
+            "left_repositories": [
+              "google-gemini/gemini-cli"
+            ],
+            "right_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:49a130b1c42db576",
+            "right": "semantic-action:93f459fa906953c4",
+            "left_repositories": [
+              "google-gemini/gemini-cli"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:49a130b1c42db576",
+            "right": "semantic-action:97a1b27a0ab7585f",
+            "left_repositories": [
+              "google-gemini/gemini-cli"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:49a130b1c42db576",
+            "right": "semantic-action:9a58cce611178d40",
+            "left_repositories": [
+              "google-gemini/gemini-cli"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "same-operation-different-owner",
+            "reasons": [
+              "semantic-owner-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:49a130b1c42db576",
+            "right": "semantic-action:c854d93b3267fab8",
+            "left_repositories": [
+              "google-gemini/gemini-cli"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:51e824964aeedb15",
+            "right": "semantic-action:5604b0556bc9d6fa",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:51e824964aeedb15",
+            "right": "semantic-action:97a1b27a0ab7585f",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:51e824964aeedb15",
+            "right": "semantic-action:9a58cce611178d40",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:51e824964aeedb15",
+            "right": "semantic-action:c854d93b3267fab8",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:5604b0556bc9d6fa",
+            "right": "semantic-action:93f459fa906953c4",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "openai/codex"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:5604b0556bc9d6fa",
+            "right": "semantic-action:97a1b27a0ab7585f",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:5604b0556bc9d6fa",
+            "right": "semantic-action:9a58cce611178d40",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:5604b0556bc9d6fa",
+            "right": "semantic-action:c854d93b3267fab8",
+            "left_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:93f459fa906953c4",
+            "right": "semantic-action:97a1b27a0ab7585f",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:93f459fa906953c4",
+            "right": "semantic-action:9a58cce611178d40",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          },
+          {
+            "left": "semantic-action:93f459fa906953c4",
+            "right": "semantic-action:c854d93b3267fab8",
+            "left_repositories": [
+              "openai/codex"
+            ],
+            "right_repositories": [
+              "NousResearch/hermes-agent"
+            ],
+            "decision": "not-a-peer",
+            "reasons": [
+              "semantic-owner-differs",
+              "finite-operation-differs",
+              "precondition-differs",
+              "postcondition-differs",
+              "oracle-differs"
+            ],
+            "same_contract_fields": {
+              "pre_state": false,
+              "post_state": false,
+              "validation": false
+            }
+          }
+        ],
+        "workflow_role_segments": [
+          {
+            "segment_roles": [
+              "establish-contract",
+              "reconcile",
+              "implement"
+            ],
+            "kind": "workflow-role-skeleton",
+            "supporting_repositories": [
+              "openai/codex"
+            ],
+            "supporting_categories": [
+              "failure-recovery-and-streaming"
+            ],
+            "category_repository_support": {
+              "failure-recovery-and-streaming": [
+                "openai/codex"
+              ],
+              "provider-interface-adaptation": [
+                "Aider-AI/aider"
+              ]
+            },
+            "same_category_cross_repository_support": {},
+            "reuse_scope": "cross-category-skeleton",
+            "supporting_workflows": [
+              "workflow:0363b1166be8f0a5"
+            ],
+            "occurrences": [
+              {
+                "workflow_id": "workflow:0363b1166be8f0a5",
+                "repository": "openai/codex",
+                "issue": 47641,
+                "category": "failure-recovery-and-streaming",
+                "action_ids": [
+                  "semantic-action:51e824964aeedb15",
+                  "semantic-action:3dd9ae24c28fb2e8",
+                  "semantic-action:93f459fa906953c4"
+                ]
+              }
+            ],
+            "action_reuse": false,
+            "interpretation": "Reusable control-flow skeleton only; each step still needs a repository-specific Action contract."
+          },
+          {
+            "segment_roles": [
+              "establish-contract",
+              "implement"
+            ],
+            "kind": "workflow-role-skeleton",
+            "supporting_repositories": [
+              "QwenLM/qwen-code"
+            ],
+            "supporting_categories": [
+              "failure-recovery-and-streaming"
+            ],
+            "category_repository_support": {
+              "context-budget-and-compaction": [
+                "earendil-works/pi"
+              ],
+              "credential-resolution-and-authentication": [
+                "QwenLM/qwen-code",
+                "earendil-works/pi",
+                "google-gemini/gemini-cli"
+              ],
+              "effect-control-and-isolation": [
+                "earendil-works/pi",
+                "openai/codex"
+              ],
+              "failure-recovery-and-streaming": [
+                "QwenLM/qwen-code"
+              ],
+              "provider-interface-adaptation": [
+                "NousResearch/hermes-agent",
+                "google-gemini/gemini-cli"
+              ],
+              "state-continuity-and-resume": [
+                "earendil-works/pi"
+              ],
+              "structured-tool-contract-integrity": [
+                "QwenLM/qwen-code"
+              ]
+            },
+            "same_category_cross_repository_support": {
+              "credential-resolution-and-authentication": [
+                "QwenLM/qwen-code",
+                "earendil-works/pi",
+                "google-gemini/gemini-cli"
+              ],
+              "effect-control-and-isolation": [
+                "earendil-works/pi",
+                "openai/codex"
+              ],
+              "provider-interface-adaptation": [
+                "NousResearch/hermes-agent",
+                "google-gemini/gemini-cli"
+              ]
+            },
+            "reuse_scope": "same-category-cross-repository",
+            "supporting_workflows": [
+              "workflow:af5bab3dbb54c7c1"
+            ],
+            "occurrences": [
+              {
+                "workflow_id": "workflow:af5bab3dbb54c7c1",
+                "repository": "QwenLM/qwen-code",
+                "issue": 7832,
+                "category": "failure-recovery-and-streaming",
+                "action_ids": [
+                  "semantic-action:5604b0556bc9d6fa",
+                  "semantic-action:3cd2c74b91e970d0"
+                ]
+              }
+            ],
+            "action_reuse": false,
+            "interpretation": "The role sequence recurs within at least one category across repositories, but each step still needs a repository-specific Action contract."
+          },
+          {
+            "segment_roles": [
+              "establish-contract",
+              "reconcile"
+            ],
+            "kind": "workflow-role-skeleton",
+            "supporting_repositories": [
+              "openai/codex"
+            ],
+            "supporting_categories": [
+              "failure-recovery-and-streaming"
+            ],
+            "category_repository_support": {
+              "failure-recovery-and-streaming": [
+                "openai/codex"
+              ],
+              "provider-interface-adaptation": [
+                "Aider-AI/aider",
+                "QwenLM/qwen-code"
+              ],
+              "structured-tool-contract-integrity": [
+                "earendil-works/pi",
+                "openai/codex"
+              ]
+            },
+            "same_category_cross_repository_support": {
+              "provider-interface-adaptation": [
+                "Aider-AI/aider",
+                "QwenLM/qwen-code"
+              ],
+              "structured-tool-contract-integrity": [
+                "earendil-works/pi",
+                "openai/codex"
+              ]
+            },
+            "reuse_scope": "same-category-cross-repository",
+            "supporting_workflows": [
+              "workflow:0363b1166be8f0a5"
+            ],
+            "occurrences": [
+              {
+                "workflow_id": "workflow:0363b1166be8f0a5",
+                "repository": "openai/codex",
+                "issue": 47641,
+                "category": "failure-recovery-and-streaming",
+                "action_ids": [
+                  "semantic-action:51e824964aeedb15",
+                  "semantic-action:3dd9ae24c28fb2e8"
+                ]
+              }
+            ],
+            "action_reuse": false,
+            "interpretation": "The role sequence recurs within at least one category across repositories, but each step still needs a repository-specific Action contract."
+          },
+          {
+            "segment_roles": [
+              "reconcile",
+              "implement"
+            ],
+            "kind": "workflow-role-skeleton",
+            "supporting_repositories": [
+              "openai/codex"
+            ],
+            "supporting_categories": [
+              "failure-recovery-and-streaming"
+            ],
+            "category_repository_support": {
+              "credential-resolution-and-authentication": [
+                "QwenLM/qwen-code"
+              ],
+              "effect-control-and-isolation": [
+                "earendil-works/pi"
+              ],
+              "failure-recovery-and-streaming": [
+                "openai/codex"
+              ],
+              "provider-interface-adaptation": [
+                "Aider-AI/aider"
+              ]
+            },
+            "same_category_cross_repository_support": {},
+            "reuse_scope": "cross-category-skeleton",
+            "supporting_workflows": [
+              "workflow:0363b1166be8f0a5"
+            ],
+            "occurrences": [
+              {
+                "workflow_id": "workflow:0363b1166be8f0a5",
+                "repository": "openai/codex",
+                "issue": 47641,
+                "category": "failure-recovery-and-streaming",
+                "action_ids": [
+                  "semantic-action:3dd9ae24c28fb2e8",
+                  "semantic-action:93f459fa906953c4"
+                ]
+              }
+            ],
+            "action_reuse": false,
+            "interpretation": "Reusable control-flow skeleton only; each step still needs a repository-specific Action contract."
+          }
+        ],
+        "interpretation": {
+          "action_reuse": "An Action is reusable only when its semantic owner, finite operation, state transition, and validation oracle all survive substitution into the other repository.",
+          "workflow_reuse": "A repeated role sequence such as establish-contract -> reconcile -> validate is a reusable Workflow fragment, but it is a template over new Actions rather than evidence that the Actions themselves are interchangeable.",
+          "granularity": "A split is justified only when a candidate contains independently testable finite operations with separate postconditions or validation oracles. Different paths, providers, or filenames alone are not a reason to split."
+        }
+      },
+      "boundary": {
+        "training_only": true,
+        "holdout_loaded": false,
+        "action_similarity_is_not_equivalence": true,
+        "role_templates_must_bind_to_real_action_ids": true
+      }
+    },
+    "previous_validation_errors": []
+  },
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Human-readable resolution Pattern induction",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "schema_version",
+      "pattern_id",
+      "category",
+      "decision",
+      "title",
+      "summary",
+      "when_to_use",
+      "anti_goals",
+      "not_applicable_when",
+      "invariants",
+      "action_template",
+      "decision_points",
+      "ordering_constraints",
+      "validation_ladder",
+      "known_failure_modes",
+      "exclusions",
+      "supporting_workflow_ids",
+      "workflow_realizations",
+      "confidence",
+      "rationale",
+      "evidence_ids",
+      "missing_probes"
+    ],
+    "properties": {
+      "schema_version": {
+        "const": "resolution-pattern-induction-v1"
+      },
+      "pattern_id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "category": {
+        "type": "string",
+        "minLength": 1
+      },
+      "decision": {
+        "enum": [
+          "candidate_pending_holdout",
+          "defer",
+          "reject"
+        ]
+      },
+      "title": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "summary": {
+        "type": "string",
+        "minLength": 1
+      },
+      "when_to_use": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "anti_goals": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "not_applicable_when": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "invariants": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "action_template": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "role_id",
+            "title",
+            "purpose",
+            "required",
+            "condition",
+            "validation"
+          ],
+          "properties": {
+            "role_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "purpose": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "condition": {
+              "type": "string"
+            },
+            "validation": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "decision_points": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "question",
+            "branches"
+          ],
+          "properties": {
+            "question": {
+              "type": "string",
+              "minLength": 1
+            },
+            "branches": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "condition",
+                  "action_role_ids"
+                ],
+                "properties": {
+                  "condition": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "action_role_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ordering_constraints": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "before_role_id",
+            "after_role_id",
+            "condition"
+          ],
+          "properties": {
+            "before_role_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "after_role_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "condition": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "validation_ladder": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "known_failure_modes": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "failure",
+            "detection",
+            "mitigation"
+          ],
+          "properties": {
+            "failure": {
+              "type": "string",
+              "minLength": 1
+            },
+            "detection": {
+              "type": "string",
+              "minLength": 1
+            },
+            "mitigation": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "exclusions": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "supporting_workflow_ids": {
+        "type": "array",
+        "minItems": 2,
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "workflow_realizations": {
+        "type": "array",
+        "minItems": 2,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "workflow_id",
+            "repository",
+            "role_bindings",
+            "evidence_ids"
+          ],
+          "properties": {
+            "workflow_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "repository": {
+              "type": "string",
+              "minLength": 1
+            },
+            "role_bindings": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "role_id",
+                  "action_ids"
+                ],
+                "properties": {
+                  "role_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "action_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      },
+      "confidence": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "rationale": {
+        "type": "string",
+        "minLength": 1
+      },
+      "evidence_ids": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "missing_probes": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  },
+  "holdout_loaded": false
+}

@@ -130,14 +130,24 @@ def local_issue_bundle(case: dict[str, Any]) -> dict[str, Any]:
         raise RuntimeError("offline fallback requires manifest ref")
     commit = _git(checkout, "rev-parse", f"{ref}^{{commit}}").strip()
     parents = _git(checkout, "rev-list", "--parents", "-n", "1", commit).strip().split()[1:]
-    parent = parents[0] if parents else ""
-    show, show_error = _git_best_effort(
-        checkout, "show", "--no-ext-diff", "--format=fuller", "--stat", commit
+    diff_parent = int(case.get("diff_parent", 1))
+    if diff_parent < 1 or diff_parent > len(parents):
+        raise RuntimeError(
+            f"diff_parent {diff_parent} is invalid for commit {commit} with {len(parents)} parents"
+        )
+    parent = parents[diff_parent - 1]
+    metadata, metadata_error = _git_best_effort(
+        checkout, "show", "--no-ext-diff", "--format=fuller", "--no-patch", commit
     )
-    if not show:
+    change_stat, stat_error = _git_best_effort(
+        checkout, "diff", "--no-ext-diff", "--stat", parent, commit
+    )
+    show = metadata.rstrip() + "\n\nSelected implementation diff stat:\n" + change_stat
+    show_error = metadata_error or stat_error
+    if not metadata.strip():
         show, _ = _git_best_effort(checkout, "cat-file", "-p", commit)
     names, names_error = _git_best_effort(
-        checkout, "diff-tree", "-m", "--no-commit-id", "--name-status", "-r", commit
+        checkout, "diff", "--no-ext-diff", "--name-status", parent, commit
     )
     if not names:
         names = "\n".join(f"M\t{path}" for path in case.get("file_sample", []))
@@ -189,6 +199,8 @@ def local_issue_bundle(case: dict[str, Any]) -> dict[str, Any]:
         "pinned_ref": ref,
         "resolved_commit": commit,
         "parent_commit": parent,
+        "all_parent_commits": parents,
+        "diff_parent": diff_parent,
         "commit_show_stat": show,
         "changed_files_name_status": names,
         "linked_issue_numbers": case.get("linked_issue_numbers", [int(case["issue"])]),
@@ -261,9 +273,16 @@ def issue_bundle(case: dict[str, Any], token: str | None, max_linked_prs: int) -
 
 def prompt_for(bundle_path: Path, case: dict[str, Any]) -> str:
     ref = str(case.get("ref") or case.get("extraction_ref") or "(not supplied)")
+    diff_parent = int(case.get("diff_parent", 1))
     category = str(case.get("category") or case.get("theme") or "universal-functional-problem")
     meta_skill = META_SKILL.read_text(encoding="utf-8") if META_SKILL.exists() else ""
-    ref_instruction = f"Pinned implementation ref: {ref}\nUse git show {ref} and inspect its parent, changed files, implementation, call sites, and tests."
+    ref_instruction = (
+        f"Pinned implementation ref: {ref}\n"
+        f"Selected comparison parent: {ref}^{diff_parent}\n"
+        f"Inspect git diff {ref}^{diff_parent} {ref}, changed files, implementation, call sites, "
+        "and tests. For a merge commit, do not treat changes inherited only from another parent "
+        "as part of this issue fix."
+    )
     return f"""You are extracting a training-quality ChangeEpisode from a real agent repository.
 
 Repository checkout: {case["checkout"]}

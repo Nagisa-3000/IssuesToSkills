@@ -1,0 +1,215 @@
+{
+  "schema_version": "resolution-pattern-induction-v1",
+  "pattern_id": "pattern:331e9fe7c100003e",
+  "category": "effect-control-and-isolation",
+  "decision": "candidate_pending_holdout",
+  "title": "Preserve restrictions before enabling broader effects",
+  "summary": "When an authorization transition enables broader effects, first construct an explicit contract describing which restrictions must survive, then project that contract through the mechanism that activates the effects without allowing initialization, aliases, remapping, or fallback behavior to reopen excluded effects.",
+  "when_to_use": [
+    "An approval or authorization decision will make previously unavailable writes, packages, extensions, hooks, or runtime resources available.",
+    "Existing denials or effect boundaries must remain effective after the authorization transition.",
+    "The activation mechanism has an intermediate loading, mounting, aliasing, remapping, or bootstrap stage that can weaken the intended restrictions.",
+    "There is an observable safe fallback that can retain the original restricted state when the preserved boundary cannot be represented."
+  ],
+  "anti_goals": [
+    "Do not treat approval as permission to discard explicit denials or activate every discovered resource.",
+    "Do not use the effects being authorized to decide whether those same effects should be authorized.",
+    "Do not retain unrelated permissions merely because they existed in the pre-transition policy.",
+    "Do not continue with broader effects when the protected boundary cannot be represented safely.",
+    "Do not treat the repository-specific Actions as interchangeable implementations."
+  ],
+  "not_applicable_when": [
+    "The transition does not broaden any executable, writable, installable, or configuration-driven effect.",
+    "No existing exclusion or denial must survive the transition.",
+    "The defect is solely a classifier traversal bug or an unreliable-parser guard and does not require a contract followed by isolated effect activation.",
+    "The intended policy explicitly revokes the previous restrictions through a separate authorized decision."
+  ],
+  "invariants": [
+    "The restrictions that must survive are identified before broader effects are activated.",
+    "Failure to classify or materialize a required restriction leaves the original restricted state in force.",
+    "The mechanism used to prepare or apply authorization cannot itself activate excluded effects.",
+    "The final mechanism permits the intended approved effects while keeping explicitly excluded effects unavailable.",
+    "Repository-specific loading and remapping defenses are conditional realizations of the roles, not universal implementation requirements."
+  ],
+  "action_template": [
+    {
+      "role_id": "preserved-boundary-contract",
+      "title": "Define the boundary that approval must preserve",
+      "purpose": "Translate the current authorization state into an explicit, enforceable description of the effects that may become available and the denials or excluded resources that must remain unavailable, retaining the original state when that description cannot be produced safely.",
+      "required": true,
+      "condition": "Apply before any transition that broadens effects while preserving existing exclusions.",
+      "validation": "Focused contract checks must prove the intended included and excluded cases, reject unsafe or unresolved inputs, and demonstrate fail-closed retention of the original restricted state."
+    },
+    {
+      "role_id": "isolated-effect-activation",
+      "title": "Activate approved effects without reopening exclusions",
+      "purpose": "Apply the preserved boundary through the repository's effect-enabling mechanism while preventing bootstrap loading, aliases, remapping, metadata paths, devices, or equivalent intermediaries from bypassing the exclusions.",
+      "required": true,
+      "condition": "Apply only after a safe preserved-boundary contract has been established and whenever an intermediate activation mechanism can change effective access.",
+      "validation": "Integration checks must demonstrate that intended approved effects work, excluded effects remain unavailable through indirect paths, and preparation of the activation mechanism does not consume protected effects prematurely."
+    }
+  ],
+  "decision_points": [
+    {
+      "question": "Can every required exclusion be classified or materialized safely?",
+      "branches": [
+        {
+          "condition": "Yes; the preserved boundary is explicit and enforceable.",
+          "action_role_ids": [
+            "preserved-boundary-contract",
+            "isolated-effect-activation"
+          ]
+        },
+        {
+          "condition": "No; an exclusion is unresolved, unsafe to translate, or dependent on unavailable context.",
+          "action_role_ids": [
+            "preserved-boundary-contract"
+          ]
+        }
+      ]
+    },
+    {
+      "question": "Which intermediate mechanism could weaken the preserved boundary?",
+      "branches": [
+        {
+          "condition": "Authorization depends on loading policy hooks or settings before project-local effects are trusted; bootstrap only non-project decision sources under a denied project state.",
+          "action_role_ids": [
+            "isolated-effect-activation"
+          ]
+        },
+        {
+          "condition": "Authorization is projected through roots, volumes, mounts, aliases, devices, metadata paths, or comparable remapping; order and suppress projections so denials cannot be shadowed or reopened.",
+          "action_role_ids": [
+            "isolated-effect-activation"
+          ]
+        }
+      ]
+    }
+  ],
+  "ordering_constraints": [
+    {
+      "before_role_id": "preserved-boundary-contract",
+      "after_role_id": "isolated-effect-activation",
+      "condition": "Always when broader effects must preserve existing restrictions."
+    }
+  ],
+  "validation_ladder": [
+    "Focused contract checks: exercise representative allowed, denied, unresolved, relative, inherited, or otherwise repository-relevant inputs and verify the exact preserved boundary plus fail-closed fallback.",
+    "Integration checks: run the real loading, mounting, remapping, or resource-resolution path and prove intended effects become available while excluded effects remain unavailable through direct and indirect paths.",
+    "Regression checks: run adjacent authorization and isolation suites to confirm previously allowed behavior still works, explicit denials remain denied, passive or unrelated behavior is not newly gated, and existing compatibility contracts are unchanged."
+  ],
+  "known_failure_modes": [
+    {
+      "failure": "The broadened contract retains unrelated grants or treats non-effect-bearing inputs as authorization triggers.",
+      "detection": "Focused fixtures show permissions or trust requirements beyond the explicitly intended effect-bearing inputs and preserved exclusions.",
+      "mitigation": "Construct a minimal replacement contract from the approved effects and explicit exclusions rather than copying the previous policy wholesale."
+    },
+    {
+      "failure": "The activation mechanism consumes protected resources before authorization is resolved.",
+      "detection": "Bootstrap or integration tests observe project-local packages, extensions, settings, or equivalent effects while the authorization state is still denied or unresolved.",
+      "mitigation": "Run preparation under the denied state and admit only decision sources that are independent of the protected project effects."
+    },
+    {
+      "failure": "Aliases, remapping, metadata paths, or operation ordering reopen a denied target.",
+      "detection": "Integration probes reach an excluded effect through an alternate path even though direct access is denied.",
+      "mitigation": "Suppress redundant projections and order restoration, broad access, denial masks, and narrow carveouts so later operations cannot undo the exclusions."
+    },
+    {
+      "failure": "An unresolved restriction is silently dropped so broader effects can proceed.",
+      "detection": "A missing root, ancestry boundary, workspace context, or materialization failure produces a broadened result rather than the original restricted state.",
+      "mitigation": "Stop activation and retain the original policy or denied authorization state."
+    }
+  ],
+  "exclusions": [
+    "The multiline command-classifier repair in workflow:d3f024d363790b52 is excluded because it changes matcher traversal and validates regressions but does not realize both required roles.",
+    "The parser-reliability guard in workflow:ed74bb1786137da3 is excluded because it is a single authorization-boundary guard and does not realize the contract-then-activation sequence.",
+    "Capability advertisement is not a required role in this Pattern because cross-repository support exists only for defining and applying the preserved boundary."
+  ],
+  "supporting_workflow_ids": [
+    "workflow:006719c822ba21ae",
+    "workflow:2331dbe1b9917d43"
+  ],
+  "workflow_realizations": [
+    {
+      "workflow_id": "workflow:006719c822ba21ae",
+      "repository": "earendil-works/pi",
+      "role_bindings": [
+        {
+          "role_id": "preserved-boundary-contract",
+          "action_ids": [
+            "semantic-action:3709667575b779bd"
+          ]
+        },
+        {
+          "role_id": "isolated-effect-activation",
+          "action_ids": [
+            "semantic-action:90d88971b074b27d"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "ev-impl-boundary-1",
+        "ev-test-scope-1",
+        "ev-test-boundary-1",
+        "ev-impl-bootstrap-1",
+        "ev-callsite-1",
+        "ev-test-policy-1"
+      ]
+    },
+    {
+      "workflow_id": "workflow:2331dbe1b9917d43",
+      "repository": "openai/codex",
+      "role_bindings": [
+        {
+          "role_id": "preserved-boundary-contract",
+          "action_ids": [
+            "semantic-action:e5146086b20a5590"
+          ]
+        },
+        {
+          "role_id": "isolated-effect-activation",
+          "action_ids": [
+            "semantic-action:061cca90b2fef939"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9",
+        "E10",
+        "E11"
+      ]
+    }
+  ],
+  "confidence": 0.72,
+  "rationale": "Two repositories independently realize the same ordered decision structure: first establish the restrictions that must survive an authorization expansion, then apply the expanded effects through an isolated mechanism. Their Actions remain distinct: one classifies project effect-bearing inputs and bootstraps non-project hooks under denied trust, while the other derives a denial-retaining filesystem policy and compiles it into ordered mount operations. This is sufficient for a training-supported candidate, but promotion requires a separate untouched holdout repair demonstrating both required roles.",
+  "evidence_ids": [
+    "ev-impl-boundary-1",
+    "ev-test-scope-1",
+    "ev-test-boundary-1",
+    "ev-impl-bootstrap-1",
+    "ev-callsite-1",
+    "ev-test-policy-1",
+    "E2",
+    "E3",
+    "E4",
+    "E5",
+    "E6",
+    "E7",
+    "E8",
+    "E9",
+    "E10",
+    "E11"
+  ],
+  "missing_probes": [
+    "A separate untouched holdout repair that independently realizes both preserved-boundary-contract and isolated-effect-activation is required before promotion.",
+    "The supplied evidence does not include observed CI or local execution results for either supporting workflow.",
+    "A holdout should test whether the policy remains coherent outside project-resource bootstrapping and filesystem mount projection without collapsing distinct Action contracts."
+  ]
+}

@@ -1,0 +1,290 @@
+{
+  "schema_version": "resolution-pattern-induction-v1",
+  "pattern_id": "pattern:12e363c8192ed215",
+  "category": "credential-resolution-and-authentication",
+  "decision": "candidate_pending_holdout",
+  "title": "Preserve credential intent before applying fallback",
+  "summary": "First establish which credential sources are authoritative, ordered, or eligible for fallback; then enforce that contract at the authentication boundary. Deliberately selected sources must not be overridden by lower-priority ambient credentials, while non-authoritative or unusable sources must not prevent supported fallbacks from being attempted.",
+  "when_to_use": [
+    "Multiple credential sources can coexist and the current implementation loses their provenance, priority, or fallback relationship before authentication.",
+    "A deliberate credential selection can be overridden by ambient credentials that the downstream client treats as higher priority.",
+    "The first readable credential can be invalid, expired, or revoked while a later configured credential remains usable.",
+    "A missing explicit credential may permit an ambient path only under a narrowly observable eligibility contract."
+  ],
+  "anti_goals": [
+    "Do not treat all credential sources as interchangeable merely because they can authenticate the same client.",
+    "Do not silently bypass a declared or deliberately selected credential source with ambient credentials.",
+    "Do not disable valid ambient or secondary fallback when no authoritative source excludes it.",
+    "Do not equate successful loading or parsing with successful authentication.",
+    "Do not reorder unrelated explicit overrides or redesign downstream interactive, compute, bearer-token, routing, or persistence behavior."
+  ],
+  "not_applicable_when": [
+    "Only one credential source can exist and no supported fallback or precedence conflict is possible.",
+    "The intended policy is to fail closed on the first configured source rather than attempt a lower-priority source.",
+    "Source provenance cannot be retained until the authentication decision is made.",
+    "There is no safe validation oracle for determining whether a candidate credential is usable.",
+    "The defect concerns endpoint routing, token refresh, credential persistence, or provider selection rather than source authority, precedence, or fallback."
+  ],
+  "invariants": [
+    "Credential provenance and configured priority are established before credentials are injected, omitted, or attempted.",
+    "A request-explicit, stored, scoped, or otherwise declared authoritative source is not silently displaced by a lower-priority ambient source.",
+    "When fallback is part of the contract, an isolated load, parse, token-acquisition, or verification failure does not hide later eligible candidates.",
+    "The first candidate accepted by the repository's real authentication oracle wins; lower-priority candidates are not attempted afterward.",
+    "Existing explicit overrides remain stronger than the repaired source-selection policy.",
+    "If all eligible candidates fail, control returns to the repository's existing post-exhaustion behavior rather than inventing a new authentication path."
+  ],
+  "action_template": [
+    {
+      "role_id": "establish-credential-source-contract",
+      "title": "Establish source authority and fallback order",
+      "purpose": "Preserve enough source provenance to distinguish deliberate or declared credential choices from ambient discovery, and define which remaining sources are eligible fallbacks and in what order.",
+      "required": true,
+      "condition": "Apply whenever two or more credential sources may coexist, or when a missing explicit credential may conditionally enable an ambient resolver.",
+      "validation": "Focused contract cases must distinguish authoritative from non-authoritative sources, preserve documented ordering, reject excluded configurations, and show that an unreadable or absent non-authoritative source does not erase later eligible candidates."
+    },
+    {
+      "role_id": "enforce-credential-source-contract",
+      "title": "Enforce the contract at authentication",
+      "purpose": "Apply the established authority and ordering where client credentials are constructed or candidates are authenticated, preventing lower-priority overrides while retaining supported fallback.",
+      "required": true,
+      "condition": "Apply at every consuming boundary that injects credentials, omits credentials for SDK resolution, or attempts candidate authentication.",
+      "validation": "Focused checks must prove that authoritative sources suppress conflicting lower-priority injection, while eligible fallback sources remain usable when no authoritative source exists or a higher-priority candidate fails its actual authentication oracle."
+    }
+  ],
+  "decision_points": [
+    {
+      "question": "Does configuration identify an authoritative credential source whose absence or failure must remain visible?",
+      "branches": [
+        {
+          "condition": "Yes; a source is request-explicit, stored or scoped, or declared by the selected configuration.",
+          "action_role_ids": [
+            "establish-credential-source-contract",
+            "enforce-credential-source-contract"
+          ]
+        },
+        {
+          "condition": "No; available sources are ordered alternatives and repository policy permits fallback between them.",
+          "action_role_ids": [
+            "establish-credential-source-contract",
+            "enforce-credential-source-contract"
+          ]
+        }
+      ]
+    },
+    {
+      "question": "Can source usability be decided before the downstream authentication attempt?",
+      "branches": [
+        {
+          "condition": "Yes; source provenance and downstream precedence are sufficient to prevent a known lower-priority credential from being injected.",
+          "action_role_ids": [
+            "enforce-credential-source-contract"
+          ]
+        },
+        {
+          "condition": "No; a candidate must acquire and validate a token before it can be accepted.",
+          "action_role_ids": [
+            "establish-credential-source-contract",
+            "enforce-credential-source-contract"
+          ]
+        }
+      ]
+    },
+    {
+      "question": "Is ambient authentication conditionally supported when no explicit secret resolves?",
+      "branches": [
+        {
+          "condition": "Yes; require the supported authentication mode, usable routing context, and absence of a declared secret source before permitting the ambient path.",
+          "action_role_ids": [
+            "establish-credential-source-contract",
+            "enforce-credential-source-contract"
+          ]
+        },
+        {
+          "condition": "No; retain the missing-credential failure and do not broaden fallback eligibility.",
+          "action_role_ids": [
+            "establish-credential-source-contract"
+          ]
+        }
+      ]
+    }
+  ],
+  "ordering_constraints": [
+    {
+      "before_role_id": "establish-credential-source-contract",
+      "after_role_id": "enforce-credential-source-contract",
+      "condition": "Source authority, eligibility, and ordering must be observable before changing client construction or candidate authentication."
+    }
+  ],
+  "validation_ladder": [
+    "Focused contract checks: exercise explicit or scoped sources, ambient-only sources, absent and malformed sources, blank routing context, declared-but-missing secrets, and documented priority ordering.",
+    "Focused enforcement checks: inspect constructed client options or candidate-selection results to prove that authoritative sources prevent conflicting lower-priority injection and that permitted fallback remains reachable.",
+    "Integration checks: invoke the public client-acquisition or startup boundary and verify that the selected credential or SDK credential chain is the one actually used, not merely the one returned by an internal helper.",
+    "Regression checks: cover both the repaired conflict or rejected-primary case and unaffected fallback cases, including no authoritative source, ambient-only discovery, and valid secondary credentials.",
+    "Broader regressions: confirm explicit overrides retain priority and existing post-exhaustion authentication paths, unrelated authentication modes, endpoint selection, and token handling remain unchanged."
+  ],
+  "known_failure_modes": [
+    {
+      "failure": "Credential provenance is collapsed into a single value before precedence is decided.",
+      "detection": "Explicit, scoped, and ambient inputs produce indistinguishable state at the client-construction boundary.",
+      "mitigation": "Preserve a separate authority marker or ordered candidate representation until the consuming authentication boundary."
+    },
+    {
+      "failure": "A parseable but unusable credential blocks a valid fallback.",
+      "detection": "The resolver stops after loading the first source without exercising token acquisition or server-side verification.",
+      "mitigation": "Collect eligible candidates in priority order and continue after an isolated candidate rejection until one verifies or the list is exhausted."
+    },
+    {
+      "failure": "A lower-priority ambient credential silently changes the authenticated principal.",
+      "detection": "Client configuration contains directly injected ambient credentials alongside a deliberate profile or declared secret source.",
+      "mitigation": "Omit or reject the lower-priority injection whenever the established source contract marks the deliberate source as authoritative."
+    },
+    {
+      "failure": "The repair disables valid ambient fallback.",
+      "detection": "Configurations with no authoritative source stop receiving previously supported access keys or SDK-chain credentials.",
+      "mitigation": "Add regression cases for no-profile, ambient-profile-only, missing-primary, and valid-secondary configurations."
+    },
+    {
+      "failure": "Successful source discovery is reported as successful authentication.",
+      "detection": "Tests assert only that a file, profile, or project identifier exists rather than that the authentication oracle accepted it.",
+      "mitigation": "Keep discovery and authentication outcomes distinct and validate through the public acquisition boundary."
+    }
+  ],
+  "exclusions": [
+    "Endpoint-specific versus generic compatible environment-variable precedence is not included because workflow:d223ffc3e21b4fac does not independently realize the required source-contract establishment role.",
+    "Client mode construction, cross-gate startup reconciliation, diagnostics, and preflight status reporting from workflow:69a62ada5b9d2fa3 are repository-specific branches rather than mandatory parts of this pattern.",
+    "Interactive login, compute credentials, bearer-token selection, skip-auth behavior, credential persistence, proxy configuration, and endpoint routing are outside this pattern unless separately evidenced."
+  ],
+  "supporting_workflow_ids": [
+    "workflow:69a62ada5b9d2fa3",
+    "workflow:93b8d079bb756671",
+    "workflow:ec991aae270f5400"
+  ],
+  "workflow_realizations": [
+    {
+      "workflow_id": "workflow:69a62ada5b9d2fa3",
+      "repository": "QwenLM/qwen-code",
+      "role_bindings": [
+        {
+          "role_id": "establish-credential-source-contract",
+          "action_ids": [
+            "semantic-action:6131245bcf396066"
+          ]
+        },
+        {
+          "role_id": "enforce-credential-source-contract",
+          "action_ids": [
+            "semantic-action:7c87047d5fc8835e"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9",
+        "E10",
+        "E11",
+        "E12",
+        "E13",
+        "E14"
+      ]
+    },
+    {
+      "workflow_id": "workflow:93b8d079bb756671",
+      "repository": "earendil-works/pi",
+      "role_bindings": [
+        {
+          "role_id": "establish-credential-source-contract",
+          "action_ids": [
+            "semantic-action:8e99fdc4c5a44619"
+          ]
+        },
+        {
+          "role_id": "enforce-credential-source-contract",
+          "action_ids": [
+            "semantic-action:0ed4df7cdd031b8d"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "ev-commit-1",
+        "ev-before-1",
+        "ev-diff-1",
+        "ev-callsite-1",
+        "ev-callsite-2",
+        "ev-test-1",
+        "ev-test-2",
+        "ev-test-3",
+        "ev-validation-1"
+      ]
+    },
+    {
+      "workflow_id": "workflow:ec991aae270f5400",
+      "repository": "google-gemini/gemini-cli",
+      "role_bindings": [
+        {
+          "role_id": "establish-credential-source-contract",
+          "action_ids": [
+            "semantic-action:0988516672c6f923"
+          ]
+        },
+        {
+          "role_id": "enforce-credential-source-contract",
+          "action_ids": [
+            "semantic-action:44169da62485357a"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E7",
+        "E8",
+        "E9",
+        "E10",
+        "E11"
+      ]
+    }
+  ],
+  "confidence": 0.84,
+  "rationale": "Three repositories independently realize the same required sequence: establish an explicit contract for credential-source authority or ordering, then enforce that contract at the authentication boundary. Their Actions remain distinct: one classifies keyless eligibility and preserves declared secrets, one preserves profile provenance and guards direct key injection, and one collects ordered candidates and verifies them sequentially. The shared policy is therefore a role-level decision structure rather than a claim that these Actions are interchangeable. Promotion remains pending because no untouched holdout repair was supplied.",
+  "evidence_ids": [
+    "E1",
+    "E2",
+    "E3",
+    "E4",
+    "E5",
+    "E6",
+    "E7",
+    "E8",
+    "E9",
+    "E10",
+    "E11",
+    "E12",
+    "E13",
+    "E14",
+    "ev-commit-1",
+    "ev-before-1",
+    "ev-diff-1",
+    "ev-callsite-1",
+    "ev-callsite-2",
+    "ev-test-1",
+    "ev-test-2",
+    "ev-test-3",
+    "ev-validation-1"
+  ],
+  "missing_probes": [
+    "Apply the role sequence to a separate untouched holdout repair and verify that both required roles map to new repository-specific Actions without changing their contracts.",
+    "Run the focused tests that were unavailable in the supplied extraction environments.",
+    "Verify on the holdout that the public authentication boundary, not only an internal resolver, observes the intended source authority and fallback behavior.",
+    "Check whether any holdout contains a counterexample where a declared source is intentionally allowed to fall through after authentication rejection."
+  ]
+}

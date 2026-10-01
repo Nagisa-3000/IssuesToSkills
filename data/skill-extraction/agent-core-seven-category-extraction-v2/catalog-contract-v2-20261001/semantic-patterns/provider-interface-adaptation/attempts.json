@@ -1,0 +1,237 @@
+[
+  {
+    "attempt": 1,
+    "valid": true,
+    "errors": [],
+    "response": {
+      "schema_version": "resolution-pattern-induction-v1",
+      "pattern_id": "pattern:5895d079305884e4",
+      "category": "provider-interface-adaptation",
+      "decision": "defer",
+      "title": "Scope provider adaptations before changing dependent boundaries",
+      "summary": "The evidence suggests a two-role fragment: first establish the configuration or endpoint boundary that identifies when an adaptation applies, then reconcile only the dependent construction or outbound-request boundary while preserving unaffected behavior. The supporting repairs, however, establish materially different contracts and perform materially different reconciliations, so the shared structure is not yet a coherent cross-project decision policy.",
+      "when_to_use": [
+        "Provider-compatible behavior fails only after configuration, endpoint identity, or routing information crosses into a dependent construction or request boundary.",
+        "The affected path can be identified from stable configuration evidence such as supplied client settings or a parsed canonical hostname.",
+        "The repair must preserve the ordinary provider path and avoid applying provider-specific behavior when its applicability signal is absent."
+      ],
+      "anti_goals": [
+        "Do not treat provider configuration, endpoint selection, constructor decoupling, and request-field filtering as interchangeable Actions.",
+        "Do not apply provider-specific settings or transformations when their observable applicability conditions are absent.",
+        "Do not infer endpoint identity from a model-family name or another value that unrelated providers may share.",
+        "Do not broaden the repair into prompting, retry policy, response processing, authentication redesign, or unrelated provider paths.",
+        "Do not mutate caller-owned history or retain provider credentials in unrelated domain constructor contracts."
+      ],
+      "not_applicable_when": [
+        "No stable configuration or endpoint signal can distinguish the affected provider path from unaffected paths.",
+        "The target provider is not compatible with the existing client or request protocol and requires a new transport or authentication design.",
+        "The failure concerns persisted-session route precedence, endpoint transport admission, or SDK mode reconciliation rather than the dependent-boundary fragment supported here.",
+        "The proposed transformation cannot distinguish generated compatibility data from caller-authored data.",
+        "Provider configuration is intentionally isolated per component or request and cannot use the evidenced application-boundary ownership model."
+      ],
+      "invariants": [
+        "Applicability must be established before modifying a dependent construction or outbound-request boundary.",
+        "Provider-specific optional values or transformations apply only when the corresponding configuration or endpoint condition is present.",
+        "The ordinary path for unaffected providers and unconfigured optional values retains its prior behavior.",
+        "A dependent-boundary repair preserves caller-owned data and unrelated fields or constructor inputs.",
+        "Each realization retains its own Action contract; shared role names do not make the bound Actions substitutable."
+      ],
+      "action_template": [
+        {
+          "role_id": "establish-provider-boundary",
+          "title": "Establish the provider applicability boundary",
+          "purpose": "Use observable configuration or parsed endpoint evidence to define where provider-specific behavior applies and where the existing path must remain unchanged.",
+          "required": true,
+          "condition": "A provider adaptation can be scoped using supported client settings or a stable endpoint identity rather than model-name inference or global behavior changes.",
+          "validation": "Focused contract checks must prove positive selection, absence behavior, and negative or confusion cases appropriate to the boundary, without assuming that different boundary Actions implement the same contract."
+        },
+        {
+          "role_id": "reconcile-dependent-boundary",
+          "title": "Reconcile the affected dependent boundary",
+          "purpose": "Change only the constructor or outbound-request behavior that conflicts with the established provider contract, preserving unrelated inputs, caller data, and unaffected provider behavior.",
+          "required": true,
+          "condition": "After applicability is established, a downstream construction or request boundary still carries provider-specific coupling or emits data incompatible with the selected endpoint.",
+          "validation": "Focused checks must prove the exact dependent-boundary postcondition and preservation cases; integration checks must exercise the changed composition or wire path; regression checks must cover unaffected paths."
+        }
+      ],
+      "decision_points": [
+        {
+          "question": "Can the affected provider path be identified from stable, observable configuration evidence?",
+          "branches": [
+            {
+              "condition": "Yes; supplied client settings or a parsed canonical hostname distinguish the affected path and negative cases can be tested.",
+              "action_role_ids": [
+                "establish-provider-boundary",
+                "reconcile-dependent-boundary"
+              ]
+            },
+            {
+              "condition": "No; identification would depend on model-family names, substring matching, or another ambiguous heuristic.",
+              "action_role_ids": []
+            }
+          ]
+        },
+        {
+          "question": "What dependent boundary demonstrably conflicts with the established provider contract?",
+          "branches": [
+            {
+              "condition": "Provider initialization is coupled to a domain constructor after configuration ownership belongs at the application boundary.",
+              "action_role_ids": [
+                "reconcile-dependent-boundary"
+              ]
+            },
+            {
+              "condition": "A selected strict endpoint rejects a recognizable field synthesized by shared outbound request construction.",
+              "action_role_ids": [
+                "reconcile-dependent-boundary"
+              ]
+            }
+          ]
+        },
+        {
+          "question": "Can the repair preserve the unaffected path with a focused oracle?",
+          "branches": [
+            {
+              "condition": "Yes; tests can observe omitted optional settings, unrelated host routing, preserved explicit values, or unchanged constructor behavior.",
+              "action_role_ids": [
+                "reconcile-dependent-boundary"
+              ]
+            },
+            {
+              "condition": "No; the repair would require an unconditional provider-wide change or cannot distinguish generated data from caller-authored data.",
+              "action_role_ids": []
+            }
+          ]
+        }
+      ],
+      "ordering_constraints": [
+        {
+          "before_role_id": "establish-provider-boundary",
+          "after_role_id": "reconcile-dependent-boundary",
+          "condition": "The dependent-boundary change is allowed only after the provider applicability condition and unaffected fallback behavior are explicit."
+        }
+      ],
+      "validation_ladder": [
+        "Focused contract checks: test the applicability boundary with positive, absent, unrelated, and confusion-resistant cases, including omitted optional configuration or unrelated and suffix-confusable hosts as appropriate to the realization.",
+        "Focused reconciliation checks: assert the exact constructor or field-level postcondition, including preservation of unrelated inputs, distinct explicit values, caller-owned history, and the ordinary unconfigured path.",
+        "Integration checks: exercise the relevant application-composition path or the real conversion, provider, and HTTP request path so the changed boundary is observed beyond an isolated helper.",
+        "Regression checks: run existing construction, command, editing, provider-routing, and request-processing suites relevant to the realization and verify unaffected providers retain their prior behavior.",
+        "Runtime or external-provider checks: where the workflow claims connectivity or wire compatibility, execute a minimal request against a compatible endpoint or a strict endpoint stand-in; do not infer this result solely from static inspection."
+      ],
+      "known_failure_modes": [
+        {
+          "failure": "Provider-specific behavior leaks into unaffected paths.",
+          "detection": "Optional values appear when not configured, unrelated hosts select the dedicated adapter, or existing provider requests change shape.",
+          "mitigation": "Add explicit absence and negative-routing checks at the applicability boundary and preserve the existing fallback path."
+        },
+        {
+          "failure": "Endpoint identity is inferred from an ambiguous model name or unsafe substring match.",
+          "detection": "An unrelated or suffix-confusable hostname selects the provider-specific adapter, or the same model name routes differently depending on its host.",
+          "mitigation": "Parse the configured URL and compare hostname boundaries against the evidenced canonical host contract."
+        },
+        {
+          "failure": "The reconciliation removes or rewrites caller-authored data.",
+          "detection": "Distinct explicit field values disappear, source history changes, or non-target messages are modified.",
+          "mitigation": "Restrict transformation to the evidenced generated-data invariant and assert preservation of source data and distinct values."
+        },
+        {
+          "failure": "Moving configuration ownership breaks direct component construction.",
+          "detection": "Production or test call sites still pass provider credentials or endpoints to a domain constructor whose contract was simplified.",
+          "mitigation": "Enumerate and reconcile all direct construction call sites, then run constructor-dependent regression tests."
+        },
+        {
+          "failure": "Static or unit evidence is mistaken for end-to-end provider compatibility.",
+          "detection": "No test observes the composed application state or accepted wire request, despite a claim of successful connectivity.",
+          "mitigation": "Require an integration oracle at the composition or HTTP boundary and report runtime validation as deferred when the required environment is unavailable."
+        }
+      ],
+      "exclusions": [
+        "Persisted runtime-route reconciliation and cross-interface resume adaptation from workflow:7feccf0ac8bb22b3 are excluded because they concern durable metadata precedence rather than configuration or endpoint scoping of a dependent boundary.",
+        "Endpoint precedence, transport admission, and SDK provider-mode reconciliation from workflow:a1416952c048b7d5 are excluded because their three Action contracts form a distinct client-construction policy not independently reproduced here.",
+        "semantic-action:f739bb2c7c9a9da7 and semantic-action:4a8c6ad7fc7800b2 both realize an establish-contract role but are not interchangeable: one owns application-level client configuration and the other selects an adapter from parsed hostname identity.",
+        "semantic-action:d803e48cee271d14 and semantic-action:db94712551fe490e both realize a reconciliation role but are not interchangeable: one changes a domain constructor contract and the other selectively removes a derived outbound field."
+      ],
+      "supporting_workflow_ids": [
+        "workflow:b5dccd8edcc90ddd",
+        "workflow:da462de34604fc60"
+      ],
+      "workflow_realizations": [
+        {
+          "workflow_id": "workflow:b5dccd8edcc90ddd",
+          "repository": "Aider-AI/aider",
+          "role_bindings": [
+            {
+              "role_id": "establish-provider-boundary",
+              "action_ids": [
+                "semantic-action:f739bb2c7c9a9da7"
+              ]
+            },
+            {
+              "role_id": "reconcile-dependent-boundary",
+              "action_ids": [
+                "semantic-action:d803e48cee271d14"
+              ]
+            }
+          ],
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E9",
+            "E10"
+          ]
+        },
+        {
+          "workflow_id": "workflow:da462de34604fc60",
+          "repository": "QwenLM/qwen-code",
+          "role_bindings": [
+            {
+              "role_id": "establish-provider-boundary",
+              "action_ids": [
+                "semantic-action:4a8c6ad7fc7800b2"
+              ]
+            },
+            {
+              "role_id": "reconcile-dependent-boundary",
+              "action_ids": [
+                "semantic-action:db94712551fe490e"
+              ]
+            }
+          ],
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9"
+          ]
+        }
+      ],
+      "confidence": 0.38,
+      "rationale": "Two repositories independently realize the role sequence establish-contract then reconcile, satisfying structural support for the two required roles. However, the first workflow moves provider-client configuration out of a domain constructor, while the second identifies a strict endpoint and selectively changes its outbound request shape. Their semantic owners, state transitions, and validation oracles differ, and the available evidence does not establish a common decision rule more specific than a generic contract-first change skeleton. Promoting that skeleton would overstate coherence and risk treating distinct Actions as equivalent, so induction is deferred.",
+      "evidence_ids": [
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9",
+        "E10"
+      ],
+      "missing_probes": [
+        "A second repository showing the same configuration-ownership decision policy as semantic-action:f739bb2c7c9a9da7 followed by a corresponding provider-independent construction reconciliation.",
+        "A second repository showing the same canonical-endpoint-selection policy as semantic-action:4a8c6ad7fc7800b2 followed by selective removal of a provably generated incompatible request field.",
+        "Evidence that the proposed applicability-boundary and dependent-reconciliation roles predict concrete branch choices beyond the generic establish-contract then reconcile skeleton.",
+        "An untouched holdout repair that independently exercises every required role after coherent cross-repository training support is established.",
+        "Executed integration and regression results where the supplied workflow evidence reports unavailable runtimes or incomplete test environments."
+      ]
+    }
+  }
+]
