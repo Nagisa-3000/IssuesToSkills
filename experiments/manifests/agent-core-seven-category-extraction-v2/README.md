@@ -26,6 +26,19 @@ Current scope ends after schema-validated ChangeEpisode plus candidate Atomic
 and Workflow extraction. Holdout agent evaluation, retrieval, graph expansion,
 LLM judge/use, feedback, merge/retirement, and final evaluation are deferred.
 
+## Follow-on retrieval evaluation
+
+The extraction manifests above remain immutable training/holdout split inputs.
+`holdouts-evaluation-input.json` is a separate evaluation-only enrichment that
+adds public GitHub Issue titles and bodies. Its generator fetches no comments,
+timeline, linked pull requests, commits, patches, or tests, and every row keeps
+`extraction_forbidden: true`.
+
+The 2026-10-02 retrieval and applicability results are documented in
+`analysis/agent-core-seven-category-retrieval-evaluation-20261002.md`. This
+follow-on phase does not change the original holdout split and does not promote
+any candidate Pattern from retrieval evidence alone.
+
 The archived `codex-5.6-sol-20261001` run used the v1 extraction schema and is
 kept immutable for provenance. New extraction runs use
 `schemas/codex-change-episode-v2.schema.json`, which requires plain-language

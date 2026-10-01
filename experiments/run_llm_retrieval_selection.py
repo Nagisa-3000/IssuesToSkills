@@ -12,9 +12,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from pathlib import Path
 import sys
 import time
+from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,7 +24,6 @@ from arex_skill_graph.llm_http import OpenAICompatibleConfig, OpenAICompatibleTr
 from arex_skill_graph.retrieval import SkillRetriever
 from arex_skill_graph.schema import NodeType
 from arex_skill_graph.store import CatalogStore
-
 
 PLAN_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -49,7 +48,7 @@ def cases_from_manifest(path: Path, role: str) -> list[dict[str, Any]]:
     value = json.loads(path.read_text(encoding="utf-8"))
     cases = value.get("cases", []) if isinstance(value, dict) else value
     if not isinstance(cases, list):
-        raise ValueError("manifest must contain a cases array")
+        raise TypeError("manifest must contain a cases array")
     return [dict(case) for case in cases if str(case.get("role") or case.get("split")) == role]
 
 
@@ -60,6 +59,7 @@ def query_for_case(case: dict[str, Any]) -> str:
     return " ".join(
         part for part in (
             str(case.get("issue_title") or case.get("title") or ""),
+            str(case.get("table_note") or ""),
             str(case.get("issue_body") or "")[:1200],
             generic,
             workflow,
@@ -107,7 +107,7 @@ def hnsw_status(store: CatalogStore, path: Path | None) -> tuple[bool, str | Non
         return False, "index path was not supplied or does not exist"
     try:
         store.search_vector("hnsw preflight", limit=1, vector_backend="hnsw", hnsw_path=str(path))
-    except Exception as exc:  # optional dependency/index validity is environment-specific
+    except Exception as exc:  # noqa: BLE001 - optional backend/index failures are reported as data
         return False, f"{type(exc).__name__}: {exc}"
     return True, None
 
@@ -186,7 +186,7 @@ def run_case(store: CatalogStore, case: dict[str, Any], args: argparse.Namespace
                 }, ensure_ascii=False),
                 response_schema=PLAN_SCHEMA,
             ))
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - transport failures trigger an explicit fallback
             decision = "fallback_llm_error"
             llm_error = f"{type(exc).__name__}: {exc}"
     plan, guardrail_errors = bounded_plan(llm_result if llm_result is not None else fallback, hnsw_available=hnsw_available)

@@ -11,11 +11,12 @@ from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
 import statistics
 import sys
 import time
-from typing import Any, Iterable
+from collections.abc import Iterable
+from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -29,7 +30,7 @@ def load_cases(path: Path, role: str) -> list[dict[str, Any]]:
     value = json.loads(path.read_text(encoding="utf-8"))
     cases = value.get("cases", []) if isinstance(value, dict) else value
     if not isinstance(cases, list):
-        raise ValueError("manifest must contain a cases array")
+        raise TypeError("manifest must contain a cases array")
     return [dict(case) for case in cases if str(case.get("role") or case.get("split")) == role]
 
 
@@ -50,9 +51,17 @@ def query_for_case(case: dict[str, Any]) -> tuple[str, str]:
     else:
         generic, workflow = "", ""
     issue_title = str(case.get("issue_title") or case.get("title") or "")
+    table_note = str(case.get("table_note") or "")
     issue_body = str(case.get("issue_body") or "")
-    query = " ".join(part for part in (issue_title, issue_body[:1200], generic, workflow) if part).strip()
-    source = "issue+class" if issue_title else "class-only-unverified"
+    query = " ".join(
+        part for part in (issue_title, table_note, issue_body[:1200], generic, workflow) if part
+    ).strip()
+    if issue_title:
+        source = "issue+class"
+    elif table_note:
+        source = "table-note+class" if generic or workflow else "table-note"
+    else:
+        source = "class-only-unverified"
     return query, source
 
 
@@ -82,12 +91,18 @@ def compact_hit(hit: SearchHit, rank: int, relevant: bool) -> dict[str, Any]:
 def evaluate_case(store: CatalogStore, case: dict[str, Any], args: argparse.Namespace, hnsw_available: bool) -> list[dict[str, Any]]:
     query, query_source = query_for_case(case)
     category = str(case.get("category") or "")
-    relevant_ids = {
-        node.id for node in store.list_nodes()
+    relevant_nodes = [
+        node for node in store.list_nodes()
         if category
         and node.node_type in {NodeType.ACTION, NodeType.WORKFLOW, NodeType.PATTERN}
         and category_for_node(node) == category
-    }
+    ]
+    relevant_ids = {node.id for node in relevant_nodes}
+    holdout_repository = str(case.get("repository") or "")
+    same_repository_gold_count = sum(
+        bool(holdout_repository and node.repository == holdout_repository)
+        for node in relevant_nodes
+    )
     retriever = SkillRetriever(store)
     plans = [
         {"arm": "sparse", "kind": "sparse"},
@@ -108,9 +123,20 @@ def evaluate_case(store: CatalogStore, case: dict[str, Any], args: argparse.Name
             ranked = store.search_lexical(query, limit=args.top_k)
             hits = [SearchHit(node=node, score=score, sources={"sparse": score}) for node, score in ranked]
             seed_count, expanded_count, unresolved = len(hits), 0, []
-        elif plan["kind"] == "dense_exact":
-            ranked = store.search_vector(query, limit=args.top_k, vector_backend="exact")
-            hits = [SearchHit(node=node, score=score, sources={"dense_exact": score}) for node, score in ranked]
+        elif plan["kind"] in {"dense_exact", "dense_hnsw"}:
+            backend = "hnsw" if plan["kind"] == "dense_hnsw" else "exact"
+            ranked = store.search_vector(
+                query,
+                limit=args.top_k,
+                vector_backend=backend,
+                hnsw_path=str(args.hnsw) if backend == "hnsw" else None,
+                hnsw_ef_search=args.hnsw_ef_search,
+                hnsw_oversample=args.hnsw_oversample,
+            )
+            hits = [
+                SearchHit(node=node, score=score, sources={plan["kind"]: score})
+                for node, score in ranked
+            ]
             seed_count, expanded_count, unresolved = len(hits), 0, []
         else:
             response = retriever.search(
@@ -139,6 +165,7 @@ def evaluate_case(store: CatalogStore, case: dict[str, Any], args: argparse.Name
             "query_source": query_source,
             "gold_definition": "same universal problem class in training-derived catalog",
             "gold_count": len(relevant_ids),
+            "gold_same_repository_count": same_repository_gold_count,
             "arm": plan["arm"],
             "latency_ms": round(latency_ms, 3),
             "seed_count": seed_count,
@@ -156,10 +183,16 @@ def aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
     for arm in sorted({str(row["arm"]) for row in rows}):
         items = [row for row in rows if row["arm"] == arm]
         ranks = [int(row["first_relevant_rank"]) for row in items if row["first_relevant_rank"] is not None]
+        reciprocal_ranks = [
+            1.0 / int(row["first_relevant_rank"])
+            if row["first_relevant_rank"] is not None
+            else 0.0
+            for row in items
+        ]
         result[arm] = {
             "cases": len(items),
             "recall_at_k": len(ranks) / len(items) if items else 0.0,
-            "mrr": statistics.mean(1.0 / rank for rank in ranks) if ranks else 0.0,
+            "mrr": statistics.mean(reciprocal_ranks) if reciprocal_ranks else 0.0,
             "mean_first_relevant_rank": statistics.mean(ranks) if ranks else None,
             "mean_latency_ms": statistics.mean(float(row["latency_ms"]) for row in items) if items else None,
             "p95_latency_ms": sorted(float(row["latency_ms"]) for row in items)[max(0, int(len(items) * 0.95) - 1)] if items else None,
@@ -170,12 +203,35 @@ def aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
     return result
 
 
+def hnsw_parity(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for exact_arm, hnsw_arm in (
+        ("dense_exact", "dense_hnsw"),
+        ("hybrid_exact", "hybrid_hnsw"),
+        ("graph_exact", "graph_hnsw"),
+    ):
+        exact = {str(row["case_id"]): row for row in rows if row["arm"] == exact_arm}
+        approximate = {str(row["case_id"]): row for row in rows if row["arm"] == hnsw_arm}
+        shared = sorted(set(exact) & set(approximate))
+        identical = sum(
+            [hit["id"] for hit in exact[case_id]["hits"]]
+            == [hit["id"] for hit in approximate[case_id]["hits"]]
+            for case_id in shared
+        )
+        result[f"{exact_arm}_vs_{hnsw_arm}"] = {
+            "cases": len(shared),
+            "identical_top_k": identical,
+            "parity_rate": identical / len(shared) if shared else None,
+        }
+    return result
+
+
 def hnsw_status(store: CatalogStore, path: Path | None) -> tuple[bool, str | None]:
     if path is None or not path.exists():
         return False, "index path was not supplied or does not exist"
     try:
         store.search_vector("hnsw preflight", limit=1, vector_backend="hnsw", hnsw_path=str(path))
-    except Exception as exc:  # optional dependency/index validity is environment-specific
+    except Exception as exc:  # noqa: BLE001 - optional backend/index failures are reported as data
         return False, f"{type(exc).__name__}: {exc}"
     return True, None
 
@@ -212,7 +268,15 @@ def main() -> int:
             "role": args.role,
             "cases": len(cases),
             "arms": sorted({row["arm"] for row in rows}),
+            "retrieval": {
+                "top_k": args.top_k,
+                "seed_k": args.seed_k,
+                "expand_hops": args.expand_hops,
+                "hnsw_ef_search": args.hnsw_ef_search,
+                "hnsw_oversample": args.hnsw_oversample,
+            },
             "aggregate": aggregate(rows),
+            "hnsw_parity": hnsw_parity(rows) if hnsw_available else {},
             "rows": rows,
             "limitations": [
                 "Labels measure category transfer, not repair correctness.",
