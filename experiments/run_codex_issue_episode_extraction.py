@@ -469,6 +469,8 @@ def validate_response(value: Any) -> tuple[bool, list[str]]:
     if not isinstance(atomics, list):
         errors.append("candidate_atomics is not an array")
         atomics = []
+    if not atomics:
+        errors.append("no candidate atomics were extracted")
     atomic_names: set[str] = set()
     for index, atomic in enumerate(atomics):
         if not isinstance(atomic, dict):
@@ -483,6 +485,15 @@ def validate_response(value: Any) -> tuple[bool, list[str]]:
         for key in ("title", "description"):
             if not str(atomic.get(key, "")).strip():
                 errors.append(f"candidate_atomics[{index}].{key} is empty")
+        atomic_evidence = atomic.get("evidence_ids")
+        if not isinstance(atomic_evidence, list) or not atomic_evidence:
+            errors.append(f"candidate_atomics[{index}].evidence_ids is empty")
+        else:
+            for evidence_id in atomic_evidence:
+                if str(evidence_id) not in ids:
+                    errors.append(
+                        f"candidate_atomics[{index}] references unknown evidence: {evidence_id}"
+                    )
         semantic = atomic.get("semantic_action")
         if not isinstance(semantic, dict):
             errors.append(f"candidate_atomics[{index}].semantic_action is not an object")
@@ -490,11 +501,23 @@ def validate_response(value: Any) -> tuple[bool, list[str]]:
         for key in ("intent", "module_role", "operation", "pre_state", "post_state", "validation"):
             if not str(semantic.get(key, "")).strip():
                 errors.append(f"candidate_atomics[{index}].semantic_action.{key} is empty")
+        semantic_evidence = semantic.get("evidence_ids")
+        if not isinstance(semantic_evidence, list) or not semantic_evidence:
+            errors.append(f"candidate_atomics[{index}].semantic_action.evidence_ids is empty")
+        else:
+            for evidence_id in semantic_evidence:
+                if str(evidence_id) not in ids:
+                    errors.append(
+                        f"candidate_atomics[{index}].semantic_action references unknown "
+                        f"evidence: {evidence_id}"
+                    )
 
     workflows = value.get("candidate_workflows")
     if not isinstance(workflows, list):
         errors.append("candidate_workflows is not an array")
         workflows = []
+    if not workflows:
+        errors.append("no candidate workflows were extracted")
     for index, workflow in enumerate(workflows):
         if not isinstance(workflow, dict):
             errors.append(f"candidate_workflows[{index}] is not an object")
@@ -502,6 +525,25 @@ def validate_response(value: Any) -> tuple[bool, list[str]]:
         for key in ("name", "title", "description"):
             if not str(workflow.get(key, "")).strip():
                 errors.append(f"candidate_workflows[{index}].{key} is empty")
+        workflow_evidence = workflow.get("evidence_ids")
+        if not isinstance(workflow_evidence, list) or not workflow_evidence:
+            errors.append(f"candidate_workflows[{index}].evidence_ids is empty")
+        else:
+            for evidence_id in workflow_evidence:
+                if str(evidence_id) not in ids:
+                    errors.append(
+                        f"candidate_workflows[{index}] references unknown evidence: {evidence_id}"
+                    )
+        declared_names = workflow.get("atomic_names")
+        if not isinstance(declared_names, list) or not declared_names:
+            errors.append(f"candidate_workflows[{index}].atomic_names is empty")
+            declared_names = []
+        for action_name in declared_names:
+            if str(action_name) not in atomic_names:
+                errors.append(
+                    f"candidate_workflows[{index}] declares unknown action: {action_name}"
+                )
+        declared_name_set = {str(action_name) for action_name in declared_names}
         graph = workflow.get("workflow_graph")
         if not isinstance(graph, dict):
             errors.append(f"candidate_workflows[{index}].workflow_graph is not an object")
@@ -534,6 +576,10 @@ def validate_response(value: Any) -> tuple[bool, list[str]]:
                 errors.append(
                     f"candidate_workflows[{index}] references unknown action: {action_name}"
                 )
+            if action_name not in declared_name_set:
+                errors.append(
+                    f"candidate_workflows[{index}] step is absent from atomic_names: {action_name}"
+                )
             step_names.add(action_name)
             if not str(step.get("validation", "")).strip():
                 errors.append(
@@ -554,6 +600,24 @@ def validate_response(value: Any) -> tuple[bool, list[str]]:
                 if str(dependency) not in step_names:
                     errors.append(
                         f"candidate_workflows[{index}] references unknown dependency: {dependency}"
+                    )
+                if str(dependency) == str(step.get("action_name", "")):
+                    errors.append(
+                        f"candidate_workflows[{index}] action depends on itself: {dependency}"
+                    )
+        graph_edges = graph.get("edges")
+        if not isinstance(graph_edges, list):
+            errors.append(f"candidate_workflows[{index}].workflow_graph.edges is not an array")
+            graph_edges = []
+        for edge in graph_edges:
+            if not isinstance(edge, dict):
+                continue
+            for endpoint in ("from", "to"):
+                action_name = str(edge.get(endpoint, ""))
+                if action_name not in step_names:
+                    errors.append(
+                        f"candidate_workflows[{index}] edge has unknown {endpoint} action: "
+                        f"{action_name}"
                     )
     if not isinstance(value.get("unresolved_questions"), list):
         errors.append("unresolved_questions is not an array")

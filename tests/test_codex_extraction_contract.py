@@ -126,3 +126,26 @@ def test_validator_requires_when_to_use_and_anti_goals() -> None:
     assert valid is False
     assert any(error.endswith("workflow_graph.when_to_use is empty") for error in errors)
     assert any(error.endswith("workflow_graph.anti_goals is empty") for error in errors)
+
+
+def test_validator_rejects_unknown_evidence_reference() -> None:
+    response = _response()
+    response["candidate_atomics"][0]["semantic_action"]["evidence_ids"] = ["missing"]
+
+    valid, errors = MODULE.validate_response(response)
+
+    assert valid is False
+    assert any("references unknown evidence: missing" in error for error in errors)
+
+
+def test_validator_treats_empty_candidate_arrays_as_abstention_not_admission() -> None:
+    response = _response()
+    response["candidate_atomics"] = []
+    response["candidate_workflows"] = []
+    response["unresolved_questions"] = ["No implementation-bearing resolution was found."]
+
+    valid, errors = MODULE.validate_response(response)
+
+    assert valid is False
+    assert "no candidate atomics were extracted" in errors
+    assert "no candidate workflows were extracted" in errors
