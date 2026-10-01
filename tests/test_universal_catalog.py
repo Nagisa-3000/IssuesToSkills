@@ -87,6 +87,39 @@ def test_materializer_preserves_workflow_action_pattern_graph(tmp_path: Path) ->
         }
 
     graph = builder.build([episode("org/a", 1, "e1"), episode("org/b", 2, "e2")], manifest)
+    pattern = graph["patterns"][0]
+    action_id = graph["actions"][0]["id"]
+    pattern.update(
+        {
+            "title": "Restore state from its authoritative record",
+            "summary": "Reconcile reconstructed state with the authoritative persisted record.",
+            "confidence": 0.85,
+            "action_template": [
+                {
+                    "role_id": "reconcile-authoritative-state",
+                    "title": "Reconcile authoritative state",
+                    "purpose": "Restore the derived state from its authoritative record.",
+                    "required": True,
+                    "condition": "When reconstructed state diverges.",
+                    "validation": "A round-trip replay test passes.",
+                }
+            ],
+            "workflow_realizations": [
+                {
+                    "workflow_id": workflow["id"],
+                    "repository": workflow["repository"],
+                    "role_bindings": [
+                        {
+                            "role_id": "reconcile-authoritative-state",
+                            "action_ids": [action_id],
+                        }
+                    ],
+                    "evidence_ids": [],
+                }
+                for workflow in graph["workflows"]
+            ],
+        }
+    )
     db = tmp_path / "catalog.sqlite"
     with CatalogStore(db) as store:
         store.initialize()
@@ -101,6 +134,14 @@ def test_materializer_preserves_workflow_action_pattern_graph(tmp_path: Path) ->
         assert stats["nodes"]["pattern"] == 1
         assert stats["edges"]["has_step"] == 2
         assert stats["edges"]["executed_by"] == 2
+        assert stats["nodes"]["pattern_step"] == 1
+        assert stats["edges"]["declares_step"] == 1
+        assert stats["edges"]["conforms_to"] == 1
+        assert stats["edges"]["realizes"] == 2
+        assert stats["edges"]["instantiates"] == 2
+        pattern_node = store.get_node(pattern["id"])
+        assert pattern_node is not None
+        assert pattern_node.title == "Restore state from its authoritative record"
         response = SkillRetriever(store).search(
             "reconcile state", top_k=5, seed_k=10, expand_hops=2
         )

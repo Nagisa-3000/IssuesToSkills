@@ -11,7 +11,9 @@ from run_cross_project_holdout_agent_eval import (
     Case,
     CommandResult,
     _approved_guidance_hits,
+    _payload_relation_ids,
     _prompt,
+    _render_hit,
 )
 
 from arex_skill_graph.retrieval import SearchHit
@@ -137,3 +139,42 @@ def test_guidance_uses_only_selected_skill_and_related_expansion() -> None:
         [selected, related],
         {"applicable": False, "selected_skill_id": None},
     ) == []
+
+
+def test_pattern_guidance_keeps_human_contract_and_role_bound_actions() -> None:
+    payload = {
+        "when_to_use": ["A compatible endpoint violates its provider contract."],
+        "anti_goals": ["Do not change unrelated providers."],
+        "action_template": [
+            {
+                "role_id": "establish-contract",
+                "title": "Establish the provider contract",
+                "required": True,
+            }
+        ],
+        "supporting_workflows": ["workflow:1"],
+        "workflow_realizations": [
+            {
+                "workflow_id": "workflow:1",
+                "role_bindings": [
+                    {"role_id": "establish-contract", "action_ids": ["action:1"]}
+                ],
+            }
+        ],
+    }
+    hit = SearchHit(
+        Node(
+            "pattern:1",
+            NodeType.PATTERN,
+            "Define the provider contract before adapting its boundary",
+            "Establish identity and precedence, then change only the owning boundary.",
+            payload=payload,
+        ),
+        1.0,
+    )
+
+    rendered = _render_hit(hit, 1)
+
+    assert "when_to_use" in rendered
+    assert "action_template" in rendered
+    assert _payload_relation_ids(payload) == {"workflow:1", "action:1"}

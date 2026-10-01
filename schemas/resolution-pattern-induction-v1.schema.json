@@ -1,0 +1,219 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Human-readable resolution Pattern induction",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "pattern_id",
+    "category",
+    "decision",
+    "title",
+    "summary",
+    "when_to_use",
+    "anti_goals",
+    "not_applicable_when",
+    "invariants",
+    "action_template",
+    "decision_points",
+    "ordering_constraints",
+    "validation_ladder",
+    "known_failure_modes",
+    "exclusions",
+    "supporting_workflow_ids",
+    "workflow_realizations",
+    "confidence",
+    "rationale",
+    "evidence_ids",
+    "missing_probes"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "resolution-pattern-induction-v1"
+    },
+    "pattern_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "category": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decision": {
+      "enum": ["candidate_pending_holdout", "defer", "reject"]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "when_to_use": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "anti_goals": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "not_applicable_when": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "invariants": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "action_template": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role_id",
+          "title",
+          "purpose",
+          "required",
+          "condition",
+          "validation"
+        ],
+        "properties": {
+          "role_id": {"type": "string", "minLength": 1},
+          "title": {"type": "string", "minLength": 1},
+          "purpose": {"type": "string", "minLength": 1},
+          "required": {"type": "boolean"},
+          "condition": {"type": "string"},
+          "validation": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "decision_points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["question", "branches"],
+        "properties": {
+          "question": {"type": "string", "minLength": 1},
+          "branches": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["condition", "action_role_ids"],
+              "properties": {
+                "condition": {"type": "string", "minLength": 1},
+                "action_role_ids": {
+                  "type": "array",
+                  "items": {"type": "string", "minLength": 1}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ordering_constraints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["before_role_id", "after_role_id", "condition"],
+        "properties": {
+          "before_role_id": {"type": "string", "minLength": 1},
+          "after_role_id": {"type": "string", "minLength": 1},
+          "condition": {"type": "string"}
+        }
+      }
+    },
+    "validation_ladder": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "known_failure_modes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["failure", "detection", "mitigation"],
+        "properties": {
+          "failure": {"type": "string", "minLength": 1},
+          "detection": {"type": "string", "minLength": 1},
+          "mitigation": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "exclusions": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "supporting_workflow_ids": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "workflow_realizations": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["workflow_id", "repository", "role_bindings", "evidence_ids"],
+        "properties": {
+          "workflow_id": {"type": "string", "minLength": 1},
+          "repository": {"type": "string", "minLength": 1},
+          "role_bindings": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["role_id", "action_ids"],
+              "properties": {
+                "role_id": {"type": "string", "minLength": 1},
+                "action_ids": {
+                  "type": "array",
+                  "minItems": 1,
+                  "uniqueItems": true,
+                  "items": {"type": "string", "minLength": 1}
+                }
+              }
+            }
+          },
+          "evidence_ids": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_ids": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "missing_probes": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}

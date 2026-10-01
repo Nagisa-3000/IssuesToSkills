@@ -1,0 +1,394 @@
+{
+  "schema_version": "resolution-pattern-induction-v1",
+  "pattern_id": "pattern:5895d079305884e4",
+  "category": "provider-interface-adaptation",
+  "decision": "candidate_pending_holdout",
+  "title": "Define the provider contract before adapting its boundary",
+  "summary": "When a compatible provider path fails because configuration, persisted routing, client construction, or request shape disagrees with the actual provider interface, first establish an evidence-backed identity, precedence, and field-preservation contract. Then adapt only the boundary that violates that contract, adding transport or request-routing behavior only when the selected interface requires it.",
+  "when_to_use": [
+    "A provider-compatible path reaches the wrong endpoint, restores stale routing metadata, omits required routing arguments, or emits a field rejected by the selected endpoint.",
+    "Multiple representations or configuration sources can identify the provider route, and their precedence is currently implicit or inconsistent.",
+    "A shared implementation mostly satisfies the provider protocol, but a narrow client-construction, resume, or outbound-request boundary has a documented mismatch.",
+    "The affected interface can be identified from observable configuration, persisted route data, or parsed endpoint identity rather than model-name guesses."
+  ],
+  "anti_goals": [
+    "Do not redesign authentication, prompting, response processing, retry behavior, or unrelated provider paths.",
+    "Do not infer provider identity from model-family names when endpoint, authentication mode, or persisted route evidence is available.",
+    "Do not overwrite explicit configuration with defaults, environment values, historical metadata, or synthesized fields.",
+    "Do not add absent optional settings or provider-specific request fields to the ordinary request path.",
+    "Do not mutate caller-owned or persisted conversation data merely to change the outbound wire representation.",
+    "Do not treat distinct Actions as interchangeable merely because they occupy the same workflow role."
+  ],
+  "not_applicable_when": [
+    "The target provider is not compatible with the existing request and response protocol.",
+    "There is no evidence-backed way to identify the selected provider interface or determine precedence among competing route sources.",
+    "The failure belongs to credential acquisition, initial provider discovery, response interpretation, or another subsystem rather than an interface boundary.",
+    "Different consumers intentionally implement different routing semantics rather than alternate paths to the same provider contract.",
+    "A lower-level SDK already owns and guarantees endpoint selection, validation, and request adaptation for the affected path."
+  ],
+  "invariants": [
+    "Explicit current configuration takes precedence over fallback environment or historical values unless the established interface contract says otherwise.",
+    "A fallback fills only information that is absent; it does not replace a newer, more specific, or explicitly supplied value.",
+    "Provider identity is derived from the strongest available interface signal, such as declared authentication mode, canonical parsed hostname, or the authoritative persisted route.",
+    "Adaptation occurs at the narrowest boundary that owns the mismatched representation.",
+    "Unconfigured optional values remain absent from client options and outbound requests.",
+    "Unaffected providers, endpoints, consumers, and request shapes retain their existing behavior.",
+    "Each realization preserves the pre-state, post-state, and validation oracle of its bound Action."
+  ],
+  "action_template": [
+    {
+      "role_id": "establish-interface-contract",
+      "title": "Establish provider identity and precedence",
+      "purpose": "Define which observable signal selects the provider interface, which representation or configuration source is authoritative, and how explicit, current, legacy, and fallback values compose.",
+      "required": true,
+      "condition": "Use when multiple endpoint, provider, persisted-route, or configuration sources can influence the path, or when the affected endpoint must be distinguished from compatible alternatives.",
+      "validation": "Exercise positive selection, competing-source precedence, absent and partial inputs, malformed inputs where applicable, and negative cases that must retain the existing provider path."
+    },
+    {
+      "role_id": "adapt-contract-owner",
+      "title": "Adapt the boundary that owns the mismatch",
+      "purpose": "Make the consuming or construction boundary honor the established contract while preserving its local safety behavior and the behavior of unaffected paths.",
+      "required": true,
+      "condition": "Run after the provider identity and precedence contract is established and a specific consumer, constructor, or outbound adapter is shown to violate it.",
+      "validation": "Observe the boundary's output directly and prove that authoritative values are used, explicit or caller-authored values are preserved, and unrelated behavior remains unchanged."
+    },
+    {
+      "role_id": "guard-selected-endpoint",
+      "title": "Validate a selected custom endpoint",
+      "purpose": "Reject malformed or insecure remote endpoint overrides before external client construction while preserving an evidence-backed local-development exception.",
+      "required": false,
+      "condition": "Use only when this boundary accepts custom endpoint values and no lower layer already guarantees their parsing and transport policy.",
+      "validation": "Prove acceptance of permitted secure and loopback forms and rejection of malformed or disallowed remote plaintext forms before SDK construction."
+    },
+    {
+      "role_id": "translate-request-routing",
+      "title": "Translate provider routing at dispatch",
+      "purpose": "Map configured provider routing identifiers to the exact request keywords expected by the provider without changing requests when those identifiers are absent.",
+      "required": false,
+      "condition": "Use only when successful dispatch requires per-request routing fields not represented by the common request shape.",
+      "validation": "Capture the provider request call and assert exact key translation for configured identifiers and exact absence for unconfigured identifiers."
+    }
+  ],
+  "decision_points": [
+    {
+      "question": "What observable signal authoritatively identifies the provider interface?",
+      "branches": [
+        {
+          "condition": "The boundary has an explicit declared authentication or provider mode.",
+          "action_role_ids": [
+            "establish-interface-contract"
+          ]
+        },
+        {
+          "condition": "A configured endpoint has a stable canonical hostname and provider identity must be distinguished from compatible alternatives.",
+          "action_role_ids": [
+            "establish-interface-contract"
+          ]
+        },
+        {
+          "condition": "The operation restores an existing session and an authoritative persisted runtime route can be identified.",
+          "action_role_ids": [
+            "establish-interface-contract"
+          ]
+        },
+        {
+          "condition": "No evidence-backed interface signal is available.",
+          "action_role_ids": []
+        }
+      ]
+    },
+    {
+      "question": "Which boundary owns the demonstrated mismatch?",
+      "branches": [
+        {
+          "condition": "A consumer independently interprets persisted or layered route metadata.",
+          "action_role_ids": [
+            "adapt-contract-owner"
+          ]
+        },
+        {
+          "condition": "Application or domain construction owns provider configuration that belongs at the composition boundary.",
+          "action_role_ids": [
+            "adapt-contract-owner"
+          ]
+        },
+        {
+          "condition": "The external SDK constructor receives incomplete or inconsistent endpoint and provider-mode options.",
+          "action_role_ids": [
+            "adapt-contract-owner"
+          ]
+        },
+        {
+          "condition": "The selected endpoint rejects a recognizable field synthesized by shared request construction.",
+          "action_role_ids": [
+            "adapt-contract-owner"
+          ]
+        }
+      ]
+    },
+    {
+      "question": "Does the selected interface require additional conditional enforcement?",
+      "branches": [
+        {
+          "condition": "A non-empty custom endpoint reaches this boundary and its transport safety is not already guaranteed.",
+          "action_role_ids": [
+            "guard-selected-endpoint"
+          ]
+        },
+        {
+          "condition": "The provider requires deployment, engine, or equivalent routing identifiers on each request.",
+          "action_role_ids": [
+            "translate-request-routing"
+          ]
+        },
+        {
+          "condition": "Neither custom-endpoint admission nor additional per-request routing is required.",
+          "action_role_ids": []
+        }
+      ]
+    }
+  ],
+  "ordering_constraints": [
+    {
+      "before_role_id": "establish-interface-contract",
+      "after_role_id": "adapt-contract-owner",
+      "condition": "Always establish identity, precedence, and preservation rules before changing the consuming boundary."
+    },
+    {
+      "before_role_id": "establish-interface-contract",
+      "after_role_id": "guard-selected-endpoint",
+      "condition": "Validate only the endpoint selected under the established precedence contract."
+    },
+    {
+      "before_role_id": "guard-selected-endpoint",
+      "after_role_id": "adapt-contract-owner",
+      "condition": "When the contract owner constructs an external client from a custom endpoint, admit or reject the endpoint before forwarding it to that client."
+    },
+    {
+      "before_role_id": "establish-interface-contract",
+      "after_role_id": "translate-request-routing",
+      "condition": "Add request routing fields only after their configuration ownership and provider applicability are established."
+    }
+  ],
+  "validation_ladder": [
+    "Focused contract checks: test provider selection and precedence using explicit, fallback, partial, absent, malformed, and confusable inputs relevant to the selected identity signal.",
+    "Focused boundary checks: directly inspect the canonical resolver result, component constructor contract, SDK constructor options, or emitted request fields and verify exact preservation and omission rules.",
+    "Integration checks: exercise the real consumer-to-boundary path, such as session resume, application configuration through construction, SDK creation, or multi-turn HTTP request conversion.",
+    "Regression checks: run existing tests for unaffected providers, ordinary requests, legacy persisted data, endpoint ownership, provider healing, established constructor options, and caller-authored field preservation.",
+    "Environment-complete verification: execute the focused repository test suite in an intact checkout with required dependencies; do not substitute static inspection for successful runtime validation."
+  ],
+  "known_failure_modes": [
+    {
+      "failure": "Provider identity is inferred from a model name or unsafe hostname substring.",
+      "detection": "A similarly named, suffix-confusable, or unrelated endpoint selects the specialized path.",
+      "mitigation": "Use declared interface mode, authoritative persisted route data, or parsed canonical hostname boundaries with explicit negative cases."
+    },
+    {
+      "failure": "A fallback overrides an explicit or fresher value.",
+      "detection": "Tests with both explicit and fallback sources select the fallback, or stale metadata replaces a newer nested route.",
+      "mitigation": "Encode precedence explicitly and use fallbacks only to fill missing fields."
+    },
+    {
+      "failure": "The adaptation broadens to unaffected providers or ordinary requests.",
+      "detection": "Optional fields appear when unconfigured, unrelated hosts select the adapter, or established request snapshots change.",
+      "mitigation": "Gate the adaptation on the established provider contract and assert negative and absence cases."
+    },
+    {
+      "failure": "A caller-authored value is mistaken for a synthesized compatibility value.",
+      "detection": "Distinct explicit fields are removed or persisted source history is mutated.",
+      "mitigation": "Require an evidence-backed invariant that identifies the synthesized value and transform only the outbound copy at its owning boundary."
+    },
+    {
+      "failure": "An endpoint and provider-mode combination becomes inconsistent.",
+      "detection": "The external constructor receives an endpoint associated with one interface and a mode associated with another.",
+      "mitigation": "Derive both from the same established interface contract while preserving any valid explicit mode."
+    },
+    {
+      "failure": "Static inspection is reported as completed runtime validation.",
+      "detection": "Focused tests were unavailable, dependencies were missing, or the checkout was incomplete.",
+      "mitigation": "Record the execution gap and keep the pattern pending until an untouched holdout repair and environment-complete test run succeed."
+    }
+  ],
+  "exclusions": [
+    "Credential acquisition or credential-precedence changes.",
+    "Provider integrations requiring a different request or response protocol.",
+    "Prompting, edit-format, retry-policy, or response-processing redesign.",
+    "Raw credential persistence or restoration as part of route reconciliation.",
+    "Global removal of a shared compatibility field accepted or required by other endpoints.",
+    "Remote plaintext HTTP enablement for compatibility.",
+    "Repository-specific endpoint guards, resume repairs, constructor changes, or request fields unless their stated conditions apply."
+  ],
+  "supporting_workflow_ids": [
+    "workflow:7feccf0ac8bb22b3",
+    "workflow:a1416952c048b7d5",
+    "workflow:b5dccd8edcc90ddd",
+    "workflow:da462de34604fc60"
+  ],
+  "workflow_realizations": [
+    {
+      "workflow_id": "workflow:7feccf0ac8bb22b3",
+      "repository": "NousResearch/hermes-agent",
+      "role_bindings": [
+        {
+          "role_id": "establish-interface-contract",
+          "action_ids": [
+            "semantic-action:2d7c1bbc5fa9d6fa"
+          ]
+        },
+        {
+          "role_id": "adapt-contract-owner",
+          "action_ids": [
+            "semantic-action:743621ceda02ecdb"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9",
+        "E10",
+        "E11",
+        "E12"
+      ]
+    },
+    {
+      "workflow_id": "workflow:a1416952c048b7d5",
+      "repository": "google-gemini/gemini-cli",
+      "role_bindings": [
+        {
+          "role_id": "establish-interface-contract",
+          "action_ids": [
+            "semantic-action:0615b3d0c1425572"
+          ]
+        },
+        {
+          "role_id": "guard-selected-endpoint",
+          "action_ids": [
+            "semantic-action:6b88c49d9fea9d8b"
+          ]
+        },
+        {
+          "role_id": "adapt-contract-owner",
+          "action_ids": [
+            "semantic-action:4ebd6851e9c5c71f"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "ev-before-01",
+        "ev-diff-01",
+        "ev-impl-01",
+        "ev-call-01",
+        "ev-impl-02",
+        "ev-test-01",
+        "ev-test-02",
+        "ev-test-03",
+        "ev-test-04",
+        "ev-test-05"
+      ]
+    },
+    {
+      "workflow_id": "workflow:b5dccd8edcc90ddd",
+      "repository": "Aider-AI/aider",
+      "role_bindings": [
+        {
+          "role_id": "establish-interface-contract",
+          "action_ids": [
+            "semantic-action:f739bb2c7c9a9da7"
+          ]
+        },
+        {
+          "role_id": "adapt-contract-owner",
+          "action_ids": [
+            "semantic-action:d803e48cee271d14"
+          ]
+        },
+        {
+          "role_id": "translate-request-routing",
+          "action_ids": [
+            "semantic-action:00aaec027a328c3f"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9",
+        "E10",
+        "E11"
+      ]
+    },
+    {
+      "workflow_id": "workflow:da462de34604fc60",
+      "repository": "QwenLM/qwen-code",
+      "role_bindings": [
+        {
+          "role_id": "establish-interface-contract",
+          "action_ids": [
+            "semantic-action:4a8c6ad7fc7800b2"
+          ]
+        },
+        {
+          "role_id": "adapt-contract-owner",
+          "action_ids": [
+            "semantic-action:db94712551fe490e"
+          ]
+        }
+      ],
+      "evidence_ids": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9"
+      ]
+    }
+  ],
+  "confidence": 0.78,
+  "rationale": "All four repositories independently realize the required sequence of establishing an evidence-backed provider-interface contract and then adapting the boundary that violates it. The concrete Actions remain distinct in semantic owner, state transition, and oracle, so the Pattern reuses only their workflow roles. Optional endpoint guarding and request-routing translation remain conditional repository-specific branches. Promotion is pending because no untouched holdout repair is loaded.",
+  "evidence_ids": [
+    "E1",
+    "E2",
+    "E3",
+    "E4",
+    "E5",
+    "E6",
+    "E7",
+    "E8",
+    "E9",
+    "E10",
+    "E11",
+    "E12",
+    "ev-before-01",
+    "ev-diff-01",
+    "ev-impl-01",
+    "ev-call-01",
+    "ev-impl-02",
+    "ev-test-01",
+    "ev-test-02",
+    "ev-test-03",
+    "ev-test-04",
+    "ev-test-05"
+  ],
+  "missing_probes": [
+    "Apply the required role sequence to a separate untouched repository repair and verify that the role boundaries can be instantiated without reusing or weakening any training Action contract.",
+    "Execute focused and regression tests in dependency-complete, intact checkouts for training workflows whose tests were only inspected.",
+    "Confirm in the holdout that negative provider-selection and optional-field-absence cases remain unchanged after the adaptation."
+  ]
+}

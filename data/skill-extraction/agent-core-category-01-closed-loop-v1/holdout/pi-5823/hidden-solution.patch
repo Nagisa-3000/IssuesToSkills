@@ -1,0 +1,131 @@
+diff --git a/packages/coding-agent/CHANGELOG.md b/packages/coding-agent/CHANGELOG.md
+index 6c159b8e..a8148456 100644
+--- a/packages/coding-agent/CHANGELOG.md
++++ b/packages/coding-agent/CHANGELOG.md
+@@ -13,6 +13,7 @@
+ 
+ ### Fixed
+ 
++- Fixed bare exact `--model` IDs shared by multiple providers choosing the first catalog entry instead of the sole authenticated provider or a clear ambiguity error ([#7327](https://github.com/earendil-works/pi/issues/7327)).
+ - Fixed standalone x64 binaries requiring Haswell-era AVX2/BMI2 instructions by compiling release executables against Bun's baseline runtime ([#7149](https://github.com/earendil-works/pi/issues/7149)).
+ - Fixed `Ctrl+X` copy confirmations in fullscreen mode adding a transcript status line instead of showing the transient `Copied!` marker.
+ - Fixed Kitty image previews in fullscreen mode overlapping the sticky editor and footer dock while scrolling.
+diff --git a/packages/coding-agent/src/core/model-resolver.ts b/packages/coding-agent/src/core/model-resolver.ts
+index b5c21aa4..0ed15000 100644
+--- a/packages/coding-agent/src/core/model-resolver.ts
++++ b/packages/coding-agent/src/core/model-resolver.ts
+@@ -443,13 +443,42 @@ export function resolveCliModel(options: {
+ 
+ 	// If no provider was inferred from the slash, try exact matches without provider inference.
+ 	// This handles models whose IDs naturally contain slashes (e.g. OpenRouter-style IDs).
++	// Bare exact IDs can exist in multiple providers, so do not choose by catalog order.
++	// Prefer the sole authenticated provider when there is one; otherwise require an
++	// explicit provider to avoid silently selecting an unusable provider.
+ 	if (!provider) {
+ 		const lower = cliModel.toLowerCase();
+-		const exact = availableModels.find(
++		const exactMatches = availableModels.filter(
+ 			(m) => m.id.toLowerCase() === lower || `${m.provider}/${m.id}`.toLowerCase() === lower,
+ 		);
+-		if (exact) {
+-			return { model: exact, warning: undefined, thinkingLevel: undefined, error: undefined };
++		if (exactMatches.length === 1) {
++			return { model: exactMatches[0], warning: undefined, thinkingLevel: undefined, error: undefined };
++		}
++		if (exactMatches.length > 1) {
++			const authenticatedExactMatches = exactMatches.filter((m) => modelRuntime.hasConfiguredAuth(m.provider));
++			if (authenticatedExactMatches.length === 1) {
++				return {
++					model: authenticatedExactMatches[0],
++					warning: undefined,
++					thinkingLevel: undefined,
++					error: undefined,
++				};
++			}
++
++			const matches = exactMatches
++				.map((m) => `${m.provider}/${m.id}`)
++				.sort((a, b) => a.localeCompare(b))
++				.join(", ");
++			const authHint =
++				authenticatedExactMatches.length === 0
++					? "No matching provider is authenticated."
++					: "More than one matching provider is authenticated.";
++			return {
++				model: undefined,
++				warning: undefined,
++				thinkingLevel: undefined,
++				error: `Model "${cliModel}" is ambiguous across providers: ${matches}. ${authHint} Use --provider or provider/model.`,
++			};
+ 		}
+ 	}
+ 
+diff --git a/packages/coding-agent/test/model-resolver.test.ts b/packages/coding-agent/test/model-resolver.test.ts
+index 5c54b2d1..6840a282 100644
+--- a/packages/coding-agent/test/model-resolver.test.ts
++++ b/packages/coding-agent/test/model-resolver.test.ts
+@@ -415,6 +415,64 @@ describe("resolveCliModel", () => {
+ 		expect(result.error).toContain("No models available");
+ 	});
+ 
++	test("prefers the sole authenticated provider for an ambiguous bare exact model id", () => {
++		const azureModel: Model<"anthropic-messages"> = {
++			...mockModels[1],
++			id: "gpt-5.6-sol",
++			name: "GPT 5.6 Sol",
++			provider: "azure-openai-responses",
++		};
++		const codexModel: Model<"anthropic-messages"> = {
++			...mockModels[1],
++			id: "gpt-5.6-sol",
++			name: "GPT 5.6 Sol",
++			provider: "openai-codex",
++		};
++		const registry = {
++			getModels: () => [azureModel, codexModel],
++			hasConfiguredAuth: (provider: string) => provider === "openai-codex",
++		} as unknown as Parameters<typeof resolveCliModel>[0]["modelRuntime"];
++
++		const result = resolveCliModel({
++			cliModel: "gpt-5.6-sol",
++			modelRuntime: registry,
++		});
++
++		expect(result.error).toBeUndefined();
++		expect(result.model?.provider).toBe("openai-codex");
++		expect(result.model?.id).toBe("gpt-5.6-sol");
++	});
++
++	test("requires an explicit provider for an ambiguous bare exact model id without a unique authenticated provider", () => {
++		const azureModel: Model<"anthropic-messages"> = {
++			...mockModels[1],
++			id: "gpt-5.6-sol",
++			name: "GPT 5.6 Sol",
++			provider: "azure-openai-responses",
++		};
++		const codexModel: Model<"anthropic-messages"> = {
++			...mockModels[1],
++			id: "gpt-5.6-sol",
++			name: "GPT 5.6 Sol",
++			provider: "openai-codex",
++		};
++		const registry = {
++			getModels: () => [azureModel, codexModel],
++			hasConfiguredAuth: () => false,
++		} as unknown as Parameters<typeof resolveCliModel>[0]["modelRuntime"];
++
++		const result = resolveCliModel({
++			cliModel: "gpt-5.6-sol",
++			modelRuntime: registry,
++		});
++
++		expect(result.model).toBeUndefined();
++		expect(result.error).toContain('Model "gpt-5.6-sol" is ambiguous across providers');
++		expect(result.error).toContain("azure-openai-responses/gpt-5.6-sol");
++		expect(result.error).toContain("openai-codex/gpt-5.6-sol");
++		expect(result.error).toContain("Use --provider or provider/model");
++	});
++
+ 	test("prefers provider/model split over gateway model with matching id", () => {
+ 		// When a user writes "zai/glm-5", and both a zai provider model (id: "glm-5")
+ 		// and a gateway model (id: "zai/glm-5") exist, prefer the zai provider model.

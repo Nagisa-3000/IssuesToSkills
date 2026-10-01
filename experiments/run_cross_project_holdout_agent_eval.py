@@ -262,7 +262,35 @@ def _render_hit(hit: SearchHit, index: int) -> str:
         lines += ["", "facets:", json.dumps(node.facets, ensure_ascii=False, sort_keys=True)]
     if node.payload:
         # Keep prompts bounded and avoid dumping evidence blobs.
-        payload = {key: value for key, value in node.payload.items() if key in {"goal", "entry_state", "exit_state", "decision_points", "repair_loops", "routing_terms", "atomic_ids", "workflow_ids", "steps"}}
+        payload = {
+            key: value
+            for key, value in node.payload.items()
+            if key
+            in {
+                "goal",
+                "entry_state",
+                "exit_state",
+                "when_to_use",
+                "anti_goals",
+                "not_applicable_when",
+                "invariants",
+                "action_template",
+                "decision_points",
+                "ordering_constraints",
+                "validation_ladder",
+                "known_failure_modes",
+                "exclusions",
+                "missing_probes",
+                "stop_conditions",
+                "repair_loops",
+                "routing_terms",
+                "atomic_ids",
+                "workflow_ids",
+                "supporting_workflows",
+                "workflow_realizations",
+                "steps",
+            }
+        }
         if payload:
             lines += ["", "payload:", json.dumps(payload, ensure_ascii=False, sort_keys=True)]
     if hit.trace:
@@ -292,6 +320,23 @@ def _payload_relation_ids(payload: Mapping[str, Any]) -> set[str]:
                 value = step.get(key)
                 if isinstance(value, str):
                     related.add(value)
+    realizations = payload.get("workflow_realizations")
+    if isinstance(realizations, list):
+        for realization in realizations:
+            if not isinstance(realization, Mapping):
+                continue
+            workflow_id = realization.get("workflow_id")
+            if isinstance(workflow_id, str):
+                related.add(workflow_id)
+            bindings = realization.get("role_bindings")
+            if not isinstance(bindings, list):
+                continue
+            for binding in bindings:
+                if not isinstance(binding, Mapping):
+                    continue
+                action_ids = binding.get("action_ids")
+                if isinstance(action_ids, list):
+                    related.update(str(item) for item in action_ids if isinstance(item, str))
     return related
 
 

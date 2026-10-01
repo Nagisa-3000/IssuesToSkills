@@ -116,6 +116,15 @@ class LLMGovernanceAdapter:
             "unresolved_or_deferred",
             "when_to_use",
             "anti_goals",
+            "not_applicable_when",
+            "action_template",
+            "decision_points",
+            "ordering_constraints",
+            "validation_ladder",
+            "workflow_realizations",
+            "exclusions",
+            "missing_probes",
+            "stop_conditions",
         }
         candidates = []
         for hit in hits:
