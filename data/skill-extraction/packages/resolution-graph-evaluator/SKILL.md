@@ -65,6 +65,21 @@ Compare at least:
   tokens, and estimated cost;
 - retrieval/index/extraction cost and applicability-judge cost.
 
+For the experiment summary, use correctness as a gate and the following
+secondary weighted view:
+
+- correctness / issue completion: 60%;
+- patch precision, maintainability, style, and validation quality: 25%;
+- input/output/reasoning tokens and wall-clock efficiency: 15%.
+
+This 60/25/15 split is an AREX experiment policy, not a number copied from a
+benchmark. It follows the precedence used by SWE-bench and SWE-bench Verified:
+the regression oracle decides whether the issue is resolved; quality and cost
+only distinguish oracle-passing runs. A failed task receives no efficiency
+credit, and a leaky run receives no score. Record the rationale and citations
+in the evaluation artifact (`SWE-bench`, arXiv:2310.06770; `SWE-agent`,
+arXiv:2405.15793; and the SWE-bench Verified problem-validation protocol).
+
 Use paired per-task deltas and confidence intervals. Do not pool an
 oracle-unqualified case into the causal success denominator. A Pattern is not
 promotable when it improves Recall but lowers paired end-task correctness or

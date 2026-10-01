@@ -1,0 +1,214 @@
+{
+  "schema_version": "weighted-guided-agent-evaluation-v1",
+  "source_report": "data/skill-extraction/provider-endpoint-pilot-20260929-v3/agent-eval-aider/report.json",
+  "cases": 1,
+  "model": "openai/gpt-5.6-sol",
+  "independent_llm_evaluator_used": true,
+  "evaluations": [
+    {
+      "schema_version": "paired-agent-evaluation-v1",
+      "oracle_qualified": true,
+      "eligible_for_causal_comparison": true,
+      "weights": {
+        "correctness": 0.6,
+        "code_quality": 0.25,
+        "efficiency": 0.15
+      },
+      "weight_basis": {
+        "policy": "Correctness receives the majority weight because repository-level coding benchmarks treat issue resolution through regression tests as the primary outcome. Quality and efficiency are reported separately and only break ties between oracle-passing arms. The 60/25/15 split is an AREX operational choice, not a weight copied from any cited benchmark.",
+        "references": [
+          {
+            "name": "SWE-bench",
+            "url": "https://arxiv.org/abs/2310.06770",
+            "relevance": "Uses repository tests to determine whether a real issue is resolved."
+          },
+          {
+            "name": "SWE-agent",
+            "url": "https://arxiv.org/abs/2405.15793",
+            "relevance": "Reports issue-resolution performance together with agent trajectory cost."
+          },
+          {
+            "name": "SWE-bench Verified",
+            "url": "https://openai.com/index/introducing-swe-bench-verified/",
+            "relevance": "Emphasizes validated problem statements and reliable test oracles."
+          }
+        ]
+      },
+      "arms": {
+        "no_skill": {
+          "eligible": true,
+          "leakage_gate": {
+            "passed": true,
+            "violations": []
+          },
+          "test_success": true,
+          "issue_postcondition_satisfied": false,
+          "task_solved": false,
+          "correctness": 86.4,
+          "code_quality": 53.6667,
+          "quality_components": {
+            "patch_scope_precision": 72.0,
+            "maintainability_style": 61.0,
+            "validation_quality": 28.0
+          },
+          "efficiency": {
+            "token": 0.0,
+            "wall": 0.0,
+            "combined": 0.0
+          },
+          "overall_score": 65.2567,
+          "usage_tokens": 208111,
+          "wall_seconds": 144.902112314001,
+          "judge": {
+            "semantic_completion": 32,
+            "patch_scope_precision": 72,
+            "maintainability_style": 61,
+            "validation_quality": 28,
+            "issue_postcondition_satisfied": false,
+            "rationale": "The patch implements a narrow portion of OpenRouter model discovery: it delays model creation until after API configuration, selects an OpenRouter-specific model class, reads catalog context/pricing data, and passes the two existing visible model tests. However, it does not complete the provider-interface adaptation needed for end-to-end OpenRouter use. In particular, downstream code still derives tokenizers from the now provider-qualified model name, which can fail for names such as `openai/gpt-4`; auxiliary model use for summaries and commit messages remains tied to the old static OpenAI models; OpenRouter request headers are not supplied; and non-OpenAI catalog models may fail during `super().__init__` before their catalog metadata can be applied. The implementation is localized and readable, but it lacks caching and broader provider abstractions. Validation covered only two pre-existing tests and did not exercise OpenRouter creation or an actual coder/request path.",
+            "concerns": [
+              "Provider-qualified names are assigned to `self.name`, but tokenizer consumers still call `tiktoken.encoding_for_model(self.name)`, making normal coder initialization likely to fail for names such as `openai/gpt-4`.",
+              "Calling `super().__init__(name.split(\"/\", 1)[-1])` applies OpenAI-specific model recognition before catalog metadata is read; OpenRouter models such as `anthropic/claude-2` can therefore be rejected despite being valid catalog entries.",
+              "Summary and commit-message code continues using static GPT model instances/names rather than provider-aware model factories, so OpenRouter compatibility is incomplete outside the primary chat model.",
+              "OpenRouter-specific request headers are not added to API calls.",
+              "Streaming compatibility is not addressed for chunks whose choices omit `finish_reason`.",
+              "`openai.Model.list()` is called for every OpenRouter model construction with no cache, causing avoidable network traffic and additional failure opportunities.",
+              "No OpenRouter regression test was added or executed; the reported validation consists only of two existing model-context tests and `git diff --check`."
+            ]
+          }
+        },
+        "guided": {
+          "eligible": true,
+          "leakage_gate": {
+            "passed": true,
+            "violations": []
+          },
+          "test_success": true,
+          "issue_postcondition_satisfied": false,
+          "task_solved": false,
+          "correctness": 87.6,
+          "code_quality": 54.6667,
+          "quality_components": {
+            "patch_scope_precision": 78.0,
+            "maintainability_style": 61.0,
+            "validation_quality": 25.0
+          },
+          "efficiency": {
+            "token": 0.0,
+            "wall": 0.0,
+            "combined": 0.0
+          },
+          "overall_score": 66.2267,
+          "usage_tokens": 268989,
+          "wall_seconds": 135.00264447600057,
+          "judge": {
+            "semantic_completion": 38,
+            "patch_scope_precision": 78,
+            "maintainability_style": 61,
+            "validation_quality": 25,
+            "issue_postcondition_satisfied": false,
+            "rationale": "The patch implements a useful subset of OpenRouter model discovery: provider selection occurs after OpenAI configuration, model metadata is fetched, canonical IDs are resolved, and context/pricing values are populated. The existing visible tests pass. However, the end-to-end provider adaptation is incomplete. OpenRouter-specific model names remain incompatible with existing tokenizer and model-policy call sites, arbitrary non-OpenAI models can fail during the base Model initializer before metadata lookup, and auxiliary model usage is not adapted to the configured provider. The patch also omits compatibility handling for OpenRouter request headers and response chunks lacking finish_reason. Consequently, metadata lookup may work for the narrow gpt-4 alias case while normal application initialization or streaming can still fail.",
+            "concerns": [
+              "OpenRouterModel calls super().__init__(name) before consulting OpenRouter metadata. Models such as anthropic/claude-2, and potentially canonical IDs such as openai/gpt-4, can therefore be rejected by the OpenAI-specific base-model logic.",
+              "After resolving gpt-4 to openai/gpt-4, existing consumers still call tiktoken.encoding_for_model with the canonical OpenRouter ID; without a provider-appropriate tokenizer abstraction this can cause application initialization failures.",
+              "Only the main model is created through the provider-aware factory. Summarization, commit-message generation, repository mapping, and other secondary model paths continue using static OpenAI-oriented models or names.",
+              "OpenRouter request integration is incomplete: provider-specific headers are not supplied, and streaming responses without a finish_reason attribute are not handled defensively.",
+              "The model list is fetched on every OpenRouterModel construction rather than cached, creating avoidable network calls if provider-aware construction is expanded to auxiliary models.",
+              "Suffix matching can be ambiguous when multiple providers expose the same trailing model name; the first API result is selected without an explicit precedence rule.",
+              "Validation covered only the two pre-existing model tests. No candidate-authored regression test exercised Model.create provider selection, metadata conversion, canonical naming, unknown models, non-OpenAI OpenRouter models, tokenizer behavior, or application startup."
+            ]
+          }
+        }
+      },
+      "outcome": "neither_arm_solved",
+      "guided_minus_no_skill": {
+        "overall_score": 0.97,
+        "usage_tokens": 60878,
+        "wall_seconds": -9.8995
+      },
+      "case_id": "Aider-AI__aider__199__provider-interface-adaptation"
+    }
+  ],
+  "llm_calls": [
+    {
+      "model": "openai/gpt-5.6-sol",
+      "endpoint": "https://llm.rvnpu.cn/v1/chat/completions",
+      "attempt": 1,
+      "elapsed_ms": 18383.98,
+      "usage": {
+        "completion_tokens": 894,
+        "prompt_tokens": 6311,
+        "total_tokens": 7205,
+        "completion_tokens_details": {
+          "reasoning_tokens": 449
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "cache_creation_tokens": 0,
+          "cached_creation_tokens": 0
+        }
+      },
+      "response_id": "resp_0bed9f94da1bc570016abdf2f73fa487d0977b526c05eb3f62"
+    },
+    {
+      "model": "openai/gpt-5.6-sol",
+      "endpoint": "https://llm.rvnpu.cn/v1/chat/completions",
+      "attempt": 1,
+      "elapsed_ms": 26378.72,
+      "usage": {
+        "completion_tokens": 1185,
+        "prompt_tokens": 6268,
+        "total_tokens": 7453,
+        "completion_tokens_details": {
+          "reasoning_tokens": 728
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "cache_creation_tokens": 0,
+          "cached_creation_tokens": 0
+        }
+      },
+      "response_id": "resp_001816df0d1dce22016abdf3095fac87d0a9be5490d26fa1a3"
+    }
+  ],
+  "judgments": {
+    "Aider-AI__aider__199__provider-interface-adaptation": {
+      "no_skill": {
+        "semantic_completion": 32,
+        "patch_scope_precision": 72,
+        "maintainability_style": 61,
+        "validation_quality": 28,
+        "issue_postcondition_satisfied": false,
+        "rationale": "The patch implements a narrow portion of OpenRouter model discovery: it delays model creation until after API configuration, selects an OpenRouter-specific model class, reads catalog context/pricing data, and passes the two existing visible model tests. However, it does not complete the provider-interface adaptation needed for end-to-end OpenRouter use. In particular, downstream code still derives tokenizers from the now provider-qualified model name, which can fail for names such as `openai/gpt-4`; auxiliary model use for summaries and commit messages remains tied to the old static OpenAI models; OpenRouter request headers are not supplied; and non-OpenAI catalog models may fail during `super().__init__` before their catalog metadata can be applied. The implementation is localized and readable, but it lacks caching and broader provider abstractions. Validation covered only two pre-existing tests and did not exercise OpenRouter creation or an actual coder/request path.",
+        "concerns": [
+          "Provider-qualified names are assigned to `self.name`, but tokenizer consumers still call `tiktoken.encoding_for_model(self.name)`, making normal coder initialization likely to fail for names such as `openai/gpt-4`.",
+          "Calling `super().__init__(name.split(\"/\", 1)[-1])` applies OpenAI-specific model recognition before catalog metadata is read; OpenRouter models such as `anthropic/claude-2` can therefore be rejected despite being valid catalog entries.",
+          "Summary and commit-message code continues using static GPT model instances/names rather than provider-aware model factories, so OpenRouter compatibility is incomplete outside the primary chat model.",
+          "OpenRouter-specific request headers are not added to API calls.",
+          "Streaming compatibility is not addressed for chunks whose choices omit `finish_reason`.",
+          "`openai.Model.list()` is called for every OpenRouter model construction with no cache, causing avoidable network traffic and additional failure opportunities.",
+          "No OpenRouter regression test was added or executed; the reported validation consists only of two existing model-context tests and `git diff --check`."
+        ]
+      },
+      "guided": {
+        "semantic_completion": 38,
+        "patch_scope_precision": 78,
+        "maintainability_style": 61,
+        "validation_quality": 25,
+        "issue_postcondition_satisfied": false,
+        "rationale": "The patch implements a useful subset of OpenRouter model discovery: provider selection occurs after OpenAI configuration, model metadata is fetched, canonical IDs are resolved, and context/pricing values are populated. The existing visible tests pass. However, the end-to-end provider adaptation is incomplete. OpenRouter-specific model names remain incompatible with existing tokenizer and model-policy call sites, arbitrary non-OpenAI models can fail during the base Model initializer before metadata lookup, and auxiliary model usage is not adapted to the configured provider. The patch also omits compatibility handling for OpenRouter request headers and response chunks lacking finish_reason. Consequently, metadata lookup may work for the narrow gpt-4 alias case while normal application initialization or streaming can still fail.",
+        "concerns": [
+          "OpenRouterModel calls super().__init__(name) before consulting OpenRouter metadata. Models such as anthropic/claude-2, and potentially canonical IDs such as openai/gpt-4, can therefore be rejected by the OpenAI-specific base-model logic.",
+          "After resolving gpt-4 to openai/gpt-4, existing consumers still call tiktoken.encoding_for_model with the canonical OpenRouter ID; without a provider-appropriate tokenizer abstraction this can cause application initialization failures.",
+          "Only the main model is created through the provider-aware factory. Summarization, commit-message generation, repository mapping, and other secondary model paths continue using static OpenAI-oriented models or names.",
+          "OpenRouter request integration is incomplete: provider-specific headers are not supplied, and streaming responses without a finish_reason attribute are not handled defensively.",
+          "The model list is fetched on every OpenRouterModel construction rather than cached, creating avoidable network calls if provider-aware construction is expanded to auxiliary models.",
+          "Suffix matching can be ambiguous when multiple providers expose the same trailing model name; the first API result is selected without an explicit precedence rule.",
+          "Validation covered only the two pre-existing model tests. No candidate-authored regression test exercised Model.create provider selection, metadata conversion, canonical naming, unknown models, non-OpenAI OpenRouter models, tokenizer behavior, or application startup."
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,208 @@
+{
+  "schema_version": "weighted-guided-agent-evaluation-v1",
+  "source_report": "data/skill-extraction/provider-endpoint-pilot-20260929-v3/agent-eval-hermes/report.json",
+  "cases": 1,
+  "model": "openai/gpt-5.6-sol",
+  "independent_llm_evaluator_used": true,
+  "evaluations": [
+    {
+      "schema_version": "paired-agent-evaluation-v1",
+      "oracle_qualified": true,
+      "eligible_for_causal_comparison": true,
+      "weights": {
+        "correctness": 0.6,
+        "code_quality": 0.25,
+        "efficiency": 0.15
+      },
+      "weight_basis": {
+        "policy": "Correctness receives the majority weight because repository-level coding benchmarks treat issue resolution through regression tests as the primary outcome. Quality and efficiency are reported separately and only break ties between oracle-passing arms. The 60/25/15 split is an AREX operational choice, not a weight copied from any cited benchmark.",
+        "references": [
+          {
+            "name": "SWE-bench",
+            "url": "https://arxiv.org/abs/2310.06770",
+            "relevance": "Uses repository tests to determine whether a real issue is resolved."
+          },
+          {
+            "name": "SWE-agent",
+            "url": "https://arxiv.org/abs/2405.15793",
+            "relevance": "Reports issue-resolution performance together with agent trajectory cost."
+          },
+          {
+            "name": "SWE-bench Verified",
+            "url": "https://openai.com/index/introducing-swe-bench-verified/",
+            "relevance": "Emphasizes validated problem statements and reliable test oracles."
+          }
+        ]
+      },
+      "arms": {
+        "no_skill": {
+          "eligible": true,
+          "leakage_gate": {
+            "passed": true,
+            "violations": []
+          },
+          "test_success": false,
+          "issue_postcondition_satisfied": false,
+          "task_solved": false,
+          "correctness": 9.6,
+          "code_quality": 67.3333,
+          "quality_components": {
+            "patch_scope_precision": 88.0,
+            "maintainability_style": 86.0,
+            "validation_quality": 28.0
+          },
+          "efficiency": {
+            "token": 0.0,
+            "wall": 0.0,
+            "combined": 0.0
+          },
+          "overall_score": 22.5933,
+          "usage_tokens": 820595,
+          "wall_seconds": 229.44796094699632,
+          "judge": {
+            "semantic_completion": 48,
+            "patch_scope_precision": 88,
+            "maintainability_style": 86,
+            "validation_quality": 28,
+            "issue_postcondition_satisfied": false,
+            "rationale": "The patch correctly forwards explicit_base_url through the special OpenRouter and Anthropic resolver branches, gives it precedence over pool/canonical URLs, normalizes trailing slashes, and refuses an incompatible Anthropic endpoint rather than silently using the vendor host. This appears to satisfy the direct fallback-entry regression, and the relevant fallback tests passed. However, the issue contract also requires configured relay preservation during model discovery and runtime provider resolution. Authoritative regression results show five failures: relay catalogs still use canonical fetchers, failed relay probes can still fall through to vendor egress, the configured-relay helper is absent, and xAI runtime resolution still allows a canonical pool row to shadow model.base_url. Therefore the overall relay endpoint invariant is incomplete despite the focused auxiliary-client fix.",
+            "concerns": [
+              "Five authoritative visible regressions fail, so the completed patch does not satisfy the full issue postcondition.",
+              "hermes_cli.models has no configured-relay resolution path; model discovery still contacts canonical provider fetchers instead of the configured relay.",
+              "When relay discovery raises or returns an empty catalog, execution still falls through to vendor-host egress instead of degrading to a local curated catalog.",
+              "hermes_cli.runtime_provider still ignores model.base_url for xAI when the selected pool row contains the registry's canonical endpoint.",
+              "The patch is narrowly scoped and maintainable within agent/auxiliary_client.py, but that scope is too narrow for the tested contract.",
+              "Validation identified the incomplete behavior but ended with a failing targeted suite and no additional candidate-authored regression coverage."
+            ]
+          }
+        },
+        "guided": {
+          "eligible": true,
+          "leakage_gate": {
+            "passed": true,
+            "violations": []
+          },
+          "test_success": true,
+          "issue_postcondition_satisfied": true,
+          "task_solved": true,
+          "correctness": 96.8,
+          "code_quality": 78.6667,
+          "quality_components": {
+            "patch_scope_precision": 76.0,
+            "maintainability_style": 82.0,
+            "validation_quality": 78.0
+          },
+          "efficiency": {
+            "token": 100.0,
+            "wall": 100.0,
+            "combined": 100.0
+          },
+          "overall_score": 92.7467,
+          "usage_tokens": 1716430,
+          "wall_seconds": 312.90968137299933,
+          "judge": {
+            "semantic_completion": 84,
+            "patch_scope_precision": 76,
+            "maintainability_style": 82,
+            "validation_quality": 78,
+            "issue_postcondition_satisfied": true,
+            "rationale": "The core defect is fixed correctly: explicit fallback base URLs are forwarded into the dedicated OpenRouter and Anthropic resolver branches, override pool/canonical endpoints, and an incompatible explicit Anthropic endpoint is refused instead of silently reverting to the vendor host. The xAI runtime pool adjustment also preserves configured relays while retaining genuinely custom credential endpoints. Relay catalog discovery is made terminal for live egress, satisfying the no-canonical-fallback requirement. However, the catalog implementation intercepts every configured provider rather than preserving specialized relay-aware fetchers, which can change OpenAI/Anthropic/custom-provider discovery semantics, environment-variable precedence, catalog merging, and fallback quality. The patch also omits the corresponding model-validation adaptation: providers with authoritative profile catalogs may still validate against a canonical catalog before consulting a supplied relay listing. Validation is substantial for the three directly targeted suites, but only 3 of the 12 listed visible test paths were run and the relevant model-validation suite was omitted.",
+            "concerns": [
+              "Relay catalog handling bypasses specialized existing fetchers for all providers, including providers whose fetchers already understand model.base_url and may implement provider-specific model endpoints or catalog merging.",
+              "On relay probe failure, the local fallback is reconstructed directly from _PROVIDER_MODELS/profile.fallback_models rather than using the established static-catalog path, potentially losing models.dev merges, xAI finalization, curated ordering, or other provider-specific processing.",
+              "hermes_cli/models_validate.py is not adapted to distinguish a noncanonical runtime base_url, so an authoritative canonical profile catalog can reject a relay-only model before the relay's own listing is considered.",
+              "The relay probe does not restrict itself to API-key profiles; incompatible profile fetch_models signatures or authentication modes are swallowed and degraded to a static catalog, potentially masking configuration problems.",
+              "Validation omitted most listed visible tests, including tests/hermes_cli/test_model_validation.py, and did not run a broader regression suite."
+            ]
+          }
+        }
+      },
+      "outcome": "guided_correctness_win",
+      "guided_minus_no_skill": {
+        "overall_score": 70.1534,
+        "usage_tokens": 895835,
+        "wall_seconds": 83.4617
+      },
+      "case_id": "NousResearch__hermes-agent__121359__provider-interface-adaptation"
+    }
+  ],
+  "llm_calls": [
+    {
+      "model": "openai/gpt-5.6-sol",
+      "endpoint": "https://llm.rvnpu.cn/v1/chat/completions",
+      "attempt": 1,
+      "elapsed_ms": 15828.53,
+      "usage": {
+        "completion_tokens": 706,
+        "prompt_tokens": 14090,
+        "total_tokens": 14796,
+        "completion_tokens_details": {
+          "reasoning_tokens": 362
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "cache_creation_tokens": 0,
+          "cached_creation_tokens": 0
+        }
+      },
+      "response_id": "resp_047af107fabc1115016abdf28b026887d0b5982ced6d7493a6"
+    },
+    {
+      "model": "openai/gpt-5.6-sol",
+      "endpoint": "https://llm.rvnpu.cn/v1/chat/completions",
+      "attempt": 1,
+      "elapsed_ms": 35755.78,
+      "usage": {
+        "completion_tokens": 1701,
+        "prompt_tokens": 11707,
+        "total_tokens": 13408,
+        "completion_tokens_details": {
+          "reasoning_tokens": 1279
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "cache_creation_tokens": 0,
+          "cached_creation_tokens": 0
+        }
+      },
+      "response_id": "resp_0e626991cbf21be1016abdf29aa79087d08e94ebaacafd0463"
+    }
+  ],
+  "judgments": {
+    "NousResearch__hermes-agent__121359__provider-interface-adaptation": {
+      "no_skill": {
+        "semantic_completion": 48,
+        "patch_scope_precision": 88,
+        "maintainability_style": 86,
+        "validation_quality": 28,
+        "issue_postcondition_satisfied": false,
+        "rationale": "The patch correctly forwards explicit_base_url through the special OpenRouter and Anthropic resolver branches, gives it precedence over pool/canonical URLs, normalizes trailing slashes, and refuses an incompatible Anthropic endpoint rather than silently using the vendor host. This appears to satisfy the direct fallback-entry regression, and the relevant fallback tests passed. However, the issue contract also requires configured relay preservation during model discovery and runtime provider resolution. Authoritative regression results show five failures: relay catalogs still use canonical fetchers, failed relay probes can still fall through to vendor egress, the configured-relay helper is absent, and xAI runtime resolution still allows a canonical pool row to shadow model.base_url. Therefore the overall relay endpoint invariant is incomplete despite the focused auxiliary-client fix.",
+        "concerns": [
+          "Five authoritative visible regressions fail, so the completed patch does not satisfy the full issue postcondition.",
+          "hermes_cli.models has no configured-relay resolution path; model discovery still contacts canonical provider fetchers instead of the configured relay.",
+          "When relay discovery raises or returns an empty catalog, execution still falls through to vendor-host egress instead of degrading to a local curated catalog.",
+          "hermes_cli.runtime_provider still ignores model.base_url for xAI when the selected pool row contains the registry's canonical endpoint.",
+          "The patch is narrowly scoped and maintainable within agent/auxiliary_client.py, but that scope is too narrow for the tested contract.",
+          "Validation identified the incomplete behavior but ended with a failing targeted suite and no additional candidate-authored regression coverage."
+        ]
+      },
+      "guided": {
+        "semantic_completion": 84,
+        "patch_scope_precision": 76,
+        "maintainability_style": 82,
+        "validation_quality": 78,
+        "issue_postcondition_satisfied": true,
+        "rationale": "The core defect is fixed correctly: explicit fallback base URLs are forwarded into the dedicated OpenRouter and Anthropic resolver branches, override pool/canonical endpoints, and an incompatible explicit Anthropic endpoint is refused instead of silently reverting to the vendor host. The xAI runtime pool adjustment also preserves configured relays while retaining genuinely custom credential endpoints. Relay catalog discovery is made terminal for live egress, satisfying the no-canonical-fallback requirement. However, the catalog implementation intercepts every configured provider rather than preserving specialized relay-aware fetchers, which can change OpenAI/Anthropic/custom-provider discovery semantics, environment-variable precedence, catalog merging, and fallback quality. The patch also omits the corresponding model-validation adaptation: providers with authoritative profile catalogs may still validate against a canonical catalog before consulting a supplied relay listing. Validation is substantial for the three directly targeted suites, but only 3 of the 12 listed visible test paths were run and the relevant model-validation suite was omitted.",
+        "concerns": [
+          "Relay catalog handling bypasses specialized existing fetchers for all providers, including providers whose fetchers already understand model.base_url and may implement provider-specific model endpoints or catalog merging.",
+          "On relay probe failure, the local fallback is reconstructed directly from _PROVIDER_MODELS/profile.fallback_models rather than using the established static-catalog path, potentially losing models.dev merges, xAI finalization, curated ordering, or other provider-specific processing.",
+          "hermes_cli/models_validate.py is not adapted to distinguish a noncanonical runtime base_url, so an authoritative canonical profile catalog can reject a relay-only model before the relay's own listing is considered.",
+          "The relay probe does not restrict itself to API-key profiles; incompatible profile fetch_models signatures or authentication modes are swallowed and degraded to a static catalog, potentially masking configuration problems.",
+          "Validation omitted most listed visible tests, including tests/hermes_cli/test_model_validation.py, and did not run a broader regression suite."
+        ]
+      }
+    }
+  }
+}

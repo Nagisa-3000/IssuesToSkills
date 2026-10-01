@@ -1,0 +1,210 @@
+{
+  "schema_version": "weighted-guided-agent-evaluation-v1",
+  "source_report": "data/skill-extraction/provider-endpoint-pilot-20260929-v3/agent-eval-hermes-v2/report.json",
+  "cases": 1,
+  "model": "openai/gpt-5.6-sol",
+  "independent_llm_evaluator_used": true,
+  "evaluations": [
+    {
+      "schema_version": "paired-agent-evaluation-v1",
+      "oracle_qualified": true,
+      "eligible_for_causal_comparison": true,
+      "weights": {
+        "correctness": 0.6,
+        "code_quality": 0.25,
+        "efficiency": 0.15
+      },
+      "weight_basis": {
+        "policy": "Correctness receives the majority weight because repository-level coding benchmarks treat issue resolution through regression tests as the primary outcome. Quality and efficiency are reported separately and only break ties between oracle-passing arms. The 60/25/15 split is an AREX operational choice, not a weight copied from any cited benchmark.",
+        "references": [
+          {
+            "name": "SWE-bench",
+            "url": "https://arxiv.org/abs/2310.06770",
+            "relevance": "Uses repository tests to determine whether a real issue is resolved."
+          },
+          {
+            "name": "SWE-agent",
+            "url": "https://arxiv.org/abs/2405.15793",
+            "relevance": "Reports issue-resolution performance together with agent trajectory cost."
+          },
+          {
+            "name": "SWE-bench Verified",
+            "url": "https://openai.com/index/introducing-swe-bench-verified/",
+            "relevance": "Emphasizes validated problem statements and reliable test oracles."
+          }
+        ]
+      },
+      "arms": {
+        "no_skill": {
+          "eligible": true,
+          "leakage_gate": {
+            "passed": true,
+            "violations": []
+          },
+          "test_success": false,
+          "issue_postcondition_satisfied": false,
+          "task_solved": false,
+          "correctness": 11.0,
+          "code_quality": 68.0,
+          "quality_components": {
+            "patch_scope_precision": 88.0,
+            "maintainability_style": 84.0,
+            "validation_quality": 32.0
+          },
+          "efficiency": {
+            "token": 0.0,
+            "wall": 0.0,
+            "combined": 0.0
+          },
+          "overall_score": 23.6,
+          "usage_tokens": 1008425,
+          "wall_seconds": 220.86736363599994,
+          "judge": {
+            "concerns": [
+              "Authoritative regression run failed: 5 of 108 targeted tests failed.",
+              "Relay model discovery still invokes canonical provider catalog fetchers instead of probing the configured model.base_url.",
+              "When relay catalog probing fails or returns an empty catalog, resolution can still fall through to vendor-host egress rather than using only the local curated catalog.",
+              "hermes_cli.models lacks the expected provider-scoped _configured_relay_base_url behavior, so a relay cannot be safely associated with only its configured provider.",
+              "Runtime resolution for xAI still lets the canonical pool-row URL shadow model.base_url, leaving configured relay routing incomplete.",
+              "The patch fixes the narrow Anthropic/OpenRouter fallback-client branches, and the fallback-entry regression tests appear to pass, but it does not cover all relay endpoint resolution paths required by the issue evidence."
+            ],
+            "issue_postcondition_satisfied": false,
+            "maintainability_style": 84,
+            "patch_scope_precision": 88,
+            "rationale": "The candidate makes a clean, focused adaptation to the two exceptional auxiliary-client branches: explicit fallback base URLs are propagated for OpenRouter and Anthropic, normalized, and incompatible explicit Anthropic routes are refused rather than silently demoted to the canonical host. This closely addresses the issue title and the dedicated fallback-entry tests passed. However, regression results are authoritative, and the broader relay contract remains incomplete. Five visible tests fail across model discovery and runtime provider resolution, including cases where canonical vendor egress still occurs after a relay is configured or fails. The implementation is readable and narrowly scoped, but the submitted patch does not satisfy the complete tested postcondition and lacks successful validation.",
+            "semantic_completion": 55,
+            "validation_quality": 32
+          }
+        },
+        "guided": {
+          "eligible": true,
+          "leakage_gate": {
+            "passed": true,
+            "violations": []
+          },
+          "test_success": false,
+          "issue_postcondition_satisfied": false,
+          "task_solved": false,
+          "correctness": 10.4,
+          "code_quality": 65.6667,
+          "quality_components": {
+            "patch_scope_precision": 78.0,
+            "maintainability_style": 84.0,
+            "validation_quality": 35.0
+          },
+          "efficiency": {
+            "token": 0.0,
+            "wall": 0.0,
+            "combined": 0.0
+          },
+          "overall_score": 22.6567,
+          "usage_tokens": 1283612,
+          "wall_seconds": 234.8502763739998,
+          "judge": {
+            "semantic_completion": 52,
+            "patch_scope_precision": 78,
+            "maintainability_style": 84,
+            "validation_quality": 35,
+            "issue_postcondition_satisfied": false,
+            "rationale": "The patch correctly propagates explicit fallback base URLs through the special OpenRouter and Anthropic resolver branches, including pool-backed clients, and refuses an incompatible explicit Anthropic endpoint instead of silently using the canonical host. The fallback-specific regression tests appear to pass. However, authoritative regression evidence reports five failures in other required relay-resolution paths. Provider model discovery still bypasses the configured relay and can contact the canonical vendor host, the expected configured-relay helper is absent, failed or empty relay probes do not terminate live egress, and xAI runtime resolution still lets a canonical pool URL shadow model.base_url. Because the issue contract explicitly includes relay model discovery and runtime provider resolution, the implementation is materially incomplete despite fixing the headline Anthropic/OpenRouter fallback path.",
+            "concerns": [
+              "Configured relay model discovery is not implemented: provider_model_ids still invokes canonical provider fetchers instead of probing model.base_url.",
+              "A failed or empty relay catalog probe can still fall through to vendor-host egress rather than degrading to a local curated catalog.",
+              "hermes_cli.models._configured_relay_base_url is missing, causing a visible regression failure and indicating provider-scoped relay selection was not addressed.",
+              "xAI runtime provider resolution still ignores model.base_url when the selected pool row contains the registry's canonical host.",
+              "The targeted test command failed with 5 failures; passing fallback-specific tests is insufficient for the full stated contract.",
+              "The new parameters use str = None rather than Optional[str], which is a minor typing inconsistency, though the implementation itself is otherwise clear and localized."
+            ]
+          }
+        }
+      },
+      "outcome": "neither_arm_solved",
+      "guided_minus_no_skill": {
+        "overall_score": -0.9433,
+        "usage_tokens": 275187,
+        "wall_seconds": 13.9829
+      },
+      "case_id": "NousResearch__hermes-agent__121359__provider-interface-adaptation"
+    }
+  ],
+  "llm_calls": [
+    {
+      "model": "openai/gpt-5.6-sol",
+      "endpoint": "https://llm.rvnpu.cn/v1/chat/completions",
+      "attempt": 1,
+      "elapsed_ms": 26781.4,
+      "usage": {
+        "completion_tokens": 822,
+        "prompt_tokens": 14124,
+        "total_tokens": 14946,
+        "completion_tokens_details": {
+          "reasoning_tokens": 488
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "cache_creation_tokens": 0,
+          "cached_creation_tokens": 0
+        }
+      },
+      "response_id": "resp_0cdf008f73526519016abdf325e30c87d08dd109ec526be341"
+    },
+    {
+      "model": "openai/gpt-5.6-sol",
+      "endpoint": "https://llm.rvnpu.cn/v1/chat/completions",
+      "attempt": 1,
+      "elapsed_ms": 15805.84,
+      "usage": {
+        "completion_tokens": 606,
+        "prompt_tokens": 13931,
+        "total_tokens": 14537,
+        "completion_tokens_details": {
+          "reasoning_tokens": 259
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "cache_creation_tokens": 0,
+          "cached_creation_tokens": 0
+        }
+      },
+      "response_id": "resp_022b2bab05b4125c016abdf33e8ca087d085f1fb05c0d23837"
+    }
+  ],
+  "judgments": {
+    "NousResearch__hermes-agent__121359__provider-interface-adaptation": {
+      "no_skill": {
+        "concerns": [
+          "Authoritative regression run failed: 5 of 108 targeted tests failed.",
+          "Relay model discovery still invokes canonical provider catalog fetchers instead of probing the configured model.base_url.",
+          "When relay catalog probing fails or returns an empty catalog, resolution can still fall through to vendor-host egress rather than using only the local curated catalog.",
+          "hermes_cli.models lacks the expected provider-scoped _configured_relay_base_url behavior, so a relay cannot be safely associated with only its configured provider.",
+          "Runtime resolution for xAI still lets the canonical pool-row URL shadow model.base_url, leaving configured relay routing incomplete.",
+          "The patch fixes the narrow Anthropic/OpenRouter fallback-client branches, and the fallback-entry regression tests appear to pass, but it does not cover all relay endpoint resolution paths required by the issue evidence."
+        ],
+        "issue_postcondition_satisfied": false,
+        "maintainability_style": 84,
+        "patch_scope_precision": 88,
+        "rationale": "The candidate makes a clean, focused adaptation to the two exceptional auxiliary-client branches: explicit fallback base URLs are propagated for OpenRouter and Anthropic, normalized, and incompatible explicit Anthropic routes are refused rather than silently demoted to the canonical host. This closely addresses the issue title and the dedicated fallback-entry tests passed. However, regression results are authoritative, and the broader relay contract remains incomplete. Five visible tests fail across model discovery and runtime provider resolution, including cases where canonical vendor egress still occurs after a relay is configured or fails. The implementation is readable and narrowly scoped, but the submitted patch does not satisfy the complete tested postcondition and lacks successful validation.",
+        "semantic_completion": 55,
+        "validation_quality": 32
+      },
+      "guided": {
+        "semantic_completion": 52,
+        "patch_scope_precision": 78,
+        "maintainability_style": 84,
+        "validation_quality": 35,
+        "issue_postcondition_satisfied": false,
+        "rationale": "The patch correctly propagates explicit fallback base URLs through the special OpenRouter and Anthropic resolver branches, including pool-backed clients, and refuses an incompatible explicit Anthropic endpoint instead of silently using the canonical host. The fallback-specific regression tests appear to pass. However, authoritative regression evidence reports five failures in other required relay-resolution paths. Provider model discovery still bypasses the configured relay and can contact the canonical vendor host, the expected configured-relay helper is absent, failed or empty relay probes do not terminate live egress, and xAI runtime resolution still lets a canonical pool URL shadow model.base_url. Because the issue contract explicitly includes relay model discovery and runtime provider resolution, the implementation is materially incomplete despite fixing the headline Anthropic/OpenRouter fallback path.",
+        "concerns": [
+          "Configured relay model discovery is not implemented: provider_model_ids still invokes canonical provider fetchers instead of probing model.base_url.",
+          "A failed or empty relay catalog probe can still fall through to vendor-host egress rather than degrading to a local curated catalog.",
+          "hermes_cli.models._configured_relay_base_url is missing, causing a visible regression failure and indicating provider-scoped relay selection was not addressed.",
+          "xAI runtime provider resolution still ignores model.base_url when the selected pool row contains the registry's canonical host.",
+          "The targeted test command failed with 5 failures; passing fallback-specific tests is insufficient for the full stated contract.",
+          "The new parameters use str = None rather than Optional[str], which is a minor typing inconsistency, though the implementation itself is otherwise clear and localized."
+        ]
+      }
+    }
+  }
+}

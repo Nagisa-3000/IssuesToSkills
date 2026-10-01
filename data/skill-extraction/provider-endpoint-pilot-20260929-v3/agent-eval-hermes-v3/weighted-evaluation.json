@@ -1,0 +1,214 @@
+{
+  "schema_version": "weighted-guided-agent-evaluation-v1",
+  "source_report": "data/skill-extraction/provider-endpoint-pilot-20260929-v3/agent-eval-hermes-v3/report.json",
+  "cases": 1,
+  "model": "openai/gpt-5.6-sol",
+  "independent_llm_evaluator_used": true,
+  "evaluations": [
+    {
+      "schema_version": "paired-agent-evaluation-v1",
+      "oracle_qualified": true,
+      "eligible_for_causal_comparison": true,
+      "weights": {
+        "correctness": 0.6,
+        "code_quality": 0.25,
+        "efficiency": 0.15
+      },
+      "weight_basis": {
+        "policy": "Correctness receives the majority weight because repository-level coding benchmarks treat issue resolution through regression tests as the primary outcome. Quality and efficiency are reported separately and only break ties between oracle-passing arms. The 60/25/15 split is an AREX operational choice, not a weight copied from any cited benchmark.",
+        "references": [
+          {
+            "name": "SWE-bench",
+            "url": "https://arxiv.org/abs/2310.06770",
+            "relevance": "Uses repository tests to determine whether a real issue is resolved."
+          },
+          {
+            "name": "SWE-agent",
+            "url": "https://arxiv.org/abs/2405.15793",
+            "relevance": "Reports issue-resolution performance together with agent trajectory cost."
+          },
+          {
+            "name": "SWE-bench Verified",
+            "url": "https://openai.com/index/introducing-swe-bench-verified/",
+            "relevance": "Emphasizes validated problem statements and reliable test oracles."
+          }
+        ]
+      },
+      "arms": {
+        "no_skill": {
+          "eligible": true,
+          "leakage_gate": {
+            "passed": true,
+            "violations": []
+          },
+          "test_success": false,
+          "issue_postcondition_satisfied": false,
+          "task_solved": false,
+          "correctness": 9.6,
+          "code_quality": 66.6667,
+          "quality_components": {
+            "patch_scope_precision": 91.0,
+            "maintainability_style": 85.0,
+            "validation_quality": 24.0
+          },
+          "efficiency": {
+            "token": 0.0,
+            "wall": 0.0,
+            "combined": 0.0
+          },
+          "overall_score": 22.4267,
+          "usage_tokens": 1469758,
+          "wall_seconds": 352.67868705599903,
+          "judge": {
+            "semantic_completion": 48,
+            "patch_scope_precision": 91,
+            "maintainability_style": 85,
+            "validation_quality": 24,
+            "issue_postcondition_satisfied": false,
+            "rationale": "The patch correctly addresses the narrow fallback-resolution defect for the two special provider branches: explicit base URLs are now propagated to OpenRouter and Anthropic client construction, explicit endpoints override pool/canonical URLs, trailing slashes are normalized, and incompatible Anthropic endpoints are refused rather than silently redirected to the vendor host. The fallback-specific regression tests appear to pass. However, authoritative regression evidence reports 5 failures in other visible tests that are explicitly part of the issue contract. Configured relay URLs are still ignored during model discovery, failed relay probes still fall through to canonical vendor egress instead of local curated data, the expected relay helper is absent, and xAI runtime resolution still lets a canonical pool row shadow model.base_url. Consequently, the completed patch only implements one portion of the required provider-interface adaptation and does not satisfy the full relay-preservation/no-silent-vendor-fallback postcondition.",
+            "concerns": [
+              "The authoritative test run failed: 5 of 108 targeted tests did not pass.",
+              "hermes_cli.models.provider_model_ids still invokes canonical catalog fetchers instead of probing the configured relay.",
+              "A failed or empty relay catalog probe can still fall through to vendor-host egress, violating the explicit credential-routing safety requirement.",
+              "hermes_cli.models._configured_relay_base_url is missing, causing a direct visible regression failure.",
+              "xAI runtime provider resolution still prefers the registry-host pool URL over the configured model.base_url relay.",
+              "No candidate-authored tests were added, and the submitted validation evidence demonstrates incomplete behavior rather than a passing regression suite.",
+              "The new parameter annotations use str = None rather than Optional[str] = None; this is a minor typing/style issue but not the primary defect."
+            ]
+          }
+        },
+        "guided": {
+          "eligible": true,
+          "leakage_gate": {
+            "passed": true,
+            "violations": []
+          },
+          "test_success": false,
+          "issue_postcondition_satisfied": false,
+          "task_solved": false,
+          "correctness": 8.4,
+          "code_quality": 53.3333,
+          "quality_components": {
+            "patch_scope_precision": 68.0,
+            "maintainability_style": 64.0,
+            "validation_quality": 28.0
+          },
+          "efficiency": {
+            "token": 0.0,
+            "wall": 0.0,
+            "combined": 0.0
+          },
+          "overall_score": 18.3733,
+          "usage_tokens": 890606,
+          "wall_seconds": 197.83479078699747,
+          "judge": {
+            "semantic_completion": 42,
+            "patch_scope_precision": 68,
+            "maintainability_style": 64,
+            "validation_quality": 28,
+            "issue_postcondition_satisfied": false,
+            "rationale": "The patch addresses the immediate resolver plumbing for OpenRouter and Anthropic, and the basic fallback-entry tests appear to pass. OpenRouter correctly gives explicit_base_url precedence over pool and canonical URLs. However, the Anthropic implementation applies the explicit URL before the existing config.yaml override logic, so a compatible configured model.base_url can subsequently replace the fallback entry's explicit endpoint. That violates the requirement that the fallback entry remain authoritative and can still route a request somewhere other than the configured fallback relay. In addition, the authoritative regression run has 5 failures covering relay model discovery and runtime provider resolution, both explicitly named in the issue contract. The patch does not implement terminal relay discovery behavior, the configured-provider URL helper, or the xAI runtime resolution correction demonstrated by those tests. Thus it is a useful partial fix but not a complete issue resolution.",
+            "concerns": [
+              "Anthropic explicit_base_url is assigned before config.yaml processing; a compatible model.base_url can overwrite it, unlike the required authoritative fallback-entry behavior.",
+              "The regression suite fails 5 of 108 selected tests, including relay discovery attempts that still reach canonical provider fetchers.",
+              "hermes_cli.models lacks configured relay discovery support and _configured_relay_base_url, causing both functional failures and an AttributeError.",
+              "A failed or empty relay catalog probe can still fall through to vendor-host egress instead of degrading to the local curated catalog.",
+              "Runtime provider resolution still ignores model.base_url for an xAI pool row using the canonical registry host.",
+              "No regression tests were added or modified by the candidate, and the reported validation result is failing despite the agent run being marked successful.",
+              "The Anthropic base URL expression combines a conditional expression with or-chains in a way that is harder to verify and obscures precedence; computing and applying an override after all defaults/config resolution would be safer."
+            ]
+          }
+        }
+      },
+      "outcome": "neither_arm_solved",
+      "guided_minus_no_skill": {
+        "overall_score": -4.0534,
+        "usage_tokens": -579152,
+        "wall_seconds": -154.8439
+      },
+      "case_id": "NousResearch__hermes-agent__121359__provider-interface-adaptation"
+    }
+  ],
+  "llm_calls": [
+    {
+      "model": "openai/gpt-5.6-sol",
+      "endpoint": "https://llm.rvnpu.cn/v1/chat/completions",
+      "attempt": 1,
+      "elapsed_ms": 12430.98,
+      "usage": {
+        "completion_tokens": 548,
+        "prompt_tokens": 13878,
+        "total_tokens": 14426,
+        "completion_tokens_details": {
+          "reasoning_tokens": 171
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "cache_creation_tokens": 0,
+          "cached_creation_tokens": 0
+        }
+      },
+      "response_id": "resp_07d0120d42ec3281016abdf34e989c87d0b325ff455a651487"
+    },
+    {
+      "model": "openai/gpt-5.6-sol",
+      "endpoint": "https://llm.rvnpu.cn/v1/chat/completions",
+      "attempt": 1,
+      "elapsed_ms": 18653.54,
+      "usage": {
+        "completion_tokens": 858,
+        "prompt_tokens": 13751,
+        "total_tokens": 14609,
+        "completion_tokens_details": {
+          "reasoning_tokens": 454
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "cache_creation_tokens": 0,
+          "cached_creation_tokens": 0
+        }
+      },
+      "response_id": "resp_0e91f502cf350f3d016abdf35af45887d0b070596d6e7fd573"
+    }
+  ],
+  "judgments": {
+    "NousResearch__hermes-agent__121359__provider-interface-adaptation": {
+      "no_skill": {
+        "semantic_completion": 48,
+        "patch_scope_precision": 91,
+        "maintainability_style": 85,
+        "validation_quality": 24,
+        "issue_postcondition_satisfied": false,
+        "rationale": "The patch correctly addresses the narrow fallback-resolution defect for the two special provider branches: explicit base URLs are now propagated to OpenRouter and Anthropic client construction, explicit endpoints override pool/canonical URLs, trailing slashes are normalized, and incompatible Anthropic endpoints are refused rather than silently redirected to the vendor host. The fallback-specific regression tests appear to pass. However, authoritative regression evidence reports 5 failures in other visible tests that are explicitly part of the issue contract. Configured relay URLs are still ignored during model discovery, failed relay probes still fall through to canonical vendor egress instead of local curated data, the expected relay helper is absent, and xAI runtime resolution still lets a canonical pool row shadow model.base_url. Consequently, the completed patch only implements one portion of the required provider-interface adaptation and does not satisfy the full relay-preservation/no-silent-vendor-fallback postcondition.",
+        "concerns": [
+          "The authoritative test run failed: 5 of 108 targeted tests did not pass.",
+          "hermes_cli.models.provider_model_ids still invokes canonical catalog fetchers instead of probing the configured relay.",
+          "A failed or empty relay catalog probe can still fall through to vendor-host egress, violating the explicit credential-routing safety requirement.",
+          "hermes_cli.models._configured_relay_base_url is missing, causing a direct visible regression failure.",
+          "xAI runtime provider resolution still prefers the registry-host pool URL over the configured model.base_url relay.",
+          "No candidate-authored tests were added, and the submitted validation evidence demonstrates incomplete behavior rather than a passing regression suite.",
+          "The new parameter annotations use str = None rather than Optional[str] = None; this is a minor typing/style issue but not the primary defect."
+        ]
+      },
+      "guided": {
+        "semantic_completion": 42,
+        "patch_scope_precision": 68,
+        "maintainability_style": 64,
+        "validation_quality": 28,
+        "issue_postcondition_satisfied": false,
+        "rationale": "The patch addresses the immediate resolver plumbing for OpenRouter and Anthropic, and the basic fallback-entry tests appear to pass. OpenRouter correctly gives explicit_base_url precedence over pool and canonical URLs. However, the Anthropic implementation applies the explicit URL before the existing config.yaml override logic, so a compatible configured model.base_url can subsequently replace the fallback entry's explicit endpoint. That violates the requirement that the fallback entry remain authoritative and can still route a request somewhere other than the configured fallback relay. In addition, the authoritative regression run has 5 failures covering relay model discovery and runtime provider resolution, both explicitly named in the issue contract. The patch does not implement terminal relay discovery behavior, the configured-provider URL helper, or the xAI runtime resolution correction demonstrated by those tests. Thus it is a useful partial fix but not a complete issue resolution.",
+        "concerns": [
+          "Anthropic explicit_base_url is assigned before config.yaml processing; a compatible model.base_url can overwrite it, unlike the required authoritative fallback-entry behavior.",
+          "The regression suite fails 5 of 108 selected tests, including relay discovery attempts that still reach canonical provider fetchers.",
+          "hermes_cli.models lacks configured relay discovery support and _configured_relay_base_url, causing both functional failures and an AttributeError.",
+          "A failed or empty relay catalog probe can still fall through to vendor-host egress instead of degrading to the local curated catalog.",
+          "Runtime provider resolution still ignores model.base_url for an xAI pool row using the canonical registry host.",
+          "No regression tests were added or modified by the candidate, and the reported validation result is failing despite the agent run being marked successful.",
+          "The Anthropic base URL expression combines a conditional expression with or-chains in a way that is harder to verify and obscures precedence; computing and applying an override after all defaults/config resolution would be safer."
+        ]
+      }
+    }
+  }
+}

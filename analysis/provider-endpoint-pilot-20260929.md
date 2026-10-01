@@ -206,6 +206,51 @@ does not discriminate the known solution from the parent snapshot. The v4
 qualification run therefore establishes a 3/4 causal denominator for this
 pilot, but it does not yet provide agent arms for the newly qualified Pi case.
 
+## Independent weighted evaluator (October 1, 2026)
+
+The existing Aider and Hermes paired runs were re-evaluated by an independent
+`openai/gpt-5.6-sol` judge after both arms had completed. The evaluator receives
+the issue contract, candidate patch, executed test evidence, and hidden
+reference diff only at post-run evaluation time. Leakage remains a hard gate.
+
+The secondary score uses an explicit AREX policy rather than claiming a
+benchmark-standard composite:
+
+- task correctness and semantic completion: 60%;
+- patch precision, maintainability/style, and validation quality: 25%;
+- input/output/reasoning tokens and wall time: 15%.
+
+Correctness is still the primary outcome. A run is solved only when its tests
+pass **and** the independent evaluator finds that the issue postcondition is
+satisfied. A failing or semantically incomplete arm receives no efficiency
+credit. This ordering follows the regression-oracle emphasis of SWE-bench,
+SWE-bench Verified, and SWE-agent; the numeric 60/25/15 split is this
+experiment's policy.
+
+Five repeated paired runs were scored, representing only two independent
+holdout cases:
+
+| holdout | repeats | no-skill solved | guided solved | result |
+| --- | ---: | ---: | ---: | --- |
+| Aider #199 | 2 | 0 | 0 | both visible-test passes were judged semantically incomplete |
+| Hermes #121359 | 3 | 0 | 1 | one guided correctness win; two repeats solved by neither arm |
+
+The aggregate guided solved rate is 1/5 and the no-skill solved rate is 0/5,
+but repeats are not independent samples. Only one of two independent cases
+shows a guided advantage, and that advantage is not stable across the three
+Hermes repeats. Pattern promotion therefore remains unsupported.
+
+Artifacts:
+
+```text
+data/skill-extraction/provider-endpoint-pilot-20260929-v3/weighted-agent-evaluation-summary.json
+data/skill-extraction/provider-endpoint-pilot-20260929-v3/agent-eval-aider/weighted-evaluation.json
+data/skill-extraction/provider-endpoint-pilot-20260929-v3/agent-eval-aider-v2/weighted-evaluation.json
+data/skill-extraction/provider-endpoint-pilot-20260929-v3/agent-eval-hermes/weighted-evaluation.json
+data/skill-extraction/provider-endpoint-pilot-20260929-v3/agent-eval-hermes-v2/weighted-evaluation.json
+data/skill-extraction/provider-endpoint-pilot-20260929-v3/agent-eval-hermes-v3/weighted-evaluation.json
+```
+
 This pilot should be read against the user-supplied seven-category table. For
 the first row, the exact seeded issues #121359 (Hermes) and #9452 (Qwen) have
 implementation-bearing evidence. The seeds #5823, #2765, #41095, and #15430
