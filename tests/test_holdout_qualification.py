@@ -10,6 +10,7 @@ from qualify_cross_project_holdout_cases import oracle_blocker
 from run_cross_project_holdout_agent_eval import (
     Case,
     CommandResult,
+    _agent_command,
     _approved_guidance_hits,
     _payload_relation_ids,
     _prompt,
@@ -124,6 +125,18 @@ def test_agent_prompt_exposes_exact_validation_commands(tmp_path: Path) -> None:
     assert "`git diff --check HEAD`" in prompt
 
 
+def test_agent_command_applies_the_same_explicit_provider_profile() -> None:
+    command = _agent_command(
+        "openai/gpt-5.6-sol",
+        "/home/chenyujia/.local/bin/codex",
+        "rvnpu-test",
+    )
+
+    assert "--profile rvnpu-test" in command
+    assert "--model openai/gpt-5.6-sol" in command
+    assert "OPENAI_API_KEY" not in command
+
+
 def test_guidance_uses_only_selected_skill_and_related_expansion() -> None:
     selected = SearchHit(
         Node(
@@ -160,10 +173,13 @@ def test_guidance_uses_only_selected_skill_and_related_expansion() -> None:
     )
 
     assert [hit.node.id for hit in approved] == ["pattern:1", "workflow:1"]
-    assert _approved_guidance_hits(
-        [selected, related],
-        {"applicable": False, "selected_skill_id": None},
-    ) == []
+    assert (
+        _approved_guidance_hits(
+            [selected, related],
+            {"applicable": False, "selected_skill_id": None},
+        )
+        == []
+    )
 
 
 def test_pattern_guidance_keeps_human_contract_and_role_bound_actions() -> None:
@@ -181,9 +197,7 @@ def test_pattern_guidance_keeps_human_contract_and_role_bound_actions() -> None:
         "workflow_realizations": [
             {
                 "workflow_id": "workflow:1",
-                "role_bindings": [
-                    {"role_id": "establish-contract", "action_ids": ["action:1"]}
-                ],
+                "role_bindings": [{"role_id": "establish-contract", "action_ids": ["action:1"]}],
             }
         ],
     }

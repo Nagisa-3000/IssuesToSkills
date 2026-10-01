@@ -14,6 +14,7 @@ The solution commit and its history never enter either workspace or prompt.
 Agent JSONL events are retained so input/output/reasoning token usage and wall
 clock time can be compared with the same model/provider settings.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -75,7 +76,9 @@ class Case:
         source = self.source or {}
         families = source.get("module_families") or []
         family_text = " ".join(str(item) for item in families)
-        return " ".join(filter(None, (self.category.replace("-", " "), self.issue_title, family_text)))
+        return " ".join(
+            filter(None, (self.category.replace("-", " "), self.issue_title, family_text))
+        )
 
 
 def load_cases(path: Path, cases_root: Path) -> list[Case]:
@@ -108,7 +111,9 @@ def load_cases(path: Path, cases_root: Path) -> list[Case]:
                     item.get("apply_visible_tests_to_solution", False)
                 ),
                 timeout_seconds=int(item.get("timeout_seconds", 900)),
-                source=item.get("manifest_source") if isinstance(item.get("manifest_source"), Mapping) else item,
+                source=item.get("manifest_source")
+                if isinstance(item.get("manifest_source"), Mapping)
+                else item,
             )
         )
     return result
@@ -124,7 +129,9 @@ def _utc_now() -> str:
 
 def _write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(value, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8"
+    )
 
 
 def _run_command(
@@ -165,7 +172,14 @@ def _run_command(
         timed_out = True
     stdout_path.write_text(out, encoding="utf-8", errors="replace")
     stderr_path.write_text(err, encoding="utf-8", errors="replace")
-    return CommandResult(command, int(code), time.perf_counter() - started, str(stdout_path), str(stderr_path), timed_out)
+    return CommandResult(
+        command,
+        int(code),
+        time.perf_counter() - started,
+        str(stdout_path),
+        str(stderr_path),
+        timed_out,
+    )
 
 
 def _git_archive(repo: Path, ref: str, destination: Path) -> None:
@@ -187,21 +201,38 @@ def _git_archive(repo: Path, ref: str, destination: Path) -> None:
     stderr = proc.stderr.read().decode("utf-8", errors="replace") if proc.stderr else ""
     returncode = proc.wait()
     if returncode or extract.returncode:
-        raise RuntimeError(f"git archive failed ({returncode}/{extract.returncode}): {stderr} {extract.stderr}")
+        raise RuntimeError(
+            f"git archive failed ({returncode}/{extract.returncode}): {stderr} {extract.stderr}"
+        )
     subprocess.run(["git", "-C", str(destination), "init", "-q"], check=True, capture_output=True)
-    subprocess.run(["git", "-C", str(destination), "config", "user.email", "arex-eval@example.invalid"], check=True)
-    subprocess.run(["git", "-C", str(destination), "config", "user.name", "AREX evaluation"], check=True)
+    subprocess.run(
+        ["git", "-C", str(destination), "config", "user.email", "arex-eval@example.invalid"],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(destination), "config", "user.name", "AREX evaluation"], check=True
+    )
     subprocess.run(["git", "-C", str(destination), "add", "-A"], check=True)
-    subprocess.run(["git", "-C", str(destination), "commit", "-q", "-m", "evaluation baseline"], check=True)
+    subprocess.run(
+        ["git", "-C", str(destination), "commit", "-q", "-m", "evaluation baseline"], check=True
+    )
 
 
 def _apply_visible_tests(case: Case, workspace: Path, artifact_dir: Path) -> CommandResult:
-    patch = case.test_patch_path.read_text(encoding="utf-8") if case.test_patch_path.exists() else ""
+    patch = (
+        case.test_patch_path.read_text(encoding="utf-8") if case.test_patch_path.exists() else ""
+    )
     artifact_dir.mkdir(parents=True, exist_ok=True)
     patch_path = artifact_dir / "visible-tests.patch"
     patch_path.write_text(patch, encoding="utf-8")
     if not patch.strip():
-        return CommandResult("visible test patch (empty)", 0, 0.0, str(artifact_dir / "stdout"), str(artifact_dir / "stderr"))
+        return CommandResult(
+            "visible test patch (empty)",
+            0,
+            0.0,
+            str(artifact_dir / "stdout"),
+            str(artifact_dir / "stderr"),
+        )
     result = _run_command(
         "git apply --index --whitespace=nowarn -",
         cwd=workspace,
@@ -212,7 +243,18 @@ def _apply_visible_tests(case: Case, workspace: Path, artifact_dir: Path) -> Com
         stdin_text=patch,
     )
     if result.returncode == 0:
-        subprocess.run(["git", "-C", str(workspace), "commit", "-q", "-m", "evaluation visible regression tests"], check=True)
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                str(workspace),
+                "commit",
+                "-q",
+                "-m",
+                "evaluation visible regression tests",
+            ],
+            check=True,
+        )
     return result
 
 
@@ -247,7 +289,9 @@ def _prepare_workspace(
         "pre_patch_setup": [asdict(item) for item in pre_patch_setup],
         "pre_patch_setup_success": all(item.returncode == 0 for item in pre_patch_setup),
         "visible_test_patch": asdict(visible),
-        "git_head": subprocess.check_output(["git", "-C", str(workspace), "rev-parse", "HEAD"], text=True).strip(),
+        "git_head": subprocess.check_output(
+            ["git", "-C", str(workspace), "rev-parse", "HEAD"], text=True
+        ).strip(),
     }
 
 
@@ -344,9 +388,7 @@ def _payload_relation_ids(payload: Mapping[str, Any]) -> set[str]:
     return related
 
 
-def _approved_guidance_hits(
-    hits: Sequence[SearchHit], judge: Mapping[str, Any]
-) -> list[SearchHit]:
+def _approved_guidance_hits(hits: Sequence[SearchHit], judge: Mapping[str, Any]) -> list[SearchHit]:
     """Keep only the LLM-approved Skill and its retrieved graph neighborhood."""
     if judge.get("applicable") is not True:
         return []
@@ -383,7 +425,15 @@ def _parse_usage(path: Path) -> dict[str, Any]:
                 turns += 1
             if item.get("type") == "error":
                 errors.append(str(item.get("message", "")))
-    totals = {key: 0 for key in ("input_tokens", "cached_input_tokens", "output_tokens", "reasoning_output_tokens")}
+    totals = {
+        key: 0
+        for key in (
+            "input_tokens",
+            "cached_input_tokens",
+            "output_tokens",
+            "reasoning_output_tokens",
+        )
+    }
     for usage in usage_rows:
         for key in totals:
             try:
@@ -434,7 +484,16 @@ def _build_guidance(
                     + "\n...<visible test patch truncated>...\n"
                     + visible_test_patch[-25_000:]
                 )
-            transport = OpenAICompatibleTransport(OpenAICompatibleConfig(api_key=api_key, base_url=base_url, model=model, timeout_seconds=180, max_output_tokens=2500, retries=2))
+            transport = OpenAICompatibleTransport(
+                OpenAICompatibleConfig(
+                    api_key=api_key,
+                    base_url=base_url,
+                    model=model,
+                    timeout_seconds=180,
+                    max_output_tokens=2500,
+                    retries=2,
+                )
+            )
             governance = LLMGovernanceAdapter(
                 transport,
                 GovernanceContext(
@@ -490,7 +549,16 @@ def _build_guidance(
         "expanded_count": response.expanded_count,
         "unresolved": list(response.unresolved),
         "hits": [
-            {"id": hit.node.id, "node_type": hit.node.node_type.value, "title": hit.node.title, "summary": hit.node.summary, "repository": hit.node.repository, "score": hit.score, "sources": dict(hit.sources), "trace": list(hit.trace)}
+            {
+                "id": hit.node.id,
+                "node_type": hit.node.node_type.value,
+                "title": hit.node.title,
+                "summary": hit.node.summary,
+                "repository": hit.node.repository,
+                "score": hit.score,
+                "sources": dict(hit.sources),
+                "trace": list(hit.trace),
+            }
             for hit in hits
         ],
         "judge": judge,
@@ -504,15 +572,27 @@ def _build_guidance(
 
 
 def _prompt(case: Case, arm: str, guidance: Mapping[str, Any] | None) -> str:
-    common = f"""You are solving a held-out implementation task in repository {case.repository}.\nThe workspace is a synthetic snapshot based on the pre-change parent and has no future Git history. The original solution commit is not available. Work only in this workspace; do not search external services or other repositories. Do not edit the visible regression tests. Inspect the current code, implement the behavior, and run focused tests before finishing.\n\n# Problem family\n{case.category.replace('-', ' ')}\n\n# Issue/task\n{case.issue_title}\n\n{case.issue_body}\n\n# Visible regression tests retained for this evaluation\n"""
-    tests = "\n".join(f"- {path}" for path in case.visible_test_paths) or "- No target test path was available; use existing tests and a focused validation."
-    validation = "\n".join(f"- `{command}`" for command in case.test_commands) or "- Run the narrowest relevant repository tests."
+    common = f"""You are solving a held-out implementation task in repository {case.repository}.\nThe workspace is a synthetic snapshot based on the pre-change parent and has no future Git history. The original solution commit is not available. Work only in this workspace; do not search external services or other repositories. Do not edit the visible regression tests. Inspect the current code, implement the behavior, and run focused tests before finishing.\n\n# Problem family\n{case.category.replace("-", " ")}\n\n# Issue/task\n{case.issue_title}\n\n{case.issue_body}\n\n# Visible regression tests retained for this evaluation\n"""
+    tests = (
+        "\n".join(f"- {path}" for path in case.visible_test_paths)
+        or "- No target test path was available; use existing tests and a focused validation."
+    )
+    validation = (
+        "\n".join(f"- `{command}`" for command in case.test_commands)
+        or "- Run the narrowest relevant repository tests."
+    )
     task_context = common + tests + "\n\n# Validation commands\n" + validation
     if arm == "no_skill":
-        return task_context + "\n\n# Arm\nno_skill\n\nSolve the task from the repository and visible tests without any retrieved Skill context."
+        return (
+            task_context
+            + "\n\n# Arm\nno_skill\n\nSolve the task from the repository and visible tests without any retrieved Skill context."
+        )
     context = (guidance or {}).get("rendered") or "(Retrieval returned no usable context.)"
     judge = json.dumps((guidance or {}).get("judge", {}), ensure_ascii=False, indent=2)
-    return task_context + f"""\n\n# Arm\nguided\n\n# Retrieved Skill Graph guidance\nThe following are hypotheses retrieved only from the training repositories using lexical/vector retrieval, optional HNSW, and typed graph expansion. Verify every step against the current code and tests; do not copy repository-specific names blindly.\n\n{context}\n\n# Applicability judgment\n{judge}\n\nUse the guidance to localize the problem and choose a safe implementation, but rely on the visible tests and current code as the oracle."""
+    return (
+        task_context
+        + f"""\n\n# Arm\nguided\n\n# Retrieved Skill Graph guidance\nThe following are hypotheses retrieved only from the training repositories using lexical/vector retrieval, optional HNSW, and typed graph expansion. Verify every step against the current code and tests; do not copy repository-specific names blindly.\n\n{context}\n\n# Applicability judgment\n{judge}\n\nUse the guidance to localize the problem and choose a safe implementation, but rely on the visible tests and current code as the oracle."""
+    )
 
 
 def _path_for_executable(path: Path, executable: str) -> str:
@@ -520,14 +600,19 @@ def _path_for_executable(path: Path, executable: str) -> str:
     if Path(executable).suffix.lower() != ".exe":
         return str(path)
     try:
-        converted = subprocess.run(["wslpath", "-w", str(path)], text=True, capture_output=True, check=True).stdout.strip()
+        converted = subprocess.run(
+            ["wslpath", "-w", str(path)], text=True, capture_output=True, check=True
+        ).stdout.strip()
     except (OSError, subprocess.CalledProcessError):
         return str(path)
     return converted or str(path)
 
 
-def _agent_command(model: str, executable: str) -> str:
-    return f"{shlex.quote(executable)} exec --ephemeral --model {shlex.quote(model)} --sandbox danger-full-access --json -o {{last}} -C {{worktree}} -"
+def _agent_command(model: str, executable: str, profile: str | None = None) -> str:
+    command = f"{shlex.quote(executable)} exec --ephemeral --model {shlex.quote(model)}"
+    if profile:
+        command += f" --profile {shlex.quote(profile)}"
+    return command + " --sandbox danger-full-access --json -o {last} -C {worktree} -"
 
 
 def _run_arm(
@@ -540,6 +625,7 @@ def _run_arm(
     model: str,
     codex_executable: str,
     codex_home: Path,
+    codex_profile: str | None,
     api_key: str | None,
 ) -> dict[str, Any]:
     # Resolve before converting paths for a Windows Codex binary.  Passing a
@@ -561,7 +647,17 @@ def _run_arm(
     if api_key:
         env["OPENAI_API_KEY"] = api_key
     snapshot = _prepare_workspace(case, workspace, run_dir / "snapshot", env)
-    setup_results = [_run_command(command, cwd=workspace, env=env, timeout_seconds=case.timeout_seconds, stdout_path=run_dir / "setup" / f"{index:02d}.stdout", stderr_path=run_dir / "setup" / f"{index:02d}.stderr") for index, command in enumerate(case.setup_commands, start=1)]
+    setup_results = [
+        _run_command(
+            command,
+            cwd=workspace,
+            env=env,
+            timeout_seconds=case.timeout_seconds,
+            stdout_path=run_dir / "setup" / f"{index:02d}.stdout",
+            stderr_path=run_dir / "setup" / f"{index:02d}.stderr",
+        )
+        for index, command in enumerate(case.setup_commands, start=1)
+    ]
     setup_blockers: list[str] = []
     if not bool(snapshot["pre_patch_setup_success"]):
         setup_blockers.append("pre-patch setup failed")
@@ -570,13 +666,24 @@ def _run_arm(
     if not all(item.returncode == 0 for item in setup_results):
         setup_blockers.append("post-patch setup failed")
     setup_ok = not setup_blockers
-    command = _agent_command(model, codex_executable).format(last=shlex.quote(_path_for_executable(run_dir / "agent-last.txt", codex_executable)), worktree=shlex.quote(_path_for_executable(workspace, codex_executable)))
+    command = _agent_command(model, codex_executable, codex_profile).format(
+        last=shlex.quote(_path_for_executable(run_dir / "agent-last.txt", codex_executable)),
+        worktree=shlex.quote(_path_for_executable(workspace, codex_executable)),
+    )
     started = time.perf_counter()
     # Dependency setup is measured separately and must not silently turn the
     # agent arm into a no-op.  The model still receives the same source/test
     # workspace when setup is unavailable; the subsequent test result records
     # the missing-runtime failure explicitly.
-    agent = _run_command(command, cwd=workspace, env=env, timeout_seconds=case.timeout_seconds, stdout_path=run_dir / "agent-events.jsonl", stderr_path=run_dir / "agent.stderr", stdin_text=prompt)
+    agent = _run_command(
+        command,
+        cwd=workspace,
+        env=env,
+        timeout_seconds=case.timeout_seconds,
+        stdout_path=run_dir / "agent-events.jsonl",
+        stderr_path=run_dir / "agent.stderr",
+        stdin_text=prompt,
+    )
     patch = subprocess.run(
         ["git", "-C", str(workspace), "diff", "--binary", "HEAD"],
         capture_output=True,
@@ -600,7 +707,14 @@ def _run_arm(
     tests = []
     if setup_ok and agent.returncode == 0:
         for index, test_command in enumerate(case.test_commands, start=1):
-            result = _run_command(test_command, cwd=workspace, env=env, timeout_seconds=case.timeout_seconds, stdout_path=run_dir / "tests" / f"{index:02d}.stdout", stderr_path=run_dir / "tests" / f"{index:02d}.stderr")
+            result = _run_command(
+                test_command,
+                cwd=workspace,
+                env=env,
+                timeout_seconds=case.timeout_seconds,
+                stdout_path=run_dir / "tests" / f"{index:02d}.stdout",
+                stderr_path=run_dir / "tests" / f"{index:02d}.stderr",
+            )
             tests.append(result)
             if result.returncode != 0:
                 break
@@ -627,6 +741,7 @@ def _run_arm(
         "tests": [asdict(item) for item in tests],
         "usage": usage,
         "model": model,
+        "codex_profile": codex_profile,
         "prompt_characters": len(prompt),
         "prompt_estimated_tokens": (len(prompt) + 3) // 4,
         "changed_files": sorted(changed_paths),
@@ -657,15 +772,43 @@ def _aggregate(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         result[arm] = {
             "cases": len(items),
             "test_successes": sum(bool(item.get("test_success")) for item in items),
-            "test_success_rate": (sum(bool(item.get("test_success")) for item in items) / len(items)) if items else 0.0,
-            "agent_success_rate": (sum(bool(item.get("agent_success")) for item in items) / len(items)) if items else 0.0,
+            "test_success_rate": (
+                sum(bool(item.get("test_success")) for item in items) / len(items)
+            )
+            if items
+            else 0.0,
+            "agent_success_rate": (
+                sum(bool(item.get("agent_success")) for item in items) / len(items)
+            )
+            if items
+            else 0.0,
             "mean_wall_seconds": mean_wall_seconds,
-            "mean_input_tokens": statistics.mean(int(item.get("usage", {}).get("input_tokens", 0)) for item in items) if items else 0.0,
-            "mean_cached_input_tokens": statistics.mean(int(item.get("usage", {}).get("cached_input_tokens", 0)) for item in items) if items else 0.0,
-            "mean_output_tokens": statistics.mean(int(item.get("usage", {}).get("output_tokens", 0)) for item in items) if items else 0.0,
-            "mean_reasoning_output_tokens": statistics.mean(int(item.get("usage", {}).get("reasoning_output_tokens", 0)) for item in items) if items else 0.0,
-            "total_input_tokens": sum(int(item.get("usage", {}).get("input_tokens", 0)) for item in items),
-            "total_output_tokens": sum(int(item.get("usage", {}).get("output_tokens", 0)) for item in items),
+            "mean_input_tokens": statistics.mean(
+                int(item.get("usage", {}).get("input_tokens", 0)) for item in items
+            )
+            if items
+            else 0.0,
+            "mean_cached_input_tokens": statistics.mean(
+                int(item.get("usage", {}).get("cached_input_tokens", 0)) for item in items
+            )
+            if items
+            else 0.0,
+            "mean_output_tokens": statistics.mean(
+                int(item.get("usage", {}).get("output_tokens", 0)) for item in items
+            )
+            if items
+            else 0.0,
+            "mean_reasoning_output_tokens": statistics.mean(
+                int(item.get("usage", {}).get("reasoning_output_tokens", 0)) for item in items
+            )
+            if items
+            else 0.0,
+            "total_input_tokens": sum(
+                int(item.get("usage", {}).get("input_tokens", 0)) for item in items
+            ),
+            "total_output_tokens": sum(
+                int(item.get("usage", {}).get("output_tokens", 0)) for item in items
+            ),
             "mean_prompt_estimated_tokens": mean_prompt_estimated_tokens,
         }
     return result
@@ -679,17 +822,35 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--workspace-root", type=Path, required=True)
     parser.add_argument("--hnsw", type=Path)
-    parser.add_argument("--api-key", default=os.environ.get("OPENAI_API_KEY"), help="Optional API key; omit to let Codex use CODEX_HOME login")
+    parser.add_argument(
+        "--api-key",
+        default=os.environ.get("OPENAI_API_KEY"),
+        help="Optional API key; omit to let Codex use CODEX_HOME login",
+    )
     parser.add_argument("--base-url", default="https://llm.rvnpu.cn/v1")
     parser.add_argument("--model", default="openai/gpt-5.6-sol")
-    parser.add_argument("--codex", default=os.environ.get("CODEX_EXECUTABLE", "/usr/local/bin/codex"), help="Codex executable used for both paired arms")
+    parser.add_argument(
+        "--codex",
+        default=os.environ.get("CODEX_EXECUTABLE", "/usr/local/bin/codex"),
+        help="Codex executable used for both paired arms",
+    )
     parser.add_argument("--codex-home", type=Path, required=True)
+    parser.add_argument(
+        "--codex-profile",
+        help="Optional CODEX_HOME profile applied identically to both paired arms",
+    )
     parser.add_argument("--top-k", type=int, default=8)
     parser.add_argument("--seed-k", type=int, default=40)
     parser.add_argument("--expand-hops", type=int, default=2)
     parser.add_argument("--max-cases", type=int)
     parser.add_argument("--skip-setup", action="store_true")
     args = parser.parse_args()
+    if args.codex_profile:
+        if Path(args.codex_profile).name != args.codex_profile:
+            parser.error("--codex-profile must be a profile name, not a path")
+        profile_path = args.codex_home / f"{args.codex_profile}.config.toml"
+        if not profile_path.is_file():
+            parser.error(f"Codex profile does not exist: {profile_path}")
     cases = load_cases(args.cases, args.cases_root)
     if args.max_cases is not None:
         cases = cases[: max(0, args.max_cases)]
@@ -699,8 +860,20 @@ def main() -> int:
     with CatalogStore(args.db) as store:
         store.initialize()
         for case in cases:
-            guidance = _build_guidance(case, store, hnsw_path=args.hnsw, api_key=args.api_key, base_url=args.base_url, model=args.model, top_k=args.top_k, seed_k=args.seed_k, expand_hops=args.expand_hops)
-            _write_json(args.output_dir / "retrieval" / f"{_safe_name(case.case_id)}.json", guidance)
+            guidance = _build_guidance(
+                case,
+                store,
+                hnsw_path=args.hnsw,
+                api_key=args.api_key,
+                base_url=args.base_url,
+                model=args.model,
+                top_k=args.top_k,
+                seed_k=args.seed_k,
+                expand_hops=args.expand_hops,
+            )
+            _write_json(
+                args.output_dir / "retrieval" / f"{_safe_name(case.case_id)}.json", guidance
+            )
             if args.skip_setup:
                 case = Case(
                     **{
@@ -711,11 +884,63 @@ def main() -> int:
                 )
             # Each arm receives its own synthetic snapshot and its own fresh
             # ephemeral Codex session; there is no resume/fork relationship.
-            rows.append(_run_arm(case, "no_skill", output_dir=args.output_dir, workspace_root=args.workspace_root, guidance=None, model=args.model, codex_executable=args.codex, codex_home=args.codex_home, api_key=args.api_key))
-            rows.append(_run_arm(case, "guided", output_dir=args.output_dir, workspace_root=args.workspace_root, guidance=guidance, model=args.model, codex_executable=args.codex, codex_home=args.codex_home, api_key=args.api_key))
-    report = {"schema_version": "cross-project-guided-agent-eval-v1", "generated_at": _utc_now(), "cases": len(cases), "arms": ["no_skill", "guided"], "rows": rows, "aggregate": _aggregate(rows), "leakage_checks": {"all_solution_refs_absent_from_prompts": all(not row["solution_ref_in_prompt"] for row in rows), "synthetic_history_only": all(not row["solution_ref_in_workspace_history"] for row in rows)}}
+            rows.append(
+                _run_arm(
+                    case,
+                    "no_skill",
+                    output_dir=args.output_dir,
+                    workspace_root=args.workspace_root,
+                    guidance=None,
+                    model=args.model,
+                    codex_executable=args.codex,
+                    codex_home=args.codex_home,
+                    codex_profile=args.codex_profile,
+                    api_key=args.api_key,
+                )
+            )
+            rows.append(
+                _run_arm(
+                    case,
+                    "guided",
+                    output_dir=args.output_dir,
+                    workspace_root=args.workspace_root,
+                    guidance=guidance,
+                    model=args.model,
+                    codex_executable=args.codex,
+                    codex_home=args.codex_home,
+                    codex_profile=args.codex_profile,
+                    api_key=args.api_key,
+                )
+            )
+    report = {
+        "schema_version": "cross-project-guided-agent-eval-v1",
+        "generated_at": _utc_now(),
+        "cases": len(cases),
+        "arms": ["no_skill", "guided"],
+        "execution_config": {
+            "model": args.model,
+            "base_url": args.base_url,
+            "codex_executable": args.codex,
+            "codex_profile": args.codex_profile,
+        },
+        "rows": rows,
+        "aggregate": _aggregate(rows),
+        "leakage_checks": {
+            "all_solution_refs_absent_from_prompts": all(
+                not row["solution_ref_in_prompt"] for row in rows
+            ),
+            "synthetic_history_only": all(
+                not row["solution_ref_in_workspace_history"] for row in rows
+            ),
+        },
+    }
     _write_json(args.output_dir / "report.json", report)
-    print(json.dumps({"cases": len(cases), "rows": len(rows), "aggregate": report["aggregate"]}, ensure_ascii=False))
+    print(
+        json.dumps(
+            {"cases": len(cases), "rows": len(rows), "aggregate": report["aggregate"]},
+            ensure_ascii=False,
+        )
+    )
     return 0
 
 

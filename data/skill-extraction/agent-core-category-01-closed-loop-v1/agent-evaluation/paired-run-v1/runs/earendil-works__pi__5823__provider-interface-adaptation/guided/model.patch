@@ -1,0 +1,27 @@
+diff --git a/packages/coding-agent/src/core/model-resolver.ts b/packages/coding-agent/src/core/model-resolver.ts
+index bd74c20..ba126fa 100644
+--- a/packages/coding-agent/src/core/model-resolver.ts
++++ b/packages/coding-agent/src/core/model-resolver.ts
+@@ -311,13 +311,17 @@ export function resolveCliModel(options: {
+ 		};
+ 	}
+ 
+-	// If no explicit --provider, first try exact matches without any provider inference.
+-	// This avoids misinterpreting model IDs that themselves contain slashes (e.g. OpenRouter-style IDs).
++	// If no explicit --provider, prefer an exact provider/model match when the prefix names
++	// a known provider. Otherwise, preserve support for model IDs that contain slashes
++	// (e.g. OpenRouter-style IDs) by checking the full model ID.
+ 	if (!provider) {
+ 		const lower = cliModel.toLowerCase();
+-		const exact = availableModels.find(
+-			(m) => m.id.toLowerCase() === lower || `${m.provider}/${m.id}`.toLowerCase() === lower,
+-		);
++		const exactProviderModel = availableModels.find((m) => `${m.provider}/${m.id}`.toLowerCase() === lower);
++		if (exactProviderModel) {
++			return { model: exactProviderModel, warning: undefined, thinkingLevel: undefined, error: undefined };
++		}
++
++		const exact = availableModels.find((m) => m.id.toLowerCase() === lower);
+ 		if (exact) {
+ 			return { model: exact, warning: undefined, thinkingLevel: undefined, error: undefined };
+ 		}

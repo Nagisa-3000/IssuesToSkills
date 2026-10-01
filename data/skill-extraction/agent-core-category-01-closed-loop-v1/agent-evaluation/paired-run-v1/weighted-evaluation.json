@@ -1,0 +1,213 @@
+{
+  "schema_version": "weighted-guided-agent-evaluation-v1",
+  "source_report": "/home/chenyujia/tritonToLlvm/arex-skill-graph/data/skill-extraction/agent-core-category-01-closed-loop-v1/agent-evaluation/paired-run-v1/report.json",
+  "cases": 1,
+  "model": "openai/gpt-5.6-sol",
+  "independent_llm_evaluator_used": true,
+  "evaluations": [
+    {
+      "schema_version": "paired-agent-evaluation-v1",
+      "oracle_qualified": true,
+      "setup_gate": {
+        "passed": true
+      },
+      "retrieval_gate": {
+        "checked": true,
+        "passed": true,
+        "applicable": true,
+        "selected_skill_id": "pattern:5895d079305884e4",
+        "confidence": 0.93,
+        "rationale": "The failure is a provider-selection precedence mismatch: the explicit CLI specification `provider/model` is the authoritative interface signal, but resolution can instead select a competing catalog entry whose model ID equals the entire input string. The holdout test makes this causal conflict explicit by placing `vercel-ai-gateway` model ID `zai/glm-5` before the intended `zai` provider model ID `glm-5`, then requiring `resolveCliModel` to honor the parsed provider and model components. The selected pattern directly applies because it requires establishing explicit provider identity and precedence, then adapting the narrow resolver boundary that violates that contract while preserving unaffected resolution paths. The repository-specific workflows and SDK-option action concern endpoint construction, persisted routes, or request translation and are therefore less applicable than the cross-workflow pattern."
+      },
+      "eligible_for_causal_comparison": true,
+      "weights": {
+        "correctness": 0.6,
+        "code_quality": 0.25,
+        "efficiency": 0.15
+      },
+      "weight_basis": {
+        "policy": "Correctness receives the majority weight because repository-level coding benchmarks treat issue resolution through regression tests as the primary outcome. Quality and efficiency are reported separately and only break ties between oracle-passing arms. The 60/25/15 split is an AREX operational choice, not a weight copied from any cited benchmark.",
+        "references": [
+          {
+            "name": "SWE-bench",
+            "url": "https://arxiv.org/abs/2310.06770",
+            "relevance": "Uses repository tests to determine whether a real issue is resolved."
+          },
+          {
+            "name": "SWE-agent",
+            "url": "https://arxiv.org/abs/2405.15793",
+            "relevance": "Reports issue-resolution performance together with agent trajectory cost."
+          },
+          {
+            "name": "SWE-bench Verified",
+            "url": "https://openai.com/index/introducing-swe-bench-verified/",
+            "relevance": "Emphasizes validated problem statements and reliable test oracles."
+          }
+        ]
+      },
+      "arms": {
+        "no_skill": {
+          "eligible": true,
+          "leakage_gate": {
+            "passed": true,
+            "violations": []
+          },
+          "setup_success": true,
+          "test_success": true,
+          "issue_postcondition_satisfied": true,
+          "task_solved": true,
+          "correctness": 99.4,
+          "code_quality": 93.0,
+          "quality_components": {
+            "patch_scope_precision": 98.0,
+            "maintainability_style": 91.0,
+            "validation_quality": 90.0
+          },
+          "efficiency": {
+            "token": 93.9899,
+            "wall": 91.5492,
+            "combined": 93.0136
+          },
+          "overall_score": 96.842,
+          "usage_tokens": 335118,
+          "wall_seconds": 131.0398769999956,
+          "judge": {
+            "semantic_completion": 97,
+            "patch_scope_precision": 98,
+            "maintainability_style": 91,
+            "validation_quality": 90,
+            "issue_postcondition_satisfied": true,
+            "rationale": "The patch directly fixes the precedence defect: when the prefix is a recognized provider and the remainder resolves within that provider, that provider-specific result is returned before considering an identical slash-containing model ID elsewhere. It also preserves the established OpenRouter-style behavior by falling back to an exact full model ID when the inferred provider cannot resolve the remainder. The authoritative holdout test passes, and the combined resolver suite reports all 27 tests passing. Scope is limited to the relevant resolver function with no unrelated edits. The implementation is somewhat more complex than necessary because provider parsing may be performed once speculatively and then again on the error path, but the behavior is clear and localized. Validation is strong and includes focused regression tests and diff hygiene; the repository-wide check failure is attributable to the retained holdout test's TypeScript import configuration rather than the source patch.",
+            "concerns": [
+              "Provider-prefixed input is parsed twice when the initial provider-scoped parse finds no model and exact raw-ID fallback also fails; this is minor duplication and could make future resolver changes harder to keep consistent.",
+              "Unlike the reference implementation, fallback after unsuccessful provider inference only accepts an exact full raw model ID and does not retry fuzzy full-input matching. This is not required by the reported issue and does not regress the covered existing behavior, but it is a narrower compatibility fallback.",
+              "A full repository check did not complete successfully because the injected holdout test uses a '.ts' import unsupported by the current TypeScript configuration; source-level validation therefore relies primarily on the focused 27-test resolver run."
+            ]
+          }
+        },
+        "guided": {
+          "eligible": true,
+          "leakage_gate": {
+            "passed": true,
+            "violations": []
+          },
+          "setup_success": true,
+          "test_success": true,
+          "issue_postcondition_satisfied": true,
+          "task_solved": true,
+          "correctness": 98.4,
+          "code_quality": 93.6667,
+          "quality_components": {
+            "patch_scope_precision": 98.0,
+            "maintainability_style": 94.0,
+            "validation_quality": 89.0
+          },
+          "efficiency": {
+            "token": 100.0,
+            "wall": 100.0,
+            "combined": 100.0
+          },
+          "overall_score": 97.4567,
+          "usage_tokens": 314977,
+          "wall_seconds": 119.96590489400114,
+          "judge": {
+            "semantic_completion": 92,
+            "patch_scope_precision": 98,
+            "maintainability_style": 94,
+            "validation_quality": 89,
+            "issue_postcondition_satisfied": true,
+            "rationale": "The patch directly fixes the reported duplicate-model-ID case by checking exact provider/model matches before unscoped model-ID matches, making explicit provider selection independent of catalog order. It preserves slash-containing model IDs when no exact provider-scoped match exists, and both the targeted holdout test and all 26 existing resolver tests passed. The change is small, localized, readable, and avoids unrelated modifications. It is somewhat narrower than the reference behavior: provider inference is still performed after raw exact-ID matching, so a known provider prefix can potentially be ignored in ambiguous cases involving a slash-containing raw model ID and a non-exact provider-scoped pattern or provider alias. That does not invalidate the stated exact duplicate-ID postcondition but leaves a related precedence edge case unresolved.",
+            "concerns": [
+              "Provider inference still occurs after raw exact model-ID matching. If `provider/pattern` is not an exact provider/model pair but would resolve within that provider, an exact slash-containing model ID on another provider may win first.",
+              "Direct exact matching does not canonicalize provider aliases before applying precedence, leaving similar ambiguity for alias-prefixed specifications.",
+              "No permanent regression test was added to the repository patch, although the external holdout and existing resolver suite both passed.",
+              "The full `npm run check` did not pass due to the retained holdout test importing a `.ts` extension; evidence indicates this was test-infrastructure-related rather than a source-code error."
+            ]
+          }
+        }
+      },
+      "outcome": "full_tie",
+      "guided_minus_no_skill": {
+        "overall_score": 0.6147,
+        "usage_tokens": -20141,
+        "wall_seconds": -11.074
+      },
+      "case_id": "earendil-works__pi__5823__provider-interface-adaptation"
+    }
+  ],
+  "llm_calls": [
+    {
+      "model": "openai/gpt-5.6-sol",
+      "endpoint": "https://llm.rvnpu.cn/v1/chat/completions",
+      "attempt": 1,
+      "elapsed_ms": 21415.23,
+      "usage": {
+        "completion_tokens": 831,
+        "prompt_tokens": 7066,
+        "total_tokens": 7897,
+        "completion_tokens_details": {
+          "reasoning_tokens": 482
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "cache_creation_tokens": 0,
+          "cached_creation_tokens": 0
+        }
+      },
+      "response_id": "resp_0a0183344afdc736016abe7604f76487d0b809d484b5e4576e"
+    },
+    {
+      "model": "openai/gpt-5.6-sol",
+      "endpoint": "https://llm.rvnpu.cn/v1/chat/completions",
+      "attempt": 1,
+      "elapsed_ms": 21352.7,
+      "usage": {
+        "completion_tokens": 1006,
+        "prompt_tokens": 5019,
+        "total_tokens": 6025,
+        "completion_tokens_details": {
+          "reasoning_tokens": 682
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "cache_creation_tokens": 0,
+          "cached_creation_tokens": 0
+        }
+      },
+      "response_id": "resp_07960ef4d05660c2016abe761b0d5c87d0bc7b0af82113d0d2"
+    }
+  ],
+  "judgments": {
+    "earendil-works__pi__5823__provider-interface-adaptation": {
+      "no_skill": {
+        "semantic_completion": 97,
+        "patch_scope_precision": 98,
+        "maintainability_style": 91,
+        "validation_quality": 90,
+        "issue_postcondition_satisfied": true,
+        "rationale": "The patch directly fixes the precedence defect: when the prefix is a recognized provider and the remainder resolves within that provider, that provider-specific result is returned before considering an identical slash-containing model ID elsewhere. It also preserves the established OpenRouter-style behavior by falling back to an exact full model ID when the inferred provider cannot resolve the remainder. The authoritative holdout test passes, and the combined resolver suite reports all 27 tests passing. Scope is limited to the relevant resolver function with no unrelated edits. The implementation is somewhat more complex than necessary because provider parsing may be performed once speculatively and then again on the error path, but the behavior is clear and localized. Validation is strong and includes focused regression tests and diff hygiene; the repository-wide check failure is attributable to the retained holdout test's TypeScript import configuration rather than the source patch.",
+        "concerns": [
+          "Provider-prefixed input is parsed twice when the initial provider-scoped parse finds no model and exact raw-ID fallback also fails; this is minor duplication and could make future resolver changes harder to keep consistent.",
+          "Unlike the reference implementation, fallback after unsuccessful provider inference only accepts an exact full raw model ID and does not retry fuzzy full-input matching. This is not required by the reported issue and does not regress the covered existing behavior, but it is a narrower compatibility fallback.",
+          "A full repository check did not complete successfully because the injected holdout test uses a '.ts' import unsupported by the current TypeScript configuration; source-level validation therefore relies primarily on the focused 27-test resolver run."
+        ]
+      },
+      "guided": {
+        "semantic_completion": 92,
+        "patch_scope_precision": 98,
+        "maintainability_style": 94,
+        "validation_quality": 89,
+        "issue_postcondition_satisfied": true,
+        "rationale": "The patch directly fixes the reported duplicate-model-ID case by checking exact provider/model matches before unscoped model-ID matches, making explicit provider selection independent of catalog order. It preserves slash-containing model IDs when no exact provider-scoped match exists, and both the targeted holdout test and all 26 existing resolver tests passed. The change is small, localized, readable, and avoids unrelated modifications. It is somewhat narrower than the reference behavior: provider inference is still performed after raw exact-ID matching, so a known provider prefix can potentially be ignored in ambiguous cases involving a slash-containing raw model ID and a non-exact provider-scoped pattern or provider alias. That does not invalidate the stated exact duplicate-ID postcondition but leaves a related precedence edge case unresolved.",
+        "concerns": [
+          "Provider inference still occurs after raw exact model-ID matching. If `provider/pattern` is not an exact provider/model pair but would resolve within that provider, an exact slash-containing model ID on another provider may win first.",
+          "Direct exact matching does not canonicalize provider aliases before applying precedence, leaving similar ambiguity for alias-prefixed specifications.",
+          "No permanent regression test was added to the repository patch, although the external holdout and existing resolver suite both passed.",
+          "The full `npm run check` did not pass due to the retained holdout test importing a `.ts` extension; evidence indicates this was test-infrastructure-related rather than a source-code error."
+        ]
+      }
+    }
+  }
+}

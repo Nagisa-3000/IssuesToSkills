@@ -1,0 +1,59 @@
+diff --git a/packages/coding-agent/src/core/model-resolver.ts b/packages/coding-agent/src/core/model-resolver.ts
+index bd74c20..bbff681 100644
+--- a/packages/coding-agent/src/core/model-resolver.ts
++++ b/packages/coding-agent/src/core/model-resolver.ts
+@@ -311,29 +311,40 @@ export function resolveCliModel(options: {
+ 		};
+ 	}
+ 
+-	// If no explicit --provider, first try exact matches without any provider inference.
+-	// This avoids misinterpreting model IDs that themselves contain slashes (e.g. OpenRouter-style IDs).
+-	if (!provider) {
+-		const lower = cliModel.toLowerCase();
+-		const exact = availableModels.find(
+-			(m) => m.id.toLowerCase() === lower || `${m.provider}/${m.id}`.toLowerCase() === lower,
+-		);
+-		if (exact) {
+-			return { model: exact, warning: undefined, thinkingLevel: undefined, error: undefined };
+-		}
+-	}
+-
+ 	let pattern = cliModel;
+ 
+-	// If no explicit --provider, allow --model provider/<pattern>
++	// If no explicit --provider, prefer a recognized provider prefix when that provider
++	// can resolve the pattern. Fall back to an exact slash-containing ID otherwise.
+ 	if (!provider) {
+ 		const slashIndex = cliModel.indexOf("/");
+ 		if (slashIndex !== -1) {
+ 			const maybeProvider = cliModel.substring(0, slashIndex);
+ 			const canonical = providerMap.get(maybeProvider.toLowerCase());
+ 			if (canonical) {
++				const providerPattern = cliModel.substring(slashIndex + 1);
++				const providerCandidates = availableModels.filter((m) => m.provider === canonical);
++				const providerResult = parseModelPattern(providerPattern, providerCandidates, {
++					allowInvalidThinkingLevelFallback: false,
++				});
++				if (providerResult.model) {
++					return { ...providerResult, error: undefined };
++				}
++
++				const exactId = availableModels.find((m) => m.id.toLowerCase() === cliModel.toLowerCase());
++				if (exactId) {
++					return { model: exactId, warning: undefined, thinkingLevel: undefined, error: undefined };
++				}
++
+ 				provider = canonical;
+-				pattern = cliModel.substring(slashIndex + 1);
++				pattern = providerPattern;
++			}
++		}
++
++		if (!provider) {
++			const lower = cliModel.toLowerCase();
++			const exact = availableModels.find((m) => m.id.toLowerCase() === lower);
++			if (exact) {
++				return { model: exact, warning: undefined, thinkingLevel: undefined, error: undefined };
+ 			}
+ 		}
+ 	} else {

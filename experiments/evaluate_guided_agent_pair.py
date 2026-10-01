@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from collections.abc import Mapping
@@ -86,6 +87,56 @@ def _test_evidence(row: Mapping[str, Any]) -> list[dict[str, Any]]:
     return evidence
 
 
+def _agent_validation_evidence(
+    report_root: Path,
+    case_id: str,
+    arm: str,
+) -> dict[str, Any]:
+    run_dir = report_root / "runs" / _safe_name(case_id) / arm
+    final_path = run_dir / "agent-last.txt"
+    final_message = (
+        _bounded_text(final_path.read_text(encoding="utf-8", errors="replace"), 12000)
+        if final_path.is_file()
+        else ""
+    )
+    events_path = run_dir / "agent-events.jsonl"
+    commands: list[dict[str, Any]] = []
+    if events_path.is_file():
+        for line in events_path.read_text(encoding="utf-8", errors="replace").splitlines():
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            item = event.get("item") if isinstance(event, Mapping) else None
+            if event.get("type") != "item.completed" or not isinstance(item, Mapping):
+                continue
+            if item.get("type") != "command_execution":
+                continue
+            command = str(item.get("command") or "")
+            lower_command = command.lower()
+            is_validation = any(
+                marker in lower_command
+                for marker in ("vitest", "pytest", "typecheck", "git diff --check")
+            ) or bool(
+                re.search(
+                    r"\b(?:npm|pnpm|yarn|bun)\b[^;&|\n]*\b(?:test|check|lint)\b",
+                    lower_command,
+                )
+                or re.search(r"(?:^|[\s/])(?:tsc|tsgo)(?:\s|$)", lower_command)
+            )
+            if not is_validation:
+                continue
+            commands.append(
+                {
+                    "command": command,
+                    "exit_code": item.get("exit_code"),
+                    "status": item.get("status"),
+                    "output": _bounded_text(str(item.get("aggregated_output") or ""), 10000),
+                }
+            )
+    return {"final_message": final_message, "validation_commands": commands[-10:]}
+
+
 def _retrieval_judgment(report_root: Path, case_id: str) -> Mapping[str, Any] | None:
     guidance_path = report_root / "runs" / _safe_name(case_id) / "guided" / "guidance.json"
     if not guidance_path.is_file():
@@ -139,6 +190,11 @@ def _judge(
             "changed_untracked_files": row.get("changed_untracked_files", []),
             "edited_visible_tests": row.get("edited_visible_tests", []),
             "test_evidence": _test_evidence(row),
+            "agent_validation_evidence": _agent_validation_evidence(
+                report_root,
+                str(row["case_id"]),
+                str(row["arm"]),
+            ),
         },
         "candidate_patch": _bounded_text(candidate_patch),
         "hidden_reference_diff_for_post_run_evaluation_only": solution_diff,
