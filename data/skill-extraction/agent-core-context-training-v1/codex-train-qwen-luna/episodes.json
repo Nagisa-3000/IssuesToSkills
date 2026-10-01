@@ -1,0 +1,649 @@
+[
+  {
+    "after": "At pinned implementation ref `3987391392611e5d1f66851681f13ee7e55f4864`, the existing DeepSeek V4 rows use `/^deepseek-(?:v4|flash)/` for both input and output, ahead of the generic/family-specific rows. `deepseek-flash` therefore resolves to 1,000,000 input and 384,000 output; the output path recognizes it as a known model and applies the existing 64,000 automatic ceiling. Neighboring V4, older-family, and control identifiers retain their prior results. [E3,E5,E10]",
+    "before": "At parent `156092e892db5b098bd6d0ecf606dd37449538fe`, the ordered input table matched `/^deepseek-v4/` to 1,000,000 and otherwise fell through to `/^deepseek/` at 131,072. The output table matched only `/^deepseek-v4/`, so `deepseek-flash` used the 32,000 unknown-model default. Issue #11894 measured 131,072/32,000 and linked the undersized context to repeated compression and `COMPRESSION_FAILED_OUTPUT_TRUNCATED` in long sessions. [E1,E2]",
+    "diff": "Commit `3987391392611e5d1f66851681f13ee7e55f4864` has parent `156092e892db5b098bd6d0ecf606dd37449538fe` and changes exactly two files: `packages/core/src/core/tokenLimits.ts` (the input and output DeepSeek regex rows, with a vendor-spelling explanation) and `packages/core/src/core/tokenLimits.test.ts` (the new alias test). GitHub reports 12 additions and 2 deletions overall; there are no provider or normalizer edits. [E3,E4,E5]",
+    "episode_id": "QwenLM/qwen-code#11894@3987391392611e5d1f66851681f13ee7e55f4864",
+    "title": "Prevent context-budget collapse for DeepSeek's canonical flash alias",
+    "repository": "QwenLM/qwen-code",
+    "revision": "github-issue-11894",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10",
+      "E11",
+      "E12",
+      "E13"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "QwenLM/qwen-code",
+      "issue": 11894,
+      "checkout": "/home/chenyujia/tritonToLlvm/qwen-code",
+      "manifest_metadata": {
+        "category": "context-budget-and-compaction",
+        "role": "train_candidate",
+        "case_id": "QwenLM__qwen-code__11894__context-budget-and-compaction"
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "QwenLM/qwen-code",
+        "issue_number": 11894,
+        "issue": {
+          "number": 11894,
+          "title": "",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 11909,
+              "title": "",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tpackages/core/src/core/tokenLimits.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/core/src/core/tokenLimits.ts"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "3987391392611e5d1f66851681f13ee7e55f4864",
+                "subject": "fix(core): resolve DeepSeek's official API `deepseek-flash` name at V4 limits (#11909)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/qwen-code",
+        "pinned_ref": "3987391392611e5d1f66851681f13ee7e55f4864",
+        "resolved_commit": "3987391392611e5d1f66851681f13ee7e55f4864",
+        "parent_commit": "156092e892db5b098bd6d0ecf606dd37449538fe",
+        "commit_show_stat": "commit 3987391392611e5d1f66851681f13ee7e55f4864\nAuthor:     Yufeng He <40085740+he-yufeng@users.noreply.github.com>\nAuthorDate: Fri Sep 18 00:58:35 2026 +0000\nCommit:     GitHub <noreply@github.com>\nCommitDate: Fri Sep 18 00:58:35 2026 +0000\n\n    fix(core): resolve DeepSeek's official API `deepseek-flash` name at V4 limits (#11909)\n    \n    The official DeepSeek API only accepts `deepseek-flash` and `deepseek-v4-pro`\n    as model names, but the V4 rules keyed on `/^deepseek-v4/`, so the direct-API\n    name fell through to the generic 128K/32K row and long sessions died on\n    COMPRESSION_FAILED_OUTPUT_TRUNCATED. Both rules now match\n    `/^deepseek-(?:v4|flash)/`; older families keep their pinned fallbacks.\n    \n    Closes #11894\n\n packages/core/src/core/tokenLimits.test.ts | 7 +++++++\n packages/core/src/core/tokenLimits.ts      | 7 +++++--\n 2 files changed, 12 insertions(+), 2 deletions(-)\n",
+        "changed_files_name_status": "M\tpackages/core/src/core/tokenLimits.test.ts\nM\tpackages/core/src/core/tokenLimits.ts\n",
+        "linked_issue_numbers": [
+          11894,
+          11909
+        ],
+        "manifest_metadata": {
+          "category": "context-budget-and-compaction",
+          "theme": "context-budget-and-compaction",
+          "file_sample": [
+            "packages/core/src/core/tokenLimits.ts",
+            "packages/core/src/core/tokenLimits.test.ts"
+          ],
+          "quality": "exact-table-row-implementation-bearing"
+        },
+        "fetched_at": "2026-09-30T16:47:59.579242+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "candidate_atomics": [
+          {
+            "description": "Measure the configured model alias in both input and output dimensions before changing the classifier, so a context-budget failure is distinguished from a compression-algorithm failure. The issue reproduction measured `deepseek-flash` at 131072 input and 32000 output, while the PR validation repeated the same before-state values and compared them with the intended V4 values. [E1,E8,E10]",
+            "evidence_ids": [
+              "E1",
+              "E8",
+              "E10"
+            ],
+            "name": "measure-alias-limit-resolution",
+            "semantic_action": {
+              "evidence_ids": [
+                "E1",
+                "E8",
+                "E10"
+              ],
+              "intent": "Identify whether premature compaction is caused by a model-name alias falling into an artificially small or unknown budget bucket. [E1,E10]",
+              "module_role": "Token-budget resolution diagnostic probe [E1,E8]",
+              "operation": "measure",
+              "parameters": [
+                "configured model identifier, especially `deepseek-flash` [E1]",
+                "input versus output limit selector [E1,E8]",
+                "resolved context and output limits [E1,E10]",
+                "observed compression status or context-window behavior [E1,E10]"
+              ],
+              "post_state": "The probe establishes the before-state contract: `deepseek-flash` resolves to 131072 input, 32000 output, and an unknown-model output classification, while neighboring V4 and older-family identifiers provide comparison controls. [E1,E8,E10]",
+              "pre_state": "A provider configuration names a model alias and a long session shows repeated compaction or a compression failure, but the model-name-to-limit mapping has not yet been verified. [E1,E10]",
+              "validation": "Run the direct `tokenLimit()` probe and compare it with the issue's measured long-session behavior; the PR's later A/B validation repeats the values and exercises the resulting CLI context/compaction path. [E1,E8,E10]"
+            }
+          },
+          {
+            "description": "Extend the existing ordered input-limit mapping so the official DeepSeek API alias `deepseek-flash` shares the already-defined V4 1M context bucket before the generic 128K fallback. This fixes the custom-provider path that lets `knownTokenLimit` populate an absent `contextWindowSize`, without changing older DeepSeek families. [E1,E2,E3,E4,E6,E10]",
+            "evidence_ids": [
+              "E1",
+              "E2",
+              "E3",
+              "E4",
+              "E6",
+              "E10"
+            ],
+            "name": "classify-deepseek-flash-as-v4-input",
+            "semantic_action": {
+              "evidence_ids": [
+                "E1",
+                "E2",
+                "E3",
+                "E4",
+                "E5",
+                "E6",
+                "E9",
+                "E10"
+              ],
+              "intent": "Prevent a valid high-context model alias from being misclassified into a smaller context window that drives premature compaction and eventual `COMPRESSION_FAILED_OUTPUT_TRUNCATED`. [E1,E6,E10]",
+              "module_role": "Ordered model-identifier-to-context-budget classifier [E2,E3]",
+              "operation": "map",
+              "parameters": [
+                "normalized model identifier `deepseek-flash` [E1,E2]",
+                "V4/flash family prefix `/^deepseek-(?:v4|flash)/` [E3]",
+                "1,000,000-token input bucket [E2,E3]",
+                "generic `/^deepseek/` fallback at 131072 [E2,E3]",
+                "custom provider entry without an explicit `contextWindowSize` [E1,E6]"
+              ],
+              "post_state": "The input row matches names beginning with `deepseek-v4` or `deepseek-flash` and remains ahead of the generic DeepSeek fallback, so `deepseek-flash` resolves to 1,000,000 input tokens while the tested older families retain their existing rows. [E3,E10]",
+              "pre_state": "At parent `156092e892db5b098bd6d0ecf606dd37449538fe`, normalization leaves `deepseek-flash` outside the `/^deepseek-v4/` row; first-match resolution therefore falls through to `/^deepseek/` and returns 131072 input tokens. [E1,E2]",
+              "validation": "The added input assertion passes in the 91/91 core test run, and the two-tree CLI check changes `deepseek-flash` from a 131.1k to a 1000.0k context window while the `deepseek-xyz` control remains at 131.1k. [E5,E8,E9,E10]"
+            }
+          },
+          {
+            "description": "Extend the output-limit mapping in parallel so `deepseek-flash` receives the V4 384K advertised output limit and follows the existing known-model provider path instead of the 32K unknown-model default. The existing 64K automatic output ceiling remains the request-level cap, and older output rows are preserved. [E1,E2,E3,E7,E10]",
+            "evidence_ids": [
+              "E1",
+              "E2",
+              "E3",
+              "E4",
+              "E7",
+              "E10"
+            ],
+            "name": "classify-deepseek-flash-as-v4-output",
+            "semantic_action": {
+              "evidence_ids": [
+                "E1",
+                "E2",
+                "E3",
+                "E5",
+                "E7",
+                "E8",
+                "E10"
+              ],
+              "intent": "Remove the silent unknown-model output fallback for the canonical alias while aligning its output behavior with the already-supported V4 family. [E1,E7,E10]",
+              "module_role": "Ordered model-identifier-to-output-budget classifier [E2,E3]",
+              "operation": "map",
+              "parameters": [
+                "normalized model identifier `deepseek-flash` [E1]",
+                "V4/flash output prefix `/^deepseek-(?:v4|flash)/` [E3]",
+                "384,000-token model output limit [E2,E3]",
+                "`hasExplicitOutputLimit` known-model classification [E7,E10]",
+                "64,000-token `OUTPUT_TOKEN_CEILING` for automatic requests [E7,E10]"
+              ],
+              "post_state": "The output row returns 384,000 for `deepseek-flash`, the provider sees the model as explicitly known, and the default request follows the existing V4 behavior with a 64,000 ceiling; `deepseek-v3.2`, `deepseek-r1`, `deepseek-reasoner`, and `deepseek-chat` remain unchanged. [E3,E10]",
+              "pre_state": "The parent output table recognizes only `/^deepseek-v4/`; `deepseek-flash` matches no DeepSeek output row and consequently returns the 32,000 default, causing output consumers to treat it as an unknown model. [E1,E2,E7]",
+              "validation": "The new output assertion passes, and the maintainer A/B records 32000/unknown/32000 before versus 384000/known/64000 after, with the neighboring model rows unchanged. [E5,E8,E10]"
+            }
+          },
+          {
+            "description": "Add a focused regression contract for the canonical alias that pins both input and output limits and proves the change is load-bearing while retaining the surrounding V4 and older-family assertions. Reverting the two production rows makes the new case fail at the issue's original 131072 value. [E5,E8,E10]",
+            "evidence_ids": [
+              "E4",
+              "E5",
+              "E8",
+              "E10"
+            ],
+            "name": "pin-deepseek-flash-limit-regression",
+            "semantic_action": {
+              "evidence_ids": [
+                "E4",
+                "E5",
+                "E8",
+                "E10"
+              ],
+              "intent": "Make the alias-to-budget behavior regression-detectable across both context-window and output-limit dimensions. [E5,E10]",
+              "module_role": "Model-budget mapping regression contract [E5]",
+              "operation": "validate",
+              "parameters": [
+                "canonical model alias `deepseek-flash` [E5]",
+                "expected input limit 1,000,000 [E5]",
+                "expected output limit 384,000 [E5]",
+                "neighboring V4 and older-family control models [E5,E10]"
+              ],
+              "post_state": "A named test asserts `tokenLimit('deepseek-flash') === 1000000` and `tokenLimit('deepseek-flash', 'output') === 384000`, while the existing V4 and 128K-family cases remain in the suite. [E5]",
+              "pre_state": "The test suite covered versioned V4 names and older DeepSeek families but had no direct assertion for the official API spelling `deepseek-flash`. [E2,E5]",
+              "validation": "`vitest run src/core/tokenLimits.test.ts` passes 91/91 at the PR head; with the two regex rows reverted, exactly the new test fails with 131072 instead of 1000000, demonstrating that the oracle distinguishes before from after. [E8,E10]"
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "atomic_names": [
+              "measure-alias-limit-resolution",
+              "classify-deepseek-flash-as-v4-input",
+              "classify-deepseek-flash-as-v4-output",
+              "pin-deepseek-flash-limit-regression"
+            ],
+            "description": "Use this workflow when a provider's accepted model identifier has a different spelling from the repository's existing high-capacity family rule and long sessions show premature compaction or compression failure. It is not applicable when the provider has already supplied an explicit, authoritative context window or when there is no evidence that the alias belongs to the existing high-capacity family. Do not rewrite the global normalizer, broaden the generic family fallback, or change an unrelated provider preset merely to make one alias pass; the implementation evidence shows that the narrow table-row change reaches the custom-provider path and preserves neighboring model behavior. [E1,E6,E10,E13]",
+            "evidence_ids": [
+              "E1",
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E10",
+              "E11",
+              "E12",
+              "E13"
+            ],
+            "name": "repair-canonical-model-alias-budget-routing",
+            "workflow_graph": {
+              "edges": [
+                {
+                  "from": "measure-alias-limit-resolution",
+                  "to": "classify-deepseek-flash-as-v4-input",
+                  "type": "enables"
+                },
+                {
+                  "from": "measure-alias-limit-resolution",
+                  "to": "classify-deepseek-flash-as-v4-output",
+                  "type": "enables"
+                },
+                {
+                  "from": "classify-deepseek-flash-as-v4-input",
+                  "to": "pin-deepseek-flash-limit-regression",
+                  "type": "validates"
+                },
+                {
+                  "from": "classify-deepseek-flash-as-v4-output",
+                  "to": "pin-deepseek-flash-limit-regression",
+                  "type": "validates"
+                }
+              ],
+              "entry_state": "A custom model-provider configuration supplies `deepseek-flash` without an explicit context window; first-match resolution reports 131072 input and 32000 output, and a large prompt is driven into the compaction path. [E1,E6,E10]",
+              "exit_state": "The canonical alias resolves to 1,000,000 input and 384,000 output, the provider observes the existing 64,000 automatic output ceiling, neighboring DeepSeek families retain their previous limits, and the regression plus end-to-end checks pass. [E5,E9,E10]",
+              "goal": "Align the provider's canonical model spelling with the existing high-capacity family invariant in every affected limit dimension, so context budgeting and output sizing do not silently use the generic or unknown-model fallback. [E3,E6,E7,E10]",
+              "steps": [
+                {
+                  "action_name": "measure-alias-limit-resolution",
+                  "optional": false,
+                  "role": "diagnose"
+                },
+                {
+                  "action_name": "classify-deepseek-flash-as-v4-input",
+                  "optional": false,
+                  "role": "reconcile"
+                },
+                {
+                  "action_name": "classify-deepseek-flash-as-v4-output",
+                  "optional": false,
+                  "role": "reconcile"
+                },
+                {
+                  "action_name": "pin-deepseek-flash-limit-regression",
+                  "optional": false,
+                  "role": "validate"
+                }
+              ],
+              "unresolved_or_deferred": [
+                "The PR did not make a live request to `api.deepseek.com`; the vendor's accepted names and advertised limits remain grounded in the endpoint 400 text quoted by Issue #11894 and corroborating repository configuration, so a new provider should re-confirm that external contract. [E1,E8,E10]",
+                "The bare alias `deepseek-v4` still normalizes to `deepseek` and remains at 131072 in both before and after trees; this workflow must not claim to fix that pre-existing suffix-stripping issue. [E11]",
+                "The duplicated VS Code companion table remains unchanged. Review evidence describes it as a non-production mirror with no live importer and a follow-up opportunity, not part of this core fix. [E10,E12]",
+                "The built-in DeepSeek preset may still expose a model spelling rejected by the official endpoint; its explicit 1,000,000 context setting prevents this particular auto-bucketing failure, but endpoint-name compatibility is a separate unresolved issue. [E1,E10,E12]",
+                "Only one repository/workflow is represented here, so no cross-project Resolution Pattern should be promoted from this episode alone. [E4]"
+              ]
+            }
+          }
+        ],
+        "episode": {
+          "after": "At pinned implementation ref `3987391392611e5d1f66851681f13ee7e55f4864`, the existing DeepSeek V4 rows use `/^deepseek-(?:v4|flash)/` for both input and output, ahead of the generic/family-specific rows. `deepseek-flash` therefore resolves to 1,000,000 input and 384,000 output; the output path recognizes it as a known model and applies the existing 64,000 automatic ceiling. Neighboring V4, older-family, and control identifiers retain their prior results. [E3,E5,E10]",
+          "before": "At parent `156092e892db5b098bd6d0ecf606dd37449538fe`, the ordered input table matched `/^deepseek-v4/` to 1,000,000 and otherwise fell through to `/^deepseek/` at 131,072. The output table matched only `/^deepseek-v4/`, so `deepseek-flash` used the 32,000 unknown-model default. Issue #11894 measured 131,072/32,000 and linked the undersized context to repeated compression and `COMPRESSION_FAILED_OUTPUT_TRUNCATED` in long sessions. [E1,E2]",
+          "diff": "Commit `3987391392611e5d1f66851681f13ee7e55f4864` has parent `156092e892db5b098bd6d0ecf606dd37449538fe` and changes exactly two files: `packages/core/src/core/tokenLimits.ts` (the input and output DeepSeek regex rows, with a vendor-spelling explanation) and `packages/core/src/core/tokenLimits.test.ts` (the new alias test). GitHub reports 12 additions and 2 deletions overall; there are no provider or normalizer edits. [E3,E4,E5]",
+          "episode_id": "QwenLM/qwen-code#11894@3987391392611e5d1f66851681f13ee7e55f4864",
+          "title": "Prevent context-budget collapse for DeepSeek's canonical flash alias"
+        },
+        "evidence_units": [
+          {
+            "claim": "Issue #11894 reports that the official DeepSeek endpoint accepts `deepseek-flash` and `deepseek-v4-pro`, rejects the DashScope spelling `deepseek-v4.1-flash`, and that direct `deepseek-flash` resolution produces 131072 input and 32000 output; measured long `/review --effort high` sessions repeatedly compacted and one died with `COMPRESSION_FAILED_OUTPUT_TRUNCATED`, while a 1,000,000 context workaround completed normally.",
+            "id": "E1",
+            "kind": "issue",
+            "source": "https://github.com/QwenLM/qwen-code/issues/11894"
+          },
+          {
+            "claim": "The parent implementation table is first-match ordered: `/^deepseek-v4/` maps input to the 1,000,000 bucket before `/^deepseek/` maps other DeepSeek names to 131072; the output table has `/^deepseek-v4/` at 384000 but no generic DeepSeek output row, leaving unmatched names to the 32000 default.",
+            "id": "E2",
+            "kind": "implementation",
+            "source": "https://github.com/QwenLM/qwen-code/blob/156092e892db5b098bd6d0ecf606dd37449538fe/packages/core/src/core/tokenLimits.ts#L243-L307"
+          },
+          {
+            "claim": "The pinned implementation widens both existing V4 rows to `/^deepseek-(?:v4|flash)/`, keeps the input row before the generic `/^deepseek/` fallback and the output row before the older-family rows, and documents the official-versus-DashScope spelling distinction.",
+            "id": "E3",
+            "kind": "implementation",
+            "source": "https://github.com/QwenLM/qwen-code/blob/3987391392611e5d1f66851681f13ee7e55f4864/packages/core/src/core/tokenLimits.ts#L243-L307"
+          },
+          {
+            "claim": "Commit `3987391392611e5d1f66851681f13ee7e55f4864` has parent `156092e892db5b098bd6d0ecf606dd37449538fe`, changes two files, and reports 12 additions and 2 deletions: the core limit table and its test.",
+            "id": "E4",
+            "kind": "commit",
+            "source": "https://api.github.com/repos/QwenLM/qwen-code/commits/3987391392611e5d1f66851681f13ee7e55f4864"
+          },
+          {
+            "claim": "The head test adds a dedicated case asserting `tokenLimit('deepseek-flash')` equals 1000000 and `tokenLimit('deepseek-flash', 'output')` equals 384000, alongside the existing V4 and older-family cases.",
+            "id": "E5",
+            "kind": "test",
+            "source": "https://github.com/QwenLM/qwen-code/blob/3987391392611e5d1f66851681f13ee7e55f4864/packages/core/src/core/tokenLimits.test.ts#L258-L275"
+          },
+          {
+            "claim": "The input call site in `modelConfigResolver.ts` uses `knownTokenLimit(modelId, 'input')` to auto-fill `contextWindowSize` when no explicit provider value exists, which is the custom-provider path implicated by the issue.",
+            "id": "E6",
+            "kind": "call_site",
+            "source": "https://github.com/QwenLM/qwen-code/blob/3987391392611e5d1f66851681f13ee7e55f4864/packages/core/src/models/modelConfigResolver.ts#L409-L414"
+          },
+          {
+            "claim": "The OpenAI-compatible default provider and Anthropic generator call `tokenLimit(model, 'output')` together with `hasExplicitOutputLimit`, so widening the output row changes the alias from unknown-model handling to the existing known-V4 output-budget path.",
+            "id": "E7",
+            "kind": "call_site",
+            "source": "https://github.com/QwenLM/qwen-code/blob/3987391392611e5d1f66851681f13ee7e55f4864/packages/core/src/core/openaiContentGenerator/provider/default.ts#L324-L328; https://github.com/QwenLM/qwen-code/blob/3987391392611e5d1f66851681f13ee7e55f4864/packages/core/src/core/anthropicContentGenerator/anthropicContentGenerator.ts#L840-L843"
+          },
+          {
+            "claim": "The PR test plan reports a direct probe of 1000000 input and 384000 output for `deepseek-flash`, unchanged neighboring values, and `vitest run src/core/tokenLimits.test.ts` passing 91/91; it also states that reverting the regex makes the new case fail at 131072/32000.",
+            "id": "E8",
+            "kind": "validation",
+            "source": "https://github.com/QwenLM/qwen-code/pull/11909"
+          },
+          {
+            "claim": "A PR verification comment reports a two-tree CLI `/context` A/B: `deepseek-flash` is 1000.0k on the head and 131.1k with the merge-base table, while `deepseek-xyz` remains 131.1k as a control; the context/compaction ladder moves with the corrected window and the relevant product CI lanes are green.",
+            "id": "E9",
+            "kind": "validation",
+            "source": "https://github.com/QwenLM/qwen-code/pull/11909#issuecomment-5711481953"
+          },
+          {
+            "claim": "A maintainer's real-build verification isolates the two regex rows, reports 91/91 unit tests at head and exactly one reverted-test failure, measures `deepseek-flash` changing from 131072/32000/unknown/32000 to 1000000/384000/known/64000, shows a 250k prompt is safe after the change rather than entering compaction, and reproduces then removes the reported compression failure using an injected prompt count.",
+            "id": "E10",
+            "kind": "validation",
+            "source": "https://github.com/QwenLM/qwen-code/pull/11909#issuecomment-5675130325"
+          },
+          {
+            "claim": "Review verification records that bare `deepseek-v4` remains 131.1k in both trees because `normalize()` strips a trailing `-v4` before table matching; this is pre-existing and not fixed by the pinned change.",
+            "id": "E11",
+            "kind": "limitation",
+            "source": "https://github.com/QwenLM/qwen-code/pull/11909#issuecomment-5711481953"
+          },
+          {
+            "claim": "The maintainer verification records that the VS Code companion contains a duplicated, unsynchronized table with no production importer, and that the built-in provider preset may have a separate endpoint-name issue even though its explicit context setting avoids this auto-bucketing failure; both are outside the pinned core diff.",
+            "id": "E12",
+            "kind": "limitation",
+            "source": "https://github.com/QwenLM/qwen-code/pull/11909#issuecomment-5675130325"
+          },
+          {
+            "claim": "The review identifies the narrow solution boundary: widen the two existing table rows rather than rewrite the shared normalizer or modify only a provider preset, and preserve the specific older DeepSeek rows and generic fallback ordering.",
+            "id": "E13",
+            "kind": "review",
+            "source": "https://github.com/QwenLM/qwen-code/pull/11909#issuecomment-5674679847"
+          }
+        ],
+        "unresolved_questions": [
+          "The PR did not make a live request to `api.deepseek.com`; the vendor's accepted names and exact advertised limits remain based on the endpoint 400 text quoted in Issue #11894 and repository corroboration, not an independent live call. [E1,E8,E10]",
+          "The bare `deepseek-v4` alias still resolves to 131072 because normalization removes the discriminating suffix before matching; this pre-existing issue is intentionally not credited to the pinned implementation. [E11]",
+          "The duplicated VS Code companion limit table is still out of sync, and whether it should be synchronized remains a separate follow-up because its live path imports the core classifier instead. [E10,E12]",
+          "The built-in DeepSeek preset may still expose a model spelling rejected by the official endpoint; its explicit contextWindowSize prevents this particular context-budget bug, but provider-name compatibility is unresolved. [E1,E10,E12]",
+          "The detailed A/B and real-build validation was recorded on PR head `4eda03bf5eeca40f320a1b3616b45f1587571fd1`, while the requested pinned ref is merge commit `3987391392611e5d1f66851681f13ee7e55f4864`; commit metadata shows the same two-file implementation diff, but no separate execution at the merge SHA is recorded. [E4,E10]",
+          "No cross-project peer workflows or untouched holdout result are present in this single-repository episode, so a universal Resolution Pattern is deferred rather than promoted. [E4]"
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "description": "Measure the configured model alias in both input and output dimensions before changing the classifier, so a context-budget failure is distinguished from a compression-algorithm failure. The issue reproduction measured `deepseek-flash` at 131072 input and 32000 output, while the PR validation repeated the same before-state values and compared them with the intended V4 values. [E1,E8,E10]",
+          "evidence_ids": [
+            "E1",
+            "E8",
+            "E10"
+          ],
+          "name": "measure-alias-limit-resolution",
+          "semantic_action": {
+            "evidence_ids": [
+              "E1",
+              "E8",
+              "E10"
+            ],
+            "intent": "Identify whether premature compaction is caused by a model-name alias falling into an artificially small or unknown budget bucket. [E1,E10]",
+            "module_role": "Token-budget resolution diagnostic probe [E1,E8]",
+            "operation": "measure",
+            "parameters": [
+              "configured model identifier, especially `deepseek-flash` [E1]",
+              "input versus output limit selector [E1,E8]",
+              "resolved context and output limits [E1,E10]",
+              "observed compression status or context-window behavior [E1,E10]"
+            ],
+            "post_state": "The probe establishes the before-state contract: `deepseek-flash` resolves to 131072 input, 32000 output, and an unknown-model output classification, while neighboring V4 and older-family identifiers provide comparison controls. [E1,E8,E10]",
+            "pre_state": "A provider configuration names a model alias and a long session shows repeated compaction or a compression failure, but the model-name-to-limit mapping has not yet been verified. [E1,E10]",
+            "validation": "Run the direct `tokenLimit()` probe and compare it with the issue's measured long-session behavior; the PR's later A/B validation repeats the values and exercises the resulting CLI context/compaction path. [E1,E8,E10]"
+          }
+        },
+        {
+          "description": "Extend the existing ordered input-limit mapping so the official DeepSeek API alias `deepseek-flash` shares the already-defined V4 1M context bucket before the generic 128K fallback. This fixes the custom-provider path that lets `knownTokenLimit` populate an absent `contextWindowSize`, without changing older DeepSeek families. [E1,E2,E3,E4,E6,E10]",
+          "evidence_ids": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E6",
+            "E10"
+          ],
+          "name": "classify-deepseek-flash-as-v4-input",
+          "semantic_action": {
+            "evidence_ids": [
+              "E1",
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E9",
+              "E10"
+            ],
+            "intent": "Prevent a valid high-context model alias from being misclassified into a smaller context window that drives premature compaction and eventual `COMPRESSION_FAILED_OUTPUT_TRUNCATED`. [E1,E6,E10]",
+            "module_role": "Ordered model-identifier-to-context-budget classifier [E2,E3]",
+            "operation": "map",
+            "parameters": [
+              "normalized model identifier `deepseek-flash` [E1,E2]",
+              "V4/flash family prefix `/^deepseek-(?:v4|flash)/` [E3]",
+              "1,000,000-token input bucket [E2,E3]",
+              "generic `/^deepseek/` fallback at 131072 [E2,E3]",
+              "custom provider entry without an explicit `contextWindowSize` [E1,E6]"
+            ],
+            "post_state": "The input row matches names beginning with `deepseek-v4` or `deepseek-flash` and remains ahead of the generic DeepSeek fallback, so `deepseek-flash` resolves to 1,000,000 input tokens while the tested older families retain their existing rows. [E3,E10]",
+            "pre_state": "At parent `156092e892db5b098bd6d0ecf606dd37449538fe`, normalization leaves `deepseek-flash` outside the `/^deepseek-v4/` row; first-match resolution therefore falls through to `/^deepseek/` and returns 131072 input tokens. [E1,E2]",
+            "validation": "The added input assertion passes in the 91/91 core test run, and the two-tree CLI check changes `deepseek-flash` from a 131.1k to a 1000.0k context window while the `deepseek-xyz` control remains at 131.1k. [E5,E8,E9,E10]"
+          }
+        },
+        {
+          "description": "Extend the output-limit mapping in parallel so `deepseek-flash` receives the V4 384K advertised output limit and follows the existing known-model provider path instead of the 32K unknown-model default. The existing 64K automatic output ceiling remains the request-level cap, and older output rows are preserved. [E1,E2,E3,E7,E10]",
+          "evidence_ids": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E7",
+            "E10"
+          ],
+          "name": "classify-deepseek-flash-as-v4-output",
+          "semantic_action": {
+            "evidence_ids": [
+              "E1",
+              "E2",
+              "E3",
+              "E5",
+              "E7",
+              "E8",
+              "E10"
+            ],
+            "intent": "Remove the silent unknown-model output fallback for the canonical alias while aligning its output behavior with the already-supported V4 family. [E1,E7,E10]",
+            "module_role": "Ordered model-identifier-to-output-budget classifier [E2,E3]",
+            "operation": "map",
+            "parameters": [
+              "normalized model identifier `deepseek-flash` [E1]",
+              "V4/flash output prefix `/^deepseek-(?:v4|flash)/` [E3]",
+              "384,000-token model output limit [E2,E3]",
+              "`hasExplicitOutputLimit` known-model classification [E7,E10]",
+              "64,000-token `OUTPUT_TOKEN_CEILING` for automatic requests [E7,E10]"
+            ],
+            "post_state": "The output row returns 384,000 for `deepseek-flash`, the provider sees the model as explicitly known, and the default request follows the existing V4 behavior with a 64,000 ceiling; `deepseek-v3.2`, `deepseek-r1`, `deepseek-reasoner`, and `deepseek-chat` remain unchanged. [E3,E10]",
+            "pre_state": "The parent output table recognizes only `/^deepseek-v4/`; `deepseek-flash` matches no DeepSeek output row and consequently returns the 32,000 default, causing output consumers to treat it as an unknown model. [E1,E2,E7]",
+            "validation": "The new output assertion passes, and the maintainer A/B records 32000/unknown/32000 before versus 384000/known/64000 after, with the neighboring model rows unchanged. [E5,E8,E10]"
+          }
+        },
+        {
+          "description": "Add a focused regression contract for the canonical alias that pins both input and output limits and proves the change is load-bearing while retaining the surrounding V4 and older-family assertions. Reverting the two production rows makes the new case fail at the issue's original 131072 value. [E5,E8,E10]",
+          "evidence_ids": [
+            "E4",
+            "E5",
+            "E8",
+            "E10"
+          ],
+          "name": "pin-deepseek-flash-limit-regression",
+          "semantic_action": {
+            "evidence_ids": [
+              "E4",
+              "E5",
+              "E8",
+              "E10"
+            ],
+            "intent": "Make the alias-to-budget behavior regression-detectable across both context-window and output-limit dimensions. [E5,E10]",
+            "module_role": "Model-budget mapping regression contract [E5]",
+            "operation": "validate",
+            "parameters": [
+              "canonical model alias `deepseek-flash` [E5]",
+              "expected input limit 1,000,000 [E5]",
+              "expected output limit 384,000 [E5]",
+              "neighboring V4 and older-family control models [E5,E10]"
+            ],
+            "post_state": "A named test asserts `tokenLimit('deepseek-flash') === 1000000` and `tokenLimit('deepseek-flash', 'output') === 384000`, while the existing V4 and 128K-family cases remain in the suite. [E5]",
+            "pre_state": "The test suite covered versioned V4 names and older DeepSeek families but had no direct assertion for the official API spelling `deepseek-flash`. [E2,E5]",
+            "validation": "`vitest run src/core/tokenLimits.test.ts` passes 91/91 at the PR head; with the two regex rows reverted, exactly the new test fails with 131072 instead of 1000000, demonstrating that the oracle distinguishes before from after. [E8,E10]"
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "atomic_names": [
+            "measure-alias-limit-resolution",
+            "classify-deepseek-flash-as-v4-input",
+            "classify-deepseek-flash-as-v4-output",
+            "pin-deepseek-flash-limit-regression"
+          ],
+          "description": "Use this workflow when a provider's accepted model identifier has a different spelling from the repository's existing high-capacity family rule and long sessions show premature compaction or compression failure. It is not applicable when the provider has already supplied an explicit, authoritative context window or when there is no evidence that the alias belongs to the existing high-capacity family. Do not rewrite the global normalizer, broaden the generic family fallback, or change an unrelated provider preset merely to make one alias pass; the implementation evidence shows that the narrow table-row change reaches the custom-provider path and preserves neighboring model behavior. [E1,E6,E10,E13]",
+          "evidence_ids": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10",
+            "E11",
+            "E12",
+            "E13"
+          ],
+          "name": "repair-canonical-model-alias-budget-routing",
+          "workflow_graph": {
+            "edges": [
+              {
+                "from": "measure-alias-limit-resolution",
+                "to": "classify-deepseek-flash-as-v4-input",
+                "type": "enables"
+              },
+              {
+                "from": "measure-alias-limit-resolution",
+                "to": "classify-deepseek-flash-as-v4-output",
+                "type": "enables"
+              },
+              {
+                "from": "classify-deepseek-flash-as-v4-input",
+                "to": "pin-deepseek-flash-limit-regression",
+                "type": "validates"
+              },
+              {
+                "from": "classify-deepseek-flash-as-v4-output",
+                "to": "pin-deepseek-flash-limit-regression",
+                "type": "validates"
+              }
+            ],
+            "entry_state": "A custom model-provider configuration supplies `deepseek-flash` without an explicit context window; first-match resolution reports 131072 input and 32000 output, and a large prompt is driven into the compaction path. [E1,E6,E10]",
+            "exit_state": "The canonical alias resolves to 1,000,000 input and 384,000 output, the provider observes the existing 64,000 automatic output ceiling, neighboring DeepSeek families retain their previous limits, and the regression plus end-to-end checks pass. [E5,E9,E10]",
+            "goal": "Align the provider's canonical model spelling with the existing high-capacity family invariant in every affected limit dimension, so context budgeting and output sizing do not silently use the generic or unknown-model fallback. [E3,E6,E7,E10]",
+            "steps": [
+              {
+                "action_name": "measure-alias-limit-resolution",
+                "optional": false,
+                "role": "diagnose"
+              },
+              {
+                "action_name": "classify-deepseek-flash-as-v4-input",
+                "optional": false,
+                "role": "reconcile"
+              },
+              {
+                "action_name": "classify-deepseek-flash-as-v4-output",
+                "optional": false,
+                "role": "reconcile"
+              },
+              {
+                "action_name": "pin-deepseek-flash-limit-regression",
+                "optional": false,
+                "role": "validate"
+              }
+            ],
+            "unresolved_or_deferred": [
+              "The PR did not make a live request to `api.deepseek.com`; the vendor's accepted names and advertised limits remain grounded in the endpoint 400 text quoted by Issue #11894 and corroborating repository configuration, so a new provider should re-confirm that external contract. [E1,E8,E10]",
+              "The bare alias `deepseek-v4` still normalizes to `deepseek` and remains at 131072 in both before and after trees; this workflow must not claim to fix that pre-existing suffix-stripping issue. [E11]",
+              "The duplicated VS Code companion table remains unchanged. Review evidence describes it as a non-production mirror with no live importer and a follow-up opportunity, not part of this core fix. [E10,E12]",
+              "The built-in DeepSeek preset may still expose a model spelling rejected by the official endpoint; its explicit 1,000,000 context setting prevents this particular auto-bucketing failure, but endpoint-name compatibility is a separate unresolved issue. [E1,E10,E12]",
+              "Only one repository/workflow is represented here, so no cross-project Resolution Pattern should be promoted from this episode alone. [E4]"
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The PR did not make a live request to `api.deepseek.com`; the vendor's accepted names and exact advertised limits remain based on the endpoint 400 text quoted in Issue #11894 and repository corroboration, not an independent live call. [E1,E8,E10]",
+        "The bare `deepseek-v4` alias still resolves to 131072 because normalization removes the discriminating suffix before matching; this pre-existing issue is intentionally not credited to the pinned implementation. [E11]",
+        "The duplicated VS Code companion limit table is still out of sync, and whether it should be synchronized remains a separate follow-up because its live path imports the core classifier instead. [E10,E12]",
+        "The built-in DeepSeek preset may still expose a model spelling rejected by the official endpoint; its explicit contextWindowSize prevents this particular context-budget bug, but provider-name compatibility is unresolved. [E1,E10,E12]",
+        "The detailed A/B and real-build validation was recorded on PR head `4eda03bf5eeca40f320a1b3616b45f1587571fd1`, while the requested pinned ref is merge commit `3987391392611e5d1f66851681f13ee7e55f4864`; commit metadata shows the same two-file implementation diff, but no separate execution at the merge SHA is recorded. [E4,E10]",
+        "No cross-project peer workflows or untouched holdout result are present in this single-repository episode, so a universal Resolution Pattern is deferred rather than promoted. [E4]"
+      ]
+    },
+    "call_sites": [
+      "The input call site in `modelConfigResolver.ts` uses `knownTokenLimit(modelId, 'input')` to auto-fill `contextWindowSize` when no explicit provider value exists, which is the custom-provider path implicated by the issue.",
+      "The OpenAI-compatible default provider and Anthropic generator call `tokenLimit(model, 'output')` together with `hasExplicitOutputLimit`, so widening the output row changes the alias from unknown-model handling to the existing known-V4 output-budget path."
+    ],
+    "tests": [
+      "The head test adds a dedicated case asserting `tokenLimit('deepseek-flash')` equals 1000000 and `tokenLimit('deepseek-flash', 'output')` equals 384000, alongside the existing V4 and older-family cases."
+    ]
+  }
+]

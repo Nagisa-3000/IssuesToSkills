@@ -101,17 +101,43 @@ def node_from_pattern(pattern: dict[str, Any]) -> Node:
     )
 
 
+def node_from_workflow_fragment(fragment: dict[str, Any]) -> Node:
+    fragment_id = text(fragment.get("id"))
+    roles = [text(value) for value in fragment.get("segment_roles", []) if text(value)]
+    title = "Workflow fragment: " + " -> ".join(roles)
+    return Node(
+        id=fragment_id,
+        node_type=NodeType.WORKFLOW,
+        title=title or fragment_id,
+        summary=text(fragment.get("interpretation")) or "Reusable role skeleton over repository-specific Actions.",
+        repository=None,
+        lifecycle="provisional",
+        confidence=0.55,
+        facets={
+            "problem_class": "universal-workflow-skeleton",
+            "workflow_kind": "role-skeleton",
+            "reuse_scope": text(fragment.get("reuse_scope")),
+            "supporting_categories": fragment.get("supporting_categories", []),
+            "supporting_repositories": fragment.get("supporting_repositories", []),
+        },
+        payload=dict(fragment),
+        provenance={"source": "action-factorization-audit", "stage": "materialize-workflow-fragment"},
+    )
+
+
 def materialize(graph: dict[str, Any], store: CatalogStore) -> dict[str, int]:
     policy = graph.get("extraction_policy") or {}
     if policy.get("holdout_refused") is not True:
         raise ValueError("graph must declare holdout_refused=true")
     action_rows = [dict(item) for item in graph.get("actions", []) if isinstance(item, dict)]
     workflow_rows = [dict(item) for item in graph.get("workflows", []) if isinstance(item, dict)]
+    fragment_rows = [dict(item) for item in graph.get("workflow_fragments", []) if isinstance(item, dict)]
     pattern_rows = [dict(item) for item in graph.get("patterns", []) if isinstance(item, dict)]
 
     nodes: list[Node] = []
     nodes.extend(node_from_action(row) for row in action_rows if text(row.get("id")))
     nodes.extend(node_from_workflow(row) for row in workflow_rows if text(row.get("id")))
+    nodes.extend(node_from_workflow_fragment(row) for row in fragment_rows if text(row.get("id")))
     nodes.extend(node_from_pattern(row) for row in pattern_rows if text(row.get("id")))
 
     with store.transaction():
@@ -195,6 +221,7 @@ def materialize(graph: dict[str, Any], store: CatalogStore) -> dict[str, int]:
     return {
         "actions": len(action_rows),
         "workflows": len(workflow_rows),
+        "workflow_fragments": len(fragment_rows),
         "patterns": len(pattern_rows),
         "nodes": sum(int(value) for value in node_counts.values()) if isinstance(node_counts, dict) else 0,
     }

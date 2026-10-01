@@ -1,0 +1,674 @@
+[
+  {
+    "after": "At pinned ref 3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da, the loop-detection service adds a narrow semantic classifier for run_shell_command requests: every shell-chain segment must be a read-only git status, overview-style git diff, or git ls-files command, with file operands and write-bearing or mixed commands excluded. Recognized variants share one inspection bucket and accumulate a contiguous streak; the eighth request sets loopDetected, records shell_command_stagnation, and logs the typed event. Non-inspection requests, Retry, and prompt reset clear the shell streak. The core stream path propagates the typed reason and stops pending continuation work, while telemetry and non-interactive CLI code expose a human-readable always-on explanation [EV-IMPLEMENTATION-SERVICE][EV-CALLSITE-CLIENT][EV-TELEMETRY-CLI][EV-TEST-SERVICE].",
+    "before": "The pinned ref's parent is 680f523853175856236162460fcd6985c9d68620 [EV-COMMIT-3CE]. Before the change, LoopDetectionService's always-on tier handled exact repeated tool calls based on the same tool name and JSON arguments plus a 100-call per-turn cap, but had no semantic bucket or state for varied read-only git inspection commands. Broader action-stagnation detection lived in the heuristic path, which the core client gated behind skipLoopDetection; consequently the reported varied inspection pattern had no dedicated always-on contract [EV-PARENT-SERVICE][EV-PARENT-CLIENT][EV-ISSUE-4695].",
+    "diff": "The implementation-bearing ref changes four files, with 461 additions and 16 deletions: loopDetectionService.ts adds the threshold, streak state, classifier, always-on guard, and reset behavior; loopDetectionService.test.ts adds 308 lines of positive, reset, retry, disable, and false-positive boundary coverage; nonInteractiveCli.ts adds the new label and always-on hint; telemetry/types.ts adds the structured loop type; client.ts synchronizes the always-on call-site contract comments [EV-COMMIT-3CE][EV-DIFF-3CE][EV-IMPLEMENTATION-SERVICE][EV-TEST-SERVICE][EV-CALLSITE-CLIENT][EV-TELEMETRY-CLI].",
+    "episode_id": "QwenLM/qwen-code#4695@3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da",
+    "title": "Structured tool-contract integrity: stop varied read-only shell inspection loops",
+    "repository": "QwenLM/qwen-code",
+    "revision": "github-issue-4695",
+    "evidence_ids": [
+      "EV-ISSUE-4695",
+      "EV-PR-5944",
+      "EV-COMMIT-3CE",
+      "EV-PARENT-SERVICE",
+      "EV-PARENT-CLIENT",
+      "EV-IMPLEMENTATION-SERVICE",
+      "EV-CALLSITE-CLIENT",
+      "EV-TELEMETRY-CLI",
+      "EV-TEST-SERVICE",
+      "EV-DIFF-3CE",
+      "EV-VALIDATION-PR"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "QwenLM/qwen-code",
+      "issue": 4695,
+      "checkout": "/home/chenyujia/tritonToLlvm/qwen-code",
+      "manifest_metadata": {
+        "category": "structured-tool-contract-integrity",
+        "role": "train_candidate",
+        "case_id": "QwenLM__qwen-code__4695__structured-tool-contract-integrity"
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "QwenLM/qwen-code",
+        "issue_number": 4695,
+        "issue": {
+          "number": 4695,
+          "title": "",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 5944,
+              "title": "",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tpackages/cli/src/nonInteractiveCli.ts"
+              },
+              {
+                "status_line": "M\tpackages/core/src/core/client.ts"
+              },
+              {
+                "status_line": "M\tpackages/core/src/services/loopDetectionService.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/core/src/services/loopDetectionService.ts"
+              },
+              {
+                "status_line": "M\tpackages/core/src/telemetry/types.ts"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da",
+                "subject": "fix(core): halt repeated shell inspection variants (#5944)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/qwen-code",
+        "pinned_ref": "3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da",
+        "resolved_commit": "3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da",
+        "parent_commit": "680f523853175856236162460fcd6985c9d68620",
+        "commit_show_stat": "commit 3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da\nAuthor:     易良 <1204183885@qq.com>\nAuthorDate: Sun Jun 28 21:08:19 2026 +0800\nCommit:     GitHub <noreply@github.com>\nCommitDate: Sun Jun 28 13:08:19 2026 +0000\n\n    fix(core): halt repeated shell inspection variants (#5944)\n    \n    * fix(core): halt repeated shell inspection variants\n    \n    * test(core): cover shell-stagnation streak reset, fix guard-count doc\n    \n    Address review on #5944: the checkAlwaysOnSafeties JSDoc still said it\n    enforces two guards after the shell inspection-command stagnation guard\n    was added, so correct it to three.\n    \n    Add a regression test proving a non-inspection tool call resets the\n    shell-stagnation streak to zero, which is the guard's main false-positive\n    defense and was previously untested.\n    \n    * fix(core): exclude write-bearing git chains from stagnation bucket\n    \n    isGitInspectionCommand matched if any segment of a shell chain was a git\n    status/diff/ls-files, so a productive chain like\n    `git add . && git status && git commit` was classified as read-only\n    inspection. Eight such commands would falsely trip the always-on\n    shell-stagnation guard.\n    \n    Require every segment of the chain to be a read-only git inspection\n    before bucketing. Mixed chains that also write fail open (non-inspection),\n    the safe direction for an always-on halt. The #4695 loop is still caught:\n    its compound case is status && diff, both read-only.\n    \n    * fix(core): halt repeated shell inspection variants\n    \n    * fix(core): treat path-specific git diffs as progress\n    \n    * test(core): cover shell stagnation guard boundaries\n    \n    * test(core): address shell stagnation review feedback\n    \n    * docs(core): sync loop guard comments\n\n packages/cli/src/nonInteractiveCli.ts              |   3 +\n packages/core/src/core/client.ts                   |  14 +-\n .../core/src/services/loopDetectionService.test.ts | 308 +++++++++++++++++++++\n packages/core/src/services/loopDetectionService.ts | 150 +++++++++-\n packages/core/src/telemetry/types.ts               |   2 +\n 5 files changed, 461 insertions(+), 16 deletions(-)\n",
+        "changed_files_name_status": "M\tpackages/cli/src/nonInteractiveCli.ts\nM\tpackages/core/src/core/client.ts\nM\tpackages/core/src/services/loopDetectionService.test.ts\nM\tpackages/core/src/services/loopDetectionService.ts\nM\tpackages/core/src/telemetry/types.ts\n",
+        "linked_issue_numbers": [
+          4695,
+          5944
+        ],
+        "manifest_metadata": {
+          "category": "structured-tool-contract-integrity",
+          "theme": "structured-tool-contract-integrity",
+          "file_sample": [
+            "packages/core/src/services/loopDetectionService.ts",
+            "packages/core/src/services/loopDetectionService.test.ts",
+            "packages/core/src/core/client.ts"
+          ],
+          "quality": "exact-table-row-local-implementation-bearing-candidate"
+        },
+        "fetched_at": "2026-09-30T17:32:40.581496+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "candidate_atomics": [
+          {
+            "description": "Normalize a shell tool request into a semantic read-only repository-inspection bucket so syntactic command variation cannot evade duplicate detection.",
+            "evidence_ids": [
+              "EV-IMPLEMENTATION-SERVICE",
+              "EV-TEST-SERVICE",
+              "EV-DIFF-3CE"
+            ],
+            "name": "normalize_read_only_shell_inspection",
+            "semantic_action": {
+              "evidence_ids": [
+                "EV-IMPLEMENTATION-SERVICE",
+                "EV-TEST-SERVICE"
+              ],
+              "intent": "Recognize semantically equivalent repository-overview inspections even when the model varies the command text, while leaving productive or file-scoped shell work outside the stagnation bucket.",
+              "module_role": "Shell-command intent classifier inside the loop-detection service",
+              "operation": "normalize",
+              "parameters": [
+                "tool name",
+                "args.command string",
+                "shell-chain segments",
+                "git status/diff/ls-files subcommand",
+                "diff flags and revision tokens",
+                "pathspec or file operands"
+              ],
+              "post_state": "For a run_shell_command request, every nonempty shell segment is classified into the stable bucket run_shell_command:git-inspection only when it is a read-only git status, overview-style git diff, or git ls-files inspection; non-git commands, file-specific diffs, write-bearing chains, and mixed shell chains produce no bucket key and follow the reset path.",
+              "pre_state": "A tool-call event contains a tool name and argument object, and the command may be an arbitrary shell string whose semantic intent has not yet been classified.",
+              "validation": "The service tests exercise varied git status/diff/ls-files commands and newline-separated chains, and assert that file-specific diffs with and without --, add/status/commit chains, mixed non-git chains, and repeated non-git commands are not classified as shell stagnation."
+            }
+          },
+          {
+            "description": "Count contiguous semantically equivalent shell inspections and halt the turn on the eighth recognized overview inspection before the generic hard cap is reached.",
+            "evidence_ids": [
+              "EV-IMPLEMENTATION-SERVICE",
+              "EV-TEST-SERVICE",
+              "EV-PR-5944",
+              "EV-VALIDATION-PR"
+            ],
+            "name": "guard_shell_inspection_stagnation",
+            "semantic_action": {
+              "evidence_ids": [
+                "EV-IMPLEMENTATION-SERVICE",
+                "EV-TEST-SERVICE",
+                "EV-VALIDATION-PR"
+              ],
+              "intent": "Stop a model that keeps inspecting repository state without making progress, including loops that vary command spelling or harmless flags and therefore bypass exact tool-call matching.",
+              "module_role": "Always-on shell-inspection circuit breaker in the loop-detection service",
+              "operation": "guard",
+              "parameters": [
+                "normalized inspection bucket key",
+                "consecutive streak count",
+                "threshold of 8",
+                "prompt identifier",
+                "in-session disable state"
+              ],
+              "post_state": "When eight contiguous recognized inspection requests arrive while the shell-stagnation detector is active, the service sets loopDetected, records shell_command_stagnation as the last loop type, logs the loop event, and returns true; requests below the threshold return false and continue.",
+              "pre_state": "The current event is a run_shell_command request that normalized to the read-only inspection bucket, the current contiguous streak is below eight, and the detector has not already halted the turn.",
+              "validation": "The positive unit test passes seven overview variants without halting and asserts that the eighth sets LoopType.SHELL_COMMAND_STAGNATION and emits telemetry; the reported bundled-CLI verification reproduces the same eighth-call halt before the 100-call cap."
+            }
+          },
+          {
+            "description": "Reconcile the inspection streak at progress and lifecycle boundaries so the always-on guard fails open for legitimate work and does not carry state across retries or new prompts.",
+            "evidence_ids": [
+              "EV-IMPLEMENTATION-SERVICE",
+              "EV-TEST-SERVICE",
+              "EV-PR-5944"
+            ],
+            "name": "reset_shell_stagnation_on_progress_boundary",
+            "semantic_action": {
+              "evidence_ids": [
+                "EV-IMPLEMENTATION-SERVICE",
+                "EV-TEST-SERVICE"
+              ],
+              "intent": "Prevent false positives when a non-inspection tool demonstrates progress, when a retry replays a failed attempt, or when a new prompt starts a fresh detection state.",
+              "module_role": "Loop-detector state lifecycle and false-positive boundary manager",
+              "operation": "reconcile",
+              "parameters": [
+                "next stream event type",
+                "next tool name and command",
+                "Retry event",
+                "prompt reset identifier",
+                "last inspection key",
+                "inspection streak"
+              ],
+              "post_state": "A nonmatching tool call clears the shell bucket and streak before later inspections; Retry and prompt reset clear the shell tracking through the shared tool-call reset; productive write-bearing chains, file-specific diffs, and mixed commands never increment the shell-inspection streak.",
+              "pre_state": "The detector has accumulated zero or more recognized inspection calls and receives either another shell request, a non-inspection tool call, a Retry event, or a prompt reset; no earlier always-on detector has already terminated the turn.",
+              "validation": "Tests assert that seven inspections followed by read_file and seven more do not halt, that a Retry restarts the count, that explicit session disable suppresses the shell guard, and that write-bearing, mixed, non-git, and file-specific command sequences remain below the shell-stagnation detector."
+            }
+          },
+          {
+            "description": "Assign a typed telemetry identity to the new stagnation outcome so the detector, logging, and downstream presentation share one structured reason.",
+            "evidence_ids": [
+              "EV-IMPLEMENTATION-SERVICE",
+              "EV-TELEMETRY-CLI",
+              "EV-TEST-SERVICE"
+            ],
+            "name": "record_typed_shell_stagnation_outcome",
+            "semantic_action": {
+              "evidence_ids": [
+                "EV-IMPLEMENTATION-SERVICE",
+                "EV-TELEMETRY-CLI",
+                "EV-TEST-SERVICE"
+              ],
+              "intent": "Make the semantic reason for the halt observable as structured loop-detection data rather than only as a generic interruption.",
+              "module_role": "Loop-detection outcome and telemetry contract owner",
+              "operation": "map",
+              "parameters": [
+                "LoopType enum",
+                "shell_command_stagnation value",
+                "prompt identifier",
+                "lastLoopType state",
+                "loop-detected telemetry event"
+              ],
+              "post_state": "A threshold breach records SHELL_COMMAND_STAGNATION as the detector's last loop type and emits a LoopDetectedEvent carrying that typed reason, which callers can propagate without reinterpreting command text.",
+              "pre_state": "The shell-inspection streak has reached the configured threshold and the service is about to report a loop.",
+              "validation": "The shell-stagnation tests assert both getLastLoopType() and the logger payload, while telemetry types define the new structured enum value used by the caller and CLI."
+            }
+          },
+          {
+            "description": "Use the existing always-on stream termination path to discard pending continuation work and present a human-readable, non-disableable halt reason to non-interactive users.",
+            "evidence_ids": [
+              "EV-CALLSITE-CLIENT",
+              "EV-TELEMETRY-CLI",
+              "EV-VALIDATION-PR",
+              "EV-DIFF-3CE"
+            ],
+            "name": "propagate_loop_halt_and_reason",
+            "semantic_action": {
+              "evidence_ids": [
+                "EV-CALLSITE-CLIENT",
+                "EV-TELEMETRY-CLI",
+                "EV-VALIDATION-PR"
+              ],
+              "intent": "Ensure a detected shell-inspection loop stops further tool execution and is visible to both structured stream consumers and human users.",
+              "module_role": "Core stream event consumer and non-interactive diagnostic presenter",
+              "operation": "adapt",
+              "parameters": [
+                "checkAlwaysOnSafeties result",
+                "pending tool-call collection",
+                "LoopDetected stream event",
+                "typed loop reason",
+                "CLI output format",
+                "always-on configuration hint"
+              ],
+              "post_state": "When the always-on service returns true, the core client clears pending tool calls, yields LoopDetected with the typed loop reason, reports the error, performs cleanup, and returns; the CLI labels shell_command_stagnation as repeated similar shell inspections and states that model.skipLoopDetection cannot disable this guard.",
+              "pre_state": "The streamed model response has produced a tool-call event and the loop detector has set a typed always-on loop outcome.",
+              "validation": "The head client shows the always-on check before the skipLoopDetection gate and the early-return cleanup path; the CLI maps the new enum value and the reported end-to-end run finishes with shell_command_stagnation after seven tool results and the eighth request."
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "atomic_names": [
+              "normalize_read_only_shell_inspection",
+              "guard_shell_inspection_stagnation",
+              "reset_shell_stagnation_on_progress_boundary",
+              "record_typed_shell_stagnation_outcome",
+              "propagate_loop_halt_and_reason"
+            ],
+            "description": "Use this workflow when a model repeatedly emits run_shell_command requests that inspect repository state with varied git status, overview diff, or git ls-files syntax and exact name-plus-argument matching is insufficient. Treat the semantic bucket as a narrow contract: do not apply it to file-specific diff review, commands that stage or commit work, mixed shell commands, ordinary non-git commands, or a streak interrupted by real progress. Normalize first, count only contiguous recognized inspections, reset at progress or retry boundaries, halt at eight, and then propagate the typed reason. Validate the positive threshold and all fail-open boundaries before accepting the change. Evidence: EV-ISSUE-4695, EV-PR-5944, EV-IMPLEMENTATION-SERVICE, EV-TEST-SERVICE, EV-CALLSITE-CLIENT, EV-VALIDATION-PR.",
+            "evidence_ids": [
+              "EV-ISSUE-4695",
+              "EV-PR-5944",
+              "EV-IMPLEMENTATION-SERVICE",
+              "EV-TEST-SERVICE",
+              "EV-CALLSITE-CLIENT",
+              "EV-VALIDATION-PR"
+            ],
+            "name": "break_syntactically_varied_read_only_shell_loop",
+            "workflow_graph": {
+              "edges": [
+                {
+                  "from": "normalize_read_only_shell_inspection",
+                  "to": "guard_shell_inspection_stagnation",
+                  "type": "requires"
+                },
+                {
+                  "from": "normalize_read_only_shell_inspection",
+                  "to": "reset_shell_stagnation_on_progress_boundary",
+                  "type": "enables"
+                },
+                {
+                  "from": "reset_shell_stagnation_on_progress_boundary",
+                  "to": "guard_shell_inspection_stagnation",
+                  "type": "repairs"
+                },
+                {
+                  "from": "guard_shell_inspection_stagnation",
+                  "to": "record_typed_shell_stagnation_outcome",
+                  "type": "enables"
+                },
+                {
+                  "from": "record_typed_shell_stagnation_outcome",
+                  "to": "propagate_loop_halt_and_reason",
+                  "type": "requires"
+                }
+              ],
+              "entry_state": "A model turn is producing repeated shell-tool requests for repository-overview inspection, with command text or harmless flags varying enough to evade exact tool-call matching [EV-ISSUE-4695][EV-PR-5944].",
+              "exit_state": "The eighth contiguous recognized read-only overview inspection halts before the generic per-turn cap, emits a structured shell_command_stagnation reason, and prevents further continuation; legitimate file review, writes, mixed commands, and interrupted inspection sequences continue without this guard [EV-TEST-SERVICE][EV-CALLSITE-CLIENT][EV-VALIDATION-PR].",
+              "goal": "Preserve tool-call contract integrity by stopping semantically stagnant inspection loops while keeping productive shell work and legitimate review workflows available.",
+              "steps": [
+                {
+                  "action_name": "normalize_read_only_shell_inspection",
+                  "optional": false,
+                  "role": "establish-contract"
+                },
+                {
+                  "action_name": "guard_shell_inspection_stagnation",
+                  "optional": false,
+                  "role": "implement"
+                },
+                {
+                  "action_name": "reset_shell_stagnation_on_progress_boundary",
+                  "optional": true,
+                  "role": "repair"
+                },
+                {
+                  "action_name": "record_typed_shell_stagnation_outcome",
+                  "optional": false,
+                  "role": "implement"
+                },
+                {
+                  "action_name": "propagate_loop_halt_and_reason",
+                  "optional": false,
+                  "role": "implement"
+                }
+              ],
+              "unresolved_or_deferred": [
+                "The PR reports deterministic fake OpenAI-compatible endpoint and macOS validation, but explicitly did not test Windows or Linux locally and did not validate against a live DeepSeek endpoint; transport/model-specific prevalence remains deferred [EV-VALIDATION-PR].",
+                "The local WSL checkout and requested issue-bundle path were not readable from this execution sandbox, so the parent, pinned diff, implementation, call sites, tests, and validation were established from the corresponding public GitHub issue, PR, commit, parent blob, and pinned-ref blobs; no local test rerun was performed."
+              ]
+            }
+          }
+        ],
+        "episode": {
+          "after": "At pinned ref 3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da, the loop-detection service adds a narrow semantic classifier for run_shell_command requests: every shell-chain segment must be a read-only git status, overview-style git diff, or git ls-files command, with file operands and write-bearing or mixed commands excluded. Recognized variants share one inspection bucket and accumulate a contiguous streak; the eighth request sets loopDetected, records shell_command_stagnation, and logs the typed event. Non-inspection requests, Retry, and prompt reset clear the shell streak. The core stream path propagates the typed reason and stops pending continuation work, while telemetry and non-interactive CLI code expose a human-readable always-on explanation [EV-IMPLEMENTATION-SERVICE][EV-CALLSITE-CLIENT][EV-TELEMETRY-CLI][EV-TEST-SERVICE].",
+          "before": "The pinned ref's parent is 680f523853175856236162460fcd6985c9d68620 [EV-COMMIT-3CE]. Before the change, LoopDetectionService's always-on tier handled exact repeated tool calls based on the same tool name and JSON arguments plus a 100-call per-turn cap, but had no semantic bucket or state for varied read-only git inspection commands. Broader action-stagnation detection lived in the heuristic path, which the core client gated behind skipLoopDetection; consequently the reported varied inspection pattern had no dedicated always-on contract [EV-PARENT-SERVICE][EV-PARENT-CLIENT][EV-ISSUE-4695].",
+          "diff": "The implementation-bearing ref changes four files, with 461 additions and 16 deletions: loopDetectionService.ts adds the threshold, streak state, classifier, always-on guard, and reset behavior; loopDetectionService.test.ts adds 308 lines of positive, reset, retry, disable, and false-positive boundary coverage; nonInteractiveCli.ts adds the new label and always-on hint; telemetry/types.ts adds the structured loop type; client.ts synchronizes the always-on call-site contract comments [EV-COMMIT-3CE][EV-DIFF-3CE][EV-IMPLEMENTATION-SERVICE][EV-TEST-SERVICE][EV-CALLSITE-CLIENT][EV-TELEMETRY-CLI].",
+          "episode_id": "QwenLM/qwen-code#4695@3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da",
+          "title": "Structured tool-contract integrity: stop varied read-only shell inspection loops"
+        },
+        "evidence_units": [
+          {
+            "claim": "Issue #4695 reports a long-context session in which the model repeatedly emits shell tool calls, asks for client-side repeated-call detection and a per-turn cap, and records substantial repeated-call cost before the user stops the run.",
+            "id": "EV-ISSUE-4695",
+            "kind": "issue",
+            "source": "https://github.com/QwenLM/qwen-code/issues/4695"
+          },
+          {
+            "claim": "PR #5944 explicitly links Fixes #4695 and explains that varying read-only git overview commands can evade exact repeated-call detection; it defines the narrow always-on scope and the fail-open exclusions for file-specific diffs, write-bearing chains, mixed commands, and progress boundaries.",
+            "id": "EV-PR-5944",
+            "kind": "implementation",
+            "source": "https://github.com/QwenLM/qwen-code/pull/5944"
+          },
+          {
+            "claim": "The pinned implementation ref 3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da has parent 680f523853175856236162460fcd6985c9d68620 and changes four files with 461 additions and 16 deletions.",
+            "id": "EV-COMMIT-3CE",
+            "kind": "commit",
+            "source": "https://github.com/QwenLM/qwen-code/commit/3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da"
+          },
+          {
+            "claim": "The parent loop-detection service has a five-call exact same-tool-and-JSON-arguments guard and a 100-call per-turn hard cap in its always-on tier, but no shell-inspection bucket, shell streak state, or shell-specific always-on guard; action stagnation remains in the heuristic path.",
+            "id": "EV-PARENT-SERVICE",
+            "kind": "implementation",
+            "source": "https://github.com/QwenLM/qwen-code/blob/680f523853175856236162460fcd6985c9d68620/packages/core/src/services/loopDetectionService.ts"
+          },
+          {
+            "claim": "The parent core client already invokes the always-on safety tier before the skipLoopDetection-gated heuristic tier, clears pending tool calls, yields LoopDetected, and returns when an always-on guard fires; before the change its comments enumerate only the exact-call guard and per-turn cap.",
+            "id": "EV-PARENT-CLIENT",
+            "kind": "call_site",
+            "source": "https://github.com/QwenLM/qwen-code/blob/680f523853175856236162460fcd6985c9d68620/packages/core/src/core/client.ts"
+          },
+          {
+            "claim": "The pinned loop-detection service adds an eight-call shell-inspection threshold, dedicated last-key and streak state, a run_shell_command semantic bucket, shell-chain segmentation, read-only git overview classification, overview-diff operand validation, and reset behavior on nonmatching commands, Retry, and prompt reset.",
+            "id": "EV-IMPLEMENTATION-SERVICE",
+            "kind": "implementation",
+            "source": "https://github.com/QwenLM/qwen-code/blob/3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da/packages/core/src/services/loopDetectionService.ts"
+          },
+          {
+            "claim": "The pinned core client runs the new shell stagnation check in the always-on tier before the skipLoopDetection gate; on detection it clears pending tool calls, yields LoopDetected with the last loop type, reports the error, cleans up, and returns.",
+            "id": "EV-CALLSITE-CLIENT",
+            "kind": "call_site",
+            "source": "https://github.com/QwenLM/qwen-code/blob/3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da/packages/core/src/core/client.ts"
+          },
+          {
+            "claim": "The pinned telemetry enum defines SHELL_COMMAND_STAGNATION, and the non-interactive CLI maps it to a human-readable repeated-shell-inspection message and marks it as an always-on guard that cannot be disabled through model.skipLoopDetection.",
+            "id": "EV-TELEMETRY-CLI",
+            "kind": "call_site",
+            "source": "https://github.com/QwenLM/qwen-code/blob/3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da/packages/core/src/telemetry/types.ts; https://github.com/QwenLM/qwen-code/blob/3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da/packages/cli/src/nonInteractiveCli.ts"
+          },
+          {
+            "claim": "The pinned service test file adds the shell-stagnation threshold and deterministic coverage for the eighth-call halt, non-inspection and Retry resets, explicit disable, write-bearing and mixed-chain exclusions, non-git exclusions, newline-separated variants, and file-specific diff exclusions.",
+            "id": "EV-TEST-SERVICE",
+            "kind": "test",
+            "source": "https://github.com/QwenLM/qwen-code/blob/3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da/packages/core/src/services/loopDetectionService.test.ts"
+          },
+          {
+            "claim": "The commit diff contains the four-file implementation/test/telemetry/CLI changes described by the episode, including the service guard, new loop type, CLI label, call-site contract comments, and regression tests.",
+            "id": "EV-DIFF-3CE",
+            "kind": "diff",
+            "source": "https://github.com/QwenLM/qwen-code/commit/3ce46949c2132dd8b3cc8f05cdc6c023aee0c2da"
+          },
+          {
+            "claim": "The PR reports 72 core loop-detection tests, 57 CLI tests with one skipped, lint, typecheck, build, bundle, and a deterministic bundled-CLI E2E passing; the E2E served eight completion requests, executed seven tool results, and halted with shell_command_stagnation on the eighth request.",
+            "id": "EV-VALIDATION-PR",
+            "kind": "validation",
+            "source": "https://github.com/QwenLM/qwen-code/pull/5944"
+          }
+        ],
+        "unresolved_questions": [
+          "The PR explicitly reports no Windows or Linux local run and uses a fake OpenAI-compatible endpoint rather than a live DeepSeek endpoint, so platform-specific and provider-specific behavior remains deferred [EV-VALIDATION-PR].",
+          "The local WSL checkout and requested issue-bundle path were not readable from this execution sandbox; the extraction therefore used the public GitHub issue, PR, pinned commit, parent blob, pinned implementation blobs, call sites, tests, and PR-reported validation, and no local test rerun was performed."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "description": "Normalize a shell tool request into a semantic read-only repository-inspection bucket so syntactic command variation cannot evade duplicate detection.",
+          "evidence_ids": [
+            "EV-IMPLEMENTATION-SERVICE",
+            "EV-TEST-SERVICE",
+            "EV-DIFF-3CE"
+          ],
+          "name": "normalize_read_only_shell_inspection",
+          "semantic_action": {
+            "evidence_ids": [
+              "EV-IMPLEMENTATION-SERVICE",
+              "EV-TEST-SERVICE"
+            ],
+            "intent": "Recognize semantically equivalent repository-overview inspections even when the model varies the command text, while leaving productive or file-scoped shell work outside the stagnation bucket.",
+            "module_role": "Shell-command intent classifier inside the loop-detection service",
+            "operation": "normalize",
+            "parameters": [
+              "tool name",
+              "args.command string",
+              "shell-chain segments",
+              "git status/diff/ls-files subcommand",
+              "diff flags and revision tokens",
+              "pathspec or file operands"
+            ],
+            "post_state": "For a run_shell_command request, every nonempty shell segment is classified into the stable bucket run_shell_command:git-inspection only when it is a read-only git status, overview-style git diff, or git ls-files inspection; non-git commands, file-specific diffs, write-bearing chains, and mixed shell chains produce no bucket key and follow the reset path.",
+            "pre_state": "A tool-call event contains a tool name and argument object, and the command may be an arbitrary shell string whose semantic intent has not yet been classified.",
+            "validation": "The service tests exercise varied git status/diff/ls-files commands and newline-separated chains, and assert that file-specific diffs with and without --, add/status/commit chains, mixed non-git chains, and repeated non-git commands are not classified as shell stagnation."
+          }
+        },
+        {
+          "description": "Count contiguous semantically equivalent shell inspections and halt the turn on the eighth recognized overview inspection before the generic hard cap is reached.",
+          "evidence_ids": [
+            "EV-IMPLEMENTATION-SERVICE",
+            "EV-TEST-SERVICE",
+            "EV-PR-5944",
+            "EV-VALIDATION-PR"
+          ],
+          "name": "guard_shell_inspection_stagnation",
+          "semantic_action": {
+            "evidence_ids": [
+              "EV-IMPLEMENTATION-SERVICE",
+              "EV-TEST-SERVICE",
+              "EV-VALIDATION-PR"
+            ],
+            "intent": "Stop a model that keeps inspecting repository state without making progress, including loops that vary command spelling or harmless flags and therefore bypass exact tool-call matching.",
+            "module_role": "Always-on shell-inspection circuit breaker in the loop-detection service",
+            "operation": "guard",
+            "parameters": [
+              "normalized inspection bucket key",
+              "consecutive streak count",
+              "threshold of 8",
+              "prompt identifier",
+              "in-session disable state"
+            ],
+            "post_state": "When eight contiguous recognized inspection requests arrive while the shell-stagnation detector is active, the service sets loopDetected, records shell_command_stagnation as the last loop type, logs the loop event, and returns true; requests below the threshold return false and continue.",
+            "pre_state": "The current event is a run_shell_command request that normalized to the read-only inspection bucket, the current contiguous streak is below eight, and the detector has not already halted the turn.",
+            "validation": "The positive unit test passes seven overview variants without halting and asserts that the eighth sets LoopType.SHELL_COMMAND_STAGNATION and emits telemetry; the reported bundled-CLI verification reproduces the same eighth-call halt before the 100-call cap."
+          }
+        },
+        {
+          "description": "Reconcile the inspection streak at progress and lifecycle boundaries so the always-on guard fails open for legitimate work and does not carry state across retries or new prompts.",
+          "evidence_ids": [
+            "EV-IMPLEMENTATION-SERVICE",
+            "EV-TEST-SERVICE",
+            "EV-PR-5944"
+          ],
+          "name": "reset_shell_stagnation_on_progress_boundary",
+          "semantic_action": {
+            "evidence_ids": [
+              "EV-IMPLEMENTATION-SERVICE",
+              "EV-TEST-SERVICE"
+            ],
+            "intent": "Prevent false positives when a non-inspection tool demonstrates progress, when a retry replays a failed attempt, or when a new prompt starts a fresh detection state.",
+            "module_role": "Loop-detector state lifecycle and false-positive boundary manager",
+            "operation": "reconcile",
+            "parameters": [
+              "next stream event type",
+              "next tool name and command",
+              "Retry event",
+              "prompt reset identifier",
+              "last inspection key",
+              "inspection streak"
+            ],
+            "post_state": "A nonmatching tool call clears the shell bucket and streak before later inspections; Retry and prompt reset clear the shell tracking through the shared tool-call reset; productive write-bearing chains, file-specific diffs, and mixed commands never increment the shell-inspection streak.",
+            "pre_state": "The detector has accumulated zero or more recognized inspection calls and receives either another shell request, a non-inspection tool call, a Retry event, or a prompt reset; no earlier always-on detector has already terminated the turn.",
+            "validation": "Tests assert that seven inspections followed by read_file and seven more do not halt, that a Retry restarts the count, that explicit session disable suppresses the shell guard, and that write-bearing, mixed, non-git, and file-specific command sequences remain below the shell-stagnation detector."
+          }
+        },
+        {
+          "description": "Assign a typed telemetry identity to the new stagnation outcome so the detector, logging, and downstream presentation share one structured reason.",
+          "evidence_ids": [
+            "EV-IMPLEMENTATION-SERVICE",
+            "EV-TELEMETRY-CLI",
+            "EV-TEST-SERVICE"
+          ],
+          "name": "record_typed_shell_stagnation_outcome",
+          "semantic_action": {
+            "evidence_ids": [
+              "EV-IMPLEMENTATION-SERVICE",
+              "EV-TELEMETRY-CLI",
+              "EV-TEST-SERVICE"
+            ],
+            "intent": "Make the semantic reason for the halt observable as structured loop-detection data rather than only as a generic interruption.",
+            "module_role": "Loop-detection outcome and telemetry contract owner",
+            "operation": "map",
+            "parameters": [
+              "LoopType enum",
+              "shell_command_stagnation value",
+              "prompt identifier",
+              "lastLoopType state",
+              "loop-detected telemetry event"
+            ],
+            "post_state": "A threshold breach records SHELL_COMMAND_STAGNATION as the detector's last loop type and emits a LoopDetectedEvent carrying that typed reason, which callers can propagate without reinterpreting command text.",
+            "pre_state": "The shell-inspection streak has reached the configured threshold and the service is about to report a loop.",
+            "validation": "The shell-stagnation tests assert both getLastLoopType() and the logger payload, while telemetry types define the new structured enum value used by the caller and CLI."
+          }
+        },
+        {
+          "description": "Use the existing always-on stream termination path to discard pending continuation work and present a human-readable, non-disableable halt reason to non-interactive users.",
+          "evidence_ids": [
+            "EV-CALLSITE-CLIENT",
+            "EV-TELEMETRY-CLI",
+            "EV-VALIDATION-PR",
+            "EV-DIFF-3CE"
+          ],
+          "name": "propagate_loop_halt_and_reason",
+          "semantic_action": {
+            "evidence_ids": [
+              "EV-CALLSITE-CLIENT",
+              "EV-TELEMETRY-CLI",
+              "EV-VALIDATION-PR"
+            ],
+            "intent": "Ensure a detected shell-inspection loop stops further tool execution and is visible to both structured stream consumers and human users.",
+            "module_role": "Core stream event consumer and non-interactive diagnostic presenter",
+            "operation": "adapt",
+            "parameters": [
+              "checkAlwaysOnSafeties result",
+              "pending tool-call collection",
+              "LoopDetected stream event",
+              "typed loop reason",
+              "CLI output format",
+              "always-on configuration hint"
+            ],
+            "post_state": "When the always-on service returns true, the core client clears pending tool calls, yields LoopDetected with the typed loop reason, reports the error, performs cleanup, and returns; the CLI labels shell_command_stagnation as repeated similar shell inspections and states that model.skipLoopDetection cannot disable this guard.",
+            "pre_state": "The streamed model response has produced a tool-call event and the loop detector has set a typed always-on loop outcome.",
+            "validation": "The head client shows the always-on check before the skipLoopDetection gate and the early-return cleanup path; the CLI maps the new enum value and the reported end-to-end run finishes with shell_command_stagnation after seven tool results and the eighth request."
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "atomic_names": [
+            "normalize_read_only_shell_inspection",
+            "guard_shell_inspection_stagnation",
+            "reset_shell_stagnation_on_progress_boundary",
+            "record_typed_shell_stagnation_outcome",
+            "propagate_loop_halt_and_reason"
+          ],
+          "description": "Use this workflow when a model repeatedly emits run_shell_command requests that inspect repository state with varied git status, overview diff, or git ls-files syntax and exact name-plus-argument matching is insufficient. Treat the semantic bucket as a narrow contract: do not apply it to file-specific diff review, commands that stage or commit work, mixed shell commands, ordinary non-git commands, or a streak interrupted by real progress. Normalize first, count only contiguous recognized inspections, reset at progress or retry boundaries, halt at eight, and then propagate the typed reason. Validate the positive threshold and all fail-open boundaries before accepting the change. Evidence: EV-ISSUE-4695, EV-PR-5944, EV-IMPLEMENTATION-SERVICE, EV-TEST-SERVICE, EV-CALLSITE-CLIENT, EV-VALIDATION-PR.",
+          "evidence_ids": [
+            "EV-ISSUE-4695",
+            "EV-PR-5944",
+            "EV-IMPLEMENTATION-SERVICE",
+            "EV-TEST-SERVICE",
+            "EV-CALLSITE-CLIENT",
+            "EV-VALIDATION-PR"
+          ],
+          "name": "break_syntactically_varied_read_only_shell_loop",
+          "workflow_graph": {
+            "edges": [
+              {
+                "from": "normalize_read_only_shell_inspection",
+                "to": "guard_shell_inspection_stagnation",
+                "type": "requires"
+              },
+              {
+                "from": "normalize_read_only_shell_inspection",
+                "to": "reset_shell_stagnation_on_progress_boundary",
+                "type": "enables"
+              },
+              {
+                "from": "reset_shell_stagnation_on_progress_boundary",
+                "to": "guard_shell_inspection_stagnation",
+                "type": "repairs"
+              },
+              {
+                "from": "guard_shell_inspection_stagnation",
+                "to": "record_typed_shell_stagnation_outcome",
+                "type": "enables"
+              },
+              {
+                "from": "record_typed_shell_stagnation_outcome",
+                "to": "propagate_loop_halt_and_reason",
+                "type": "requires"
+              }
+            ],
+            "entry_state": "A model turn is producing repeated shell-tool requests for repository-overview inspection, with command text or harmless flags varying enough to evade exact tool-call matching [EV-ISSUE-4695][EV-PR-5944].",
+            "exit_state": "The eighth contiguous recognized read-only overview inspection halts before the generic per-turn cap, emits a structured shell_command_stagnation reason, and prevents further continuation; legitimate file review, writes, mixed commands, and interrupted inspection sequences continue without this guard [EV-TEST-SERVICE][EV-CALLSITE-CLIENT][EV-VALIDATION-PR].",
+            "goal": "Preserve tool-call contract integrity by stopping semantically stagnant inspection loops while keeping productive shell work and legitimate review workflows available.",
+            "steps": [
+              {
+                "action_name": "normalize_read_only_shell_inspection",
+                "optional": false,
+                "role": "establish-contract"
+              },
+              {
+                "action_name": "guard_shell_inspection_stagnation",
+                "optional": false,
+                "role": "implement"
+              },
+              {
+                "action_name": "reset_shell_stagnation_on_progress_boundary",
+                "optional": true,
+                "role": "repair"
+              },
+              {
+                "action_name": "record_typed_shell_stagnation_outcome",
+                "optional": false,
+                "role": "implement"
+              },
+              {
+                "action_name": "propagate_loop_halt_and_reason",
+                "optional": false,
+                "role": "implement"
+              }
+            ],
+            "unresolved_or_deferred": [
+              "The PR reports deterministic fake OpenAI-compatible endpoint and macOS validation, but explicitly did not test Windows or Linux locally and did not validate against a live DeepSeek endpoint; transport/model-specific prevalence remains deferred [EV-VALIDATION-PR].",
+              "The local WSL checkout and requested issue-bundle path were not readable from this execution sandbox, so the parent, pinned diff, implementation, call sites, tests, and validation were established from the corresponding public GitHub issue, PR, commit, parent blob, and pinned-ref blobs; no local test rerun was performed."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The PR explicitly reports no Windows or Linux local run and uses a fake OpenAI-compatible endpoint rather than a live DeepSeek endpoint, so platform-specific and provider-specific behavior remains deferred [EV-VALIDATION-PR].",
+        "The local WSL checkout and requested issue-bundle path were not readable from this execution sandbox; the extraction therefore used the public GitHub issue, PR, pinned commit, parent blob, pinned implementation blobs, call sites, tests, and PR-reported validation, and no local test rerun was performed."
+      ]
+    },
+    "call_sites": [
+      "The parent core client already invokes the always-on safety tier before the skipLoopDetection-gated heuristic tier, clears pending tool calls, yields LoopDetected, and returns when an always-on guard fires; before the change its comments enumerate only the exact-call guard and per-turn cap.",
+      "The pinned core client runs the new shell stagnation check in the always-on tier before the skipLoopDetection gate; on detection it clears pending tool calls, yields LoopDetected with the last loop type, reports the error, cleans up, and returns.",
+      "The pinned telemetry enum defines SHELL_COMMAND_STAGNATION, and the non-interactive CLI maps it to a human-readable repeated-shell-inspection message and marks it as an always-on guard that cannot be disabled through model.skipLoopDetection."
+    ],
+    "tests": [
+      "The pinned service test file adds the shell-stagnation threshold and deterministic coverage for the eighth-call halt, non-inspection and Retry resets, explicit disable, write-bearing and mixed-chain exclusions, non-git exclusions, newline-separated variants, and file-specific diff exclusions."
+    ]
+  }
+]

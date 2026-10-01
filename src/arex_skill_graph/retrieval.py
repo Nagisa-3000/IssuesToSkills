@@ -239,7 +239,20 @@ class SkillRetriever:
                     direction="out",
                 )
                 if not step_neighbors:
-                    unresolved.append(f"pattern {hit.node.id} has no declared steps")
+                    # Candidate patterns are intentionally allowed to have no
+                    # mandatory actions yet: the graph builder keeps them
+                    # visible while cross-repository evidence and the semantic
+                    # judge are still pending.  Treating those empty candidates
+                    # as broken closure roots made every exploratory solve query
+                    # report a false unresolved error.  A pattern with declared
+                    # mandatory actions but missing graph edges remains an
+                    # actual integrity failure and is still reported below.
+                    payload = hit.node.payload if isinstance(hit.node.payload, dict) else {}
+                    mandatory_actions = payload.get("mandatory_actions")
+                    if isinstance(mandatory_actions, list) and mandatory_actions:
+                        unresolved.append(f"pattern {hit.node.id} has no declared steps")
+                    else:
+                        continue
                 for edge, step, _ in step_neighbors:
                     step_hit = hits.setdefault(
                         step.id,

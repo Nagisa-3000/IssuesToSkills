@@ -66,6 +66,7 @@ def test_materializer_preserves_workflow_action_pattern_graph(tmp_path: Path) ->
         counts = materializer.materialize(graph, store)
         assert counts["actions"] == 1
         assert counts["workflows"] == 2
+        assert counts["workflow_fragments"] == 0
         assert counts["patterns"] == 1
         stats = store.stats()
         assert stats["nodes"]["action"] == 1

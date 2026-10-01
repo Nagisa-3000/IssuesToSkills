@@ -4,6 +4,15 @@
 
 This is the first category pilot from the six-harness study:
 `provider-interface-adaptation` / model, provider, and endpoint resolution.
+
+The authoritative expanded study table is now materialized at
+`experiments/manifests/agent-core-function-issue-table-v1.json`. It contains
+seven abstract agent-core categories and the 42 user-supplied issue rows (six
+repositories per category). The deterministic split produces 35
+`train_candidate` rows and seven category-transfer holdouts, one untouched
+repository per category. The provider pilot below predates that full-table
+manifest and is therefore a category-1 pilot, not the final seven-category
+result.
 The evidence gate did not force all user-seeded Issues into extraction:
 
 - Hermes #121359 and Qwen Code #9452 had pinned implementation-bearing
@@ -173,3 +182,37 @@ Aider was rerun with the corrected Python 3.11 seeded environment:
 This second Aider run is a correctness tie with higher guided context cost; the
 first Aider run was faster in the guided arm. Both results are retained rather
 than cherry-picked.
+
+## Qualification rerun after the table-scope correction (September 30, 2026)
+
+The v4 holdout preparation was rerun from its immutable case manifest rather
+than relying on the interrupted qualification directory. The fresh report is:
+
+```text
+data/skill-extraction/provider-endpoint-pilot-20260929-v4/qualification-rerun-20260930/qualification-report.json
+```
+
+It contains four oracle checks and three strict qualifications:
+
+| holdout | base snapshot | known solution | strict oracle |
+| --- | --- | --- | --- |
+| Aider #199 | fails | passes | qualified |
+| Hermes #121359 | fails | passes | qualified |
+| Qwen Code #9452 | fails | fails | not qualified |
+| Pi #4558 | fails | passes | qualified |
+
+The Qwen result is not counted as an agent failure: the visible test bundle
+does not discriminate the known solution from the parent snapshot. The v4
+qualification run therefore establishes a 3/4 causal denominator for this
+pilot, but it does not yet provide agent arms for the newly qualified Pi case.
+
+This pilot should be read against the user-supplied seven-category table. For
+the first row, the exact seeded issues #121359 (Hermes) and #9452 (Qwen) have
+implementation-bearing evidence. The seeds #5823, #2765, #41095, and #15430
+were retained in the audit but did not have a locally pinned,
+implementation-bearing resolution at the time of the gate. The training graph
+therefore uses explicitly labelled evidence-backed substitutes (Aider #88,
+Hermes #125942, Qwen #11657, and Pi #5832) instead of silently treating those
+four unresolved seeds as extracted episodes. The substitute decision is
+auditable in `experiments/manifests/provider-endpoint-resolution-pilot-v3.json`
+and is not evidence that the other six table rows are complete.

@@ -190,6 +190,33 @@ class StoreRetrievalTests(unittest.TestCase):
                     any("--contains/" in trace for hit in response.hits for trace in hit.trace)
                 )
 
+    def test_unpromoted_empty_pattern_is_not_reported_as_unresolved(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            db = Path(directory) / "catalog.db"
+            with CatalogStore(db) as store:
+                store.initialize()
+                pattern = Node(
+                    id="pattern:pending",
+                    node_type=NodeType.PATTERN,
+                    title="pending cross-repository pattern",
+                    summary="awaits enough mandatory action support",
+                    repository=None,
+                    payload={
+                        "mandatory_actions": [],
+                        "promotion_status": "insufficient-structural-support",
+                    },
+                )
+                with store.transaction():
+                    store.upsert_node(pattern)
+
+                response = SkillRetriever(store).search(
+                    "pending cross-repository pattern",
+                    top_k=4,
+                    expand_hops=1,
+                )
+                self.assertIn(pattern.id, {hit.node.id for hit in response.hits})
+                self.assertEqual([], response.unresolved)
+
 
 if __name__ == "__main__":
     unittest.main()

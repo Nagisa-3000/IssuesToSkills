@@ -1,0 +1,925 @@
+{
+  "schema_version": "universal-resolution-graph-v1",
+  "extraction_policy": {
+    "training_only": true,
+    "holdout_refused": true,
+    "unknown_semantics_are_not_deduplicated": true,
+    "pattern_promotion_requires_llm_judge_and_holdout": true
+  },
+  "actions": [
+    {
+      "id": "semantic-action:2d6a7a39e552adce",
+      "node_type": "change_action",
+      "category": "provider-interface-adaptation",
+      "intent": "Keep provider initialization at the application boundary while preserving construction of the request consumer across all known callers.",
+      "module_role": "consumer factory interface and its call sites",
+      "operation": "reconcile",
+      "pre_state": "The consumer factory requires provider configuration arguments, and production and tests pass those arguments at every construction site.",
+      "post_state": "The consumer factory accepts only its functional construction inputs, and known production and test callers use the reduced interface.",
+      "validation": "Diff all known Coder.create call sites and existing constructor-oriented tests to confirm removal of the obsolete argument; the suite could not be executed locally because dependencies were missing.",
+      "parameters": [
+        "consumer_factory",
+        "application_call_site",
+        "test_call_sites",
+        "provider_configuration_arguments"
+      ],
+      "evidence_ids": [
+        "ev-before-01",
+        "ev-after-03",
+        "ev-callsite-01",
+        "ev-test-01",
+        "ev-validation-01"
+      ],
+      "source_name": "reconcile-consumer-construction-interface",
+      "description": "Remove provider credentials from the consumer factory contract and migrate production and test callers to the configuration-independent constructor.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "Aider-AI__aider__88@549a1a76403e309890410f9538bda2fc4f901758"
+      ],
+      "supporting_repositories": [
+        "Aider-AI/aider"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:30d94e268da81e3a",
+      "node_type": "change_action",
+      "category": "provider-interface-adaptation",
+      "intent": "Apply a compatibility policy only to requests targeting the endpoint whose wire contract requires it, without misrouting other hosts that serve the same model family.",
+      "module_role": "provider selection boundary",
+      "operation": "classify",
+      "pre_state": "The affected endpoint falls through to a generic compatible-provider implementation, while model identifiers are insufficient to identify the actual endpoint.",
+      "post_state": "Exact canonical hostname and legitimate subdomains select the specialized adapter; unrelated, hostile-suffix, missing, and invalid URLs do not.",
+      "validation": "Route exact-host, subdomain, and hostile lookalike URLs through provider selection and assert their resulting request behavior distinguishes matched from fallback endpoints.",
+      "parameters": [
+        "configured base URL",
+        "canonical endpoint hostname",
+        "provider configuration"
+      ],
+      "evidence_ids": [
+        "E3",
+        "E4",
+        "E6",
+        "E7"
+      ],
+      "source_name": "classify-compatible-endpoint-by-canonical-hostname",
+      "description": "Select an endpoint-specific compatibility adapter using parsed hostname boundaries rather than model-family names or substring matching.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "QwenLM/qwen-code#11657@3ba01990e13e9e8e14e147b60add50e0f972431a"
+      ],
+      "supporting_repositories": [
+        "QwenLM/qwen-code"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:5f86bf02fd2a0ba6",
+      "node_type": "change_action",
+      "category": "provider-interface-adaptation",
+      "intent": "Prevent regressions where normalization works in isolation but adapter output still hides or duplicates the provider reason.",
+      "module_role": "provider diagnostic regression oracle",
+      "operation": "validate",
+      "pre_state": "The shared contract and adapter integrations have been implemented, but their behavior across error shapes and adapter tiers is not yet established.",
+      "post_state": "Tests specify that output preserves error stop state, includes HTTP status and body reason, excludes known opaque-only output, bounds long bodies, and avoids duplicate supplemental text.",
+      "validation": "The three added test files provide utility-level and representative adapter-level assertions; the available evidence does not include an executed test or CI result.",
+      "parameters": [
+        "synthetic_sdk_error_shapes",
+        "representative_adapter_tiers",
+        "expected_status",
+        "expected_body_reason",
+        "duplicate_marker"
+      ],
+      "evidence_ids": [
+        "E8",
+        "E9",
+        "E10"
+      ],
+      "source_name": "validate-provider-diagnostic-contract",
+      "description": "Exercise utility edge cases and representative real adapter catch paths with opaque SDK messages that retain the actual reason in separate body fields.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "earendil-works/pi#5832@6fbeba51af98a37a0695ec8b53308dde81d9ab46"
+      ],
+      "supporting_repositories": [
+        "earendil-works/pi"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:78dd7c430a0fc63d",
+      "node_type": "change_action",
+      "category": "provider-interface-adaptation",
+      "intent": "Demonstrate that replaying a prior thinking turn no longer produces a rejected continuation request.",
+      "module_role": "provider wire-contract validation",
+      "operation": "validate",
+      "pre_state": "A multi-turn request includes an assistant thought that conversion represents as reasoning_content, and a strict endpoint rejects any assistant reasoning property.",
+      "post_state": "The continuation receives a successful response, with reasoning_content present and reasoning absent in the captured HTTP request.",
+      "validation": "Use a strict local HTTP server that returns the reported 400 validation payload if reasoning is present, then execute two turns through OpenAIContentGenerator and inspect the second request body.",
+      "parameters": [
+        "multi-turn generation request",
+        "prior thought part",
+        "strict HTTP test endpoint",
+        "captured request bodies"
+      ],
+      "evidence_ids": [
+        "E6",
+        "E8"
+      ],
+      "source_name": "validate-strict-endpoint-multiturn-continuation",
+      "description": "Exercise the complete history-conversion, provider-adaptation, and HTTP path against a strict contract oracle.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "QwenLM/qwen-code#11657@3ba01990e13e9e8e14e147b60add50e0f972431a"
+      ],
+      "supporting_repositories": [
+        "QwenLM/qwen-code"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:7d6b49a1ecedb342",
+      "node_type": "change_action",
+      "category": "provider-interface-adaptation",
+      "intent": "Allow one client integration to target provider-compatible endpoints that require additional SDK configuration without embedding startup configuration inside the request consumer.",
+      "module_role": "application configuration boundary and provider client initializer",
+      "operation": "adapt",
+      "pre_state": "The application boundary supplies only a key and base, while a downstream consumer factory owns provider SDK mutation and cannot represent type, version, deployment, or engine settings.",
+      "post_state": "Startup owns provider SDK initialization, exposes the supported endpoint settings, and mutates optional SDK attributes only when corresponding values were supplied.",
+      "validation": "Inspect parsed option definitions and the pre-construction mapping to provider SDK attributes; verify the downstream factory no longer accepts or assigns provider configuration. Runtime validation remains unavailable in the inspected environment.",
+      "parameters": [
+        "credential",
+        "endpoint_base",
+        "provider_type",
+        "api_version",
+        "deployment_identifier",
+        "engine_identifier",
+        "provider_sdk_module"
+      ],
+      "evidence_ids": [
+        "ev-before-01",
+        "ev-before-02",
+        "ev-after-01",
+        "ev-after-02",
+        "ev-after-03",
+        "ev-callsite-01",
+        "ev-validation-01"
+      ],
+      "source_name": "centralize-provider-sdk-configuration",
+      "description": "Accept endpoint-specific provider settings at the application boundary and apply only supplied values to the shared provider client before constructing downstream consumers.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "Aider-AI__aider__88@549a1a76403e309890410f9538bda2fc4f901758"
+      ],
+      "supporting_repositories": [
+        "Aider-AI/aider"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:8ce6b0f7e8c07846",
+      "node_type": "change_action",
+      "category": "provider-interface-adaptation",
+      "intent": "Make provider-facing text, response, streaming, and image entry points consistently return actionable HTTP failure details.",
+      "module_role": "provider adapter error boundary",
+      "operation": "adapt",
+      "pre_state": "Adapter catch blocks independently format thrown SDK values, and some lose bodies or duplicate supplemental details.",
+      "post_state": "Affected adapters consume the shared normalized diagnostic while preserving their established stop reasons, contextual prefixes, exception categories, hints, and nonduplicated supplemental data.",
+      "validation": "Mocked end-to-end catch-path tests require status and body propagation for representative image, text, response, and Bedrock tiers and require supplemental raw metadata to appear once.",
+      "parameters": [
+        "provider_adapter",
+        "caught_error",
+        "adapter_prefix",
+        "adapter_specific_hints",
+        "supplemental_metadata"
+      ],
+      "evidence_ids": [
+        "E5",
+        "E6",
+        "E7",
+        "E9",
+        "E10"
+      ],
+      "source_name": "adapt-provider-catch-boundaries",
+      "description": "Replace adapter-local message-only formatting with the shared diagnostic contract while retaining adapter-specific semantics such as category prefixes, hints, and supplemental metadata.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "earendil-works/pi#5832@6fbeba51af98a37a0695ec8b53308dde81d9ab46"
+      ],
+      "supporting_repositories": [
+        "earendil-works/pi"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:9cbf99d39f855621",
+      "node_type": "change_action",
+      "category": "provider-interface-adaptation",
+      "intent": "Recover actionable HTTP failure details that provider SDKs retain outside Error.message.",
+      "module_role": "shared provider-failure normalization boundary",
+      "operation": "normalize",
+      "pre_state": "A provider call has thrown an unknown value whose status and body may occupy SDK-specific fields or whose message may already contain the body.",
+      "post_state": "The failure is represented by a stable record with a safe message, optional numeric status, optional non-empty bounded body, and an explicit body-in-message predicate.",
+      "validation": "Synthetic error shapes verify field precedence and extraction for multiple SDK conventions, non-Error serialization, empty-body handling, truncation, and existing-body detection.",
+      "parameters": [
+        "thrown_value",
+        "status_field_candidates",
+        "body_field_candidates",
+        "maximum_body_characters"
+      ],
+      "evidence_ids": [
+        "E3",
+        "E8"
+      ],
+      "source_name": "normalize-heterogeneous-provider-failures",
+      "description": "Convert heterogeneous thrown provider values into one bounded diagnostic record containing the original message, optional HTTP status, optional body, and a flag indicating whether the message already carries that body.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "earendil-works/pi#5832@6fbeba51af98a37a0695ec8b53308dde81d9ab46"
+      ],
+      "supporting_repositories": [
+        "earendil-works/pi"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:d0e6aa7cfadb55f2",
+      "node_type": "change_action",
+      "category": "provider-interface-adaptation",
+      "intent": "Prevent strict-schema request rejection without discarding supported replay data, explicit caller intent, or shared history.",
+      "module_role": "outbound provider request adapter",
+      "operation": "reconcile",
+      "pre_state": "An inherited generic transformation has added a reasoning field equal to reasoning_content on an assistant history message, but the selected endpoint rejects reasoning and accepts reasoning_content.",
+      "post_state": "The outbound copy omits reasoning only when it exactly matches the derived mirror signature; reasoning_content and distinct explicit reasoning values remain, and the source request is unchanged.",
+      "validation": "Assert the mirrored-equality case is removed, unequal explicit values are retained, supported content remains present, source history is not mutated, and fallback providers preserve their prior behavior.",
+      "parameters": [
+        "outbound chat request",
+        "assistant history messages",
+        "reasoning_content field",
+        "reasoning field",
+        "mirror equality predicate"
+      ],
+      "evidence_ids": [
+        "E2",
+        "E5",
+        "E7",
+        "E10"
+      ],
+      "source_name": "remove-only-derived-incompatible-wire-field",
+      "description": "At the outbound boundary, remove only a field recognizable as a derived mirror while retaining the endpoint-supported source field and distinct explicit values.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "QwenLM/qwen-code#11657@3ba01990e13e9e8e14e147b60add50e0f972431a"
+      ],
+      "supporting_repositories": [
+        "QwenLM/qwen-code"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:d6f919dc5f5f465a",
+      "node_type": "change_action",
+      "category": "provider-interface-adaptation",
+      "intent": "Expose the provider's actual HTTP reason without duplicating it or discarding established adapter context.",
+      "module_role": "user-visible provider diagnostic composition boundary",
+      "operation": "reconcile",
+      "pre_state": "A normalized failure may contain status and body separately, may already include the body in its message, and may require an adapter-specific prefix.",
+      "post_state": "The diagnostic contains status plus body when separately available; otherwise it preserves the message, with the requested prefix and status where applicable, and does not print the body twice.",
+      "validation": "Formatter unit tests assert unprefixed and prefixed status/body output, preservation of messages already containing a body, and fallback behavior for non-Error values.",
+      "parameters": [
+        "normalized_failure",
+        "optional_context_prefix"
+      ],
+      "evidence_ids": [
+        "E4",
+        "E8"
+      ],
+      "source_name": "compose-nonduplicating-provider-diagnostic",
+      "description": "Render a normalized failure so status and body are exposed when available while preserving prefixes, fallbacks, and messages that already contain the body.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "earendil-works/pi#5832@6fbeba51af98a37a0695ec8b53308dde81d9ab46"
+      ],
+      "supporting_repositories": [
+        "earendil-works/pi"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:db6b4ad8c741d3ab",
+      "node_type": "change_action",
+      "category": "provider-interface-adaptation",
+      "intent": "Route requests through endpoints whose invocation contract requires a deployment identifier or engine identifier.",
+      "module_role": "provider request adapter",
+      "operation": "map",
+      "pre_state": "Provider requests include generic chat fields but omit endpoint-specific deployment and engine routing fields.",
+      "post_state": "Each configured routing identifier is included under the provider call's expected request keyword, while absent identifiers add no keyword.",
+      "validation": "Inspect the kwargs assembled immediately before request hashing and ChatCompletion.create; a dedicated behavioral test proving present and absent branches is not in the pinned change.",
+      "parameters": [
+        "deployment_identifier",
+        "engine_identifier",
+        "request_kwargs",
+        "provider_sdk_module",
+        "chat_completion_call"
+      ],
+      "evidence_ids": [
+        "ev-before-03",
+        "ev-after-04",
+        "ev-test-02"
+      ],
+      "source_name": "forward-optional-provider-routing-fields",
+      "description": "Conditionally translate configured deployment and engine identifiers into per-request arguments at the provider invocation boundary.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "Aider-AI__aider__88@549a1a76403e309890410f9538bda2fc4f901758"
+      ],
+      "supporting_repositories": [
+        "Aider-AI/aider"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:dd2d4348a148e6cd",
+      "node_type": "change_action",
+      "category": "provider-interface-adaptation",
+      "intent": "Keep separate resume surfaces from interpreting the same persisted provider interface differently.",
+      "module_role": "session-resume runtime adapter",
+      "operation": "adapt",
+      "pre_state": "One resume surface manually reads only legacy top-level fields and billing identity, while another uses the canonical reader that understands the latest nested runtime route.",
+      "post_state": "The resume surface obtains provider, endpoint, and wire mode from the canonical resolver, while its existing model restoration, foreign-endpoint rejection, provider healing, reasoning, and service-tier behavior remains downstream.",
+      "validation": "The focused regression tests assert that Desktop/TUI and CLI select the same nested route for a stale-billing row, and that Desktop/TUI gives the nested route precedence over stale top-level keys.",
+      "parameters": [
+        "stored session row",
+        "canonical route resolver",
+        "resume model override",
+        "provider override",
+        "endpoint safety policy"
+      ],
+      "evidence_ids": [
+        "E3",
+        "E4",
+        "E7",
+        "E8",
+        "E9"
+      ],
+      "source_name": "delegate-resume-consumer-to-canonical-route-reader",
+      "description": "Replace a consumer-specific reconstruction of persisted provider metadata with the canonical session-route resolver before applying existing endpoint-safety and provider-healing logic.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "NousResearch/hermes-agent#125942@33c6ab002d1fac653d7e772025ef7aaab7c83480"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    },
+    {
+      "id": "semantic-action:dd484e564659b2bd",
+      "node_type": "change_action",
+      "category": "provider-interface-adaptation",
+      "intent": "Restore a resumed session on the provider interface most recently used by that session without discarding compatible legacy route metadata.",
+      "module_role": "canonical persisted-session route resolver",
+      "operation": "reconcile",
+      "pre_state": "Session metadata may contain a newer nested runtime route, older top-level provider/endpoint fields, and a first-call billing identity that disagree or are only partially populated.",
+      "post_state": "A provider-bearing nested runtime route wins; otherwise top-level route fields are retained and a routable billing identity fills only a missing provider, while unroutable bare billing buckets do not become route identities.",
+      "validation": "Conflicting nested-versus-billing and nested-versus-top-level fixtures must resolve to the nested provider and wire mode, while the existing legacy switched-provider fixture must still discard an endpoint belonging to the previous provider.",
+      "parameters": [
+        "session metadata row",
+        "nested runtime-route object",
+        "legacy top-level provider",
+        "legacy top-level endpoint",
+        "legacy top-level wire mode",
+        "billing-provider identity",
+        "set of unroutable billing buckets"
+      ],
+      "evidence_ids": [
+        "E2",
+        "E5",
+        "E6",
+        "E8",
+        "E9",
+        "E10"
+      ],
+      "source_name": "resolve-persisted-route-by-freshness",
+      "description": "Normalize multiple persisted route representations into one provider/endpoint/wire tuple using explicit freshness precedence: the latest nested runtime route first, then legacy top-level fields, with a routable billing identity only filling a missing provider.",
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "NousResearch/hermes-agent#125942@33c6ab002d1fac653d7e772025ef7aaab7c83480"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent"
+      ],
+      "aliases": [],
+      "status": "candidate"
+    }
+  ],
+  "workflows": [
+    {
+      "id": "workflow:39fa8a7327fff902",
+      "node_type": "issue_workflow",
+      "category": "provider-interface-adaptation",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 125942,
+      "episode_id": "NousResearch/hermes-agent#125942@33c6ab002d1fac653d7e772025ef7aaab7c83480",
+      "name": "adapt-session-resume-to-a-versioned-provider-route",
+      "description": "Establish one precedence-aware interpretation of persisted provider-interface state, then make each resume consumer delegate route extraction to it and validate conflicts between new and legacy representations.",
+      "goal": "Resume a session using its latest persisted provider, endpoint, and wire protocol without regressing compatible legacy rows or existing endpoint-safety rules.",
+      "entry_state": "A producer persists the latest route in a nested runtime object, but at least one consumer independently reconstructs the route from older top-level fields and a potentially stale billing identity.",
+      "exit_state": "Persisted route precedence is centralized and all relevant resume consumers use it; conflicting-representation tests select the latest nested route and legacy endpoint-safety coverage remains intact.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:dd484e564659b2bd",
+          "role": "establish-contract",
+          "optional": false
+        },
+        {
+          "step_id": "step-2",
+          "action_id": "semantic-action:dd2d4348a148e6cd",
+          "role": "implement",
+          "optional": false
+        }
+      ],
+      "edges": [
+        {
+          "from": "step-1",
+          "to": "step-2",
+          "type": "enables"
+        },
+        {
+          "from": "step-2",
+          "to": "step-1",
+          "type": "validates"
+        }
+      ],
+      "unresolved_or_deferred": [
+        "No cross-repository resolution pattern is proposed from this single workflow.",
+        "The repository's test runner could not be independently executed in the available checkout because the installed Python environment lacks pytest; green-on-head status is supported by the pinned commit message rather than a fresh local run."
+      ],
+      "evidence_ids": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9",
+        "E10",
+        "E11"
+      ],
+      "supporting_repositories": [
+        "NousResearch/hermes-agent"
+      ],
+      "source_case": "NousResearch/hermes-agent#125942"
+    },
+    {
+      "id": "workflow:4b61c655f3f3c32e",
+      "node_type": "issue_workflow",
+      "category": "provider-interface-adaptation",
+      "repository": "Aider-AI/aider",
+      "issue": 88,
+      "episode_id": "Aider-AI__aider__88@549a1a76403e309890410f9538bda2fc4f901758",
+      "name": "adapt-a-client-to-provider-specific-endpoint-contracts",
+      "description": "Extend a provider-compatible client by centralizing endpoint configuration, reconciling consumer construction, and translating optional routing values only at the invocation boundary.",
+      "goal": "Permit the same application to invoke a compatible provider endpoint whose SDK and request contracts require optional endpoint metadata, without forcing provider configuration through the consumer factory.",
+      "entry_state": "The client supports a generic key/base configuration, configuration mutation occurs inside a downstream factory, and provider-specific routing values cannot reach the request call.",
+      "exit_state": "Application startup initializes all supplied provider settings, the consumer factory is configuration-independent, known callers use its revised interface, and configured request-routing identifiers are forwarded conditionally.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:7d6b49a1ecedb342",
+          "role": "establish-contract",
+          "optional": false
+        },
+        {
+          "step_id": "step-2",
+          "action_id": "semantic-action:2d6a7a39e552adce",
+          "role": "reconcile",
+          "optional": false
+        },
+        {
+          "step_id": "step-3",
+          "action_id": "semantic-action:db6b4ad8c741d3ab",
+          "role": "implement",
+          "optional": false
+        }
+      ],
+      "edges": [
+        {
+          "from": "step-1",
+          "to": "step-2",
+          "type": "enables"
+        },
+        {
+          "from": "step-1",
+          "to": "step-3",
+          "type": "enables"
+        },
+        {
+          "from": "step-2",
+          "to": "step-1",
+          "type": "validates"
+        }
+      ],
+      "unresolved_or_deferred": [
+        "No pinned test directly asserts SDK attribute assignment for the new optional configuration values.",
+        "No pinned test directly asserts conditional deployment_id or engine forwarding into ChatCompletion.create.",
+        "Runtime regression validation is deferred because required Python dependencies are unavailable in the inspection environment.",
+        "Behavior when the same process invokes main repeatedly with different optional settings is not established; omitted settings are left untouched on the shared SDK module.",
+        "Cross-project pattern promotion is deferred because this episode supplies only one repository workflow and no holdout result."
+      ],
+      "evidence_ids": [
+        "ev-before-01",
+        "ev-before-02",
+        "ev-before-03",
+        "ev-after-01",
+        "ev-after-02",
+        "ev-after-03",
+        "ev-after-04",
+        "ev-callsite-01",
+        "ev-test-01",
+        "ev-test-02",
+        "ev-validation-01"
+      ],
+      "supporting_repositories": [
+        "Aider-AI/aider"
+      ],
+      "source_case": "Aider-AI/aider#88"
+    },
+    {
+      "id": "workflow:ab57da6fa585a2b5",
+      "node_type": "issue_workflow",
+      "category": "provider-interface-adaptation",
+      "repository": "QwenLM/qwen-code",
+      "issue": 11657,
+      "episode_id": "QwenLM/qwen-code#11657@3ba01990e13e9e8e14e147b60add50e0f972431a",
+      "name": "adapt-generic-compatible-requests-to-a-stricter-endpoint-contract",
+      "description": "Introduce a narrowly routed outbound adapter when a nominally compatible endpoint rejects a generic provider transformation, preserving shared semantics and verifying the complete continuation path.",
+      "goal": "Allow thinking-history and tool-call continuations to satisfy the stricter endpoint schema without weakening behavior for other compatible endpoints or deleting supported replay data.",
+      "entry_state": "A generic compatible-provider transformation derives an extra message field from preserved history, and the actual endpoint rejects that field during multi-turn continuation.",
+      "exit_state": "The affected endpoint is safely identified, only the derived incompatible field is removed from an outbound copy, other endpoint behavior is unchanged, and a strict HTTP oracle accepts the continuation wire shape.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:30d94e268da81e3a",
+          "role": "establish-contract",
+          "optional": false
+        },
+        {
+          "step_id": "step-2",
+          "action_id": "semantic-action:d0e6aa7cfadb55f2",
+          "role": "reconcile",
+          "optional": false
+        },
+        {
+          "step_id": "step-3",
+          "action_id": "semantic-action:78dd7c430a0fc63d",
+          "role": "validate",
+          "optional": false
+        }
+      ],
+      "edges": [
+        {
+          "from": "step-1",
+          "to": "step-2",
+          "type": "enables"
+        },
+        {
+          "from": "step-2",
+          "to": "step-3",
+          "type": "validates"
+        }
+      ],
+      "unresolved_or_deferred": [
+        "No independent test-run or CI result is present in the supplied GitHub bundle; the validation oracle is established from committed tests, but execution success was not independently observed in this extraction.",
+        "The bundle lacks issue body, comments, reviews, timeline, and status checks, so the endpoint contract and failure reproduction are grounded in the commit, implementation, and tests rather than discussion metadata.",
+        "No cross-repository peers or untouched holdout were provided, so this single workflow must not be promoted as a universal resolution pattern."
+      ],
+      "evidence_ids": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E10"
+      ],
+      "supporting_repositories": [
+        "QwenLM/qwen-code"
+      ],
+      "source_case": "QwenLM/qwen-code#11657"
+    },
+    {
+      "id": "workflow:db028c1199198681",
+      "node_type": "issue_workflow",
+      "category": "provider-interface-adaptation",
+      "repository": "earendil-works/pi",
+      "issue": 5832,
+      "episode_id": "earendil-works/pi#5832@6fbeba51af98a37a0695ec8b53308dde81d9ab46",
+      "name": "surface-hidden-http-error-details-at-provider-boundaries",
+      "description": "Establish one bounded error contract, compose it without duplication, adopt it at affected provider boundaries while preserving local behavior, and verify both utility semantics and representative catch paths.",
+      "goal": "Return actionable provider HTTP failure details when an SDK exposes the status and response body outside its opaque Error.message.",
+      "entry_state": "Multiple provider adapters own incompatible catch formatting, and gateway or proxy failures can expose only an opaque SDK message even though the thrown object retains a status and body.",
+      "exit_state": "Affected adapters expose a bounded status/body diagnostic without double-printing existing content and without losing adapter-specific prefixes, categories, hints, stop reasons, or supplemental metadata.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "semantic-action:9cbf99d39f855621",
+          "role": "establish-contract",
+          "optional": false
+        },
+        {
+          "step_id": "step-2",
+          "action_id": "semantic-action:d6f919dc5f5f465a",
+          "role": "reconcile",
+          "optional": false
+        },
+        {
+          "step_id": "step-3",
+          "action_id": "semantic-action:8ce6b0f7e8c07846",
+          "role": "implement",
+          "optional": false
+        },
+        {
+          "step_id": "step-4",
+          "action_id": "semantic-action:5f86bf02fd2a0ba6",
+          "role": "validate",
+          "optional": false
+        }
+      ],
+      "edges": [
+        {
+          "from": "step-1",
+          "to": "step-2",
+          "type": "enables"
+        },
+        {
+          "from": "step-2",
+          "to": "step-3",
+          "type": "enables"
+        },
+        {
+          "from": "step-3",
+          "to": "step-4",
+          "type": "validates"
+        },
+        {
+          "from": "step-1",
+          "to": "step-4",
+          "type": "validates"
+        }
+      ],
+      "unresolved_or_deferred": [
+        "The evidence establishes extraction only for the implemented SDK field shapes; behavior for other SDK error layouts remains outside this episode.",
+        "Only representative adapter tiers have end-to-end regression tests; the other migrated adapters rely on the shared utility contract and analogous call-site integration.",
+        "No test execution log or CI status was available, so runtime passage of the added tests is not claimed.",
+        "Cross-repository peers, semantic deduplication, pattern induction, and holdout validation are outside this single-episode extraction and remain deferred."
+      ],
+      "evidence_ids": [
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9",
+        "E10"
+      ],
+      "supporting_repositories": [
+        "earendil-works/pi"
+      ],
+      "source_case": "earendil-works/pi#5832"
+    }
+  ],
+  "patterns": [
+    {
+      "id": "pattern:5895d079305884e4",
+      "node_type": "resolution_pattern",
+      "category": "provider-interface-adaptation",
+      "intent": "Resolve provider interface adaptation through a contract-first, evidence-validated change chain.",
+      "mandatory_actions": [],
+      "optional_actions": [],
+      "workflow_template": [],
+      "ordering_constraints": [],
+      "decision_points": [],
+      "invariants": [],
+      "validation_ladder": [],
+      "known_failure_modes": [],
+      "supporting_workflows": [
+        "workflow:39fa8a7327fff902",
+        "workflow:4b61c655f3f3c32e",
+        "workflow:ab57da6fa585a2b5",
+        "workflow:db028c1199198681"
+      ],
+      "supporting_repositories": [
+        "Aider-AI/aider",
+        "NousResearch/hermes-agent",
+        "QwenLM/qwen-code",
+        "earendil-works/pi"
+      ],
+      "counterexamples": [],
+      "confidence": 0.0,
+      "promotion_status": "insufficient-structural-support",
+      "held_out_results": [],
+      "extraction_method": "structural-action-fingerprint-v1; semantic judge required before promotion"
+    }
+  ],
+  "edges": [
+    {
+      "from": "semantic-action:7d6b49a1ecedb342",
+      "to": "evidence:Aider-AI__aider__88@549a1a76403e309890410f9538bda2fc4f901758",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:db6b4ad8c741d3ab",
+      "to": "evidence:Aider-AI__aider__88@549a1a76403e309890410f9538bda2fc4f901758",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:2d6a7a39e552adce",
+      "to": "evidence:Aider-AI__aider__88@549a1a76403e309890410f9538bda2fc4f901758",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:7d6b49a1ecedb342",
+      "to": "semantic-action:2d6a7a39e552adce",
+      "type": "enables",
+      "workflow_id": "workflow:4b61c655f3f3c32e",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-2"
+    },
+    {
+      "from": "semantic-action:7d6b49a1ecedb342",
+      "to": "semantic-action:db6b4ad8c741d3ab",
+      "type": "enables",
+      "workflow_id": "workflow:4b61c655f3f3c32e",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-3"
+    },
+    {
+      "from": "semantic-action:2d6a7a39e552adce",
+      "to": "semantic-action:7d6b49a1ecedb342",
+      "type": "validates",
+      "workflow_id": "workflow:4b61c655f3f3c32e",
+      "workflow_step_from": "step-2",
+      "workflow_step_to": "step-1"
+    },
+    {
+      "from": "semantic-action:dd484e564659b2bd",
+      "to": "evidence:NousResearch/hermes-agent#125942@33c6ab002d1fac653d7e772025ef7aaab7c83480",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:dd2d4348a148e6cd",
+      "to": "evidence:NousResearch/hermes-agent#125942@33c6ab002d1fac653d7e772025ef7aaab7c83480",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:dd484e564659b2bd",
+      "to": "semantic-action:dd2d4348a148e6cd",
+      "type": "enables",
+      "workflow_id": "workflow:39fa8a7327fff902",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-2"
+    },
+    {
+      "from": "semantic-action:dd2d4348a148e6cd",
+      "to": "semantic-action:dd484e564659b2bd",
+      "type": "validates",
+      "workflow_id": "workflow:39fa8a7327fff902",
+      "workflow_step_from": "step-2",
+      "workflow_step_to": "step-1"
+    },
+    {
+      "from": "semantic-action:30d94e268da81e3a",
+      "to": "evidence:QwenLM/qwen-code#11657@3ba01990e13e9e8e14e147b60add50e0f972431a",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:d0e6aa7cfadb55f2",
+      "to": "evidence:QwenLM/qwen-code#11657@3ba01990e13e9e8e14e147b60add50e0f972431a",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:78dd7c430a0fc63d",
+      "to": "evidence:QwenLM/qwen-code#11657@3ba01990e13e9e8e14e147b60add50e0f972431a",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:30d94e268da81e3a",
+      "to": "semantic-action:d0e6aa7cfadb55f2",
+      "type": "enables",
+      "workflow_id": "workflow:ab57da6fa585a2b5",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-2"
+    },
+    {
+      "from": "semantic-action:d0e6aa7cfadb55f2",
+      "to": "semantic-action:78dd7c430a0fc63d",
+      "type": "validates",
+      "workflow_id": "workflow:ab57da6fa585a2b5",
+      "workflow_step_from": "step-2",
+      "workflow_step_to": "step-3"
+    },
+    {
+      "from": "semantic-action:9cbf99d39f855621",
+      "to": "evidence:earendil-works/pi#5832@6fbeba51af98a37a0695ec8b53308dde81d9ab46",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:d6f919dc5f5f465a",
+      "to": "evidence:earendil-works/pi#5832@6fbeba51af98a37a0695ec8b53308dde81d9ab46",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:8ce6b0f7e8c07846",
+      "to": "evidence:earendil-works/pi#5832@6fbeba51af98a37a0695ec8b53308dde81d9ab46",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:5f86bf02fd2a0ba6",
+      "to": "evidence:earendil-works/pi#5832@6fbeba51af98a37a0695ec8b53308dde81d9ab46",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "semantic-action:9cbf99d39f855621",
+      "to": "semantic-action:d6f919dc5f5f465a",
+      "type": "enables",
+      "workflow_id": "workflow:db028c1199198681",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-2"
+    },
+    {
+      "from": "semantic-action:d6f919dc5f5f465a",
+      "to": "semantic-action:8ce6b0f7e8c07846",
+      "type": "enables",
+      "workflow_id": "workflow:db028c1199198681",
+      "workflow_step_from": "step-2",
+      "workflow_step_to": "step-3"
+    },
+    {
+      "from": "semantic-action:8ce6b0f7e8c07846",
+      "to": "semantic-action:5f86bf02fd2a0ba6",
+      "type": "validates",
+      "workflow_id": "workflow:db028c1199198681",
+      "workflow_step_from": "step-3",
+      "workflow_step_to": "step-4"
+    },
+    {
+      "from": "semantic-action:9cbf99d39f855621",
+      "to": "semantic-action:5f86bf02fd2a0ba6",
+      "type": "validates",
+      "workflow_id": "workflow:db028c1199198681",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-4"
+    },
+    {
+      "from": "pattern:5895d079305884e4",
+      "to": "workflow:4b61c655f3f3c32e",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:5895d079305884e4",
+      "to": "workflow:39fa8a7327fff902",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:5895d079305884e4",
+      "to": "workflow:ab57da6fa585a2b5",
+      "type": "supported_by"
+    },
+    {
+      "from": "pattern:5895d079305884e4",
+      "to": "workflow:db028c1199198681",
+      "type": "supported_by"
+    }
+  ],
+  "rejected": [],
+  "summary": {
+    "episodes_input": 4,
+    "episodes_used": 4,
+    "actions": 12,
+    "grounded_actions": 12,
+    "workflows": 4,
+    "patterns": 1,
+    "patterns_with_cross_repository_support": 1,
+    "rejected": 0,
+    "preflight_refused": 0
+  }
+}
