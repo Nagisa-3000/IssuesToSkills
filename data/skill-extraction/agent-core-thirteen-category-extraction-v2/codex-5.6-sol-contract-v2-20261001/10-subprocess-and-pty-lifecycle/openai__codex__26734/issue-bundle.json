@@ -1,0 +1,163 @@
+{
+  "source": "local_git_pinned_ref",
+  "repository": "openai/codex",
+  "issue_number": 26734,
+  "issue": {
+    "number": 26734,
+    "title": "[codex] Handle Ctrl-C for non-TTY unified exec (#26734)",
+    "body": null,
+    "metadata_unavailable": [
+      "issue body",
+      "comments",
+      "timeline",
+      "author/review discussion"
+    ]
+  },
+  "comments": [],
+  "timeline": [],
+  "linked_pull_requests": [
+    {
+      "pull_request": {
+        "number": 26734,
+        "title": "[codex] Handle Ctrl-C for non-TTY unified exec (#26734)",
+        "metadata_unavailable": [
+          "PR body",
+          "reviews",
+          "status checks"
+        ]
+      },
+      "files": [
+        {
+          "status_line": "M\tcodex-rs/core/src/unified_exec/process.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/src/unified_exec/process_manager.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/src/unified_exec/process_tests.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/tests/suite/unified_exec.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/exec-server/src/client.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/exec-server/src/lib.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/exec-server/src/local_process.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/exec-server/src/process.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/exec-server/src/protocol.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/exec-server/src/remote_process.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/exec-server/src/server/handler.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/exec-server/src/server/process_handler.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/exec-server/src/server/registry.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/exec-server/tests/exec_process.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/utils/pty/src/lib.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/utils/pty/src/pipe.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/utils/pty/src/process.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/utils/pty/src/process_group.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/utils/pty/src/pty.rs"
+        }
+      ],
+      "commits": [
+        {
+          "sha": "f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519",
+          "subject": "[codex] Handle Ctrl-C for non-TTY unified exec (#26734)"
+        }
+      ]
+    }
+  ],
+  "checkout": "/home/chenyujia/tritonToLlvm/codex-agent",
+  "pinned_ref": "f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519",
+  "resolved_commit": "f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519",
+  "parent_commit": "f574946960a4d21e884453ac9963a869153b847d",
+  "commit_show_stat": "commit f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519\nAuthor:     pakrym-oai <pakrym@openai.com>\nAuthorDate: Tue Jun 9 15:10:17 2026 -0700\nCommit:     GitHub <noreply@github.com>\nCommitDate: Tue Jun 9 15:10:17 2026 -0700\n\n    [codex] Handle Ctrl-C for non-TTY unified exec (#26734)\n    \n    ## Why\n    \n    A long-running unified exec process started with `tty: false` could not\n    be interrupted via `write_stdin`: ordinary non-TTY stdin writes are\n    rejected once stdin is closed, but an exact U+0003 payload should still\n    map to a process interrupt. The interrupt should flow through the same\n    process lifecycle path as a real signal so Codex preserves\n    process-reported output and exit metadata instead of fabricating a\n    Ctrl-C exit code or tearing down the session early.\n    \n    ## What Changed\n    \n    - Add `process/signal` to exec-server with `ProcessSignal::Interrupt`\n    and an empty response.\n    - Add a non-consuming `ProcessHandle::signal` path for spawned\n    processes; on Unix it sends SIGINT to the process group and leaves\n    terminate/hard-kill unchanged.\n    - Route non-TTY U+0003 `write_stdin` through `process.signal(...)`\n    instead of `terminate`, then let the normal post-write collection path\n    drain output and observe exit.\n    - Add exec-server coverage where a shell `trap INT` handler prints the\n    signal and exits with its own code.\n    - Add unified exec coverage where a `tty: false` process traps SIGINT,\n    emits output, and exits with its own code.\n    \n    ## Validation\n    \n    - `just test -p codex-exec-server\n    exec_process_signal_interrupts_process`\n    - `just test -p codex-exec-server`\n    - `just test -p codex-core\n    write_stdin_ctrl_c_interrupts_non_tty_session`\n\n codex-rs/core/src/unified_exec/process.rs          |  15 +-\n codex-rs/core/src/unified_exec/process_manager.rs  |  40 ++--\n codex-rs/core/src/unified_exec/process_tests.rs    |   5 +\n codex-rs/core/tests/suite/unified_exec.rs          | 243 +++++++++++++++++++++\n codex-rs/exec-server/src/client.rs                 |  25 +++\n codex-rs/exec-server/src/lib.rs                    |   3 +\n codex-rs/exec-server/src/local_process.rs          |  54 ++++-\n codex-rs/exec-server/src/process.rs                |   3 +\n codex-rs/exec-server/src/protocol.rs               |  18 ++\n codex-rs/exec-server/src/remote_process.rs         |   6 +\n codex-rs/exec-server/src/server/handler.rs         |  10 +\n codex-rs/exec-server/src/server/process_handler.rs |   9 +\n codex-rs/exec-server/src/server/registry.rs        |   8 +\n codex-rs/exec-server/tests/exec_process.rs         | 125 ++++++++++-\n codex-rs/utils/pty/src/lib.rs                      |   2 +\n codex-rs/utils/pty/src/pipe.rs                     |  20 +-\n codex-rs/utils/pty/src/process.rs                  |  48 ++++\n codex-rs/utils/pty/src/process_group.rs            |  43 ++--\n codex-rs/utils/pty/src/pty.rs                      |  26 ++-\n 19 files changed, 659 insertions(+), 44 deletions(-)\n",
+  "changed_files_name_status": "M\tcodex-rs/core/src/unified_exec/process.rs\nM\tcodex-rs/core/src/unified_exec/process_manager.rs\nM\tcodex-rs/core/src/unified_exec/process_tests.rs\nM\tcodex-rs/core/tests/suite/unified_exec.rs\nM\tcodex-rs/exec-server/src/client.rs\nM\tcodex-rs/exec-server/src/lib.rs\nM\tcodex-rs/exec-server/src/local_process.rs\nM\tcodex-rs/exec-server/src/process.rs\nM\tcodex-rs/exec-server/src/protocol.rs\nM\tcodex-rs/exec-server/src/remote_process.rs\nM\tcodex-rs/exec-server/src/server/handler.rs\nM\tcodex-rs/exec-server/src/server/process_handler.rs\nM\tcodex-rs/exec-server/src/server/registry.rs\nM\tcodex-rs/exec-server/tests/exec_process.rs\nM\tcodex-rs/utils/pty/src/lib.rs\nM\tcodex-rs/utils/pty/src/pipe.rs\nM\tcodex-rs/utils/pty/src/process.rs\nM\tcodex-rs/utils/pty/src/process_group.rs\nM\tcodex-rs/utils/pty/src/pty.rs\n",
+  "linked_issue_numbers": [
+    26734
+  ],
+  "manifest_metadata": {
+    "category": "subprocess-and-pty-lifecycle",
+    "theme": "subprocess and pseudo-terminal lifecycle finalization",
+    "file_sample": [
+      "codex-rs/core/src/unified_exec/process.rs",
+      "codex-rs/core/src/unified_exec/process_manager.rs",
+      "codex-rs/core/src/unified_exec/process_tests.rs",
+      "codex-rs/core/tests/suite/unified_exec.rs",
+      "codex-rs/exec-server/src/client.rs",
+      "codex-rs/exec-server/src/lib.rs",
+      "codex-rs/exec-server/src/local_process.rs",
+      "codex-rs/exec-server/src/process.rs",
+      "codex-rs/exec-server/src/protocol.rs",
+      "codex-rs/exec-server/src/remote_process.rs",
+      "codex-rs/exec-server/src/server/handler.rs",
+      "codex-rs/exec-server/src/server/process_handler.rs",
+      "codex-rs/exec-server/src/server/registry.rs",
+      "codex-rs/exec-server/tests/exec_process.rs",
+      "codex-rs/utils/pty/src/lib.rs",
+      "codex-rs/utils/pty/src/pipe.rs",
+      "codex-rs/utils/pty/src/process.rs",
+      "codex-rs/utils/pty/src/process_group.rs",
+      "codex-rs/utils/pty/src/pty.rs"
+    ],
+    "quality": "implementation_plus_test",
+    "case_id": "openai__codex__26734__subprocess-and-pty-lifecycle",
+    "role": "train_candidate",
+    "split": "train_candidate",
+    "sample_kind": "verified_implementation_pull_request",
+    "resolution_url": "https://github.com/openai/codex/pull/26734",
+    "source": "agent_core_thirteen_category_extraction_v2",
+    "provenance": {
+      "classification": "direct_implementation_artifact",
+      "resolution_artifact": {
+        "type": "pull_request",
+        "number": 26734,
+        "url": "https://github.com/openai/codex/pull/26734"
+      },
+      "commit": {
+        "sha": "f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519",
+        "subject": "[codex] Handle Ctrl-C for non-TTY unified exec (#26734)",
+        "parents": [
+          "f574946960a4d21e884453ac9963a869153b847d"
+        ],
+        "body_excerpt": "## Why\n\nA long-running unified exec process started with `tty: false` could not\nbe interrupted via `write_stdin`: ordinary non-TTY stdin writes are\nrejected once stdin is closed, but an exact U+0003 payload should still\nmap to a process interrupt. The interrupt should flow through the same\nprocess lifecycle path as a real signal so Codex preserves\nprocess-reported output and exit metadata instead of fabricating a\nCtrl-C exit code or tearing down the session early.\n\n## What Changed\n\n- Add `process/signal` to exec-server with `ProcessSignal::Interrupt`\nand an empty response.\n- Add a non-consuming `ProcessHandle::signal` path for spawned\nprocesses; on Unix it sends SIGINT to the process group and leaves\nterminate/hard-kill unchanged.\n- Route non-TTY U+0003 `write_stdin` through `process.signal(...)`\ninstead of `terminate`, then let the normal post-write collection path\ndrain output and observe exit.\n- Add exec-server coverage where a shell `trap INT` handler prints the\nsignal and exits with its own code.\n- Add unified exec coverage where a `tty: false` process traps SIGINT,\nemits output, and exits with its own code.\n\n## Validation\n\n- `just test -p codex-exec-server\nexec_process_signal"
+      },
+      "verification": [
+        "local_git_commit_resolved",
+        "first_parent_and_changed_files_recorded",
+        "implementation_change_present",
+        "test_or_spec_change_present"
+      ]
+    }
+  },
+  "fetched_at": "2026-10-01T11:01:40.223318+00:00",
+  "limitations": [
+    "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+  ]
+}

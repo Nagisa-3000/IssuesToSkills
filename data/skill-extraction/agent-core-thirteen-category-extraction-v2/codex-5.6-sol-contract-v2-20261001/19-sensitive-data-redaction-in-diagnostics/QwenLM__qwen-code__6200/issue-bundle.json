@@ -1,0 +1,103 @@
+{
+  "source": "local_git_pinned_ref",
+  "repository": "QwenLM/qwen-code",
+  "issue_number": 6200,
+  "issue": {
+    "number": 6200,
+    "title": "fix(qqbot): security hardening — gateway validation, atomic state, sanitized logging (#6200)",
+    "body": null,
+    "metadata_unavailable": [
+      "issue body",
+      "comments",
+      "timeline",
+      "author/review discussion"
+    ]
+  },
+  "comments": [],
+  "timeline": [],
+  "linked_pull_requests": [
+    {
+      "pull_request": {
+        "number": 6200,
+        "title": "fix(qqbot): security hardening — gateway validation, atomic state, sanitized logging (#6200)",
+        "metadata_unavailable": [
+          "PR body",
+          "reviews",
+          "status checks"
+        ]
+      },
+      "files": [
+        {
+          "status_line": "M\tpackages/channels/qqbot/src/QQChannel.ts"
+        },
+        {
+          "status_line": "M\tpackages/channels/qqbot/src/api.test.ts"
+        },
+        {
+          "status_line": "M\tpackages/channels/qqbot/src/api.ts"
+        },
+        {
+          "status_line": "M\tpackages/channels/qqbot/src/send.test.ts"
+        }
+      ],
+      "commits": [
+        {
+          "sha": "c1235d8c69fcccadf96609af54ed1e08b72fa7ed",
+          "subject": "fix(qqbot): security hardening — gateway validation, atomic state, sanitized logging (#6200)"
+        }
+      ]
+    }
+  ],
+  "checkout": "/home/chenyujia/tritonToLlvm/qwen-code",
+  "pinned_ref": "c1235d8c69fcccadf96609af54ed1e08b72fa7ed",
+  "resolved_commit": "c1235d8c69fcccadf96609af54ed1e08b72fa7ed",
+  "parent_commit": "006ac59a33b60bcd87086b5ddd6afa5abe85e448",
+  "commit_show_stat": "commit c1235d8c69fcccadf96609af54ed1e08b72fa7ed\nAuthor:     曹潇缤 <634718930@qq.com>\nAuthorDate: Fri Jul 3 15:26:13 2026 +0800\nCommit:     GitHub <noreply@github.com>\nCommitDate: Fri Jul 3 07:26:13 2026 +0000\n\n    fix(qqbot): security hardening — gateway validation, atomic state, sanitized logging (#6200)\n    \n    * fix(qqbot): validate gateway URL protocol to prevent SSRF\n    \n    - Add validateGatewayUrl(): enforce wss:// protocol, warn on unexpected hostnames\n    - Integrate into fetchGatewayUrl() return path\n    - Truncate error body in fetchAccessToken() to 80 chars\n    - Add 6 tests covering protocol rejection, wss acceptance, and edge cases\n    \n    * fix(qqbot): atomic state persistence and error log sanitization\n    \n    State persistence hardening:\n    - Atomic saveQQState() via tmp+renameSync with disposed guard and unref()\n    - Atomic flushQQState() with {mode: 0o600} permissions\n    - Entry type validation in restoreQQState() for chatTypeMap and msgSeqMap\n    \n    Error log sanitization:\n    - Wrap all user-controlled data in process.stderr.write() with sanitizeLogText()\n    - Covering: connect retry, sendMessage errors, state persistence failures,\n      token refresh, malformed gateway, WebSocket errors, reconnect, and\n      C2C/group handler error paths\n    \n    * fix(qqbot): add replyMsgId validation in restoreQQState()\n    \n    Add type/length validation for replyMsgId entries when restoring from\n    persisted state, consistent with the existing chatTypeMap and msgSeqMap\n    input validation filters. Entries must be strings ≤ 128 chars.\n    \n    * fix(qqbot): add test coverage for restoreQQState filters, atomic writes, and gateway URL validation\n    \n    * docs(qqbot): update restoreQQState doc and add disposed guard comment\n    \n    - Update restoreQQState JSDoc: document validation instead of \"trusts persisted JSON\"\n    - Add inline comment explaining why saveQQState has disposed guard but flushQQState doesn't\n    \n    * docs(qqbot): update validateGatewayUrl docstring to reflect TLS enforcement, not SSRF\n    \n    * fix(qqbot): address wenshao review — hostname rejection, error sanitization, msgSeqMap validation\n    \n    * fix(qqbot): address PR review — drain body, narrow gateway hostname\n    \n    - Drain resp.body?.cancel() in fetchAccessToken error to prevent\n      Undici connection leaks on repeated token failures\n    - Narrow validateGatewayUrl hostname check from broad Tencent\n      wildcards (.tencent.com, .tencentcs.com) to only *.qq.com\n      to prevent attacker-controlled Tencent Cloud API Gateway\n      domains from passing validation\n    \n    * test(qqbot): tighten token-error assertion to exact match\n    \n    * test(qqbot): add connect retry sanitization + msgSeqMap edge-case tests\n    \n    Add test verifying the final connect() retry sanitizes newline/control\n    characters in the thrown error message. Add tests for fractional,\n    overflow, and Infinity values in msgSeqMap restore validation to\n    prevent regression of the Number.isSafeInteger fix.\n    \n    * fix(qqbot): address wenshao review round 3 — error preservation, validation logging, URL normalization\n    \n    * test(qqbot): fix connect retry sanitization assertion — sanitizeLogText preserves readable content, not censor words\n    \n    * fix(qqbot): address wenshao review — error preservation, validation logging, URL userinfo stripping, test coverage\n    \n    * fix(qqbot): add Array.isArray guards and replyMsgId drop logging in restoreQQState\n    \n    Prevent TypeError from .filter() on non-array state values (e.g. object\n    from partial write). Missing Array.isArray() guard caused all three maps\n    to be lost on a single corrupted section — now each map independently\n    validates with both truthiness + Array.isArray() before filtering.\n    \n    Also add replyMsgId drop-count logging (was missing while chatTypeMap\n    and msgSeqMap already had it).\n    \n    * fix(qqbot): drain response body in token error path, sanitize URL TypeError, clean tmp on atomic write failure\n    \n    Three fixes from wenshao review:\n    \n    1. fetchAccessToken: cancel unconsumed response body to prevent Undici TCP\n       socket leak (could exhaust connection pool over hours in long-running daemon)\n    \n    2. validateGatewayUrl: strip raw URL from TypeError message to prevent\n       log injection via malformed URL strings\n    \n    3. saveQQState/flushQQState: unlinkSync(tmpPath) in catch blocks to\n       prevent orphaned .tmp files when renameSync fails (cross-device, Docker)\n    \n    * fix(qqbot): test Infinity rejection via 1e999 raw JSON, not JSON.stringify nullification\n    \n    * fix(qqbot): address PR #6200 review — beforeExit hook, key validation, error clarity\n    \n    - Add beforeExit hook to flush debounced state on abnormal process exit\n      (SIGKILL, OOM, crash) when unref'd 500ms timer has pending writes\n    - Validate map keys (typeof string, ≤256 chars) in restoreQQState filters\n      alongside existing value validation to prevent non-string key bloat\n    - Improve gateway hostname error message to include expected domain\n    \n    * fix(qqbot): address PR #6200 review round — non-object JSON restore, disposed guard, beforeExit dedup, comment fix\n    \n    * fix(qqbot): hoist tmpPath declaration before try block in saveQQState\n    \n    * fix(qqbot): update beforeExit JSDoc to accurately describe behavior\n    \n    * fix(qqbot): drain response body in fetchGatewayUrl error path\n\n packages/channels/qqbot/src/QQChannel.ts | 168 ++++++++++---\n packages/channels/qqbot/src/api.test.ts  | 137 ++++++++++-\n packages/channels/qqbot/src/api.ts       |  47 +++-\n packages/channels/qqbot/src/send.test.ts | 390 +++++++++++++++++++++++++++++++\n 4 files changed, 705 insertions(+), 37 deletions(-)\n",
+  "changed_files_name_status": "M\tpackages/channels/qqbot/src/QQChannel.ts\nM\tpackages/channels/qqbot/src/api.test.ts\nM\tpackages/channels/qqbot/src/api.ts\nM\tpackages/channels/qqbot/src/send.test.ts\n",
+  "linked_issue_numbers": [
+    6200
+  ],
+  "manifest_metadata": {
+    "category": "sensitive-data-redaction-in-diagnostics",
+    "theme": "redact secrets and sensitive payloads at logging and diagnostics boundaries",
+    "file_sample": [
+      "packages/channels/qqbot/src/QQChannel.ts",
+      "packages/channels/qqbot/src/api.test.ts",
+      "packages/channels/qqbot/src/api.ts",
+      "packages/channels/qqbot/src/send.test.ts"
+    ],
+    "quality": "implementation_plus_test",
+    "case_id": "QwenLM__qwen-code__6200__sensitive-data-redaction-in-diagnostics",
+    "role": "train_candidate",
+    "split": "train_candidate",
+    "sample_kind": "verified_implementation_pull_request",
+    "resolution_url": "https://github.com/QwenLM/qwen-code/pull/6200",
+    "source": "agent_core_thirteen_category_extraction_v2",
+    "provenance": {
+      "classification": "direct_implementation_artifact",
+      "resolution_artifact": {
+        "type": "pull_request",
+        "number": 6200,
+        "url": "https://github.com/QwenLM/qwen-code/pull/6200"
+      },
+      "commit": {
+        "sha": "c1235d8c69fcccadf96609af54ed1e08b72fa7ed",
+        "subject": "fix(qqbot): security hardening — gateway validation, atomic state, sanitized logging (#6200)",
+        "parents": [
+          "006ac59a33b60bcd87086b5ddd6afa5abe85e448"
+        ],
+        "body_excerpt": "* fix(qqbot): validate gateway URL protocol to prevent SSRF\n\n- Add validateGatewayUrl(): enforce wss:// protocol, warn on unexpected hostnames\n- Integrate into fetchGatewayUrl() return path\n- Truncate error body in fetchAccessToken() to 80 chars\n- Add 6 tests covering protocol rejection, wss acceptance, and edge cases\n\n* fix(qqbot): atomic state persistence and error log sanitization\n\nState persistence hardening:\n- Atomic saveQQState() via tmp+renameSync with disposed guard and unref()\n- Atomic flushQQState() with {mode: 0o600} permissions\n- Entry type validation in restoreQQState() for chatTypeMap and msgSeqMap\n\nError log sanitization:\n- Wrap all user-controlled data in process.stderr.write() with sanitizeLogText()\n- Covering: connect retry, sendMessage errors, state persistence failures,\n  token refresh, malformed gateway, WebSocket errors, reconnect, and\n  C2C/group handler error paths\n\n* fix(qqbot): add replyMsgId validation in restoreQQState()\n\nAdd type/length validation for replyMsgId entries when restoring from\npersisted state, consistent with the existing chatTypeMap and msgSeqMap\ninput validation filters. Entries must be strings ≤ 128 chars.\n\n* fix(qqbot): add test coverag"
+      },
+      "verification": [
+        "local_git_commit_resolved",
+        "first_parent_and_changed_files_recorded",
+        "implementation_change_present",
+        "test_or_spec_change_present"
+      ]
+    }
+  },
+  "fetched_at": "2026-10-01T11:06:43.323609+00:00",
+  "limitations": [
+    "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+  ]
+}

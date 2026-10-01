@@ -1,0 +1,107 @@
+{
+  "source": "local_git_pinned_ref",
+  "repository": "NousResearch/hermes-agent",
+  "issue_number": 3249,
+  "issue": {
+    "number": 3249,
+    "title": "fix(state): SQLite concurrency hardening + session transcript integrity (#3249)",
+    "body": null,
+    "metadata_unavailable": [
+      "issue body",
+      "comments",
+      "timeline",
+      "author/review discussion"
+    ]
+  },
+  "comments": [],
+  "timeline": [],
+  "linked_pull_requests": [
+    {
+      "pull_request": {
+        "number": 3249,
+        "title": "fix(state): SQLite concurrency hardening + session transcript integrity (#3249)",
+        "metadata_unavailable": [
+          "PR body",
+          "reviews",
+          "status checks"
+        ]
+      },
+      "files": [
+        {
+          "status_line": "M\tgateway/session.py"
+        },
+        {
+          "status_line": "M\thermes_state.py"
+        },
+        {
+          "status_line": "M\trun_agent.py"
+        },
+        {
+          "status_line": "M\ttests/gateway/test_session.py"
+        },
+        {
+          "status_line": "M\ttests/test_hermes_state.py"
+        }
+      ],
+      "commits": [
+        {
+          "sha": "b81d49dc450a56791a4ba39401f785eaff573d59",
+          "subject": "fix(state): SQLite concurrency hardening + session transcript integrity (#3249)"
+        }
+      ]
+    }
+  ],
+  "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+  "pinned_ref": "b81d49dc450a56791a4ba39401f785eaff573d59",
+  "resolved_commit": "b81d49dc450a56791a4ba39401f785eaff573d59",
+  "parent_commit": "3a7907b278169110d4fe16e1d50cb316ad5944e0",
+  "commit_show_stat": "commit b81d49dc450a56791a4ba39401f785eaff573d59\nAuthor:     Teknium <127238744+teknium1@users.noreply.github.com>\nAuthorDate: Thu Mar 26 13:47:14 2026 -0700\nCommit:     GitHub <noreply@github.com>\nCommitDate: Thu Mar 26 13:47:14 2026 -0700\n\n    fix(state): SQLite concurrency hardening + session transcript integrity (#3249)\n    \n    * fix(session-db): survive CLI/gateway concurrent write contention\n    \n    Closes #3139\n    \n    Three layered fixes for the scenario where CLI and gateway write to\n    state.db concurrently, causing create_session() to fail with\n    'database is locked' and permanently disabling session_search on the\n    gateway side.\n    \n    1. Increase SQLite connection timeout: 10s -> 30s\n       hermes_state.py: longer window for the WAL writer to finish a batch\n       flush before the other process gives up entirely.\n    \n    2. INSERT OR IGNORE in create_session\n       hermes_state.py: prevents IntegrityError on duplicate session IDs\n       (e.g. gateway restarts while CLI session is still alive).\n    \n    3. Don't null out _session_db on create_session failure  (main fix)\n       run_agent.py: a transient lock at agent startup must not permanently\n       disable session_search for the lifetime of that agent instance.\n       _session_db now stays alive so subsequent flushes and searches work\n       once the lock clears.\n    \n    4. New ensure_session() helper + call it during flush\n       hermes_state.py: INSERT OR IGNORE for a minimal session row.\n       run_agent.py _flush_messages_to_session_db: calls ensure_session()\n       before appending messages, so the FK constraint is satisfied even\n       when create_session() failed at startup. No-op when the row exists.\n    \n    * fix(state): release lock between context queries in search_messages\n    \n    The context-window queries (one per FTS5 match) were running inside\n    the same lock acquisition as the primary FTS5 query, holding the lock\n    for O(N) sequential SQLite round-trips. Move per-match context fetches\n    outside the outer lock block so each acquires the lock independently,\n    keeping critical sections short and allowing other threads to interleave.\n    \n    * fix(session): prefer longer source in load_transcript to prevent legacy truncation\n    \n    When a long-lived session pre-dates SQLite storage (e.g. sessions\n    created before the DB layer was introduced, or after a clean\n    deployment that reset the DB), _flush_messages_to_session_db only\n    writes the *new* messages from the current turn to SQLite — it skips\n    messages already present in conversation_history, assuming they are\n    already persisted.\n    \n    That assumption fails for legacy JSONL-only sessions:\n    \n      Turn N (first after DB migration):\n        load_transcript(id)       → SQLite: 0  → falls back to JSONL: 994 ✓\n        _flush_messages_to_session_db: skip first 994, write 2 new → SQLite: 2\n    \n      Turn N+1:\n        load_transcript(id)       → SQLite: 2  → returns immediately ✗\n        Agent sees 2 messages of history instead of 996\n    \n    The same pattern causes the reported symptom: session JSON truncated\n    to 4 messages (_save_session_log writes agent.messages which only has\n    2 history + 2 new = 4).\n    \n    Fix: always load both sources and return whichever is longer.  For a\n    fully-migrated session SQLite will always be ≥ JSONL, so there is no\n    regression.  For a legacy session that hasn't been bootstrapped yet,\n    JSONL wins and the full history is restored.\n    \n    Closes #3212\n    \n    * test: add load_transcript source preference tests for #3212\n    \n    Covers: JSONL longer returns JSONL, SQLite longer returns SQLite,\n    SQLite empty falls back to JSONL, both empty returns empty, equal\n    length prefers SQLite (richer reasoning fields).\n    \n    ---------\n    \n    Co-authored-by: Mibayy <mibayy@hermes.ai>\n    Co-authored-by: kewe63 <kewe.3217@gmail.com>\n    Co-authored-by: Mibayy <mibayy@users.noreply.github.com>\n\n gateway/session.py            | 62 +++++++++++++++++-----------\n hermes_state.py               | 42 +++++++++++++++----\n run_agent.py                  | 19 ++++++++-\n tests/gateway/test_session.py | 94 +++++++++++++++++++++++++++++++++++++++++++\n tests/test_hermes_state.py    | 63 +++++++++++++++++++++++++++++\n 5 files changed, 247 insertions(+), 33 deletions(-)\n",
+  "changed_files_name_status": "M\tgateway/session.py\nM\thermes_state.py\nM\trun_agent.py\nM\ttests/gateway/test_session.py\nM\ttests/test_hermes_state.py\n",
+  "linked_issue_numbers": [
+    3139
+  ],
+  "manifest_metadata": {
+    "category": "persistent-state-and-schema-consistency",
+    "theme": "persistent cache and state schema consistency",
+    "file_sample": [
+      "gateway/session.py",
+      "hermes_state.py",
+      "run_agent.py",
+      "tests/gateway/test_session.py",
+      "tests/test_hermes_state.py"
+    ],
+    "quality": "implementation_plus_test",
+    "case_id": "NousResearch__hermes-agent__3249__persistent-state-and-schema-consistency",
+    "role": "train_candidate",
+    "split": "train_candidate",
+    "sample_kind": "verified_implementation_pull_request",
+    "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/3249",
+    "source": "agent_core_thirteen_category_extraction_v2",
+    "provenance": {
+      "classification": "direct_implementation_artifact",
+      "resolution_artifact": {
+        "type": "pull_request",
+        "number": 3249,
+        "url": "https://github.com/NousResearch/hermes-agent/pull/3249"
+      },
+      "commit": {
+        "sha": "b81d49dc450a56791a4ba39401f785eaff573d59",
+        "subject": "fix(state): SQLite concurrency hardening + session transcript integrity (#3249)",
+        "parents": [
+          "3a7907b278169110d4fe16e1d50cb316ad5944e0"
+        ],
+        "body_excerpt": "* fix(session-db): survive CLI/gateway concurrent write contention\n\nCloses #3139\n\nThree layered fixes for the scenario where CLI and gateway write to\nstate.db concurrently, causing create_session() to fail with\n'database is locked' and permanently disabling session_search on the\ngateway side.\n\n1. Increase SQLite connection timeout: 10s -> 30s\n   hermes_state.py: longer window for the WAL writer to finish a batch\n   flush before the other process gives up entirely.\n\n2. INSERT OR IGNORE in create_session\n   hermes_state.py: prevents IntegrityError on duplicate session IDs\n   (e.g. gateway restarts while CLI session is still alive).\n\n3. Don't null out _session_db on create_session failure  (main fix)\n   run_agent.py: a transient lock at agent startup must not permanently\n   disable session_search for the lifetime of that agent instance.\n   _session_db now stays alive so subsequent flushes and searches work\n   once the lock clears.\n\n4. New ensure_session() helper + call it during flush\n   hermes_state.py: INSERT OR IGNORE for a minimal session row.\n   run_agent.py _flush_messages_to_session_db: calls ensure_session()\n   before appending messages, so the FK constraint is satisfied even\n"
+      },
+      "verification": [
+        "local_git_commit_resolved",
+        "first_parent_and_changed_files_recorded",
+        "implementation_change_present",
+        "test_or_spec_change_present"
+      ]
+    }
+  },
+  "fetched_at": "2026-10-01T10:59:30.019926+00:00",
+  "limitations": [
+    "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+  ]
+}

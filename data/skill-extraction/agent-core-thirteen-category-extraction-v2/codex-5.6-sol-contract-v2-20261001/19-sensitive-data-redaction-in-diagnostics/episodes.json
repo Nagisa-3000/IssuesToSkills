@@ -1,0 +1,2500 @@
+[
+  {
+    "episode_id": "NousResearch__hermes-agent__77484__72eda946be",
+    "title": "Redact secrets at terminal exception-result and ACP stderr boundaries",
+    "before": "At parent commit 2a743e5f4377419c54054ce7c65c79cff98a092c, terminal_tool serialized raw exception text and traceback.format_exc() into model-visible JSON for both the generic exception handler and the TERMINAL_DEGRADED_MODE=fail branch. ACP logging setup also replaced root handlers with a stderr handler using plain logging.Formatter, so that independently configured diagnostic surface bypassed the repository's redacting formatter.",
+    "after": "At commit 72eda946be949a5932923df3325037a0d6c5da49, both terminal error-result branches apply redact_sensitive_text to the error and traceback fields before JSON serialization, preserving the structured failure response while masking secrets. ACP stderr setup uses RedactingFormatter, causing formatted log records on that handler to pass through the shared secret-redaction policy.",
+    "diff": "The implementation changes two diagnostic emission boundaries without changing the redaction algorithm: tools/terminal_tool.py adds lazy imports of redact_sensitive_text and sanitizes four outgoing field values across two exception paths; acp_adapter/entry.py replaces logging.Formatter with RedactingFormatter. Two regression-test modules add three tests that inject prefixed secrets and assert that secret values are absent while useful context and response structure remain. The commit reports 98 insertions and 5 deletions across four files.",
+    "repository": "NousResearch/hermes-agent",
+    "revision": "github-issue-77484",
+    "evidence_ids": [
+      "ev-commit-resolution",
+      "ev-before-terminal",
+      "ev-after-terminal",
+      "ev-terminal-call-site",
+      "ev-before-acp",
+      "ev-after-acp",
+      "ev-redaction-contract",
+      "ev-test-generic",
+      "ev-test-degraded",
+      "ev-test-acp",
+      "ev-static-validation",
+      "ev-runtime-validation-unavailable"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 77484,
+      "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+      "manifest_metadata": {
+        "category": "sensitive-data-redaction-in-diagnostics",
+        "role": "train_candidate",
+        "case_id": "NousResearch__hermes-agent__77484__sensitive-data-redaction-in-diagnostics",
+        "sample_kind": "verified_implementation_pull_request",
+        "seed_issue": null,
+        "seed_issue_url": null,
+        "seed_relation": null,
+        "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/77484",
+        "provenance": {
+          "classification": "direct_implementation_artifact",
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 77484,
+            "url": "https://github.com/NousResearch/hermes-agent/pull/77484"
+          },
+          "commit": {
+            "sha": "72eda946be949a5932923df3325037a0d6c5da49",
+            "subject": "fix(security): redact terminal exception results and ACP stderr logs (#77484)",
+            "parents": [
+              "2a743e5f4377419c54054ce7c65c79cff98a092c"
+            ],
+            "body_excerpt": "Closes the last two emission gaps from #77484:\n\n- tools/terminal_tool.py: both exception paths (generic except and\n  TERMINAL_DEGRADED_MODE=fail) returned raw str(e) + traceback.format_exc()\n  to the model — only the logger copy was redacted. Exception text can\n  embed the failing command line and any secrets inline in it; both fields\n  now pass through redact_sensitive_text.\n- acp_adapter/entry.py: _setup_logging cleared root handlers and installed\n  a plain logging.Formatter, bypassing redaction entirely on ACP stderr.\n  Now uses RedactingFormatter like every other logging surface.\n\nThe other three gaps from #77484 (process(list), *_KEY regex variants,\ncontrol-char splits) were fixed in #80964/#80965."
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "first_parent_and_changed_files_recorded",
+            "implementation_change_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "NousResearch/hermes-agent",
+        "issue_number": 77484,
+        "issue": {
+          "number": 77484,
+          "title": "fix(security): redact terminal exception results and ACP stderr logs (#77484)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 77484,
+              "title": "fix(security): redact terminal exception results and ACP stderr logs (#77484)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tacp_adapter/entry.py"
+              },
+              {
+                "status_line": "A\ttests/acp_adapter/test_acp_logging_redaction.py"
+              },
+              {
+                "status_line": "A\ttests/tools/test_terminal_tool_exception_redaction.py"
+              },
+              {
+                "status_line": "M\ttools/terminal_tool.py"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "72eda946be949a5932923df3325037a0d6c5da49",
+                "subject": "fix(security): redact terminal exception results and ACP stderr logs (#77484)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+        "pinned_ref": "72eda946be949a5932923df3325037a0d6c5da49",
+        "resolved_commit": "72eda946be949a5932923df3325037a0d6c5da49",
+        "parent_commit": "2a743e5f4377419c54054ce7c65c79cff98a092c",
+        "commit_show_stat": "commit 72eda946be949a5932923df3325037a0d6c5da49\nAuthor:     Teknium <127238744+teknium1@users.noreply.github.com>\nAuthorDate: Sat Aug 8 04:03:04 2026 -0700\nCommit:     Teknium <127238744+teknium1@users.noreply.github.com>\nCommitDate: Sat Aug 8 04:19:49 2026 -0700\n\n    fix(security): redact terminal exception results and ACP stderr logs (#77484)\n    \n    Closes the last two emission gaps from #77484:\n    \n    - tools/terminal_tool.py: both exception paths (generic except and\n      TERMINAL_DEGRADED_MODE=fail) returned raw str(e) + traceback.format_exc()\n      to the model — only the logger copy was redacted. Exception text can\n      embed the failing command line and any secrets inline in it; both fields\n      now pass through redact_sensitive_text.\n    - acp_adapter/entry.py: _setup_logging cleared root handlers and installed\n      a plain logging.Formatter, bypassing redaction entirely on ACP stderr.\n      Now uses RedactingFormatter like every other logging surface.\n    \n    The other three gaps from #77484 (process(list), *_KEY regex variants,\n    control-char splits) were fixed in #80964/#80965.\n\n acp_adapter/entry.py                               |  4 +-\n tests/acp_adapter/test_acp_logging_redaction.py    | 41 ++++++++++++++++++++\n .../test_terminal_tool_exception_redaction.py      | 44 ++++++++++++++++++++++\n tools/terminal_tool.py                             | 14 +++++--\n 4 files changed, 98 insertions(+), 5 deletions(-)\n",
+        "changed_files_name_status": "M\tacp_adapter/entry.py\nA\ttests/acp_adapter/test_acp_logging_redaction.py\nA\ttests/tools/test_terminal_tool_exception_redaction.py\nM\ttools/terminal_tool.py\n",
+        "linked_issue_numbers": [
+          80964,
+          80965
+        ],
+        "manifest_metadata": {
+          "category": "sensitive-data-redaction-in-diagnostics",
+          "theme": "redact secrets and sensitive payloads at logging and diagnostics boundaries",
+          "file_sample": [
+            "acp_adapter/entry.py",
+            "tests/acp_adapter/test_acp_logging_redaction.py",
+            "tests/tools/test_terminal_tool_exception_redaction.py",
+            "tools/terminal_tool.py"
+          ],
+          "quality": "implementation_plus_test",
+          "case_id": "NousResearch__hermes-agent__77484__sensitive-data-redaction-in-diagnostics",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_implementation_pull_request",
+          "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/77484",
+          "source": "agent_core_thirteen_category_extraction_v2",
+          "provenance": {
+            "classification": "direct_implementation_artifact",
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 77484,
+              "url": "https://github.com/NousResearch/hermes-agent/pull/77484"
+            },
+            "commit": {
+              "sha": "72eda946be949a5932923df3325037a0d6c5da49",
+              "subject": "fix(security): redact terminal exception results and ACP stderr logs (#77484)",
+              "parents": [
+                "2a743e5f4377419c54054ce7c65c79cff98a092c"
+              ],
+              "body_excerpt": "Closes the last two emission gaps from #77484:\n\n- tools/terminal_tool.py: both exception paths (generic except and\n  TERMINAL_DEGRADED_MODE=fail) returned raw str(e) + traceback.format_exc()\n  to the model — only the logger copy was redacted. Exception text can\n  embed the failing command line and any secrets inline in it; both fields\n  now pass through redact_sensitive_text.\n- acp_adapter/entry.py: _setup_logging cleared root handlers and installed\n  a plain logging.Formatter, bypassing redaction entirely on ACP stderr.\n  Now uses RedactingFormatter like every other logging surface.\n\nThe other three gaps from #77484 (process(list), *_KEY regex variants,\ncontrol-char splits) were fixed in #80964/#80965."
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "first_parent_and_changed_files_recorded",
+              "implementation_change_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T10:50:44.828547+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "NousResearch__hermes-agent__77484__72eda946be",
+          "title": "Redact secrets at terminal exception-result and ACP stderr boundaries",
+          "before": "At parent commit 2a743e5f4377419c54054ce7c65c79cff98a092c, terminal_tool serialized raw exception text and traceback.format_exc() into model-visible JSON for both the generic exception handler and the TERMINAL_DEGRADED_MODE=fail branch. ACP logging setup also replaced root handlers with a stderr handler using plain logging.Formatter, so that independently configured diagnostic surface bypassed the repository's redacting formatter.",
+          "after": "At commit 72eda946be949a5932923df3325037a0d6c5da49, both terminal error-result branches apply redact_sensitive_text to the error and traceback fields before JSON serialization, preserving the structured failure response while masking secrets. ACP stderr setup uses RedactingFormatter, causing formatted log records on that handler to pass through the shared secret-redaction policy.",
+          "diff": "The implementation changes two diagnostic emission boundaries without changing the redaction algorithm: tools/terminal_tool.py adds lazy imports of redact_sensitive_text and sanitizes four outgoing field values across two exception paths; acp_adapter/entry.py replaces logging.Formatter with RedactingFormatter. Two regression-test modules add three tests that inject prefixed secrets and assert that secret values are absent while useful context and response structure remain. The commit reports 98 insertions and 5 deletions across four files."
+        },
+        "evidence_units": [
+          {
+            "id": "ev-commit-resolution",
+            "kind": "commit",
+            "claim": "Commit 72eda946be949a5932923df3325037a0d6c5da49 is an implementation-bearing security fix for issue/PR 77484, with parent 2a743e5f4377419c54054ce7c65c79cff98a092c and four changed files.",
+            "source": "git show --format=fuller --stat 72eda946be949a5932923df3325037a0d6c5da49; issue-bundle.json linked_pull_requests[0]"
+          },
+          {
+            "id": "ev-before-terminal",
+            "kind": "implementation",
+            "claim": "In the parent state, both the degraded-fail EnvironmentConnectionError branch and the generic exception branch returned raw str(e) in error and raw traceback.format_exc() in traceback.",
+            "source": "git show 2a743e5f4377419c54054ce7c65c79cff98a092c:tools/terminal_tool.py, terminal_tool exception handlers around lines 3300-3348"
+          },
+          {
+            "id": "ev-after-terminal",
+            "kind": "diff",
+            "claim": "The pinned change applies redact_sensitive_text separately to the model-visible error and traceback fields in both terminal exception-result branches before json.dumps.",
+            "source": "git diff 2a743e5f4377419c54054ce7c65c79cff98a092c 72eda946be949a5932923df3325037a0d6c5da49 -- tools/terminal_tool.py"
+          },
+          {
+            "id": "ev-terminal-call-site",
+            "kind": "call_site",
+            "claim": "terminal_tool returns these dictionaries as JSON tool results, making their error and traceback fields a model-facing diagnostic boundary rather than merely internal logger output.",
+            "source": "git show 72eda946be949a5932923df3325037a0d6c5da49:tools/terminal_tool.py, returns in EnvironmentConnectionError degraded_mode == 'fail' and except Exception handlers"
+          },
+          {
+            "id": "ev-before-acp",
+            "kind": "implementation",
+            "claim": "In the parent state, _setup_logging created a stderr StreamHandler, assigned a plain logging.Formatter, cleared the root handlers, and installed that handler, bypassing formatter-level redaction for ACP stderr.",
+            "source": "git show 2a743e5f4377419c54054ce7c65c79cff98a092c:acp_adapter/entry.py, _setup_logging"
+          },
+          {
+            "id": "ev-after-acp",
+            "kind": "diff",
+            "claim": "The pinned change imports RedactingFormatter and uses it in place of logging.Formatter while retaining the existing stderr destination, format string, filter, root-handler replacement, and logging levels.",
+            "source": "git diff 2a743e5f4377419c54054ce7c65c79cff98a092c 72eda946be949a5932923df3325037a0d6c5da49 -- acp_adapter/entry.py"
+          },
+          {
+            "id": "ev-redaction-contract",
+            "kind": "implementation",
+            "claim": "The shared redact_sensitive_text function passes nonmatching text through, is enabled by default, and masks recognized secrets; RedactingFormatter formats a record normally and then applies redact_sensitive_text to the complete formatted string.",
+            "source": "git show 72eda946be949a5932923df3325037a0d6c5da49:agent/redact.py, redact_sensitive_text and RedactingFormatter.format"
+          },
+          {
+            "id": "ev-test-generic",
+            "kind": "test",
+            "claim": "The generic-exception regression test forces _get_env_config to raise an exception containing a prefixed secret and asserts error status, absence of the secret from both error and traceback, and preservation of the key label and failure context.",
+            "source": "git show 72eda946be949a5932923df3325037a0d6c5da49:tests/tools/test_terminal_tool_exception_redaction.py, test_generic_exception_result_redacts_error_and_traceback"
+          },
+          {
+            "id": "ev-test-degraded",
+            "kind": "test",
+            "claim": "The degraded-fail regression test enables TERMINAL_DEGRADED_MODE=fail, injects an EnvironmentConnectionError containing a prefixed secret, and asserts that neither returned error nor traceback contains the secret.",
+            "source": "git show 72eda946be949a5932923df3325037a0d6c5da49:tests/tools/test_terminal_tool_exception_redaction.py, test_degraded_fail_mode_result_redacts_error_and_traceback"
+          },
+          {
+            "id": "ev-test-acp",
+            "kind": "test",
+            "claim": "The ACP regression test invokes _setup_logging, formats a LogRecord containing an API-key assignment through the installed root handler, and asserts that the secret is absent while the key label remains.",
+            "source": "git show 72eda946be949a5932923df3325037a0d6c5da49:tests/acp_adapter/test_acp_logging_redaction.py, test_acp_stderr_handler_redacts_secrets"
+          },
+          {
+            "id": "ev-static-validation",
+            "kind": "validation",
+            "claim": "git diff --check reports no whitespace errors for the parent-to-pinned change.",
+            "source": "git diff --check 72eda946be949a5932923df3325037a0d6c5da49^ 72eda946be949a5932923df3325037a0d6c5da49"
+          },
+          {
+            "id": "ev-runtime-validation-unavailable",
+            "kind": "validation",
+            "claim": "The focused tests could not be executed in the supplied environment because python is absent and python3 does not have pytest installed; therefore runtime pass status was not independently established during extraction.",
+            "source": "local commands: python -m pytest returned 'python: command not found'; python3 -m pytest returned 'No module named pytest'"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "redact-structured-exception-diagnostics-before-return",
+            "title": "Redact exception diagnostics before returning them to the caller",
+            "description": "Sanitize exception-derived message and traceback fields at a structured result boundary while retaining status, field structure, and non-secret diagnostic context.",
+            "evidence_ids": [
+              "ev-before-terminal",
+              "ev-after-terminal",
+              "ev-terminal-call-site",
+              "ev-redaction-contract",
+              "ev-test-generic",
+              "ev-test-degraded"
+            ],
+            "semantic_action": {
+              "intent": "Prevent credentials embedded in exceptions or failing command context from reaching a diagnostic-result consumer without removing the actionable failure response.",
+              "module_role": "Structured diagnostic-result producer",
+              "operation": "sanitize",
+              "pre_state": "An exception handler is about to serialize exception-derived text and traceback content into an externally consumed error result, and those strings may contain secret assignments or prefixed credentials.",
+              "post_state": "Every exception-derived text field on the affected error-result branches has passed through the shared sensitive-text redactor before serialization; response status, schema, and non-secret context remain available.",
+              "validation": "Force each affected exception branch with a recognizable secret in the exception text, parse the returned result, assert the error status and expected fields, assert the raw secret is absent from every diagnostic field, and assert useful labels or failure context remain.",
+              "parameters": [
+                "exception object",
+                "formatted traceback",
+                "outgoing diagnostic fields: error and traceback",
+                "affected branches: generic exception and configured degraded-fail exception",
+                "shared sensitive-text redaction function"
+              ],
+              "evidence_ids": [
+                "ev-after-terminal",
+                "ev-terminal-call-site",
+                "ev-redaction-contract",
+                "ev-test-generic",
+                "ev-test-degraded"
+              ]
+            }
+          },
+          {
+            "name": "install-redacting-formatter-on-isolated-log-sink",
+            "title": "Install redaction on an independently configured diagnostic log sink",
+            "description": "Use the shared redacting formatter when a subsystem replaces global logging handlers with its own stderr handler, preserving existing routing and filtering behavior.",
+            "evidence_ids": [
+              "ev-before-acp",
+              "ev-after-acp",
+              "ev-redaction-contract",
+              "ev-test-acp"
+            ],
+            "semantic_action": {
+              "intent": "Prevent an independently configured log sink from bypassing the application's secret-redaction policy.",
+              "module_role": "Diagnostic logging configuration owner",
+              "operation": "adapt",
+              "pre_state": "A subsystem clears inherited root handlers and installs its own diagnostic handler with a plain formatter, so records emitted through that handler are not redacted.",
+              "post_state": "The subsystem-owned handler formats complete log records through the shared redacting formatter while retaining its destination, layout, filters, and logging-level behavior.",
+              "validation": "Run the logging setup, obtain the installed handler, format a record containing a recognizable secret assignment, assert the raw secret is absent, and assert the non-secret key label remains.",
+              "parameters": [
+                "subsystem logging setup",
+                "diagnostic stream handler",
+                "shared redacting formatter",
+                "existing format and date format",
+                "representative secret-bearing log record"
+              ],
+              "evidence_ids": [
+                "ev-after-acp",
+                "ev-redaction-contract",
+                "ev-test-acp"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "close-secret-leaks-across-diagnostic-emission-boundaries",
+            "title": "Close secret leaks at structured-result and log-output boundaries",
+            "description": "A partial-order workflow for applying an existing redaction policy to diagnostic surfaces that bypass it: sanitize exception-derived fields immediately before structured return, and attach the shared formatter to independently configured log handlers, then verify secrecy and retained diagnostic utility at each boundary.",
+            "atomic_names": [
+              "redact-structured-exception-diagnostics-before-return",
+              "install-redacting-formatter-on-isolated-log-sink"
+            ],
+            "evidence_ids": [
+              "ev-commit-resolution",
+              "ev-before-terminal",
+              "ev-after-terminal",
+              "ev-terminal-call-site",
+              "ev-before-acp",
+              "ev-after-acp",
+              "ev-redaction-contract",
+              "ev-test-generic",
+              "ev-test-degraded",
+              "ev-test-acp",
+              "ev-static-validation",
+              "ev-runtime-validation-unavailable"
+            ],
+            "workflow_graph": {
+              "goal": "Ensure that secrets embedded in exception diagnostics or log records cannot cross the affected consumer-facing diagnostic boundaries while structured errors and useful non-secret context remain intact.",
+              "when_to_use": [
+                "A structured error result exposes raw exception messages, tracebacks, command context, or comparable diagnostic text to an external consumer.",
+                "A subsystem replaces inherited logging handlers or formatters and therefore bypasses an established application-wide redaction formatter.",
+                "An existing, tested sensitive-text redaction policy can be reused at the emission boundary."
+              ],
+              "anti_goals": [
+                "Do not remove the error result, traceback field, log destination, log layout, filters, or status information merely to avoid leakage.",
+                "Do not redesign or broaden the secret-detection algorithm when the demonstrated defect is an emission boundary that fails to invoke the existing policy.",
+                "Do not claim closure of unrelated secret-emission gaps outside the inspected exception-result and ACP stderr surfaces."
+              ],
+              "not_applicable_when": [
+                "The diagnostic text is already demonstrably redacted after all formatting and immediately before emission.",
+                "No trusted redaction function or formatter exists and its detection behavior cannot be established from implementation and tests.",
+                "The data must remain byte-exact for an authorized internal-only consumer and applying this redactor would violate that explicit contract."
+              ],
+              "inputs": [
+                "Inventory of externally visible diagnostic-result fields and independently configured log handlers",
+                "Existing sensitive-text redaction function and redacting log formatter",
+                "Representative secret-bearing exceptions and log records",
+                "Branch controls needed to reach each affected exception path",
+                "Test runner capable of executing the focused regression tests"
+              ],
+              "entry_state": "At least one externally observable diagnostic path emits exception-derived or log-formatted text without applying the shared redaction policy at its final boundary.",
+              "exit_state": "All evidenced diagnostic paths apply the shared redaction policy immediately before structured serialization or during final log formatting, and focused tests demonstrate that raw secrets are absent while response structure and useful context are retained.",
+              "steps": [
+                {
+                  "action_name": "redact-structured-exception-diagnostics-before-return",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "Required for each structured exception-result branch that can contain exception-derived secret material.",
+                  "validation": "Exercise the generic and configured degraded-fail branches; verify the secret is absent from error and traceback while status and useful failure context remain."
+                },
+                {
+                  "action_name": "install-redacting-formatter-on-isolated-log-sink",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "Required when the subsystem clears or replaces inherited handlers and assigns its own formatter.",
+                  "validation": "Format a secret-bearing record through the installed handler; verify the raw value is absent and the non-secret key label remains."
+                }
+              ],
+              "edges": [],
+              "validation_ladder": [
+                "Static comparison: confirm each raw emission point in the parent is replaced by the shared redaction function or formatter without changing unrelated routing and response structure.",
+                "Branch-level structured-result tests: inject a secret-bearing generic exception and a degraded-fail connection exception, then inspect every returned diagnostic field.",
+                "Sink-level logging test: format a secret-bearing record through the exact handler installed by subsystem logging setup.",
+                "Integration check: run the three focused regression tests together in an environment with the repository's test dependencies.",
+                "Broader regression check: run the surrounding terminal-tool, ACP-adapter, and redaction test suites to detect formatting, filtering, or response-contract regressions."
+              ],
+              "stop_conditions": [
+                "Stop and defer if the parent and after states do not identify a concrete unredacted emission boundary.",
+                "Stop if redaction is applied only to an internal logger copy while another consumer-facing copy remains raw.",
+                "Stop if the focused tests do not assert both secret absence and preservation of the required diagnostic contract.",
+                "Do not report runtime validation as passed when the test runner or dependencies are unavailable."
+              ],
+              "unresolved_or_deferred": [
+                "Focused runtime tests were not executed during extraction because pytest is unavailable in the supplied environment.",
+                "The commit explicitly states that process-list output, additional environment-key variants, and control-character-split tokens were handled by separate changes; their implementation and validation are outside this episode.",
+                "The workflow contains two independently required branches with no evidence-backed ordering dependency between them; completion requires validating both when both boundary types are present."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Do the three focused tests pass at the pinned commit under the repository's supported dependency environment? Runtime execution was unavailable locally because pytest is not installed.",
+          "Do broader terminal-tool, ACP-adapter, and redaction suites reveal compatibility regressions? The available evidence contains focused tests but no GitHub status-check or review metadata.",
+          "The issue bundle lacks the issue/PR body, comments, reviews, timeline, and status checks, so no claims are made about reviewer intent or CI results beyond the commit and checked-in tests."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "redact-structured-exception-diagnostics-before-return",
+          "title": "Redact exception diagnostics before returning them to the caller",
+          "description": "Sanitize exception-derived message and traceback fields at a structured result boundary while retaining status, field structure, and non-secret diagnostic context.",
+          "evidence_ids": [
+            "ev-before-terminal",
+            "ev-after-terminal",
+            "ev-terminal-call-site",
+            "ev-redaction-contract",
+            "ev-test-generic",
+            "ev-test-degraded"
+          ],
+          "semantic_action": {
+            "intent": "Prevent credentials embedded in exceptions or failing command context from reaching a diagnostic-result consumer without removing the actionable failure response.",
+            "module_role": "Structured diagnostic-result producer",
+            "operation": "sanitize",
+            "pre_state": "An exception handler is about to serialize exception-derived text and traceback content into an externally consumed error result, and those strings may contain secret assignments or prefixed credentials.",
+            "post_state": "Every exception-derived text field on the affected error-result branches has passed through the shared sensitive-text redactor before serialization; response status, schema, and non-secret context remain available.",
+            "validation": "Force each affected exception branch with a recognizable secret in the exception text, parse the returned result, assert the error status and expected fields, assert the raw secret is absent from every diagnostic field, and assert useful labels or failure context remain.",
+            "parameters": [
+              "exception object",
+              "formatted traceback",
+              "outgoing diagnostic fields: error and traceback",
+              "affected branches: generic exception and configured degraded-fail exception",
+              "shared sensitive-text redaction function"
+            ],
+            "evidence_ids": [
+              "ev-after-terminal",
+              "ev-terminal-call-site",
+              "ev-redaction-contract",
+              "ev-test-generic",
+              "ev-test-degraded"
+            ]
+          }
+        },
+        {
+          "name": "install-redacting-formatter-on-isolated-log-sink",
+          "title": "Install redaction on an independently configured diagnostic log sink",
+          "description": "Use the shared redacting formatter when a subsystem replaces global logging handlers with its own stderr handler, preserving existing routing and filtering behavior.",
+          "evidence_ids": [
+            "ev-before-acp",
+            "ev-after-acp",
+            "ev-redaction-contract",
+            "ev-test-acp"
+          ],
+          "semantic_action": {
+            "intent": "Prevent an independently configured log sink from bypassing the application's secret-redaction policy.",
+            "module_role": "Diagnostic logging configuration owner",
+            "operation": "adapt",
+            "pre_state": "A subsystem clears inherited root handlers and installs its own diagnostic handler with a plain formatter, so records emitted through that handler are not redacted.",
+            "post_state": "The subsystem-owned handler formats complete log records through the shared redacting formatter while retaining its destination, layout, filters, and logging-level behavior.",
+            "validation": "Run the logging setup, obtain the installed handler, format a record containing a recognizable secret assignment, assert the raw secret is absent, and assert the non-secret key label remains.",
+            "parameters": [
+              "subsystem logging setup",
+              "diagnostic stream handler",
+              "shared redacting formatter",
+              "existing format and date format",
+              "representative secret-bearing log record"
+            ],
+            "evidence_ids": [
+              "ev-after-acp",
+              "ev-redaction-contract",
+              "ev-test-acp"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "close-secret-leaks-across-diagnostic-emission-boundaries",
+          "title": "Close secret leaks at structured-result and log-output boundaries",
+          "description": "A partial-order workflow for applying an existing redaction policy to diagnostic surfaces that bypass it: sanitize exception-derived fields immediately before structured return, and attach the shared formatter to independently configured log handlers, then verify secrecy and retained diagnostic utility at each boundary.",
+          "atomic_names": [
+            "redact-structured-exception-diagnostics-before-return",
+            "install-redacting-formatter-on-isolated-log-sink"
+          ],
+          "evidence_ids": [
+            "ev-commit-resolution",
+            "ev-before-terminal",
+            "ev-after-terminal",
+            "ev-terminal-call-site",
+            "ev-before-acp",
+            "ev-after-acp",
+            "ev-redaction-contract",
+            "ev-test-generic",
+            "ev-test-degraded",
+            "ev-test-acp",
+            "ev-static-validation",
+            "ev-runtime-validation-unavailable"
+          ],
+          "workflow_graph": {
+            "goal": "Ensure that secrets embedded in exception diagnostics or log records cannot cross the affected consumer-facing diagnostic boundaries while structured errors and useful non-secret context remain intact.",
+            "when_to_use": [
+              "A structured error result exposes raw exception messages, tracebacks, command context, or comparable diagnostic text to an external consumer.",
+              "A subsystem replaces inherited logging handlers or formatters and therefore bypasses an established application-wide redaction formatter.",
+              "An existing, tested sensitive-text redaction policy can be reused at the emission boundary."
+            ],
+            "anti_goals": [
+              "Do not remove the error result, traceback field, log destination, log layout, filters, or status information merely to avoid leakage.",
+              "Do not redesign or broaden the secret-detection algorithm when the demonstrated defect is an emission boundary that fails to invoke the existing policy.",
+              "Do not claim closure of unrelated secret-emission gaps outside the inspected exception-result and ACP stderr surfaces."
+            ],
+            "not_applicable_when": [
+              "The diagnostic text is already demonstrably redacted after all formatting and immediately before emission.",
+              "No trusted redaction function or formatter exists and its detection behavior cannot be established from implementation and tests.",
+              "The data must remain byte-exact for an authorized internal-only consumer and applying this redactor would violate that explicit contract."
+            ],
+            "inputs": [
+              "Inventory of externally visible diagnostic-result fields and independently configured log handlers",
+              "Existing sensitive-text redaction function and redacting log formatter",
+              "Representative secret-bearing exceptions and log records",
+              "Branch controls needed to reach each affected exception path",
+              "Test runner capable of executing the focused regression tests"
+            ],
+            "entry_state": "At least one externally observable diagnostic path emits exception-derived or log-formatted text without applying the shared redaction policy at its final boundary.",
+            "exit_state": "All evidenced diagnostic paths apply the shared redaction policy immediately before structured serialization or during final log formatting, and focused tests demonstrate that raw secrets are absent while response structure and useful context are retained.",
+            "steps": [
+              {
+                "action_name": "redact-structured-exception-diagnostics-before-return",
+                "role": "implement",
+                "required": true,
+                "depends_on": [],
+                "condition": "Required for each structured exception-result branch that can contain exception-derived secret material.",
+                "validation": "Exercise the generic and configured degraded-fail branches; verify the secret is absent from error and traceback while status and useful failure context remain."
+              },
+              {
+                "action_name": "install-redacting-formatter-on-isolated-log-sink",
+                "role": "implement",
+                "required": true,
+                "depends_on": [],
+                "condition": "Required when the subsystem clears or replaces inherited handlers and assigns its own formatter.",
+                "validation": "Format a secret-bearing record through the installed handler; verify the raw value is absent and the non-secret key label remains."
+              }
+            ],
+            "edges": [],
+            "validation_ladder": [
+              "Static comparison: confirm each raw emission point in the parent is replaced by the shared redaction function or formatter without changing unrelated routing and response structure.",
+              "Branch-level structured-result tests: inject a secret-bearing generic exception and a degraded-fail connection exception, then inspect every returned diagnostic field.",
+              "Sink-level logging test: format a secret-bearing record through the exact handler installed by subsystem logging setup.",
+              "Integration check: run the three focused regression tests together in an environment with the repository's test dependencies.",
+              "Broader regression check: run the surrounding terminal-tool, ACP-adapter, and redaction test suites to detect formatting, filtering, or response-contract regressions."
+            ],
+            "stop_conditions": [
+              "Stop and defer if the parent and after states do not identify a concrete unredacted emission boundary.",
+              "Stop if redaction is applied only to an internal logger copy while another consumer-facing copy remains raw.",
+              "Stop if the focused tests do not assert both secret absence and preservation of the required diagnostic contract.",
+              "Do not report runtime validation as passed when the test runner or dependencies are unavailable."
+            ],
+            "unresolved_or_deferred": [
+              "Focused runtime tests were not executed during extraction because pytest is unavailable in the supplied environment.",
+              "The commit explicitly states that process-list output, additional environment-key variants, and control-character-split tokens were handled by separate changes; their implementation and validation are outside this episode.",
+              "The workflow contains two independently required branches with no evidence-backed ordering dependency between them; completion requires validating both when both boundary types are present."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Do the three focused tests pass at the pinned commit under the repository's supported dependency environment? Runtime execution was unavailable locally because pytest is not installed.",
+        "Do broader terminal-tool, ACP-adapter, and redaction suites reveal compatibility regressions? The available evidence contains focused tests but no GitHub status-check or review metadata.",
+        "The issue bundle lacks the issue/PR body, comments, reviews, timeline, and status checks, so no claims are made about reviewer intent or CI results beyond the commit and checked-in tests."
+      ]
+    },
+    "call_sites": [
+      "terminal_tool returns these dictionaries as JSON tool results, making their error and traceback fields a model-facing diagnostic boundary rather than merely internal logger output."
+    ],
+    "tests": [
+      "The generic-exception regression test forces _get_env_config to raise an exception containing a prefixed secret and asserts error status, absence of the secret from both error and traceback, and preservation of the key label and failure context.",
+      "The degraded-fail regression test enables TERMINAL_DEGRADED_MODE=fail, injects an EnvironmentConnectionError containing a prefixed secret, and asserts that neither returned error nor traceback contains the secret.",
+      "The ACP regression test invokes _setup_logging, formats a LogRecord containing an API-key assignment through the installed root handler, and asserts that the secret is absent while the key label remains."
+    ]
+  },
+  {
+    "episode_id": "openai-codex-48686-4a36f454",
+    "title": "Remove sensitive response metadata and tool arguments from informational diagnostics",
+    "before": "At parent commit 88d743c3abbef69778dc64a3a776a16510fa77fe, a successful WebSocket handshake emitted the connection URL plus the complete response header map at info level. Completed tool calls derived a printable preview from the tool payload and source, then emitted the thread ID, tool name, and payload preview at info level.",
+    "after": "At commit 4a36f4549dfce7f7d95bd037a52147c81b79916d, successful WebSocket diagnostics retain the connection URL but no longer format response headers. Tool-call diagnostics retain the thread ID and tool name but neither derive nor format a payload preview. Response headers continue to be consumed internally for status and protocol metadata, and tool calls continue through persistence and execution unchanged.",
+    "diff": "The implementation changes two logging boundaries with 2 insertions and 8 deletions: it removes response.headers() from the successful WebSocket info message, and removes the tool_log_payload import, payload-preview computation, and payload-preview format argument from the tool-call info message. No test files were changed.",
+    "repository": "openai/codex",
+    "revision": "github-issue-48686",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10",
+      "E11"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "openai/codex",
+      "issue": 48686,
+      "checkout": "/home/chenyujia/tritonToLlvm/codex-agent",
+      "manifest_metadata": {
+        "category": "sensitive-data-redaction-in-diagnostics",
+        "role": "train_candidate",
+        "case_id": "openai__codex__48686__sensitive-data-redaction-in-diagnostics",
+        "sample_kind": "verified_implementation_pull_request",
+        "seed_issue": null,
+        "seed_issue_url": null,
+        "seed_relation": null,
+        "resolution_url": "https://github.com/openai/codex/pull/48686",
+        "provenance": {
+          "classification": "direct_implementation_artifact",
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 48686,
+            "url": "https://github.com/openai/codex/pull/48686"
+          },
+          "commit": {
+            "sha": "4a36f4549dfce7f7d95bd037a52147c81b79916d",
+            "subject": "Remove WebSocket headers and tool payloads from info logs (#48686)",
+            "parents": [
+              "88d743c3abbef69778dc64a3a776a16510fa77fe"
+            ],
+            "body_excerpt": "Stop logging response headers on successful WebSocket connections and payload\npreviews for tool calls. Keep the connection URL, tool name, and thread ID in\ntheir respective log entries.\n\nGitOrigin-RevId: 1d410b6aef8f12153da9bfc60c515b8e797a9de0\n(cherry picked from commit 41f9084b30812db321a0b592def4f500d1e79cf4)"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "first_parent_and_changed_files_recorded",
+            "implementation_change_present",
+            "no_test_file_change_observed"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "openai/codex",
+        "issue_number": 48686,
+        "issue": {
+          "number": 48686,
+          "title": "Remove WebSocket headers and tool payloads from info logs (#48686)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 48686,
+              "title": "Remove WebSocket headers and tool payloads from info logs (#48686)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tcodex-rs/codex-api/src/endpoint/responses_websocket.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/core/src/stream_events_utils.rs"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "4a36f4549dfce7f7d95bd037a52147c81b79916d",
+                "subject": "Remove WebSocket headers and tool payloads from info logs (#48686)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/codex-agent",
+        "pinned_ref": "4a36f4549dfce7f7d95bd037a52147c81b79916d",
+        "resolved_commit": "4a36f4549dfce7f7d95bd037a52147c81b79916d",
+        "parent_commit": "88d743c3abbef69778dc64a3a776a16510fa77fe",
+        "commit_show_stat": "commit 4a36f4549dfce7f7d95bd037a52147c81b79916d\nAuthor:     chess <chess@openai.com>\nAuthorDate: Sun Sep 27 11:19:48 2026 +0000\nCommit:     Ian MacLeod <imac@openai.com>\nCommitDate: Sun Sep 27 10:37:09 2026 -0700\n\n    Remove WebSocket headers and tool payloads from info logs (#48686)\n    \n    Stop logging response headers on successful WebSocket connections and payload\n    previews for tool calls. Keep the connection URL, tool name, and thread ID in\n    their respective log entries.\n    \n    GitOrigin-RevId: 1d410b6aef8f12153da9bfc60c515b8e797a9de0\n    (cherry picked from commit 41f9084b30812db321a0b592def4f500d1e79cf4)\n\n codex-rs/codex-api/src/endpoint/responses_websocket.rs | 5 +----\n codex-rs/core/src/stream_events_utils.rs               | 5 +----\n 2 files changed, 2 insertions(+), 8 deletions(-)\n",
+        "changed_files_name_status": "M\tcodex-rs/codex-api/src/endpoint/responses_websocket.rs\nM\tcodex-rs/core/src/stream_events_utils.rs\n",
+        "linked_issue_numbers": [
+          48686
+        ],
+        "manifest_metadata": {
+          "category": "sensitive-data-redaction-in-diagnostics",
+          "theme": "redact secrets and sensitive payloads at logging and diagnostics boundaries",
+          "file_sample": [
+            "codex-rs/codex-api/src/endpoint/responses_websocket.rs",
+            "codex-rs/core/src/stream_events_utils.rs"
+          ],
+          "quality": "implementation_only",
+          "case_id": "openai__codex__48686__sensitive-data-redaction-in-diagnostics",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_implementation_pull_request",
+          "resolution_url": "https://github.com/openai/codex/pull/48686",
+          "source": "agent_core_thirteen_category_extraction_v2",
+          "provenance": {
+            "classification": "direct_implementation_artifact",
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 48686,
+              "url": "https://github.com/openai/codex/pull/48686"
+            },
+            "commit": {
+              "sha": "4a36f4549dfce7f7d95bd037a52147c81b79916d",
+              "subject": "Remove WebSocket headers and tool payloads from info logs (#48686)",
+              "parents": [
+                "88d743c3abbef69778dc64a3a776a16510fa77fe"
+              ],
+              "body_excerpt": "Stop logging response headers on successful WebSocket connections and payload\npreviews for tool calls. Keep the connection URL, tool name, and thread ID in\ntheir respective log entries.\n\nGitOrigin-RevId: 1d410b6aef8f12153da9bfc60c515b8e797a9de0\n(cherry picked from commit 41f9084b30812db321a0b592def4f500d1e79cf4)"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "first_parent_and_changed_files_recorded",
+              "implementation_change_present",
+              "no_test_file_change_observed"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T10:55:55.461043+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "openai-codex-48686-4a36f454",
+          "title": "Remove sensitive response metadata and tool arguments from informational diagnostics",
+          "before": "At parent commit 88d743c3abbef69778dc64a3a776a16510fa77fe, a successful WebSocket handshake emitted the connection URL plus the complete response header map at info level. Completed tool calls derived a printable preview from the tool payload and source, then emitted the thread ID, tool name, and payload preview at info level.",
+          "after": "At commit 4a36f4549dfce7f7d95bd037a52147c81b79916d, successful WebSocket diagnostics retain the connection URL but no longer format response headers. Tool-call diagnostics retain the thread ID and tool name but neither derive nor format a payload preview. Response headers continue to be consumed internally for status and protocol metadata, and tool calls continue through persistence and execution unchanged.",
+          "diff": "The implementation changes two logging boundaries with 2 insertions and 8 deletions: it removes response.headers() from the successful WebSocket info message, and removes the tool_log_payload import, payload-preview computation, and payload-preview format argument from the tool-call info message. No test files were changed."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "The pinned implementation commit is 4a36f4549dfce7f7d95bd037a52147c81b79916d with parent 88d743c3abbef69778dc64a3a776a16510fa77fe; its subject and body state that successful WebSocket headers and tool payload previews are removed while the URL, tool name, and thread ID remain logged.",
+            "source": "git show --format=fuller 4a36f4549dfce7f7d95bd037a52147c81b79916d; issue-bundle.json commit_show_stat and provenance.commit"
+          },
+          {
+            "id": "E2",
+            "kind": "diff",
+            "claim": "The commit modifies only the WebSocket endpoint and stream-event utility, totaling 2 insertions and 8 deletions.",
+            "source": "git diff-tree --no-commit-id --name-status -r 4a36f4549dfce7f7d95bd037a52147c81b79916d; git show --stat 4a36f4549dfce7f7d95bd037a52147c81b79916d"
+          },
+          {
+            "id": "E3",
+            "kind": "implementation",
+            "claim": "Before the change, the successful WebSocket branch logged both the URL and response.headers() using debug formatting.",
+            "source": "git show 88d743c3abbef69778dc64a3a776a16510fa77fe:codex-rs/codex-api/src/endpoint/responses_websocket.rs, lines 513-520"
+          },
+          {
+            "id": "E4",
+            "kind": "implementation",
+            "claim": "After the change, the successful WebSocket branch logs only the URL; the response remains available immediately afterward and its headers are still read for reasoning, model, and turn-state protocol metadata.",
+            "source": "git show 4a36f4549dfce7f7d95bd037a52147c81b79916d:codex-rs/codex-api/src/endpoint/responses_websocket.rs, lines 513-543"
+          },
+          {
+            "id": "E5",
+            "kind": "call_site",
+            "claim": "The shared WebSocket connection helper receives merged and authenticated headers from both the normal connection path and the handshake-probe path, so the changed success diagnostic covers both callers.",
+            "source": "git show 4a36f4549dfce7f7d95bd037a52147c81b79916d:codex-rs/codex-api/src/endpoint/responses_websocket.rs, lines 390-415 and 425-447"
+          },
+          {
+            "id": "E6",
+            "kind": "implementation",
+            "claim": "Before the change, completed tool-call handling computed a payload preview from call.payload and call.direct_source(), then appended that preview to an info-level message containing the tool name and structured thread ID.",
+            "source": "git show 88d743c3abbef69778dc64a3a776a16510fa77fe:codex-rs/core/src/stream_events_utils.rs, lines 325-347"
+          },
+          {
+            "id": "E7",
+            "kind": "implementation",
+            "claim": "After the change, completed tool-call handling logs the structured thread ID and tool name only, then continues to persist the response item, execute the same call, and produce the same follow-up future.",
+            "source": "git show 4a36f4549dfce7f7d95bd037a52147c81b79916d:codex-rs/core/src/stream_events_utils.rs, lines 325-357"
+          },
+          {
+            "id": "E8",
+            "kind": "implementation",
+            "claim": "The removed preview helper returned a marker for direct plaintext arguments but otherwise delegated to payload.log_payload(), confirming that the deleted value was derived from actual tool-call payload content.",
+            "source": "git show 4a36f4549dfce7f7d95bd037a52147c81b79916d:codex-rs/core/src/tools/router.rs, lines 63-71"
+          },
+          {
+            "id": "E9",
+            "kind": "validation",
+            "claim": "A parent-to-implementation source comparison verifies that header and payload formatting expressions are absent after the change while the intended low-sensitivity identifiers and downstream operational processing remain present.",
+            "source": "git diff 88d743c3abbef69778dc64a3a776a16510fa77fe 4a36f4549dfce7f7d95bd037a52147c81b79916d -- codex-rs/codex-api/src/endpoint/responses_websocket.rs codex-rs/core/src/stream_events_utils.rs"
+          },
+          {
+            "id": "E10",
+            "kind": "test",
+            "claim": "No test file was added or modified by the implementation commit, and the available issue bundle records no status-check evidence.",
+            "source": "git show --name-only --format= 4a36f4549dfce7f7d95bd037a52147c81b79916d; issue-bundle.json manifest_metadata.provenance.verification and linked_pull_requests[0].pull_request.metadata_unavailable"
+          },
+          {
+            "id": "E11",
+            "kind": "call_site",
+            "claim": "Normal connection construction still returns the connected stream and server-derived metadata, while tool-call handling still passes the original call to the runtime; the change is confined to diagnostic emission rather than request or execution semantics.",
+            "source": "git show 4a36f4549dfce7f7d95bd037a52147c81b79916d:codex-rs/codex-api/src/endpoint/responses_websocket.rs, lines 407-415 and 538-543; git show 4a36f4549dfce7f7d95bd037a52147c81b79916d:codex-rs/core/src/stream_events_utils.rs, lines 346-357"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "omit-response-metadata-from-success-diagnostics",
+            "title": "Omit response metadata from successful connection diagnostics",
+            "description": "Narrow a successful connection message to its intended connection identifier while keeping response metadata available to protocol processing rather than serializing the complete metadata collection into an informational log.",
+            "evidence_ids": [
+              "E3",
+              "E4",
+              "E5",
+              "E9",
+              "E11"
+            ],
+            "semantic_action": {
+              "intent": "Prevent response metadata, including potentially sensitive header values, from being copied into routine successful-connection diagnostics without changing connection behavior.",
+              "module_role": "Transport connection diagnostic boundary",
+              "operation": "minimize",
+              "pre_state": "A successful connection produces a response object whose complete metadata collection is debug-formatted into an info-level diagnostic.",
+              "post_state": "The success diagnostic contains the connection URL but no response metadata collection, while status and selected protocol metadata remain available for internal processing and return values.",
+              "validation": "Compare the parent and changed success branches to confirm the metadata formatting expression is removed, then verify that subsequent status and selected-header reads and both connection callers remain intact.",
+              "parameters": [
+                "connection URL",
+                "successful handshake response",
+                "response metadata collection",
+                "diagnostic severity"
+              ],
+              "evidence_ids": [
+                "E3",
+                "E4",
+                "E5",
+                "E9",
+                "E11"
+              ]
+            }
+          },
+          {
+            "name": "omit-tool-arguments-from-invocation-diagnostics",
+            "title": "Omit tool arguments from invocation diagnostics",
+            "description": "Stop deriving and appending a printable argument preview to routine tool-invocation logs while preserving the thread correlation field, tool name, response-item persistence, and execution dispatch.",
+            "evidence_ids": [
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E11"
+            ],
+            "semantic_action": {
+              "intent": "Prevent potentially sensitive tool arguments from being copied into info-level invocation diagnostics without changing tool dispatch or correlation.",
+              "module_role": "Tool invocation diagnostic boundary",
+              "operation": "minimize",
+              "pre_state": "When a tool call is recognized, the handler derives a printable preview from the call payload and source and appends it to an info-level message.",
+              "post_state": "The handler emits only the thread correlation field and tool name, does not derive a payload preview, and still persists and executes the original call.",
+              "validation": "Compare the parent and changed handler branches to confirm removal of the preview import, derivation, and format argument; verify that the structured thread ID, tool name, persistence call, runtime dispatch, and follow-up result remain.",
+              "parameters": [
+                "thread correlation identifier",
+                "tool name",
+                "tool argument payload",
+                "tool-call source",
+                "diagnostic severity"
+              ],
+              "evidence_ids": [
+                "E6",
+                "E7",
+                "E8",
+                "E9",
+                "E11"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "minimize-sensitive-data-in-routine-diagnostics",
+            "title": "Remove sensitive values from routine diagnostics while preserving operational context",
+            "description": "Audit each information-level diagnostic at a successful transport or invocation boundary, remove broad metadata or argument serialization, retain only identifiers needed to understand the event, and confirm that the underlying protocol and execution paths still consume the original data normally.",
+            "atomic_names": [
+              "omit-response-metadata-from-success-diagnostics",
+              "omit-tool-arguments-from-invocation-diagnostics"
+            ],
+            "evidence_ids": [
+              "E1",
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E10",
+              "E11"
+            ],
+            "workflow_graph": {
+              "goal": "Routine successful-connection and tool-invocation diagnostics no longer expose response metadata or tool arguments, while retaining event identity and unchanged operational behavior.",
+              "when_to_use": [
+                "An info-level success or invocation message serializes a complete metadata collection or request/tool argument payload.",
+                "The sensitive value is needed by runtime processing but is not required to identify the diagnostic event.",
+                "The diagnostic can remain useful with bounded identifiers such as a connection target, correlation ID, or operation name."
+              ],
+              "anti_goals": [
+                "Do not disable successful-connection or tool-invocation diagnostics entirely.",
+                "Do not remove metadata or payloads from protocol processing, persistence, or tool execution.",
+                "Do not broaden the change to error diagnostics, payload storage, or unrelated telemetry without separate evidence and validation.",
+                "Do not optimize diagnostic verbosity or performance beyond eliminating the sensitive formatting operations."
+              ],
+              "not_applicable_when": [
+                "The allegedly sensitive value is not emitted by the diagnostic boundary.",
+                "The full value is an explicitly required, access-controlled audit record with a documented retention contract.",
+                "Removing the value would also remove it from runtime behavior because logging and processing are inseparably coupled and cannot first be separated.",
+                "Only issue-title or classification evidence is available and the actual before/after logging expressions cannot be inspected."
+              ],
+              "inputs": [
+                "Pinned implementation and parent refs",
+                "Locations of routine diagnostics that serialize metadata or arguments",
+                "Classification of identifiers that must remain for operational usefulness",
+                "Call sites and downstream consumers of the original metadata or payload",
+                "A source comparison or log-capture oracle capable of detecting forbidden values"
+              ],
+              "entry_state": "Routine info diagnostics expose the successful handshake response metadata and tool argument previews, although those values are not necessary to identify the connection or invoked tool.",
+              "exit_state": "Successful connection logs contain the connection URL without response headers, and tool-call logs contain the thread ID and tool name without argument previews; connection metadata handling and tool execution remain intact.",
+              "steps": [
+                {
+                  "action_name": "omit-response-metadata-from-success-diagnostics",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "Apply when a successful connection diagnostic formats the response metadata collection.",
+                  "validation": "The changed success message has no response-metadata formatting expression, retains the connection identifier, and is followed by unchanged status and selected-metadata processing."
+                },
+                {
+                  "action_name": "omit-tool-arguments-from-invocation-diagnostics",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "Apply when a routine invocation diagnostic derives or formats a preview from tool arguments.",
+                  "validation": "The changed invocation branch neither derives nor formats an argument preview, retains the correlation field and tool name, and still persists and dispatches the call."
+                }
+              ],
+              "edges": [],
+              "validation_ladder": [
+                "Inspect the parent state to identify the exact metadata and payload expressions copied into routine logs.",
+                "Inspect the implementation diff to confirm only the sensitive formatting and now-unused import or local value were removed.",
+                "Verify the remaining messages retain the intended connection, correlation, and operation identifiers.",
+                "Trace downstream code to confirm response metadata is still consumed for protocol behavior and the original tool call is still persisted and executed.",
+                "Run focused log-capture tests with sentinel header and tool-argument values when such a harness is available; assert sentinels are absent and retained identifiers are present.",
+                "Run the affected transport and core test suites or compile checks to detect behavioral or unused-import regressions."
+              ],
+              "stop_conditions": [
+                "Stop if the before-state diagnostic cannot be established from source or captured output.",
+                "Stop if removing the formatted value also changes connection negotiation, response metadata interpretation, persistence, or tool execution.",
+                "Stop and separate the work if additional diagnostic boundaries have different sensitivity contracts or validation oracles.",
+                "Do not claim runtime log-redaction coverage until a log-capture test or equivalent execution oracle has been run."
+              ],
+              "unresolved_or_deferred": [
+                "The implementation commit contains no targeted test asserting that sentinel header values or tool arguments are absent from captured logs.",
+                "The evidence bundle does not provide CI or status-check results, and no test execution result is attributable to the pinned commit.",
+                "The change intentionally retains connection URLs, thread identifiers, and tool names; whether those identifiers require further masking is outside the evidenced scope."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Was any CI, compile, or runtime log-capture validation run for the pinned commit? The available bundle omits status checks and the commit changes no tests.",
+          "Should connection URLs, thread identifiers, or tool names be classified or masked under a broader diagnostic-data policy? This episode establishes only that the implementation intentionally retained them."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "omit-response-metadata-from-success-diagnostics",
+          "title": "Omit response metadata from successful connection diagnostics",
+          "description": "Narrow a successful connection message to its intended connection identifier while keeping response metadata available to protocol processing rather than serializing the complete metadata collection into an informational log.",
+          "evidence_ids": [
+            "E3",
+            "E4",
+            "E5",
+            "E9",
+            "E11"
+          ],
+          "semantic_action": {
+            "intent": "Prevent response metadata, including potentially sensitive header values, from being copied into routine successful-connection diagnostics without changing connection behavior.",
+            "module_role": "Transport connection diagnostic boundary",
+            "operation": "minimize",
+            "pre_state": "A successful connection produces a response object whose complete metadata collection is debug-formatted into an info-level diagnostic.",
+            "post_state": "The success diagnostic contains the connection URL but no response metadata collection, while status and selected protocol metadata remain available for internal processing and return values.",
+            "validation": "Compare the parent and changed success branches to confirm the metadata formatting expression is removed, then verify that subsequent status and selected-header reads and both connection callers remain intact.",
+            "parameters": [
+              "connection URL",
+              "successful handshake response",
+              "response metadata collection",
+              "diagnostic severity"
+            ],
+            "evidence_ids": [
+              "E3",
+              "E4",
+              "E5",
+              "E9",
+              "E11"
+            ]
+          }
+        },
+        {
+          "name": "omit-tool-arguments-from-invocation-diagnostics",
+          "title": "Omit tool arguments from invocation diagnostics",
+          "description": "Stop deriving and appending a printable argument preview to routine tool-invocation logs while preserving the thread correlation field, tool name, response-item persistence, and execution dispatch.",
+          "evidence_ids": [
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E11"
+          ],
+          "semantic_action": {
+            "intent": "Prevent potentially sensitive tool arguments from being copied into info-level invocation diagnostics without changing tool dispatch or correlation.",
+            "module_role": "Tool invocation diagnostic boundary",
+            "operation": "minimize",
+            "pre_state": "When a tool call is recognized, the handler derives a printable preview from the call payload and source and appends it to an info-level message.",
+            "post_state": "The handler emits only the thread correlation field and tool name, does not derive a payload preview, and still persists and executes the original call.",
+            "validation": "Compare the parent and changed handler branches to confirm removal of the preview import, derivation, and format argument; verify that the structured thread ID, tool name, persistence call, runtime dispatch, and follow-up result remain.",
+            "parameters": [
+              "thread correlation identifier",
+              "tool name",
+              "tool argument payload",
+              "tool-call source",
+              "diagnostic severity"
+            ],
+            "evidence_ids": [
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E11"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "minimize-sensitive-data-in-routine-diagnostics",
+          "title": "Remove sensitive values from routine diagnostics while preserving operational context",
+          "description": "Audit each information-level diagnostic at a successful transport or invocation boundary, remove broad metadata or argument serialization, retain only identifiers needed to understand the event, and confirm that the underlying protocol and execution paths still consume the original data normally.",
+          "atomic_names": [
+            "omit-response-metadata-from-success-diagnostics",
+            "omit-tool-arguments-from-invocation-diagnostics"
+          ],
+          "evidence_ids": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10",
+            "E11"
+          ],
+          "workflow_graph": {
+            "goal": "Routine successful-connection and tool-invocation diagnostics no longer expose response metadata or tool arguments, while retaining event identity and unchanged operational behavior.",
+            "when_to_use": [
+              "An info-level success or invocation message serializes a complete metadata collection or request/tool argument payload.",
+              "The sensitive value is needed by runtime processing but is not required to identify the diagnostic event.",
+              "The diagnostic can remain useful with bounded identifiers such as a connection target, correlation ID, or operation name."
+            ],
+            "anti_goals": [
+              "Do not disable successful-connection or tool-invocation diagnostics entirely.",
+              "Do not remove metadata or payloads from protocol processing, persistence, or tool execution.",
+              "Do not broaden the change to error diagnostics, payload storage, or unrelated telemetry without separate evidence and validation.",
+              "Do not optimize diagnostic verbosity or performance beyond eliminating the sensitive formatting operations."
+            ],
+            "not_applicable_when": [
+              "The allegedly sensitive value is not emitted by the diagnostic boundary.",
+              "The full value is an explicitly required, access-controlled audit record with a documented retention contract.",
+              "Removing the value would also remove it from runtime behavior because logging and processing are inseparably coupled and cannot first be separated.",
+              "Only issue-title or classification evidence is available and the actual before/after logging expressions cannot be inspected."
+            ],
+            "inputs": [
+              "Pinned implementation and parent refs",
+              "Locations of routine diagnostics that serialize metadata or arguments",
+              "Classification of identifiers that must remain for operational usefulness",
+              "Call sites and downstream consumers of the original metadata or payload",
+              "A source comparison or log-capture oracle capable of detecting forbidden values"
+            ],
+            "entry_state": "Routine info diagnostics expose the successful handshake response metadata and tool argument previews, although those values are not necessary to identify the connection or invoked tool.",
+            "exit_state": "Successful connection logs contain the connection URL without response headers, and tool-call logs contain the thread ID and tool name without argument previews; connection metadata handling and tool execution remain intact.",
+            "steps": [
+              {
+                "action_name": "omit-response-metadata-from-success-diagnostics",
+                "role": "implement",
+                "required": true,
+                "depends_on": [],
+                "condition": "Apply when a successful connection diagnostic formats the response metadata collection.",
+                "validation": "The changed success message has no response-metadata formatting expression, retains the connection identifier, and is followed by unchanged status and selected-metadata processing."
+              },
+              {
+                "action_name": "omit-tool-arguments-from-invocation-diagnostics",
+                "role": "implement",
+                "required": true,
+                "depends_on": [],
+                "condition": "Apply when a routine invocation diagnostic derives or formats a preview from tool arguments.",
+                "validation": "The changed invocation branch neither derives nor formats an argument preview, retains the correlation field and tool name, and still persists and dispatches the call."
+              }
+            ],
+            "edges": [],
+            "validation_ladder": [
+              "Inspect the parent state to identify the exact metadata and payload expressions copied into routine logs.",
+              "Inspect the implementation diff to confirm only the sensitive formatting and now-unused import or local value were removed.",
+              "Verify the remaining messages retain the intended connection, correlation, and operation identifiers.",
+              "Trace downstream code to confirm response metadata is still consumed for protocol behavior and the original tool call is still persisted and executed.",
+              "Run focused log-capture tests with sentinel header and tool-argument values when such a harness is available; assert sentinels are absent and retained identifiers are present.",
+              "Run the affected transport and core test suites or compile checks to detect behavioral or unused-import regressions."
+            ],
+            "stop_conditions": [
+              "Stop if the before-state diagnostic cannot be established from source or captured output.",
+              "Stop if removing the formatted value also changes connection negotiation, response metadata interpretation, persistence, or tool execution.",
+              "Stop and separate the work if additional diagnostic boundaries have different sensitivity contracts or validation oracles.",
+              "Do not claim runtime log-redaction coverage until a log-capture test or equivalent execution oracle has been run."
+            ],
+            "unresolved_or_deferred": [
+              "The implementation commit contains no targeted test asserting that sentinel header values or tool arguments are absent from captured logs.",
+              "The evidence bundle does not provide CI or status-check results, and no test execution result is attributable to the pinned commit.",
+              "The change intentionally retains connection URLs, thread identifiers, and tool names; whether those identifiers require further masking is outside the evidenced scope."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Was any CI, compile, or runtime log-capture validation run for the pinned commit? The available bundle omits status checks and the commit changes no tests.",
+        "Should connection URLs, thread identifiers, or tool names be classified or masked under a broader diagnostic-data policy? This episode establishes only that the implementation intentionally retained them."
+      ]
+    },
+    "call_sites": [
+      "The shared WebSocket connection helper receives merged and authenticated headers from both the normal connection path and the handshake-probe path, so the changed success diagnostic covers both callers.",
+      "Normal connection construction still returns the connected stream and server-derived metadata, while tool-call handling still passes the original call to the runtime; the change is confined to diagnostic emission rather than request or execution semantics."
+    ],
+    "tests": [
+      "No test file was added or modified by the implementation commit, and the available issue bundle records no status-check evidence."
+    ]
+  },
+  {
+    "episode_id": "google-gemini__gemini-cli__26153__2194da2b",
+    "title": "Honor the telemetry payload-consent flag across diagnostic logging paths",
+    "before": "At parent commit dce13019b9e43b253d03e7fb2c12550cdd94e0aa, ordinary telemetry records emitted request_text, response_text, tool function_args, and complete tool metadata without consulting getTelemetryLogPromptsEnabled(). Policy-generation and verdict diagnostics likewise sent prompts, trusted content, generated policy, tool-call text, and verdict rationale through both OpenTelemetry and Clearcut regardless of that flag, although some semantic GenAI payload logging was already gated separately.",
+    "after": "At commit 2194da2b0213fa39062302ea3a2ee75ef768648e, payload-bearing request, response, tool-call, policy-generation, and verdict attributes are added only when getTelemetryLogPromptsEnabled() is true. With the flag false, tool metadata is reduced to an explicit allowlist of aggregate line/character counters, while operational fields such as function name, verdict result, and errors remain available. The policy diagnostics apply the same rule to both OpenTelemetry and Clearcut.",
+    "diff": "The change modifies four telemetry files (437 insertions and 57 deletions): event serialization in types.ts now conditionally emits request_text, response_text, function_args, policy inputs/outputs, tool-call text, and rationale; tool metadata is filtered through eight explicitly safe aggregate keys and JSON-serialized; conseca-logger.ts conditionally constructs Clearcut sensitive-field entries while retaining verdict and error entries; tests add enabled/disabled assertions for API response text, API request text, tool arguments, and policy-generation/verdict fields across OpenTelemetry and Clearcut.",
+    "repository": "google-gemini/gemini-cli",
+    "revision": "github-issue-26153",
+    "evidence_ids": [
+      "ev-commit-001",
+      "ev-before-otel-001",
+      "ev-before-policy-001",
+      "ev-diff-payload-gates-001",
+      "ev-impl-metadata-001",
+      "ev-callsite-records-001",
+      "ev-impl-multibackend-001",
+      "ev-test-api-001",
+      "ev-test-tool-001",
+      "ev-test-policy-001",
+      "ev-validation-scope-001",
+      "ev-bundle-limit-001"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 26153,
+      "checkout": "/home/chenyujia/tritonToLlvm/gemini-cli",
+      "manifest_metadata": {
+        "category": "sensitive-data-redaction-in-diagnostics",
+        "role": "train_candidate",
+        "case_id": "google-gemini__gemini-cli__26153__sensitive-data-redaction-in-diagnostics",
+        "sample_kind": "verified_implementation_pull_request",
+        "seed_issue": null,
+        "seed_issue_url": null,
+        "seed_relation": null,
+        "resolution_url": "https://github.com/google-gemini/gemini-cli/pull/26153",
+        "provenance": {
+          "classification": "direct_implementation_artifact",
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 26153,
+            "url": "https://github.com/google-gemini/gemini-cli/pull/26153"
+          },
+          "commit": {
+            "sha": "2194da2b0213fa39062302ea3a2ee75ef768648e",
+            "subject": "Respect logPrompts flag for logging sensitive fields (#26153)",
+            "parents": [
+              "dce13019b9e43b253d03e7fb2c12550cdd94e0aa"
+            ],
+            "body_excerpt": "Co-authored-by: David Pierce <davidapierce@google.com>\nCo-authored-by: Gal Zahavi <38544478+galz10@users.noreply.github.com>"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "first_parent_and_changed_files_recorded",
+            "implementation_change_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "google-gemini/gemini-cli",
+        "issue_number": 26153,
+        "issue": {
+          "number": 26153,
+          "title": "Respect logPrompts flag for logging sensitive fields (#26153)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 26153,
+              "title": "Respect logPrompts flag for logging sensitive fields (#26153)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tpackages/core/src/telemetry/conseca-logger.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/core/src/telemetry/conseca-logger.ts"
+              },
+              {
+                "status_line": "M\tpackages/core/src/telemetry/loggers.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/core/src/telemetry/types.ts"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "2194da2b0213fa39062302ea3a2ee75ef768648e",
+                "subject": "Respect logPrompts flag for logging sensitive fields (#26153)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/gemini-cli",
+        "pinned_ref": "2194da2b0213fa39062302ea3a2ee75ef768648e",
+        "resolved_commit": "2194da2b0213fa39062302ea3a2ee75ef768648e",
+        "parent_commit": "dce13019b9e43b253d03e7fb2c12550cdd94e0aa",
+        "commit_show_stat": "commit 2194da2b0213fa39062302ea3a2ee75ef768648e\nAuthor:     lp-peg <35035802+lp-peg@users.noreply.github.com>\nAuthorDate: Thu Apr 30 06:43:34 2026 +0900\nCommit:     GitHub <noreply@github.com>\nCommitDate: Wed Apr 29 21:43:34 2026 +0000\n\n    Respect logPrompts flag for logging sensitive fields (#26153)\n    \n    Co-authored-by: David Pierce <davidapierce@google.com>\n    Co-authored-by: Gal Zahavi <38544478+galz10@users.noreply.github.com>\n\n packages/core/src/telemetry/conseca-logger.test.ts | 171 +++++++++++++++++++\n packages/core/src/telemetry/conseca-logger.ts      |  72 ++++----\n packages/core/src/telemetry/loggers.test.ts        | 183 +++++++++++++++++++--\n packages/core/src/telemetry/types.ts               |  68 ++++++--\n 4 files changed, 437 insertions(+), 57 deletions(-)\n",
+        "changed_files_name_status": "M\tpackages/core/src/telemetry/conseca-logger.test.ts\nM\tpackages/core/src/telemetry/conseca-logger.ts\nM\tpackages/core/src/telemetry/loggers.test.ts\nM\tpackages/core/src/telemetry/types.ts\n",
+        "linked_issue_numbers": [
+          26153
+        ],
+        "manifest_metadata": {
+          "category": "sensitive-data-redaction-in-diagnostics",
+          "theme": "redact secrets and sensitive payloads at logging and diagnostics boundaries",
+          "file_sample": [
+            "packages/core/src/telemetry/conseca-logger.test.ts",
+            "packages/core/src/telemetry/conseca-logger.ts",
+            "packages/core/src/telemetry/loggers.test.ts",
+            "packages/core/src/telemetry/types.ts"
+          ],
+          "quality": "implementation_plus_test",
+          "case_id": "google-gemini__gemini-cli__26153__sensitive-data-redaction-in-diagnostics",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_implementation_pull_request",
+          "resolution_url": "https://github.com/google-gemini/gemini-cli/pull/26153",
+          "source": "agent_core_thirteen_category_extraction_v2",
+          "provenance": {
+            "classification": "direct_implementation_artifact",
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 26153,
+              "url": "https://github.com/google-gemini/gemini-cli/pull/26153"
+            },
+            "commit": {
+              "sha": "2194da2b0213fa39062302ea3a2ee75ef768648e",
+              "subject": "Respect logPrompts flag for logging sensitive fields (#26153)",
+              "parents": [
+                "dce13019b9e43b253d03e7fb2c12550cdd94e0aa"
+              ],
+              "body_excerpt": "Co-authored-by: David Pierce <davidapierce@google.com>\nCo-authored-by: Gal Zahavi <38544478+galz10@users.noreply.github.com>"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "first_parent_and_changed_files_recorded",
+              "implementation_change_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T11:00:49.479902+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "google-gemini__gemini-cli__26153__2194da2b",
+          "title": "Honor the telemetry payload-consent flag across diagnostic logging paths",
+          "before": "At parent commit dce13019b9e43b253d03e7fb2c12550cdd94e0aa, ordinary telemetry records emitted request_text, response_text, tool function_args, and complete tool metadata without consulting getTelemetryLogPromptsEnabled(). Policy-generation and verdict diagnostics likewise sent prompts, trusted content, generated policy, tool-call text, and verdict rationale through both OpenTelemetry and Clearcut regardless of that flag, although some semantic GenAI payload logging was already gated separately.",
+          "after": "At commit 2194da2b0213fa39062302ea3a2ee75ef768648e, payload-bearing request, response, tool-call, policy-generation, and verdict attributes are added only when getTelemetryLogPromptsEnabled() is true. With the flag false, tool metadata is reduced to an explicit allowlist of aggregate line/character counters, while operational fields such as function name, verdict result, and errors remain available. The policy diagnostics apply the same rule to both OpenTelemetry and Clearcut.",
+          "diff": "The change modifies four telemetry files (437 insertions and 57 deletions): event serialization in types.ts now conditionally emits request_text, response_text, function_args, policy inputs/outputs, tool-call text, and rationale; tool metadata is filtered through eight explicitly safe aggregate keys and JSON-serialized; conseca-logger.ts conditionally constructs Clearcut sensitive-field entries while retaining verdict and error entries; tests add enabled/disabled assertions for API response text, API request text, tool arguments, and policy-generation/verdict fields across OpenTelemetry and Clearcut."
+        },
+        "evidence_units": [
+          {
+            "id": "ev-commit-001",
+            "kind": "commit",
+            "claim": "Commit 2194da2b0213fa39062302ea3a2ee75ef768648e is titled “Respect logPrompts flag for logging sensitive fields (#26153)”, has parent dce13019b9e43b253d03e7fb2c12550cdd94e0aa, and changes four telemetry implementation/test files.",
+            "source": "git show --format=fuller --stat 2194da2b0213fa39062302ea3a2ee75ef768648e; issue-bundle.json resolved_commit, parent_commit, and changed_files_name_status"
+          },
+          {
+            "id": "ev-before-otel-001",
+            "kind": "implementation",
+            "claim": "In the parent, ToolCallEvent always placed serialized function_args and complete metadata in OpenTelemetry attributes; ApiRequestEvent always placed request_text there; ApiResponseEvent included response_text whenever present.",
+            "source": "git show dce13019b9e43b253d03e7fb2c12550cdd94e0aa:packages/core/src/telemetry/types.ts, ToolCallEvent.toOpenTelemetryAttributes, ApiRequestEvent.toLogRecord, and ApiResponseEvent.toLogRecord"
+          },
+          {
+            "id": "ev-before-policy-001",
+            "kind": "implementation",
+            "claim": "In the parent, policy-generation OpenTelemetry attributes always included user_prompt, trusted_content, and policy, while verdict attributes always included user_prompt, policy, tool_call, verdict, and verdict_rationale.",
+            "source": "git show dce13019b9e43b253d03e7fb2c12550cdd94e0aa:packages/core/src/telemetry/types.ts, ConsecaPolicyGenerationEvent.toOpenTelemetryAttributes and ConsecaVerdictEvent.toOpenTelemetryAttributes"
+          },
+          {
+            "id": "ev-diff-payload-gates-001",
+            "kind": "diff",
+            "claim": "The implementation gates tool arguments, API request text, API response text, policy-generation payloads, and verdict payloads on config.getTelemetryLogPromptsEnabled(), while leaving non-payload event attributes outside the conditional blocks.",
+            "source": "git diff dce13019b9e43b253d03e7fb2c12550cdd94e0aa 2194da2b0213fa39062302ea3a2ee75ef768648e -- packages/core/src/telemetry/types.ts"
+          },
+          {
+            "id": "ev-impl-metadata-001",
+            "kind": "implementation",
+            "claim": "When prompt logging is disabled, ToolCallEvent filters metadata to eight aggregate model/user added-or-removed line/character counters; when enabled it preserves all metadata, and it emits metadata only when the resulting object is nonempty.",
+            "source": "git show 2194da2b0213fa39062302ea3a2ee75ef768648e:packages/core/src/telemetry/types.ts, TOOL_CALL_METADATA_SAFE_KEYS and ToolCallEvent.toOpenTelemetryAttributes"
+          },
+          {
+            "id": "ev-callsite-records-001",
+            "kind": "call_site",
+            "claim": "The general telemetry logger passes Config into event record serializers, making the runtime prompt-logging preference available at the final OpenTelemetry attribute-construction boundary used by API and tool-call logging.",
+            "source": "git show 2194da2b0213fa39062302ea3a2ee75ef768648e:packages/core/src/telemetry/loggers.ts; logApiRequest, logApiResponse, and logToolCall calls to event record/attribute serializers, corroborated by packages/core/src/telemetry/loggers.test.ts"
+          },
+          {
+            "id": "ev-impl-multibackend-001",
+            "kind": "implementation",
+            "claim": "The policy diagnostic logger now builds Clearcut data conditionally: payload entries are appended only when prompt logging is enabled, while verdict result and error entries remain unconditional; OpenTelemetry uses the correspondingly gated event serializers.",
+            "source": "git show 2194da2b0213fa39062302ea3a2ee75ef768648e:packages/core/src/telemetry/conseca-logger.ts, logConsecaPolicyGeneration and logConsecaVerdict"
+          },
+          {
+            "id": "ev-test-api-001",
+            "kind": "test",
+            "claim": "Logger tests assert that request_text and response_text are absent when prompt logging is disabled, and that response_text is present when it is enabled.",
+            "source": "git show 2194da2b0213fa39062302ea3a2ee75ef768648e:packages/core/src/telemetry/loggers.test.ts, API request semantic-log disabled case and logApiResponse logPrompts cases"
+          },
+          {
+            "id": "ev-test-tool-001",
+            "kind": "test",
+            "claim": "Tool-call tests assert that function_args is absent while function_name remains when prompt logging is disabled, and that serialized function_args is present when the flag is enabled.",
+            "source": "git show 2194da2b0213fa39062302ea3a2ee75ef768648e:packages/core/src/telemetry/loggers.test.ts, “logToolCall — logPrompts flag” suite"
+          },
+          {
+            "id": "ev-test-policy-001",
+            "kind": "test",
+            "claim": "Policy diagnostic tests assert disabled-mode omission of user prompt, trusted content, policy, tool call, and rationale from OpenTelemetry and Clearcut, retention of verdict/error fields, and enabled-mode inclusion of sensitive fields.",
+            "source": "git show 2194da2b0213fa39062302ea3a2ee75ef768648e:packages/core/src/telemetry/conseca-logger.test.ts, added logPrompts enabled/disabled cases"
+          },
+          {
+            "id": "ev-validation-scope-001",
+            "kind": "validation",
+            "claim": "The added tests exercise both consent states and verify selective retention rather than disabling whole events: event name, function name, verdict result, and errors remain observable while payload fields are omitted.",
+            "source": "packages/core/src/telemetry/loggers.test.ts and packages/core/src/telemetry/conseca-logger.test.ts at commit 2194da2b0213fa39062302ea3a2ee75ef768648e"
+          },
+          {
+            "id": "ev-bundle-limit-001",
+            "kind": "issue",
+            "claim": "The evidence bundle identifies PR/issue 26153 as a verified implementation-plus-test training candidate but reports that the issue body, discussion, reviews, and status checks are unavailable.",
+            "source": "/home/chenyujia/tritonToLlvm/arex-skill-graph/data/skill-extraction/agent-core-thirteen-category-extraction-v2/codex-5.6-sol-contract-v2-20261001/19-sensitive-data-redaction-in-diagnostics/google-gemini__gemini-cli__26153/issue-bundle.json"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "gate-diagnostic-payload-fields",
+            "title": "Gate diagnostic payload fields on explicit logging consent",
+            "description": "At the final event-serialization boundary, omit free-form request, response, prompt, policy, tool-argument, tool-call, and rationale fields unless payload logging is explicitly enabled, while preserving non-payload operational attributes.",
+            "evidence_ids": [
+              "ev-before-otel-001",
+              "ev-before-policy-001",
+              "ev-diff-payload-gates-001",
+              "ev-callsite-records-001",
+              "ev-test-api-001",
+              "ev-test-tool-001"
+            ],
+            "semantic_action": {
+              "intent": "Prevent user or model content from entering diagnostic records when payload logging has been disabled without suppressing the entire operational event.",
+              "module_role": "diagnostic event attribute serializer",
+              "operation": "guard",
+              "pre_state": "A diagnostic event contains free-form payload fields, and its serializer can access a runtime setting that expresses whether such payloads may be logged.",
+              "post_state": "Payload fields are absent when consent is disabled and present when enabled; non-payload event identity, status, timing, and routing fields remain independently observable.",
+              "validation": "Serialize representative API and tool events under both flag values; assert payload-key absence in disabled mode, payload-key presence in enabled mode, and retention of non-payload keys such as event name or function name.",
+              "parameters": [
+                "payload_logging_enabled",
+                "diagnostic_event",
+                "payload_field_set",
+                "operational_field_set",
+                "telemetry_attributes"
+              ],
+              "evidence_ids": [
+                "ev-diff-payload-gates-001",
+                "ev-callsite-records-001",
+                "ev-test-api-001",
+                "ev-test-tool-001",
+                "ev-validation-scope-001"
+              ]
+            }
+          },
+          {
+            "name": "allowlist-safe-aggregate-metadata",
+            "title": "Reduce mixed diagnostic metadata to explicitly safe aggregates",
+            "description": "When a metadata container can mix content-bearing values with harmless counters, retain only a small explicit allowlist of aggregate measurements while payload logging is disabled.",
+            "evidence_ids": [
+              "ev-before-otel-001",
+              "ev-impl-metadata-001"
+            ],
+            "semantic_action": {
+              "intent": "Keep useful quantitative diagnostics without leaking arbitrary nested metadata that may contain user-derived content.",
+              "module_role": "structured diagnostic metadata sanitizer",
+              "operation": "filter",
+              "pre_state": "A diagnostic metadata map may contain both approved aggregate counters and arbitrary or content-bearing keys, and payload logging is disabled.",
+              "post_state": "Only explicitly approved aggregate keys remain; an empty sanitized map is not emitted, while enabled mode preserves the original metadata map.",
+              "validation": "Serialize a metadata map containing approved counters and an unapproved nested value under disabled mode and assert that only approved keys remain; repeat under enabled mode and assert that the full map is preserved.",
+              "parameters": [
+                "payload_logging_enabled",
+                "metadata_map",
+                "safe_key_allowlist",
+                "sanitized_metadata"
+              ],
+              "evidence_ids": [
+                "ev-impl-metadata-001"
+              ]
+            }
+          },
+          {
+            "name": "reconcile-redaction-across-telemetry-sinks",
+            "title": "Apply the same payload boundary across telemetry sinks",
+            "description": "Enforce the same consent decision in each backend-specific representation while retaining safe verdict and error diagnostics.",
+            "evidence_ids": [
+              "ev-impl-multibackend-001",
+              "ev-test-policy-001",
+              "ev-validation-scope-001"
+            ],
+            "semantic_action": {
+              "intent": "Avoid a privacy bypass in which one diagnostic backend redacts sensitive fields but another backend still transmits them.",
+              "module_role": "multi-sink telemetry adapter",
+              "operation": "reconcile",
+              "pre_state": "One logical event is emitted to multiple telemetry sinks whose payloads are constructed through separate code paths.",
+              "post_state": "Every sink omits the same sensitive payload categories when consent is disabled, while safe outcome and error fields continue to be emitted.",
+              "validation": "Emit policy-generation and verdict events to each configured sink with the flag disabled and enabled; compare backend payloads for omission/inclusion and verify that verdict and error fields survive disabled mode.",
+              "parameters": [
+                "payload_logging_enabled",
+                "logical_event",
+                "telemetry_sinks",
+                "sensitive_field_mapping",
+                "safe_outcome_fields"
+              ],
+              "evidence_ids": [
+                "ev-impl-multibackend-001",
+                "ev-test-policy-001",
+                "ev-validation-scope-001"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "enforce-consent-aware-diagnostic-redaction",
+            "title": "Enforce consent-aware redaction at diagnostic emission boundaries",
+            "description": "Identify content-bearing diagnostic fields, guard direct payload attributes, sanitize mixed metadata, reconcile all sink-specific encodings, and validate both privacy and retained observability.",
+            "atomic_names": [
+              "gate-diagnostic-payload-fields",
+              "allowlist-safe-aggregate-metadata",
+              "reconcile-redaction-across-telemetry-sinks"
+            ],
+            "evidence_ids": [
+              "ev-before-otel-001",
+              "ev-before-policy-001",
+              "ev-diff-payload-gates-001",
+              "ev-impl-metadata-001",
+              "ev-callsite-records-001",
+              "ev-impl-multibackend-001",
+              "ev-test-api-001",
+              "ev-test-tool-001",
+              "ev-test-policy-001",
+              "ev-validation-scope-001"
+            ],
+            "workflow_graph": {
+              "goal": "Ensure disabling payload logging removes sensitive or content-bearing values from every diagnostic representation while preserving useful non-sensitive operational telemetry.",
+              "when_to_use": [
+                "A runtime privacy or consent flag is intended to control prompt, response, command, policy, rationale, or comparable free-form diagnostic payloads.",
+                "The same logical event is serialized through multiple record types or telemetry backends.",
+                "Structured metadata may combine safe aggregate measurements with arbitrary content-bearing values."
+              ],
+              "anti_goals": [
+                "Do not disable all telemetry when only payload content requires suppression.",
+                "Do not remove safe event identity, timing, status, verdict, error, or aggregate measurement fields solely because payload logging is disabled.",
+                "Do not treat an entire extensible metadata object as safe merely because some of its current keys are numeric counters.",
+                "Do not change the meaning of the runtime consent flag or enable payload logging implicitly."
+              ],
+              "not_applicable_when": [
+                "The diagnostic event contains no user-derived, model-derived, command, policy, rationale, or extensible metadata payload.",
+                "The system has no authoritative runtime control for payload logging and adding such a policy decision is outside the change scope.",
+                "The data must never be logged under any configuration; such fields require unconditional removal rather than consent-based gating."
+              ],
+              "inputs": [
+                "Authoritative runtime payload-logging setting",
+                "Inventory of content-bearing fields for each event type",
+                "Inventory of non-sensitive operational fields that must remain observable",
+                "All backend-specific serializers and adapters for the affected events",
+                "Representative enabled-mode and disabled-mode test fixtures"
+              ],
+              "entry_state": "At least one diagnostic serialization path emits content-bearing fields without consistently consulting the authoritative payload-logging setting.",
+              "exit_state": "For all affected events and sinks, disabled mode emits no identified payload fields, enabled mode preserves intentionally supported payloads, mixed metadata is limited to approved aggregates in disabled mode, and safe operational fields remain observable.",
+              "steps": [
+                {
+                  "action_name": "gate-diagnostic-payload-fields",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "Apply to every direct diagnostic attribute classified as request, response, prompt, policy, command/tool argument, tool-call content, or explanatory rationale.",
+                  "validation": "Enabled/disabled serialization tests prove omission and inclusion while also checking at least one retained operational field."
+                },
+                {
+                  "action_name": "allowlist-safe-aggregate-metadata",
+                  "role": "establish-contract",
+                  "required": true,
+                  "depends_on": [
+                    "gate-diagnostic-payload-fields"
+                  ],
+                  "condition": "Apply when an extensible metadata object contains both approved aggregate diagnostics and potentially content-bearing keys.",
+                  "validation": "A mixed-key metadata fixture proves that disabled mode emits only allowlisted aggregates and omits the container when no safe keys remain."
+                },
+                {
+                  "action_name": "reconcile-redaction-across-telemetry-sinks",
+                  "role": "reconcile",
+                  "required": true,
+                  "depends_on": [
+                    "gate-diagnostic-payload-fields",
+                    "allowlist-safe-aggregate-metadata"
+                  ],
+                  "condition": "Apply whenever affected events have more than one sink-specific payload builder or serializer.",
+                  "validation": "Backend-specific tests prove equivalent omission of sensitive categories and continued emission of safe verdict/error data."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "gate-diagnostic-payload-fields",
+                  "to": "allowlist-safe-aggregate-metadata",
+                  "type": "enables"
+                },
+                {
+                  "from": "gate-diagnostic-payload-fields",
+                  "to": "reconcile-redaction-across-telemetry-sinks",
+                  "type": "requires"
+                },
+                {
+                  "from": "allowlist-safe-aggregate-metadata",
+                  "to": "reconcile-redaction-across-telemetry-sinks",
+                  "type": "requires"
+                }
+              ],
+              "validation_ladder": [
+                "Inspect the parent and patched serializers to confirm every identified direct payload field moved behind the runtime consent check.",
+                "Run unit cases with payload logging disabled and assert absence of request text, response text, tool arguments, prompts, policies, tool-call content, and rationale.",
+                "Run paired enabled-mode cases and assert intentionally supported payload fields remain available.",
+                "Verify non-sensitive event name, function name, verdict result, and error fields remain in disabled mode.",
+                "For mixed metadata, verify only the explicit aggregate allowlist survives disabled mode and arbitrary nested keys do not.",
+                "Exercise every backend-specific representation of the same logical event to detect sink-specific redaction bypasses."
+              ],
+              "stop_conditions": [
+                "Stop and defer if no authoritative runtime setting defines whether payload content may be logged.",
+                "Stop if the sensitive-field inventory or backend inventory cannot be established from implementation and call sites.",
+                "Do not declare completion if any affected sink still receives a classified payload in disabled mode.",
+                "Do not broaden the allowlist when a metadata key's safety cannot be established.",
+                "Stop and require an unconditional-removal decision if a field is prohibited even when payload logging is enabled."
+              ],
+              "unresolved_or_deferred": [
+                "The changed tests do not include a dedicated disabled-mode mixed-metadata fixture proving that unapproved metadata keys are removed while approved aggregate counters remain.",
+                "The supplied GitHub bundle does not contain CI status checks or review discussion, and tests were not independently executed during extraction because the checkout worktree is fully deleted/dirty and some partial-clone objects require unavailable network access."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Were all repository test suites and status checks successful for commit 2194da2b0213fa39062302ea3a2ee75ef768648e? The evidence bundle marks status checks unavailable.",
+          "Should a dedicated regression test be added for disabled-mode tool metadata containing both allowlisted aggregate counters and an unapproved nested payload? The implementation establishes this behavior, but the changed tests directly cover tool arguments rather than that negative metadata case.",
+          "The logger functions write complete event objects to debugLogger.debug before backend redaction. This commit does not change that path, and the available evidence does not establish whether debugLogger performs separate filtering or whether that local diagnostic path is in scope."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "gate-diagnostic-payload-fields",
+          "title": "Gate diagnostic payload fields on explicit logging consent",
+          "description": "At the final event-serialization boundary, omit free-form request, response, prompt, policy, tool-argument, tool-call, and rationale fields unless payload logging is explicitly enabled, while preserving non-payload operational attributes.",
+          "evidence_ids": [
+            "ev-before-otel-001",
+            "ev-before-policy-001",
+            "ev-diff-payload-gates-001",
+            "ev-callsite-records-001",
+            "ev-test-api-001",
+            "ev-test-tool-001"
+          ],
+          "semantic_action": {
+            "intent": "Prevent user or model content from entering diagnostic records when payload logging has been disabled without suppressing the entire operational event.",
+            "module_role": "diagnostic event attribute serializer",
+            "operation": "guard",
+            "pre_state": "A diagnostic event contains free-form payload fields, and its serializer can access a runtime setting that expresses whether such payloads may be logged.",
+            "post_state": "Payload fields are absent when consent is disabled and present when enabled; non-payload event identity, status, timing, and routing fields remain independently observable.",
+            "validation": "Serialize representative API and tool events under both flag values; assert payload-key absence in disabled mode, payload-key presence in enabled mode, and retention of non-payload keys such as event name or function name.",
+            "parameters": [
+              "payload_logging_enabled",
+              "diagnostic_event",
+              "payload_field_set",
+              "operational_field_set",
+              "telemetry_attributes"
+            ],
+            "evidence_ids": [
+              "ev-diff-payload-gates-001",
+              "ev-callsite-records-001",
+              "ev-test-api-001",
+              "ev-test-tool-001",
+              "ev-validation-scope-001"
+            ]
+          }
+        },
+        {
+          "name": "allowlist-safe-aggregate-metadata",
+          "title": "Reduce mixed diagnostic metadata to explicitly safe aggregates",
+          "description": "When a metadata container can mix content-bearing values with harmless counters, retain only a small explicit allowlist of aggregate measurements while payload logging is disabled.",
+          "evidence_ids": [
+            "ev-before-otel-001",
+            "ev-impl-metadata-001"
+          ],
+          "semantic_action": {
+            "intent": "Keep useful quantitative diagnostics without leaking arbitrary nested metadata that may contain user-derived content.",
+            "module_role": "structured diagnostic metadata sanitizer",
+            "operation": "filter",
+            "pre_state": "A diagnostic metadata map may contain both approved aggregate counters and arbitrary or content-bearing keys, and payload logging is disabled.",
+            "post_state": "Only explicitly approved aggregate keys remain; an empty sanitized map is not emitted, while enabled mode preserves the original metadata map.",
+            "validation": "Serialize a metadata map containing approved counters and an unapproved nested value under disabled mode and assert that only approved keys remain; repeat under enabled mode and assert that the full map is preserved.",
+            "parameters": [
+              "payload_logging_enabled",
+              "metadata_map",
+              "safe_key_allowlist",
+              "sanitized_metadata"
+            ],
+            "evidence_ids": [
+              "ev-impl-metadata-001"
+            ]
+          }
+        },
+        {
+          "name": "reconcile-redaction-across-telemetry-sinks",
+          "title": "Apply the same payload boundary across telemetry sinks",
+          "description": "Enforce the same consent decision in each backend-specific representation while retaining safe verdict and error diagnostics.",
+          "evidence_ids": [
+            "ev-impl-multibackend-001",
+            "ev-test-policy-001",
+            "ev-validation-scope-001"
+          ],
+          "semantic_action": {
+            "intent": "Avoid a privacy bypass in which one diagnostic backend redacts sensitive fields but another backend still transmits them.",
+            "module_role": "multi-sink telemetry adapter",
+            "operation": "reconcile",
+            "pre_state": "One logical event is emitted to multiple telemetry sinks whose payloads are constructed through separate code paths.",
+            "post_state": "Every sink omits the same sensitive payload categories when consent is disabled, while safe outcome and error fields continue to be emitted.",
+            "validation": "Emit policy-generation and verdict events to each configured sink with the flag disabled and enabled; compare backend payloads for omission/inclusion and verify that verdict and error fields survive disabled mode.",
+            "parameters": [
+              "payload_logging_enabled",
+              "logical_event",
+              "telemetry_sinks",
+              "sensitive_field_mapping",
+              "safe_outcome_fields"
+            ],
+            "evidence_ids": [
+              "ev-impl-multibackend-001",
+              "ev-test-policy-001",
+              "ev-validation-scope-001"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "enforce-consent-aware-diagnostic-redaction",
+          "title": "Enforce consent-aware redaction at diagnostic emission boundaries",
+          "description": "Identify content-bearing diagnostic fields, guard direct payload attributes, sanitize mixed metadata, reconcile all sink-specific encodings, and validate both privacy and retained observability.",
+          "atomic_names": [
+            "gate-diagnostic-payload-fields",
+            "allowlist-safe-aggregate-metadata",
+            "reconcile-redaction-across-telemetry-sinks"
+          ],
+          "evidence_ids": [
+            "ev-before-otel-001",
+            "ev-before-policy-001",
+            "ev-diff-payload-gates-001",
+            "ev-impl-metadata-001",
+            "ev-callsite-records-001",
+            "ev-impl-multibackend-001",
+            "ev-test-api-001",
+            "ev-test-tool-001",
+            "ev-test-policy-001",
+            "ev-validation-scope-001"
+          ],
+          "workflow_graph": {
+            "goal": "Ensure disabling payload logging removes sensitive or content-bearing values from every diagnostic representation while preserving useful non-sensitive operational telemetry.",
+            "when_to_use": [
+              "A runtime privacy or consent flag is intended to control prompt, response, command, policy, rationale, or comparable free-form diagnostic payloads.",
+              "The same logical event is serialized through multiple record types or telemetry backends.",
+              "Structured metadata may combine safe aggregate measurements with arbitrary content-bearing values."
+            ],
+            "anti_goals": [
+              "Do not disable all telemetry when only payload content requires suppression.",
+              "Do not remove safe event identity, timing, status, verdict, error, or aggregate measurement fields solely because payload logging is disabled.",
+              "Do not treat an entire extensible metadata object as safe merely because some of its current keys are numeric counters.",
+              "Do not change the meaning of the runtime consent flag or enable payload logging implicitly."
+            ],
+            "not_applicable_when": [
+              "The diagnostic event contains no user-derived, model-derived, command, policy, rationale, or extensible metadata payload.",
+              "The system has no authoritative runtime control for payload logging and adding such a policy decision is outside the change scope.",
+              "The data must never be logged under any configuration; such fields require unconditional removal rather than consent-based gating."
+            ],
+            "inputs": [
+              "Authoritative runtime payload-logging setting",
+              "Inventory of content-bearing fields for each event type",
+              "Inventory of non-sensitive operational fields that must remain observable",
+              "All backend-specific serializers and adapters for the affected events",
+              "Representative enabled-mode and disabled-mode test fixtures"
+            ],
+            "entry_state": "At least one diagnostic serialization path emits content-bearing fields without consistently consulting the authoritative payload-logging setting.",
+            "exit_state": "For all affected events and sinks, disabled mode emits no identified payload fields, enabled mode preserves intentionally supported payloads, mixed metadata is limited to approved aggregates in disabled mode, and safe operational fields remain observable.",
+            "steps": [
+              {
+                "action_name": "gate-diagnostic-payload-fields",
+                "role": "implement",
+                "required": true,
+                "depends_on": [],
+                "condition": "Apply to every direct diagnostic attribute classified as request, response, prompt, policy, command/tool argument, tool-call content, or explanatory rationale.",
+                "validation": "Enabled/disabled serialization tests prove omission and inclusion while also checking at least one retained operational field."
+              },
+              {
+                "action_name": "allowlist-safe-aggregate-metadata",
+                "role": "establish-contract",
+                "required": true,
+                "depends_on": [
+                  "gate-diagnostic-payload-fields"
+                ],
+                "condition": "Apply when an extensible metadata object contains both approved aggregate diagnostics and potentially content-bearing keys.",
+                "validation": "A mixed-key metadata fixture proves that disabled mode emits only allowlisted aggregates and omits the container when no safe keys remain."
+              },
+              {
+                "action_name": "reconcile-redaction-across-telemetry-sinks",
+                "role": "reconcile",
+                "required": true,
+                "depends_on": [
+                  "gate-diagnostic-payload-fields",
+                  "allowlist-safe-aggregate-metadata"
+                ],
+                "condition": "Apply whenever affected events have more than one sink-specific payload builder or serializer.",
+                "validation": "Backend-specific tests prove equivalent omission of sensitive categories and continued emission of safe verdict/error data."
+              }
+            ],
+            "edges": [
+              {
+                "from": "gate-diagnostic-payload-fields",
+                "to": "allowlist-safe-aggregate-metadata",
+                "type": "enables"
+              },
+              {
+                "from": "gate-diagnostic-payload-fields",
+                "to": "reconcile-redaction-across-telemetry-sinks",
+                "type": "requires"
+              },
+              {
+                "from": "allowlist-safe-aggregate-metadata",
+                "to": "reconcile-redaction-across-telemetry-sinks",
+                "type": "requires"
+              }
+            ],
+            "validation_ladder": [
+              "Inspect the parent and patched serializers to confirm every identified direct payload field moved behind the runtime consent check.",
+              "Run unit cases with payload logging disabled and assert absence of request text, response text, tool arguments, prompts, policies, tool-call content, and rationale.",
+              "Run paired enabled-mode cases and assert intentionally supported payload fields remain available.",
+              "Verify non-sensitive event name, function name, verdict result, and error fields remain in disabled mode.",
+              "For mixed metadata, verify only the explicit aggregate allowlist survives disabled mode and arbitrary nested keys do not.",
+              "Exercise every backend-specific representation of the same logical event to detect sink-specific redaction bypasses."
+            ],
+            "stop_conditions": [
+              "Stop and defer if no authoritative runtime setting defines whether payload content may be logged.",
+              "Stop if the sensitive-field inventory or backend inventory cannot be established from implementation and call sites.",
+              "Do not declare completion if any affected sink still receives a classified payload in disabled mode.",
+              "Do not broaden the allowlist when a metadata key's safety cannot be established.",
+              "Stop and require an unconditional-removal decision if a field is prohibited even when payload logging is enabled."
+            ],
+            "unresolved_or_deferred": [
+              "The changed tests do not include a dedicated disabled-mode mixed-metadata fixture proving that unapproved metadata keys are removed while approved aggregate counters remain.",
+              "The supplied GitHub bundle does not contain CI status checks or review discussion, and tests were not independently executed during extraction because the checkout worktree is fully deleted/dirty and some partial-clone objects require unavailable network access."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Were all repository test suites and status checks successful for commit 2194da2b0213fa39062302ea3a2ee75ef768648e? The evidence bundle marks status checks unavailable.",
+        "Should a dedicated regression test be added for disabled-mode tool metadata containing both allowlisted aggregate counters and an unapproved nested payload? The implementation establishes this behavior, but the changed tests directly cover tool arguments rather than that negative metadata case.",
+        "The logger functions write complete event objects to debugLogger.debug before backend redaction. This commit does not change that path, and the available evidence does not establish whether debugLogger performs separate filtering or whether that local diagnostic path is in scope."
+      ]
+    },
+    "call_sites": [
+      "The general telemetry logger passes Config into event record serializers, making the runtime prompt-logging preference available at the final OpenTelemetry attribute-construction boundary used by API and tool-call logging."
+    ],
+    "tests": [
+      "Logger tests assert that request_text and response_text are absent when prompt logging is disabled, and that response_text is present when it is enabled.",
+      "Tool-call tests assert that function_args is absent while function_name remains when prompt logging is disabled, and that serialized function_args is present when the flag is enabled.",
+      "Policy diagnostic tests assert disabled-mode omission of user prompt, trusted content, policy, tool call, and rationale from OpenTelemetry and Clearcut, retention of verdict/error fields, and enabled-mode inclusion of sensitive fields."
+    ]
+  },
+  {
+    "episode_id": "QwenLM__qwen-code__6200__c1235d8c",
+    "title": "Bound sensitive and attacker-controlled data at diagnostic boundaries",
+    "before": "At parent 006ac59a33b60bcd87086b5ddd6afa5abe85e448, the credential-token HTTP failure path read the remote response body and appended it verbatim to the thrown error. Multiple channel diagnostics also interpolated raw response bodies or exception text into stderr, including connection retries, message-send failures, token refresh, malformed gateway messages, WebSocket errors, and inbound-handler failures. Truncating some response bodies with slice limited length but did not neutralize control characters or other unsafe log text.",
+    "after": "At c1235d8c69fcccadf96609af54ed1e08b72fa7ed, credential-token HTTP failures cancel the unconsumed body and expose only the HTTP status in stderr and the thrown error. Other diagnostics pass remote response bodies and exception messages through the shared log-text sanitizer with explicit bounds before writing them or propagating the final connection error. Tests assert that token failures cannot expose the response body and that injected newline, NUL, and tab characters do not survive a propagated connection error; the slash-command audit test additionally checks ANSI, C1, Unicode line-separator, and bidi-control neutralization.",
+    "diff": "The change replaces raw or slice-only diagnostic interpolation with bounded sanitizeLogText calls across channel connection, sending, persistence, token-refresh, gateway, WebSocket, reconnect, and handler error paths. It changes the credential-token failure contract from reading and embedding the response body to canceling it and emitting status-only diagnostics. The same commit also contains gateway validation and state-persistence hardening, but those are separate concerns from this sensitive-data-redaction episode.",
+    "repository": "QwenLM/qwen-code",
+    "revision": "github-issue-6200",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "QwenLM/qwen-code",
+      "issue": 6200,
+      "checkout": "/home/chenyujia/tritonToLlvm/qwen-code",
+      "manifest_metadata": {
+        "category": "sensitive-data-redaction-in-diagnostics",
+        "role": "train_candidate",
+        "case_id": "QwenLM__qwen-code__6200__sensitive-data-redaction-in-diagnostics",
+        "sample_kind": "verified_implementation_pull_request",
+        "seed_issue": null,
+        "seed_issue_url": null,
+        "seed_relation": null,
+        "resolution_url": "https://github.com/QwenLM/qwen-code/pull/6200",
+        "provenance": {
+          "classification": "direct_implementation_artifact",
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 6200,
+            "url": "https://github.com/QwenLM/qwen-code/pull/6200"
+          },
+          "commit": {
+            "sha": "c1235d8c69fcccadf96609af54ed1e08b72fa7ed",
+            "subject": "fix(qqbot): security hardening — gateway validation, atomic state, sanitized logging (#6200)",
+            "parents": [
+              "006ac59a33b60bcd87086b5ddd6afa5abe85e448"
+            ],
+            "body_excerpt": "* fix(qqbot): validate gateway URL protocol to prevent SSRF\n\n- Add validateGatewayUrl(): enforce wss:// protocol, warn on unexpected hostnames\n- Integrate into fetchGatewayUrl() return path\n- Truncate error body in fetchAccessToken() to 80 chars\n- Add 6 tests covering protocol rejection, wss acceptance, and edge cases\n\n* fix(qqbot): atomic state persistence and error log sanitization\n\nState persistence hardening:\n- Atomic saveQQState() via tmp+renameSync with disposed guard and unref()\n- Atomic flushQQState() with {mode: 0o600} permissions\n- Entry type validation in restoreQQState() for chatTypeMap and msgSeqMap\n\nError log sanitization:\n- Wrap all user-controlled data in process.stderr.write() with sanitizeLogText()\n- Covering: connect retry, sendMessage errors, state persistence failures,\n  token refresh, malformed gateway, WebSocket errors, reconnect, and\n  C2C/group handler error paths\n\n* fix(qqbot): add replyMsgId validation in restoreQQState()\n\nAdd type/length validation for replyMsgId entries when restoring from\npersisted state, consistent with the existing chatTypeMap and msgSeqMap\ninput validation filters. Entries must be strings ≤ 128 chars.\n\n* fix(qqbot): add test coverag"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "first_parent_and_changed_files_recorded",
+            "implementation_change_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "QwenLM/qwen-code",
+        "issue_number": 6200,
+        "issue": {
+          "number": 6200,
+          "title": "fix(qqbot): security hardening — gateway validation, atomic state, sanitized logging (#6200)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 6200,
+              "title": "fix(qqbot): security hardening — gateway validation, atomic state, sanitized logging (#6200)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tpackages/channels/qqbot/src/QQChannel.ts"
+              },
+              {
+                "status_line": "M\tpackages/channels/qqbot/src/api.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/channels/qqbot/src/api.ts"
+              },
+              {
+                "status_line": "M\tpackages/channels/qqbot/src/send.test.ts"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "c1235d8c69fcccadf96609af54ed1e08b72fa7ed",
+                "subject": "fix(qqbot): security hardening — gateway validation, atomic state, sanitized logging (#6200)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/qwen-code",
+        "pinned_ref": "c1235d8c69fcccadf96609af54ed1e08b72fa7ed",
+        "resolved_commit": "c1235d8c69fcccadf96609af54ed1e08b72fa7ed",
+        "parent_commit": "006ac59a33b60bcd87086b5ddd6afa5abe85e448",
+        "commit_show_stat": "commit c1235d8c69fcccadf96609af54ed1e08b72fa7ed\nAuthor:     曹潇缤 <634718930@qq.com>\nAuthorDate: Fri Jul 3 15:26:13 2026 +0800\nCommit:     GitHub <noreply@github.com>\nCommitDate: Fri Jul 3 07:26:13 2026 +0000\n\n    fix(qqbot): security hardening — gateway validation, atomic state, sanitized logging (#6200)\n    \n    * fix(qqbot): validate gateway URL protocol to prevent SSRF\n    \n    - Add validateGatewayUrl(): enforce wss:// protocol, warn on unexpected hostnames\n    - Integrate into fetchGatewayUrl() return path\n    - Truncate error body in fetchAccessToken() to 80 chars\n    - Add 6 tests covering protocol rejection, wss acceptance, and edge cases\n    \n    * fix(qqbot): atomic state persistence and error log sanitization\n    \n    State persistence hardening:\n    - Atomic saveQQState() via tmp+renameSync with disposed guard and unref()\n    - Atomic flushQQState() with {mode: 0o600} permissions\n    - Entry type validation in restoreQQState() for chatTypeMap and msgSeqMap\n    \n    Error log sanitization:\n    - Wrap all user-controlled data in process.stderr.write() with sanitizeLogText()\n    - Covering: connect retry, sendMessage errors, state persistence failures,\n      token refresh, malformed gateway, WebSocket errors, reconnect, and\n      C2C/group handler error paths\n    \n    * fix(qqbot): add replyMsgId validation in restoreQQState()\n    \n    Add type/length validation for replyMsgId entries when restoring from\n    persisted state, consistent with the existing chatTypeMap and msgSeqMap\n    input validation filters. Entries must be strings ≤ 128 chars.\n    \n    * fix(qqbot): add test coverage for restoreQQState filters, atomic writes, and gateway URL validation\n    \n    * docs(qqbot): update restoreQQState doc and add disposed guard comment\n    \n    - Update restoreQQState JSDoc: document validation instead of \"trusts persisted JSON\"\n    - Add inline comment explaining why saveQQState has disposed guard but flushQQState doesn't\n    \n    * docs(qqbot): update validateGatewayUrl docstring to reflect TLS enforcement, not SSRF\n    \n    * fix(qqbot): address wenshao review — hostname rejection, error sanitization, msgSeqMap validation\n    \n    * fix(qqbot): address PR review — drain body, narrow gateway hostname\n    \n    - Drain resp.body?.cancel() in fetchAccessToken error to prevent\n      Undici connection leaks on repeated token failures\n    - Narrow validateGatewayUrl hostname check from broad Tencent\n      wildcards (.tencent.com, .tencentcs.com) to only *.qq.com\n      to prevent attacker-controlled Tencent Cloud API Gateway\n      domains from passing validation\n    \n    * test(qqbot): tighten token-error assertion to exact match\n    \n    * test(qqbot): add connect retry sanitization + msgSeqMap edge-case tests\n    \n    Add test verifying the final connect() retry sanitizes newline/control\n    characters in the thrown error message. Add tests for fractional,\n    overflow, and Infinity values in msgSeqMap restore validation to\n    prevent regression of the Number.isSafeInteger fix.\n    \n    * fix(qqbot): address wenshao review round 3 — error preservation, validation logging, URL normalization\n    \n    * test(qqbot): fix connect retry sanitization assertion — sanitizeLogText preserves readable content, not censor words\n    \n    * fix(qqbot): address wenshao review — error preservation, validation logging, URL userinfo stripping, test coverage\n    \n    * fix(qqbot): add Array.isArray guards and replyMsgId drop logging in restoreQQState\n    \n    Prevent TypeError from .filter() on non-array state values (e.g. object\n    from partial write). Missing Array.isArray() guard caused all three maps\n    to be lost on a single corrupted section — now each map independently\n    validates with both truthiness + Array.isArray() before filtering.\n    \n    Also add replyMsgId drop-count logging (was missing while chatTypeMap\n    and msgSeqMap already had it).\n    \n    * fix(qqbot): drain response body in token error path, sanitize URL TypeError, clean tmp on atomic write failure\n    \n    Three fixes from wenshao review:\n    \n    1. fetchAccessToken: cancel unconsumed response body to prevent Undici TCP\n       socket leak (could exhaust connection pool over hours in long-running daemon)\n    \n    2. validateGatewayUrl: strip raw URL from TypeError message to prevent\n       log injection via malformed URL strings\n    \n    3. saveQQState/flushQQState: unlinkSync(tmpPath) in catch blocks to\n       prevent orphaned .tmp files when renameSync fails (cross-device, Docker)\n    \n    * fix(qqbot): test Infinity rejection via 1e999 raw JSON, not JSON.stringify nullification\n    \n    * fix(qqbot): address PR #6200 review — beforeExit hook, key validation, error clarity\n    \n    - Add beforeExit hook to flush debounced state on abnormal process exit\n      (SIGKILL, OOM, crash) when unref'd 500ms timer has pending writes\n    - Validate map keys (typeof string, ≤256 chars) in restoreQQState filters\n      alongside existing value validation to prevent non-string key bloat\n    - Improve gateway hostname error message to include expected domain\n    \n    * fix(qqbot): address PR #6200 review round — non-object JSON restore, disposed guard, beforeExit dedup, comment fix\n    \n    * fix(qqbot): hoist tmpPath declaration before try block in saveQQState\n    \n    * fix(qqbot): update beforeExit JSDoc to accurately describe behavior\n    \n    * fix(qqbot): drain response body in fetchGatewayUrl error path\n\n packages/channels/qqbot/src/QQChannel.ts | 168 ++++++++++---\n packages/channels/qqbot/src/api.test.ts  | 137 ++++++++++-\n packages/channels/qqbot/src/api.ts       |  47 +++-\n packages/channels/qqbot/src/send.test.ts | 390 +++++++++++++++++++++++++++++++\n 4 files changed, 705 insertions(+), 37 deletions(-)\n",
+        "changed_files_name_status": "M\tpackages/channels/qqbot/src/QQChannel.ts\nM\tpackages/channels/qqbot/src/api.test.ts\nM\tpackages/channels/qqbot/src/api.ts\nM\tpackages/channels/qqbot/src/send.test.ts\n",
+        "linked_issue_numbers": [
+          6200
+        ],
+        "manifest_metadata": {
+          "category": "sensitive-data-redaction-in-diagnostics",
+          "theme": "redact secrets and sensitive payloads at logging and diagnostics boundaries",
+          "file_sample": [
+            "packages/channels/qqbot/src/QQChannel.ts",
+            "packages/channels/qqbot/src/api.test.ts",
+            "packages/channels/qqbot/src/api.ts",
+            "packages/channels/qqbot/src/send.test.ts"
+          ],
+          "quality": "implementation_plus_test",
+          "case_id": "QwenLM__qwen-code__6200__sensitive-data-redaction-in-diagnostics",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_implementation_pull_request",
+          "resolution_url": "https://github.com/QwenLM/qwen-code/pull/6200",
+          "source": "agent_core_thirteen_category_extraction_v2",
+          "provenance": {
+            "classification": "direct_implementation_artifact",
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 6200,
+              "url": "https://github.com/QwenLM/qwen-code/pull/6200"
+            },
+            "commit": {
+              "sha": "c1235d8c69fcccadf96609af54ed1e08b72fa7ed",
+              "subject": "fix(qqbot): security hardening — gateway validation, atomic state, sanitized logging (#6200)",
+              "parents": [
+                "006ac59a33b60bcd87086b5ddd6afa5abe85e448"
+              ],
+              "body_excerpt": "* fix(qqbot): validate gateway URL protocol to prevent SSRF\n\n- Add validateGatewayUrl(): enforce wss:// protocol, warn on unexpected hostnames\n- Integrate into fetchGatewayUrl() return path\n- Truncate error body in fetchAccessToken() to 80 chars\n- Add 6 tests covering protocol rejection, wss acceptance, and edge cases\n\n* fix(qqbot): atomic state persistence and error log sanitization\n\nState persistence hardening:\n- Atomic saveQQState() via tmp+renameSync with disposed guard and unref()\n- Atomic flushQQState() with {mode: 0o600} permissions\n- Entry type validation in restoreQQState() for chatTypeMap and msgSeqMap\n\nError log sanitization:\n- Wrap all user-controlled data in process.stderr.write() with sanitizeLogText()\n- Covering: connect retry, sendMessage errors, state persistence failures,\n  token refresh, malformed gateway, WebSocket errors, reconnect, and\n  C2C/group handler error paths\n\n* fix(qqbot): add replyMsgId validation in restoreQQState()\n\nAdd type/length validation for replyMsgId entries when restoring from\npersisted state, consistent with the existing chatTypeMap and msgSeqMap\ninput validation filters. Entries must be strings ≤ 128 chars.\n\n* fix(qqbot): add test coverag"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "first_parent_and_changed_files_recorded",
+              "implementation_change_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T11:06:43.323609+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "QwenLM__qwen-code__6200__c1235d8c",
+          "title": "Bound sensitive and attacker-controlled data at diagnostic boundaries",
+          "before": "At parent 006ac59a33b60bcd87086b5ddd6afa5abe85e448, the credential-token HTTP failure path read the remote response body and appended it verbatim to the thrown error. Multiple channel diagnostics also interpolated raw response bodies or exception text into stderr, including connection retries, message-send failures, token refresh, malformed gateway messages, WebSocket errors, and inbound-handler failures. Truncating some response bodies with slice limited length but did not neutralize control characters or other unsafe log text.",
+          "after": "At c1235d8c69fcccadf96609af54ed1e08b72fa7ed, credential-token HTTP failures cancel the unconsumed body and expose only the HTTP status in stderr and the thrown error. Other diagnostics pass remote response bodies and exception messages through the shared log-text sanitizer with explicit bounds before writing them or propagating the final connection error. Tests assert that token failures cannot expose the response body and that injected newline, NUL, and tab characters do not survive a propagated connection error; the slash-command audit test additionally checks ANSI, C1, Unicode line-separator, and bidi-control neutralization.",
+          "diff": "The change replaces raw or slice-only diagnostic interpolation with bounded sanitizeLogText calls across channel connection, sending, persistence, token-refresh, gateway, WebSocket, reconnect, and handler error paths. It changes the credential-token failure contract from reading and embedding the response body to canceling it and emitting status-only diagnostics. The same commit also contains gateway validation and state-persistence hardening, but those are separate concerns from this sensitive-data-redaction episode."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "Commit c1235d8c69fcccadf96609af54ed1e08b72fa7ed is the implementation-bearing resolution for PR/issue 6200, with parent 006ac59a33b60bcd87086b5ddd6afa5abe85e448 and changes to QQChannel.ts, api.ts, api.test.ts, and send.test.ts.",
+            "source": "issue-bundle.json linked_pull_requests[0], resolved_commit, parent_commit, changed_files_name_status; git show --stat c1235d8c69fcccadf96609af54ed1e08b72fa7ed"
+          },
+          {
+            "id": "E2",
+            "kind": "diff",
+            "claim": "Before the change, connection, sending, token-refresh, gateway, WebSocket, and handler diagnostics directly interpolated exception text or used slice-only response-body truncation; the change routes these dynamic values through sanitizeLogText with a 200-character bound.",
+            "source": "git diff 006ac59a33b60bcd87086b5ddd6afa5abe85e448 c1235d8c69fcccadf96609af54ed1e08b72fa7ed -- packages/channels/qqbot/src/QQChannel.ts; representative after lines 224, 279, 301, 309, 662, 677, 724, 794, 968, 1060, 1131"
+          },
+          {
+            "id": "E3",
+            "kind": "implementation",
+            "claim": "The final connection failure is rethrown with a sanitized, bounded message while retaining the original error as its cause.",
+            "source": "git show c1235d8c69fcccadf96609af54ed1e08b72fa7ed:packages/channels/qqbot/src/QQChannel.ts lines 228-234"
+          },
+          {
+            "id": "E4",
+            "kind": "call-site",
+            "claim": "Remote response bodies and exception messages are sanitized immediately where they cross stderr diagnostic boundaries, covering markdown fallback, send failures, state-write and restore failures, token refresh, malformed gateway messages, WebSocket errors, reconnect failures, and inbound-handler failures.",
+            "source": "git show c1235d8c69fcccadf96609af54ed1e08b72fa7ed:packages/channels/qqbot/src/QQChannel.ts lines 274-310, 404-452, 463-530, 657-678, 718-725, 792-795, 960-969, 1057-1062, 1128-1133"
+          },
+          {
+            "id": "E5",
+            "kind": "diff",
+            "claim": "Before the change, a failed access-token request read the remote body and embedded it in the thrown error; afterward it cancels the body and emits an HTTP-status-only stderr line and exception.",
+            "source": "git diff 006ac59a33b60bcd87086b5ddd6afa5abe85e448 c1235d8c69fcccadf96609af54ed1e08b72fa7ed -- packages/channels/qqbot/src/api.ts; after lines 37-40"
+          },
+          {
+            "id": "E6",
+            "kind": "implementation",
+            "claim": "The access-token error path preserves actionable HTTP status while deliberately excluding the response payload from both the operator diagnostic and the thrown error.",
+            "source": "git show c1235d8c69fcccadf96609af54ed1e08b72fa7ed:packages/channels/qqbot/src/api.ts lines 37-40"
+          },
+          {
+            "id": "E7",
+            "kind": "test",
+            "claim": "The token failure test supplies a body named unauthorized-body and requires an exact status-only thrown message, so reintroducing the body would fail the assertion.",
+            "source": "git show c1235d8c69fcccadf96609af54ed1e08b72fa7ed:packages/channels/qqbot/src/api.test.ts lines 120-127"
+          },
+          {
+            "id": "E8",
+            "kind": "test",
+            "claim": "The final connection retry test injects newline, NUL, and tab characters into an error and asserts that none survive in the propagated message while readable non-control content remains.",
+            "source": "git show c1235d8c69fcccadf96609af54ed1e08b72fa7ed:packages/channels/qqbot/src/send.test.ts lines 965-1038"
+          },
+          {
+            "id": "E9",
+            "kind": "test",
+            "claim": "The slash-command audit test verifies that ANSI escape, C1 controls, Unicode line separator, and bidi override characters do not survive the diagnostic line, and that an embedded newline is rendered visibly rather than creating an extra log entry.",
+            "source": "git show c1235d8c69fcccadf96609af54ed1e08b72fa7ed:packages/channels/qqbot/src/send.test.ts lines 495-536"
+          },
+          {
+            "id": "E10",
+            "kind": "call-site",
+            "claim": "The access-token function is called with application credentials by the channel token-fetch path, making its remote failure payload a credential-adjacent diagnostic boundary.",
+            "source": "git show c1235d8c69fcccadf96609af54ed1e08b72fa7ed:packages/channels/qqbot/src/QQChannel.ts lines 640-651; packages/channels/qqbot/src/api.ts lines 26-40"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "sanitize-untrusted-diagnostic-text",
+            "title": "Sanitize and bound untrusted diagnostic text",
+            "description": "Normalize remote payloads and exception messages at logging or propagated-error boundaries so control characters cannot forge diagnostics and output size is bounded while readable context remains.",
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E8",
+              "E9"
+            ],
+            "semantic_action": {
+              "intent": "Prevent attacker-controlled response and error text from injecting, reordering, or excessively expanding operator diagnostics while retaining useful readable context.",
+              "module_role": "diagnostic output boundary",
+              "operation": "sanitize",
+              "pre_state": "A diagnostic or propagated error is about to include text derived from a remote response, gateway message, user-triggered handler, filesystem error, or other exception whose content is not trusted.",
+              "post_state": "Every included dynamic text field has passed through the shared log sanitizer with an explicit maximum length; raw line-breaking and control characters do not reach the diagnostic sink.",
+              "validation": "Inject control-bearing error or command text and assert that newline, NUL, tab, ANSI, C1, Unicode line-separator, and bidi-control characters cannot alter the diagnostic structure, while ordinary readable fragments remain.",
+              "parameters": [
+                "untrusted_text",
+                "maximum_diagnostic_length",
+                "diagnostic_sink",
+                "error_context"
+              ],
+              "evidence_ids": [
+                "E2",
+                "E3",
+                "E4",
+                "E8",
+                "E9"
+              ]
+            }
+          },
+          {
+            "name": "omit-sensitive-remote-error-body",
+            "title": "Replace sensitive remote error bodies with bounded metadata",
+            "description": "Do not read or propagate a remote response body on a credential-adjacent failure when status metadata is sufficient for diagnosis; drain or cancel the body and report only the status.",
+            "evidence_ids": [
+              "E5",
+              "E6",
+              "E7",
+              "E10"
+            ],
+            "semantic_action": {
+              "intent": "Prevent server-controlled or secret-bearing response payloads from entering logs and exception messages without eliminating the failure signal needed by operators and callers.",
+              "module_role": "credential-adjacent HTTP error translator",
+              "operation": "omit",
+              "pre_state": "A credential-bearing HTTP request has failed and the implementation can observe transport metadata without exposing the response payload.",
+              "post_state": "The response body is not included in stderr or the thrown error; the body is drained or canceled and the failure retains bounded status metadata.",
+              "validation": "Return a failed response containing a recognizable sentinel body and require an exact status-only error message that cannot match if the sentinel is appended.",
+              "parameters": [
+                "failed_response",
+                "http_status",
+                "response_body",
+                "operator_diagnostic",
+                "caller_error"
+              ],
+              "evidence_ids": [
+                "E5",
+                "E6",
+                "E7",
+                "E10"
+              ]
+            }
+          },
+          {
+            "name": "verify-diagnostic-non-disclosure-contract",
+            "title": "Verify diagnostic non-disclosure and structural safety",
+            "description": "Exercise diagnostic boundaries with recognizable sensitive payloads and control characters, then assert both non-disclosure and preservation of safe troubleshooting context.",
+            "evidence_ids": [
+              "E7",
+              "E8",
+              "E9"
+            ],
+            "semantic_action": {
+              "intent": "Provide regression oracles that fail when sensitive payloads are reintroduced or untrusted text can reshape diagnostic output.",
+              "module_role": "diagnostic security test oracle",
+              "operation": "validate",
+              "pre_state": "Diagnostic boundaries have a defined policy for omitted payloads and sanitized dynamic text.",
+              "post_state": "Automated tests demonstrate that forbidden response content and structural control characters are absent while allowed status or readable text remains.",
+              "validation": "Use exact-match assertions for status-only failures and adversarial strings for control-character paths; assert forbidden content is absent and permitted diagnostic context is present.",
+              "parameters": [
+                "sensitive_body_sentinel",
+                "adversarial_control_text",
+                "expected_safe_metadata",
+                "captured_or_propagated_diagnostic"
+              ],
+              "evidence_ids": [
+                "E7",
+                "E8",
+                "E9"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "harden-sensitive-diagnostic-boundaries",
+            "title": "Harden diagnostics that may contain sensitive or attacker-controlled data",
+            "description": "Choose omission for credential-adjacent response payloads, sanitize and bound dynamic text that must remain useful, and lock both policies down with adversarial regression tests.",
+            "atomic_names": [
+              "omit-sensitive-remote-error-body",
+              "sanitize-untrusted-diagnostic-text",
+              "verify-diagnostic-non-disclosure-contract"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E10"
+            ],
+            "workflow_graph": {
+              "goal": "Preserve actionable failure diagnostics without exposing remote sensitive payloads or allowing untrusted text to forge or corrupt diagnostic records.",
+              "when_to_use": [
+                "An HTTP, messaging, gateway, persistence, or handler failure can place remote payloads or exception text into logs or caller-visible errors.",
+                "A credential-bearing request currently includes its remote error body in diagnostics.",
+                "User-controlled or server-controlled text can contain line breaks, terminal controls, invisible separators, bidi controls, or unbounded content."
+              ],
+              "anti_goals": [
+                "Do not remove stable status codes or ordinary readable context needed to diagnose the failure.",
+                "Do not treat simple truncation as sufficient protection against control-character or line-forging attacks.",
+                "Do not log credential-adjacent response bodies merely because they may contain a useful server error message.",
+                "Do not change transport behavior, retry policy, or unrelated state-persistence semantics as part of the redaction contract."
+              ],
+              "not_applicable_when": [
+                "The diagnostic contains only fixed application-authored text and bounded trusted scalar metadata.",
+                "The response payload is an explicitly approved, schema-validated diagnostic field with a separate disclosure policy and no sensitive content.",
+                "No implementation or test boundary exists where the suspected data reaches logs, exceptions, traces, or other diagnostics."
+              ],
+              "inputs": [
+                "Inventory of diagnostic sinks and propagated error boundaries",
+                "Provenance of each dynamic diagnostic field",
+                "Sensitivity policy for remote response bodies",
+                "Shared text sanitizer and maximum output lengths",
+                "Test harness capable of capturing diagnostics or inspecting thrown errors"
+              ],
+              "entry_state": "At least one diagnostic boundary emits a remote response body or unsanitized exception/user-controlled text, creating disclosure or diagnostic-injection risk.",
+              "exit_state": "Credential-adjacent bodies are omitted, remaining untrusted diagnostic text is sanitized and bounded at each sink, useful stable metadata remains, and adversarial tests enforce both non-disclosure and structural safety.",
+              "steps": [
+                {
+                  "action_name": "omit-sensitive-remote-error-body",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "Apply when a failed credential-bearing or otherwise sensitive request exposes a remote response body and status metadata is sufficient.",
+                  "validation": "A sentinel response body is absent from an exact status-only error while the HTTP status remains present."
+                },
+                {
+                  "action_name": "sanitize-untrusted-diagnostic-text",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "Apply at every diagnostic or propagated-error boundary that must retain dynamic remote, user-controlled, or exception text.",
+                  "validation": "All such fields pass through the shared sanitizer with explicit bounds; no raw dynamic interpolation or slice-only substitution remains at the scoped sinks."
+                },
+                {
+                  "action_name": "verify-diagnostic-non-disclosure-contract",
+                  "role": "validate",
+                  "required": true,
+                  "depends_on": [
+                    "omit-sensitive-remote-error-body",
+                    "sanitize-untrusted-diagnostic-text"
+                  ],
+                  "condition": "Run after the diagnostic policies are implemented.",
+                  "validation": "Exact-body-leak and adversarial-control tests pass while asserting that safe status and readable context are preserved."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "omit-sensitive-remote-error-body",
+                  "to": "verify-diagnostic-non-disclosure-contract",
+                  "type": "validates"
+                },
+                {
+                  "from": "sanitize-untrusted-diagnostic-text",
+                  "to": "verify-diagnostic-non-disclosure-contract",
+                  "type": "validates"
+                }
+              ],
+              "validation_ladder": [
+                "Diff review: enumerate each scoped dynamic diagnostic interpolation and classify it as omitted or sanitized and bounded.",
+                "Focused unit oracle: supply a recognizable remote error body and require exact status-only output.",
+                "Adversarial text oracle: inject newline, NUL, tab, ANSI, C1, Unicode separator, and bidi-control characters and assert diagnostic structure is unchanged.",
+                "Utility-preservation oracle: confirm stable status codes and ordinary readable error fragments remain available."
+              ],
+              "stop_conditions": [
+                "Stop if the data provenance or disclosure policy cannot establish whether a payload must be omitted or may be sanitized and retained.",
+                "Stop if no diagnostic sink or propagated-error call site can be established from implementation evidence.",
+                "Do not claim completion if tests only check truncation and do not assert absence of sensitive sentinels or structural control characters.",
+                "Defer broader coverage claims when changed call sites lack direct adversarial tests."
+              ],
+              "unresolved_or_deferred": [
+                "The commit applies sanitization at many call sites, but the added tests directly exercise only selected paths; exhaustive per-call-site runtime coverage is not established.",
+                "No test execution result or CI status was available in the evidence bundle, so the changed tests are treated as committed validation oracles rather than observed passing validation.",
+                "The shared sanitizer implementation predates this change; this episode establishes its application at new diagnostic boundaries rather than introducing the sanitizer itself."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "GitHub PR body, reviews, comments, timeline, and status-check results were unavailable in the supplied bundle.",
+          "The pinned checkout's working tree contains mass deletions, so tests were not executed; evidence was read directly from pinned and parent git objects without modifying the checkout.",
+          "The commit also hardens gateway validation and state persistence, but those concerns were excluded from the candidate workflow because the requested routing class is sensitive-data redaction in diagnostics."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "sanitize-untrusted-diagnostic-text",
+          "title": "Sanitize and bound untrusted diagnostic text",
+          "description": "Normalize remote payloads and exception messages at logging or propagated-error boundaries so control characters cannot forge diagnostics and output size is bounded while readable context remains.",
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E8",
+            "E9"
+          ],
+          "semantic_action": {
+            "intent": "Prevent attacker-controlled response and error text from injecting, reordering, or excessively expanding operator diagnostics while retaining useful readable context.",
+            "module_role": "diagnostic output boundary",
+            "operation": "sanitize",
+            "pre_state": "A diagnostic or propagated error is about to include text derived from a remote response, gateway message, user-triggered handler, filesystem error, or other exception whose content is not trusted.",
+            "post_state": "Every included dynamic text field has passed through the shared log sanitizer with an explicit maximum length; raw line-breaking and control characters do not reach the diagnostic sink.",
+            "validation": "Inject control-bearing error or command text and assert that newline, NUL, tab, ANSI, C1, Unicode line-separator, and bidi-control characters cannot alter the diagnostic structure, while ordinary readable fragments remain.",
+            "parameters": [
+              "untrusted_text",
+              "maximum_diagnostic_length",
+              "diagnostic_sink",
+              "error_context"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E8",
+              "E9"
+            ]
+          }
+        },
+        {
+          "name": "omit-sensitive-remote-error-body",
+          "title": "Replace sensitive remote error bodies with bounded metadata",
+          "description": "Do not read or propagate a remote response body on a credential-adjacent failure when status metadata is sufficient for diagnosis; drain or cancel the body and report only the status.",
+          "evidence_ids": [
+            "E5",
+            "E6",
+            "E7",
+            "E10"
+          ],
+          "semantic_action": {
+            "intent": "Prevent server-controlled or secret-bearing response payloads from entering logs and exception messages without eliminating the failure signal needed by operators and callers.",
+            "module_role": "credential-adjacent HTTP error translator",
+            "operation": "omit",
+            "pre_state": "A credential-bearing HTTP request has failed and the implementation can observe transport metadata without exposing the response payload.",
+            "post_state": "The response body is not included in stderr or the thrown error; the body is drained or canceled and the failure retains bounded status metadata.",
+            "validation": "Return a failed response containing a recognizable sentinel body and require an exact status-only error message that cannot match if the sentinel is appended.",
+            "parameters": [
+              "failed_response",
+              "http_status",
+              "response_body",
+              "operator_diagnostic",
+              "caller_error"
+            ],
+            "evidence_ids": [
+              "E5",
+              "E6",
+              "E7",
+              "E10"
+            ]
+          }
+        },
+        {
+          "name": "verify-diagnostic-non-disclosure-contract",
+          "title": "Verify diagnostic non-disclosure and structural safety",
+          "description": "Exercise diagnostic boundaries with recognizable sensitive payloads and control characters, then assert both non-disclosure and preservation of safe troubleshooting context.",
+          "evidence_ids": [
+            "E7",
+            "E8",
+            "E9"
+          ],
+          "semantic_action": {
+            "intent": "Provide regression oracles that fail when sensitive payloads are reintroduced or untrusted text can reshape diagnostic output.",
+            "module_role": "diagnostic security test oracle",
+            "operation": "validate",
+            "pre_state": "Diagnostic boundaries have a defined policy for omitted payloads and sanitized dynamic text.",
+            "post_state": "Automated tests demonstrate that forbidden response content and structural control characters are absent while allowed status or readable text remains.",
+            "validation": "Use exact-match assertions for status-only failures and adversarial strings for control-character paths; assert forbidden content is absent and permitted diagnostic context is present.",
+            "parameters": [
+              "sensitive_body_sentinel",
+              "adversarial_control_text",
+              "expected_safe_metadata",
+              "captured_or_propagated_diagnostic"
+            ],
+            "evidence_ids": [
+              "E7",
+              "E8",
+              "E9"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "harden-sensitive-diagnostic-boundaries",
+          "title": "Harden diagnostics that may contain sensitive or attacker-controlled data",
+          "description": "Choose omission for credential-adjacent response payloads, sanitize and bound dynamic text that must remain useful, and lock both policies down with adversarial regression tests.",
+          "atomic_names": [
+            "omit-sensitive-remote-error-body",
+            "sanitize-untrusted-diagnostic-text",
+            "verify-diagnostic-non-disclosure-contract"
+          ],
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10"
+          ],
+          "workflow_graph": {
+            "goal": "Preserve actionable failure diagnostics without exposing remote sensitive payloads or allowing untrusted text to forge or corrupt diagnostic records.",
+            "when_to_use": [
+              "An HTTP, messaging, gateway, persistence, or handler failure can place remote payloads or exception text into logs or caller-visible errors.",
+              "A credential-bearing request currently includes its remote error body in diagnostics.",
+              "User-controlled or server-controlled text can contain line breaks, terminal controls, invisible separators, bidi controls, or unbounded content."
+            ],
+            "anti_goals": [
+              "Do not remove stable status codes or ordinary readable context needed to diagnose the failure.",
+              "Do not treat simple truncation as sufficient protection against control-character or line-forging attacks.",
+              "Do not log credential-adjacent response bodies merely because they may contain a useful server error message.",
+              "Do not change transport behavior, retry policy, or unrelated state-persistence semantics as part of the redaction contract."
+            ],
+            "not_applicable_when": [
+              "The diagnostic contains only fixed application-authored text and bounded trusted scalar metadata.",
+              "The response payload is an explicitly approved, schema-validated diagnostic field with a separate disclosure policy and no sensitive content.",
+              "No implementation or test boundary exists where the suspected data reaches logs, exceptions, traces, or other diagnostics."
+            ],
+            "inputs": [
+              "Inventory of diagnostic sinks and propagated error boundaries",
+              "Provenance of each dynamic diagnostic field",
+              "Sensitivity policy for remote response bodies",
+              "Shared text sanitizer and maximum output lengths",
+              "Test harness capable of capturing diagnostics or inspecting thrown errors"
+            ],
+            "entry_state": "At least one diagnostic boundary emits a remote response body or unsanitized exception/user-controlled text, creating disclosure or diagnostic-injection risk.",
+            "exit_state": "Credential-adjacent bodies are omitted, remaining untrusted diagnostic text is sanitized and bounded at each sink, useful stable metadata remains, and adversarial tests enforce both non-disclosure and structural safety.",
+            "steps": [
+              {
+                "action_name": "omit-sensitive-remote-error-body",
+                "role": "implement",
+                "required": true,
+                "depends_on": [],
+                "condition": "Apply when a failed credential-bearing or otherwise sensitive request exposes a remote response body and status metadata is sufficient.",
+                "validation": "A sentinel response body is absent from an exact status-only error while the HTTP status remains present."
+              },
+              {
+                "action_name": "sanitize-untrusted-diagnostic-text",
+                "role": "implement",
+                "required": true,
+                "depends_on": [],
+                "condition": "Apply at every diagnostic or propagated-error boundary that must retain dynamic remote, user-controlled, or exception text.",
+                "validation": "All such fields pass through the shared sanitizer with explicit bounds; no raw dynamic interpolation or slice-only substitution remains at the scoped sinks."
+              },
+              {
+                "action_name": "verify-diagnostic-non-disclosure-contract",
+                "role": "validate",
+                "required": true,
+                "depends_on": [
+                  "omit-sensitive-remote-error-body",
+                  "sanitize-untrusted-diagnostic-text"
+                ],
+                "condition": "Run after the diagnostic policies are implemented.",
+                "validation": "Exact-body-leak and adversarial-control tests pass while asserting that safe status and readable context are preserved."
+              }
+            ],
+            "edges": [
+              {
+                "from": "omit-sensitive-remote-error-body",
+                "to": "verify-diagnostic-non-disclosure-contract",
+                "type": "validates"
+              },
+              {
+                "from": "sanitize-untrusted-diagnostic-text",
+                "to": "verify-diagnostic-non-disclosure-contract",
+                "type": "validates"
+              }
+            ],
+            "validation_ladder": [
+              "Diff review: enumerate each scoped dynamic diagnostic interpolation and classify it as omitted or sanitized and bounded.",
+              "Focused unit oracle: supply a recognizable remote error body and require exact status-only output.",
+              "Adversarial text oracle: inject newline, NUL, tab, ANSI, C1, Unicode separator, and bidi-control characters and assert diagnostic structure is unchanged.",
+              "Utility-preservation oracle: confirm stable status codes and ordinary readable error fragments remain available."
+            ],
+            "stop_conditions": [
+              "Stop if the data provenance or disclosure policy cannot establish whether a payload must be omitted or may be sanitized and retained.",
+              "Stop if no diagnostic sink or propagated-error call site can be established from implementation evidence.",
+              "Do not claim completion if tests only check truncation and do not assert absence of sensitive sentinels or structural control characters.",
+              "Defer broader coverage claims when changed call sites lack direct adversarial tests."
+            ],
+            "unresolved_or_deferred": [
+              "The commit applies sanitization at many call sites, but the added tests directly exercise only selected paths; exhaustive per-call-site runtime coverage is not established.",
+              "No test execution result or CI status was available in the evidence bundle, so the changed tests are treated as committed validation oracles rather than observed passing validation.",
+              "The shared sanitizer implementation predates this change; this episode establishes its application at new diagnostic boundaries rather than introducing the sanitizer itself."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "GitHub PR body, reviews, comments, timeline, and status-check results were unavailable in the supplied bundle.",
+        "The pinned checkout's working tree contains mass deletions, so tests were not executed; evidence was read directly from pinned and parent git objects without modifying the checkout.",
+        "The commit also hardens gateway validation and state persistence, but those concerns were excluded from the candidate workflow because the requested routing class is sensitive-data redaction in diagnostics."
+      ]
+    },
+    "call_sites": [
+      "Remote response bodies and exception messages are sanitized immediately where they cross stderr diagnostic boundaries, covering markdown fallback, send failures, state-write and restore failures, token refresh, malformed gateway messages, WebSocket errors, reconnect failures, and inbound-handler failures.",
+      "The access-token function is called with application credentials by the channel token-fetch path, making its remote failure payload a credential-adjacent diagnostic boundary."
+    ],
+    "tests": [
+      "The token failure test supplies a body named unauthorized-body and requires an exact status-only thrown message, so reintroducing the body would fail the assertion.",
+      "The final connection retry test injects newline, NUL, and tab characters into an error and asserts that none survive in the propagated message while readable non-control content remains.",
+      "The slash-command audit test verifies that ANSI escape, C1 controls, Unicode line separator, and bidi override characters do not survive the diagnostic line, and that an embedded newline is rendered visibly rather than creating an extra log entry."
+    ]
+  }
+]

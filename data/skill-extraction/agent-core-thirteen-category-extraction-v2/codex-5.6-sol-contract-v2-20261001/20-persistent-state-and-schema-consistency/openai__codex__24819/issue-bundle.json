@@ -1,0 +1,123 @@
+{
+  "source": "local_git_pinned_ref",
+  "repository": "openai/codex",
+  "issue_number": 24819,
+  "issue": {
+    "number": 24819,
+    "title": "[codex] Remove redundant SQLite dynamic tool storage (#24819)",
+    "body": null,
+    "metadata_unavailable": [
+      "issue body",
+      "comments",
+      "timeline",
+      "author/review discussion"
+    ]
+  },
+  "comments": [],
+  "timeline": [],
+  "linked_pull_requests": [
+    {
+      "pull_request": {
+        "number": 24819,
+        "title": "[codex] Remove redundant SQLite dynamic tool storage (#24819)",
+        "metadata_unavailable": [
+          "PR body",
+          "reviews",
+          "status checks"
+        ]
+      },
+      "files": [
+        {
+          "status_line": "M\tcodex-rs/core/src/session/mod.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/tests/suite/sqlite_state.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/rollout/src/metadata.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/rollout/src/state_db.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/state/src/runtime.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/state/src/runtime/threads.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/thread-store/src/local/update_thread_metadata.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/thread-store/src/thread_metadata_sync.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/thread-store/src/types.rs"
+        }
+      ],
+      "commits": [
+        {
+          "sha": "304d15cab0b1c5f23925e5a3b94c39db3483fc3d",
+          "subject": "[codex] Remove redundant SQLite dynamic tool storage (#24819)"
+        }
+      ]
+    }
+  ],
+  "checkout": "/home/chenyujia/tritonToLlvm/codex-agent",
+  "pinned_ref": "304d15cab0b1c5f23925e5a3b94c39db3483fc3d",
+  "resolved_commit": "304d15cab0b1c5f23925e5a3b94c39db3483fc3d",
+  "parent_commit": "0db49a7e6ae8fd459dd8d8d404086c748b9118a1",
+  "commit_show_stat": "commit 304d15cab0b1c5f23925e5a3b94c39db3483fc3d\nAuthor:     sayan-oai <sayan@openai.com>\nAuthorDate: Wed May 27 17:57:32 2026 -0700\nCommit:     GitHub <noreply@github.com>\nCommitDate: Wed May 27 17:57:32 2026 -0700\n\n    [codex] Remove redundant SQLite dynamic tool storage (#24819)\n    \n    ## Why\n    \n    Dynamic tools are defined at thread start and already stored in rollout\n    `SessionMeta`, which restores resumed and forked sessions. Persisting\n    the same tools through SQLite creates a second runtime persistence path\n    that is unnecessary prework for the explicit namespace refactor.\n    \n    ## What changed\n    \n    - Restore missing thread-start dynamic tools directly from rollout\n    history, including when SQLite is enabled.\n    - Remove SQLite dynamic-tool reads, writes, backfill, and thread\n    metadata patch plumbing.\n    - Add SQLite-enabled resume integration coverage that verifies a\n    rollout-defined dynamic tool is still sent after resume.\n    \n    ## Compatibility\n    \n    The existing `thread_dynamic_tools` table is intentionally not dropped\n    even though it's now unused. Older Codex binaries are allowed to open\n    databases migrated by newer binaries and still reference this table;\n    dropping it would break that mixed-version path. See\n    [here](https://github.com/openai/codex/blob/main/codex-rs/state/src/migrations.rs#L10-L11).\n    \n    ## Verification\n    \n    - `just test -p codex-state -p codex-rollout -p codex-thread-store`\n    - `just test -p codex-core --test all\n    resume_restores_dynamic_tools_from_rollout_with_sqlite_enabled`\n\n codex-rs/core/src/session/mod.rs                   |  32 +----\n codex-rs/core/tests/suite/sqlite_state.rs          | 137 +++++++++++++++------\n codex-rs/rollout/src/metadata.rs                   |  20 ---\n codex-rs/rollout/src/state_db.rs                   |  47 -------\n codex-rs/state/src/runtime.rs                      |   1 -\n codex-rs/state/src/runtime/threads.rs              | 102 ---------------\n .../src/local/update_thread_metadata.rs            |   9 --\n codex-rs/thread-store/src/thread_metadata_sync.rs  |   7 --\n codex-rs/thread-store/src/types.rs                 |   6 -\n 9 files changed, 101 insertions(+), 260 deletions(-)\n",
+  "changed_files_name_status": "M\tcodex-rs/core/src/session/mod.rs\nM\tcodex-rs/core/tests/suite/sqlite_state.rs\nM\tcodex-rs/rollout/src/metadata.rs\nM\tcodex-rs/rollout/src/state_db.rs\nM\tcodex-rs/state/src/runtime.rs\nM\tcodex-rs/state/src/runtime/threads.rs\nM\tcodex-rs/thread-store/src/local/update_thread_metadata.rs\nM\tcodex-rs/thread-store/src/thread_metadata_sync.rs\nM\tcodex-rs/thread-store/src/types.rs\n",
+  "linked_issue_numbers": [
+    24819
+  ],
+  "manifest_metadata": {
+    "category": "persistent-state-and-schema-consistency",
+    "theme": "persistent cache and state schema consistency",
+    "file_sample": [
+      "codex-rs/core/src/session/mod.rs",
+      "codex-rs/core/tests/suite/sqlite_state.rs",
+      "codex-rs/rollout/src/metadata.rs",
+      "codex-rs/rollout/src/state_db.rs",
+      "codex-rs/state/src/runtime.rs",
+      "codex-rs/state/src/runtime/threads.rs",
+      "codex-rs/thread-store/src/local/update_thread_metadata.rs",
+      "codex-rs/thread-store/src/thread_metadata_sync.rs",
+      "codex-rs/thread-store/src/types.rs"
+    ],
+    "quality": "implementation_plus_test",
+    "case_id": "openai__codex__24819__persistent-state-and-schema-consistency",
+    "role": "train_candidate",
+    "split": "train_candidate",
+    "sample_kind": "verified_implementation_pull_request",
+    "resolution_url": "https://github.com/openai/codex/pull/24819",
+    "source": "agent_core_thirteen_category_extraction_v2",
+    "provenance": {
+      "classification": "direct_implementation_artifact",
+      "resolution_artifact": {
+        "type": "pull_request",
+        "number": 24819,
+        "url": "https://github.com/openai/codex/pull/24819"
+      },
+      "commit": {
+        "sha": "304d15cab0b1c5f23925e5a3b94c39db3483fc3d",
+        "subject": "[codex] Remove redundant SQLite dynamic tool storage (#24819)",
+        "parents": [
+          "0db49a7e6ae8fd459dd8d8d404086c748b9118a1"
+        ],
+        "body_excerpt": "## Why\n\nDynamic tools are defined at thread start and already stored in rollout\n`SessionMeta`, which restores resumed and forked sessions. Persisting\nthe same tools through SQLite creates a second runtime persistence path\nthat is unnecessary prework for the explicit namespace refactor.\n\n## What changed\n\n- Restore missing thread-start dynamic tools directly from rollout\nhistory, including when SQLite is enabled.\n- Remove SQLite dynamic-tool reads, writes, backfill, and thread\nmetadata patch plumbing.\n- Add SQLite-enabled resume integration coverage that verifies a\nrollout-defined dynamic tool is still sent after resume.\n\n## Compatibility\n\nThe existing `thread_dynamic_tools` table is intentionally not dropped\neven though it's now unused. Older Codex binaries are allowed to open\ndatabases migrated by newer binaries and still reference this table;\ndropping it would break that mixed-version path. See\n[here](https://github.com/openai/codex/blob/main/codex-rs/state/src/migrations.rs#L10-L11).\n\n## Verification\n\n- `just test -p codex-state -p codex-rollout -p codex-thread-store`\n- `just test -p codex-core --test all\nresume_restores_dynamic_tools_from_rollout_with_sqlite_enabled`"
+      },
+      "verification": [
+        "local_git_commit_resolved",
+        "first_parent_and_changed_files_recorded",
+        "implementation_change_present",
+        "test_or_spec_change_present"
+      ]
+    }
+  },
+  "fetched_at": "2026-10-01T11:07:50.959535+00:00",
+  "limitations": [
+    "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "source": "local_git_pinned_ref",
+  "repository": "NousResearch/hermes-agent",
+  "issue_number": 77484,
+  "issue": {
+    "number": 77484,
+    "title": "fix(security): redact terminal exception results and ACP stderr logs (#77484)",
+    "body": null,
+    "metadata_unavailable": [
+      "issue body",
+      "comments",
+      "timeline",
+      "author/review discussion"
+    ]
+  },
+  "comments": [],
+  "timeline": [],
+  "linked_pull_requests": [
+    {
+      "pull_request": {
+        "number": 77484,
+        "title": "fix(security): redact terminal exception results and ACP stderr logs (#77484)",
+        "metadata_unavailable": [
+          "PR body",
+          "reviews",
+          "status checks"
+        ]
+      },
+      "files": [
+        {
+          "status_line": "M\tacp_adapter/entry.py"
+        },
+        {
+          "status_line": "A\ttests/acp_adapter/test_acp_logging_redaction.py"
+        },
+        {
+          "status_line": "A\ttests/tools/test_terminal_tool_exception_redaction.py"
+        },
+        {
+          "status_line": "M\ttools/terminal_tool.py"
+        }
+      ],
+      "commits": [
+        {
+          "sha": "72eda946be949a5932923df3325037a0d6c5da49",
+          "subject": "fix(security): redact terminal exception results and ACP stderr logs (#77484)"
+        }
+      ]
+    }
+  ],
+  "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+  "pinned_ref": "72eda946be949a5932923df3325037a0d6c5da49",
+  "resolved_commit": "72eda946be949a5932923df3325037a0d6c5da49",
+  "parent_commit": "2a743e5f4377419c54054ce7c65c79cff98a092c",
+  "commit_show_stat": "commit 72eda946be949a5932923df3325037a0d6c5da49\nAuthor:     Teknium <127238744+teknium1@users.noreply.github.com>\nAuthorDate: Sat Aug 8 04:03:04 2026 -0700\nCommit:     Teknium <127238744+teknium1@users.noreply.github.com>\nCommitDate: Sat Aug 8 04:19:49 2026 -0700\n\n    fix(security): redact terminal exception results and ACP stderr logs (#77484)\n    \n    Closes the last two emission gaps from #77484:\n    \n    - tools/terminal_tool.py: both exception paths (generic except and\n      TERMINAL_DEGRADED_MODE=fail) returned raw str(e) + traceback.format_exc()\n      to the model — only the logger copy was redacted. Exception text can\n      embed the failing command line and any secrets inline in it; both fields\n      now pass through redact_sensitive_text.\n    - acp_adapter/entry.py: _setup_logging cleared root handlers and installed\n      a plain logging.Formatter, bypassing redaction entirely on ACP stderr.\n      Now uses RedactingFormatter like every other logging surface.\n    \n    The other three gaps from #77484 (process(list), *_KEY regex variants,\n    control-char splits) were fixed in #80964/#80965.\n\n acp_adapter/entry.py                               |  4 +-\n tests/acp_adapter/test_acp_logging_redaction.py    | 41 ++++++++++++++++++++\n .../test_terminal_tool_exception_redaction.py      | 44 ++++++++++++++++++++++\n tools/terminal_tool.py                             | 14 +++++--\n 4 files changed, 98 insertions(+), 5 deletions(-)\n",
+  "changed_files_name_status": "M\tacp_adapter/entry.py\nA\ttests/acp_adapter/test_acp_logging_redaction.py\nA\ttests/tools/test_terminal_tool_exception_redaction.py\nM\ttools/terminal_tool.py\n",
+  "linked_issue_numbers": [
+    80964,
+    80965
+  ],
+  "manifest_metadata": {
+    "category": "sensitive-data-redaction-in-diagnostics",
+    "theme": "redact secrets and sensitive payloads at logging and diagnostics boundaries",
+    "file_sample": [
+      "acp_adapter/entry.py",
+      "tests/acp_adapter/test_acp_logging_redaction.py",
+      "tests/tools/test_terminal_tool_exception_redaction.py",
+      "tools/terminal_tool.py"
+    ],
+    "quality": "implementation_plus_test",
+    "case_id": "NousResearch__hermes-agent__77484__sensitive-data-redaction-in-diagnostics",
+    "role": "train_candidate",
+    "split": "train_candidate",
+    "sample_kind": "verified_implementation_pull_request",
+    "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/77484",
+    "source": "agent_core_thirteen_category_extraction_v2",
+    "provenance": {
+      "classification": "direct_implementation_artifact",
+      "resolution_artifact": {
+        "type": "pull_request",
+        "number": 77484,
+        "url": "https://github.com/NousResearch/hermes-agent/pull/77484"
+      },
+      "commit": {
+        "sha": "72eda946be949a5932923df3325037a0d6c5da49",
+        "subject": "fix(security): redact terminal exception results and ACP stderr logs (#77484)",
+        "parents": [
+          "2a743e5f4377419c54054ce7c65c79cff98a092c"
+        ],
+        "body_excerpt": "Closes the last two emission gaps from #77484:\n\n- tools/terminal_tool.py: both exception paths (generic except and\n  TERMINAL_DEGRADED_MODE=fail) returned raw str(e) + traceback.format_exc()\n  to the model — only the logger copy was redacted. Exception text can\n  embed the failing command line and any secrets inline in it; both fields\n  now pass through redact_sensitive_text.\n- acp_adapter/entry.py: _setup_logging cleared root handlers and installed\n  a plain logging.Formatter, bypassing redaction entirely on ACP stderr.\n  Now uses RedactingFormatter like every other logging surface.\n\nThe other three gaps from #77484 (process(list), *_KEY regex variants,\ncontrol-char splits) were fixed in #80964/#80965."
+      },
+      "verification": [
+        "local_git_commit_resolved",
+        "first_parent_and_changed_files_recorded",
+        "implementation_change_present",
+        "test_or_spec_change_present"
+      ]
+    }
+  },
+  "fetched_at": "2026-10-01T10:50:44.828547+00:00",
+  "limitations": [
+    "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+  ]
+}

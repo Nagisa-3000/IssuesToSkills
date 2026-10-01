@@ -1,0 +1,107 @@
+{
+  "source": "local_git_pinned_ref",
+  "repository": "NousResearch/hermes-agent",
+  "issue_number": 64178,
+  "issue": {
+    "number": 64178,
+    "title": "fix(plugins): hook delivery parity + symmetric force-reload (#64178)",
+    "body": null,
+    "metadata_unavailable": [
+      "issue body",
+      "comments",
+      "timeline",
+      "author/review discussion"
+    ]
+  },
+  "comments": [],
+  "timeline": [],
+  "linked_pull_requests": [
+    {
+      "pull_request": {
+        "number": 64178,
+        "title": "fix(plugins): hook delivery parity + symmetric force-reload (#64178)",
+        "metadata_unavailable": [
+          "PR body",
+          "reviews",
+          "status checks"
+        ]
+      },
+      "files": [
+        {
+          "status_line": "M\tagent/shell_hooks.py"
+        },
+        {
+          "status_line": "M\thermes_cli/plugins.py"
+        },
+        {
+          "status_line": "M\ttests/hermes_cli/test_plugins.py"
+        }
+      ],
+      "commits": [
+        {
+          "sha": "8be9c76f8c01f652e1c7acd576c37e4bdaed30be",
+          "subject": "fix(plugins): hook delivery parity + symmetric force-reload (#64178)"
+        }
+      ]
+    }
+  ],
+  "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+  "pinned_ref": "8be9c76f8c01f652e1c7acd576c37e4bdaed30be",
+  "resolved_commit": "8be9c76f8c01f652e1c7acd576c37e4bdaed30be",
+  "parent_commit": "eac1e25127a75c61116a0bbb8ce7681a2f8b61b4",
+  "commit_show_stat": "commit 8be9c76f8c01f652e1c7acd576c37e4bdaed30be\nAuthor:     Bartok9 <danielrpike9@gmail.com>\nAuthorDate: Wed Aug 12 19:23:33 2026 -0700\nCommit:     Teknium <127238744+teknium1@users.noreply.github.com>\nCommitDate: Wed Aug 12 19:40:59 2026 -0700\n\n    fix(plugins): hook delivery parity + symmetric force-reload (#64178)\n    \n    Salvaged from PR #64188 (@Bartok9), re-reviewed against the #64229\n    ownership ledger (landed in #84923).\n    \n    Delivery parity (survived):\n    - Module-level invoke_hook/invoke_middleware/has_hook/has_middleware\n      lazily run plugin discovery via _delivery_manager(), so surfaces that\n      never import model_tools (dashboards, TUI slash workers, query mode,\n      cron, gateway platform events) deliver plugin callbacks instead of\n      silently dropping them (#50776, #67597, #67890, #50937).\n    - _delivery_manager() joins any in-flight background discovery first and\n      tolerates test doubles that monkeypatch get_plugin_manager().\n    \n    Symmetric force-reload (survived):\n    - agent/shell_hooks.py gains re_register_config_hooks(); the force branch\n      of discover_and_load() calls it after a successful sweep, restoring\n      config.yaml shell hooks that the ledger-driven unload wiped but cannot\n      restore (they are config-owned, not plugin-owned) (#60036).\n    - unload(plugin=None) now sweeps pre-ledger _plugin_tool_names entries\n      out of the process-global tools.registry, mirroring the platform-name\n      sweep that already existed, so zombie tools cannot survive a force\n      reload in long-lived pre-ledger processes (#60050).\n    \n    Superseded by the ownership ledger (dropped from #64188):\n    - _unload_global_plugin_registrations() bulk tool/platform teardown —\n      the ledger's reverse-order handle disposal with previous-entry\n      restoration covers it more precisely.\n    - tools.registry/platform_registry displaced-entry LIFO restore stacks —\n      the ledger's restore_registration() identity-checked previous-entry\n      restoration made them redundant.\n    - Discovery serialization lock + double-checked singleton — main already\n      has _discovery_lock on every discover/unload path and a keyed,\n      lock-guarded per-home manager cache (#24714 concern is covered).\n    \n    Fixes tracked under #64178 (#50776, #60036, #60050, #24714, #67798,\n    #50937, #67597, #67890, #31480 — #31480 already handled on main by\n    _parse_hooks_block warn+suggest).\n\n agent/shell_hooks.py             |  21 +++++\n hermes_cli/plugins.py            |  99 +++++++++++++++++++++--\n tests/hermes_cli/test_plugins.py | 167 +++++++++++++++++++++++++++++++++++++++\n 3 files changed, 282 insertions(+), 5 deletions(-)\n",
+  "changed_files_name_status": "M\tagent/shell_hooks.py\nM\thermes_cli/plugins.py\nM\ttests/hermes_cli/test_plugins.py\n",
+  "linked_issue_numbers": [
+    50776,
+    50937,
+    60036,
+    60050,
+    64188,
+    64229,
+    67597,
+    67890,
+    84923
+  ],
+  "manifest_metadata": {
+    "category": "extension-lifecycle-and-reload",
+    "theme": "extension loading, identity, uninstall, and reload lifecycle",
+    "file_sample": [
+      "agent/shell_hooks.py",
+      "hermes_cli/plugins.py",
+      "tests/hermes_cli/test_plugins.py"
+    ],
+    "quality": "implementation_plus_test",
+    "case_id": "NousResearch__hermes-agent__64178__extension-lifecycle-and-reload",
+    "role": "train_candidate",
+    "split": "train_candidate",
+    "sample_kind": "verified_implementation_pull_request",
+    "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/64178",
+    "source": "agent_core_thirteen_category_extraction_v2",
+    "provenance": {
+      "classification": "direct_implementation_artifact",
+      "resolution_artifact": {
+        "type": "pull_request",
+        "number": 64178,
+        "url": "https://github.com/NousResearch/hermes-agent/pull/64178"
+      },
+      "commit": {
+        "sha": "8be9c76f8c01f652e1c7acd576c37e4bdaed30be",
+        "subject": "fix(plugins): hook delivery parity + symmetric force-reload (#64178)",
+        "parents": [
+          "eac1e25127a75c61116a0bbb8ce7681a2f8b61b4"
+        ],
+        "body_excerpt": "Salvaged from PR #64188 (@Bartok9), re-reviewed against the #64229\nownership ledger (landed in #84923).\n\nDelivery parity (survived):\n- Module-level invoke_hook/invoke_middleware/has_hook/has_middleware\n  lazily run plugin discovery via _delivery_manager(), so surfaces that\n  never import model_tools (dashboards, TUI slash workers, query mode,\n  cron, gateway platform events) deliver plugin callbacks instead of\n  silently dropping them (#50776, #67597, #67890, #50937).\n- _delivery_manager() joins any in-flight background discovery first and\n  tolerates test doubles that monkeypatch get_plugin_manager().\n\nSymmetric force-reload (survived):\n- agent/shell_hooks.py gains re_register_config_hooks(); the force branch\n  of discover_and_load() calls it after a successful sweep, restoring\n  config.yaml shell hooks that the ledger-driven unload wiped but cannot\n  restore (they are config-owned, not plugin-owned) (#60036).\n- unload(plugin=None) now sweeps pre-ledger _plugin_tool_names entries\n  out of the process-global tools.registry, mirroring the platform-name\n  sweep that already existed, so zombie tools cannot survive a force\n  reload in long-lived pre-ledger processes (#60050).\n\nSupersed"
+      },
+      "verification": [
+        "local_git_commit_resolved",
+        "first_parent_and_changed_files_recorded",
+        "implementation_change_present",
+        "test_or_spec_change_present"
+      ]
+    }
+  },
+  "fetched_at": "2026-10-01T10:54:42.809122+00:00",
+  "limitations": [
+    "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+  ]
+}

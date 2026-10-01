@@ -1,0 +1,95 @@
+{
+  "source": "local_git_pinned_ref",
+  "repository": "earendil-works/pi",
+  "issue_number": 7205,
+  "issue": {
+    "number": 7205,
+    "title": "fix(ai): treat only plain objects as provider error bodies (#7205)",
+    "body": null,
+    "metadata_unavailable": [
+      "issue body",
+      "comments",
+      "timeline",
+      "author/review discussion"
+    ]
+  },
+  "comments": [],
+  "timeline": [],
+  "linked_pull_requests": [
+    {
+      "pull_request": {
+        "number": 7205,
+        "title": "fix(ai): treat only plain objects as provider error bodies (#7205)",
+        "metadata_unavailable": [
+          "PR body",
+          "reviews",
+          "status checks"
+        ]
+      },
+      "files": [
+        {
+          "status_line": "M\tpackages/ai/src/utils/error-body.ts"
+        },
+        {
+          "status_line": "M\tpackages/ai/test/error-body.test.ts"
+        }
+      ],
+      "commits": [
+        {
+          "sha": "4523528b21c66084fdece7ed3ffa10888bc5ac60",
+          "subject": "fix(ai): treat only plain objects as provider error bodies (#7205)"
+        }
+      ]
+    }
+  ],
+  "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+  "pinned_ref": "4523528b21c66084fdece7ed3ffa10888bc5ac60",
+  "resolved_commit": "4523528b21c66084fdece7ed3ffa10888bc5ac60",
+  "parent_commit": "66cd061ab468aeae9fd2e38715d3931f7f77f569",
+  "commit_show_stat": "commit 4523528b21c66084fdece7ed3ffa10888bc5ac60\nAuthor:     Erik Ogenvik <erik@ogenvik.org>\nAuthorDate: Fri Jul 31 09:38:54 2026 +0200\nCommit:     GitHub <noreply@github.com>\nCommitDate: Fri Jul 31 09:38:54 2026 +0200\n\n    fix(ai): treat only plain objects as provider error bodies (#7205)\n    \n    pickBodyText serialized any non-empty object into the error body. SDK error\n    fields can hold class instances instead of parsed bodies - AWS SDK v3's\n    $response.body is an HTTP stream/response wrapper - and stringifying one\n    produced garbage like {\"_events\":...} as the body, which then replaced\n    error.message in the composed display string. error.message is where the SDK\n    puts the real deserialized exception text (\"Input is too long...\", schema\n    validation details), so the one useful string was discarded for noise.\n    \n    The existing pipe-based stream sniffing only covers node-style streams; web\n    ReadableStreams (pipeTo/pipeThrough, no pipe) and non-stream wrapper classes\n    slipped through. Require Object.prototype/null prototype before serializing\n    a candidate body - parsed JSON bodies are plain objects by construction, so\n    real gateway bodies still surface.\n\n packages/ai/src/utils/error-body.ts | 25 +++++++++++++++---\n packages/ai/test/error-body.test.ts | 51 +++++++++++++++++++++++++++++++++++++\n 2 files changed, 72 insertions(+), 4 deletions(-)\n",
+  "changed_files_name_status": "M\tpackages/ai/src/utils/error-body.ts\nM\tpackages/ai/test/error-body.test.ts\n",
+  "linked_issue_numbers": [
+    7205
+  ],
+  "manifest_metadata": {
+    "category": "provider-error-payload-normalization",
+    "theme": "preserve and normalize provider error payloads",
+    "file_sample": [
+      "packages/ai/src/utils/error-body.ts",
+      "packages/ai/test/error-body.test.ts"
+    ],
+    "quality": "implementation_plus_test",
+    "case_id": "earendil-works__pi__7205__provider-error-payload-normalization",
+    "role": "train_candidate",
+    "split": "train_candidate",
+    "sample_kind": "verified_implementation_pull_request",
+    "resolution_url": "https://github.com/earendil-works/pi/pull/7205",
+    "source": "agent_core_thirteen_category_extraction_v2",
+    "provenance": {
+      "classification": "direct_implementation_artifact",
+      "resolution_artifact": {
+        "type": "pull_request",
+        "number": 7205,
+        "url": "https://github.com/earendil-works/pi/pull/7205"
+      },
+      "commit": {
+        "sha": "4523528b21c66084fdece7ed3ffa10888bc5ac60",
+        "subject": "fix(ai): treat only plain objects as provider error bodies (#7205)",
+        "parents": [
+          "66cd061ab468aeae9fd2e38715d3931f7f77f569"
+        ],
+        "body_excerpt": "pickBodyText serialized any non-empty object into the error body. SDK error\nfields can hold class instances instead of parsed bodies - AWS SDK v3's\n$response.body is an HTTP stream/response wrapper - and stringifying one\nproduced garbage like {\"_events\":...} as the body, which then replaced\nerror.message in the composed display string. error.message is where the SDK\nputs the real deserialized exception text (\"Input is too long...\", schema\nvalidation details), so the one useful string was discarded for noise.\n\nThe existing pipe-based stream sniffing only covers node-style streams; web\nReadableStreams (pipeTo/pipeThrough, no pipe) and non-stream wrapper classes\nslipped through. Require Object.prototype/null prototype before serializing\na candidate body - parsed JSON bodies are plain objects by construction, so\nreal gateway bodies still surface."
+      },
+      "verification": [
+        "local_git_commit_resolved",
+        "first_parent_and_changed_files_recorded",
+        "implementation_change_present",
+        "test_or_spec_change_present"
+      ]
+    }
+  },
+  "fetched_at": "2026-10-01T10:53:17.215675+00:00",
+  "limitations": [
+    "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+  ]
+}

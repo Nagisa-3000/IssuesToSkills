@@ -1,0 +1,2746 @@
+[
+  {
+    "episode_id": "earendil-works__pi__4426__5998b579",
+    "title": "Restore interactive terminal state before exiting on an uncaught exception",
+    "before": "At first parent 64882c6a516c6fe0e207ee3b114704f965e4eef6, interactive startup registered signal and terminal-stream error handlers, but no uncaughtException handler. An uncaught asynchronous throw could therefore terminate the process while the TUI still owned a raw-mode terminal with the cursor hidden and terminal input protocols enabled.",
+    "after": "At pinned ref 5998b579585d62491541ee44ef6451dc8695bb86, interactive mode prepends a lifecycle-managed uncaughtException listener. Its crash finalizer prevents re-entry, unregisters handlers, attempts to kill tracked detached children, attempts TUI shutdown to restore terminal state, reports the error, and exits with status 1.",
+    "diff": "The implementation adds 37 lines to packages/coding-agent/src/modes/interactive/interactive-mode.ts: a dedicated uncaughtCrash finalizer and an uncaughtException listener installed by registerSignalHandlers and removed through signalCleanupHandlers. No test file changed in the pinned first-parent diff.",
+    "repository": "earendil-works/pi",
+    "revision": "github-issue-4426",
+    "evidence_ids": [
+      "ev-commit-4426",
+      "ev-before-no-handler",
+      "ev-diff-finalizer",
+      "ev-diff-listener",
+      "ev-callsite-init",
+      "ev-cleanup-lifecycle",
+      "ev-tui-stop-contract",
+      "ev-failure-scope",
+      "ev-no-tests",
+      "ev-diff-check"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "earendil-works/pi",
+      "issue": 4426,
+      "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+      "manifest_metadata": {
+        "category": "subprocess-and-pty-lifecycle",
+        "role": "train_candidate",
+        "case_id": "earendil-works__pi__4426__subprocess-and-pty-lifecycle",
+        "sample_kind": "verified_implementation_pull_request",
+        "seed_issue": null,
+        "seed_issue_url": null,
+        "seed_relation": null,
+        "resolution_url": "https://github.com/earendil-works/pi/pull/4426",
+        "provenance": {
+          "classification": "direct_implementation_artifact",
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 4426,
+            "url": "https://github.com/earendil-works/pi/pull/4426"
+          },
+          "commit": {
+            "sha": "5998b579585d62491541ee44ef6451dc8695bb86",
+            "subject": "Merge pull request #4426 from ofa1/fix/restore-tty-on-uncaught-exception",
+            "parents": [
+              "64882c6a516c6fe0e207ee3b114704f965e4eef6",
+              "9d84e28692f9483eea5a950ca017174cb641867a"
+            ],
+            "body_excerpt": "fix(coding-agent): restore terminal on uncaught exception"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "first_parent_and_changed_files_recorded",
+            "implementation_change_present",
+            "no_test_file_change_observed"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "earendil-works/pi",
+        "issue_number": 4426,
+        "issue": {
+          "number": 4426,
+          "title": "Merge pull request #4426 from ofa1/fix/restore-tty-on-uncaught-exception",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 4426,
+              "title": "Merge pull request #4426 from ofa1/fix/restore-tty-on-uncaught-exception",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tpackages/coding-agent/src/modes/interactive/interactive-mode.ts"
+              },
+              {
+                "status_line": "M\t.github/APPROVED_CONTRIBUTORS"
+              },
+              {
+                "status_line": "M\tpackage-lock.json"
+              },
+              {
+                "status_line": "M\tpackage.json"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/compaction/compaction.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/test/harness/compaction.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/package.json"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/CHANGELOG.md"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/package.json"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/core/agent-session.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/core/compaction/compaction.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/modes/interactive/components/extension-selector.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/modes/interactive/interactive-mode.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/test/compaction-summary-reasoning.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/tui/package.json"
+              },
+              {
+                "status_line": "M\tpackages/web-ui/example/package.json"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "5998b579585d62491541ee44ef6451dc8695bb86",
+                "subject": "Merge pull request #4426 from ofa1/fix/restore-tty-on-uncaught-exception"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+        "pinned_ref": "5998b579585d62491541ee44ef6451dc8695bb86",
+        "resolved_commit": "5998b579585d62491541ee44ef6451dc8695bb86",
+        "parent_commit": "64882c6a516c6fe0e207ee3b114704f965e4eef6",
+        "commit_show_stat": "commit 5998b579585d62491541ee44ef6451dc8695bb86\nMerge: 64882c6a 9d84e286\nAuthor:     Mario Zechner <badlogicgames@gmail.com>\nAuthorDate: Tue May 12 23:48:28 2026 +0200\nCommit:     GitHub <noreply@github.com>\nCommitDate: Tue May 12 23:48:28 2026 +0200\n\n    Merge pull request #4426 from ofa1/fix/restore-tty-on-uncaught-exception\n    \n    fix(coding-agent): restore terminal on uncaught exception\n\n .../src/modes/interactive/interactive-mode.ts      | 37 ++++++++++++++++++++++\n 1 file changed, 37 insertions(+)\n",
+        "changed_files_name_status": "M\tpackages/coding-agent/src/modes/interactive/interactive-mode.ts\nM\t.github/APPROVED_CONTRIBUTORS\nM\tpackage-lock.json\nM\tpackage.json\nM\tpackages/agent/src/harness/compaction/compaction.ts\nM\tpackages/agent/test/harness/compaction.test.ts\nM\tpackages/ai/package.json\nM\tpackages/coding-agent/CHANGELOG.md\nM\tpackages/coding-agent/package.json\nM\tpackages/coding-agent/src/core/agent-session.ts\nM\tpackages/coding-agent/src/core/compaction/compaction.ts\nM\tpackages/coding-agent/src/modes/interactive/components/extension-selector.ts\nM\tpackages/coding-agent/src/modes/interactive/interactive-mode.ts\nM\tpackages/coding-agent/test/compaction-summary-reasoning.test.ts\nM\tpackages/tui/package.json\nM\tpackages/web-ui/example/package.json\n",
+        "linked_issue_numbers": [
+          4426
+        ],
+        "manifest_metadata": {
+          "category": "subprocess-and-pty-lifecycle",
+          "theme": "subprocess and pseudo-terminal lifecycle finalization",
+          "file_sample": [
+            "packages/coding-agent/src/modes/interactive/interactive-mode.ts"
+          ],
+          "quality": "implementation_only",
+          "case_id": "earendil-works__pi__4426__subprocess-and-pty-lifecycle",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_implementation_pull_request",
+          "resolution_url": "https://github.com/earendil-works/pi/pull/4426",
+          "source": "agent_core_thirteen_category_extraction_v2",
+          "provenance": {
+            "classification": "direct_implementation_artifact",
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 4426,
+              "url": "https://github.com/earendil-works/pi/pull/4426"
+            },
+            "commit": {
+              "sha": "5998b579585d62491541ee44ef6451dc8695bb86",
+              "subject": "Merge pull request #4426 from ofa1/fix/restore-tty-on-uncaught-exception",
+              "parents": [
+                "64882c6a516c6fe0e207ee3b114704f965e4eef6",
+                "9d84e28692f9483eea5a950ca017174cb641867a"
+              ],
+              "body_excerpt": "fix(coding-agent): restore terminal on uncaught exception"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "first_parent_and_changed_files_recorded",
+              "implementation_change_present",
+              "no_test_file_change_observed"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T10:49:55.130713+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "earendil-works__pi__4426__5998b579",
+          "title": "Restore interactive terminal state before exiting on an uncaught exception",
+          "before": "At first parent 64882c6a516c6fe0e207ee3b114704f965e4eef6, interactive startup registered signal and terminal-stream error handlers, but no uncaughtException handler. An uncaught asynchronous throw could therefore terminate the process while the TUI still owned a raw-mode terminal with the cursor hidden and terminal input protocols enabled.",
+          "after": "At pinned ref 5998b579585d62491541ee44ef6451dc8695bb86, interactive mode prepends a lifecycle-managed uncaughtException listener. Its crash finalizer prevents re-entry, unregisters handlers, attempts to kill tracked detached children, attempts TUI shutdown to restore terminal state, reports the error, and exits with status 1.",
+          "diff": "The implementation adds 37 lines to packages/coding-agent/src/modes/interactive/interactive-mode.ts: a dedicated uncaughtCrash finalizer and an uncaughtException listener installed by registerSignalHandlers and removed through signalCleanupHandlers. No test file changed in the pinned first-parent diff."
+        },
+        "evidence_units": [
+          {
+            "id": "ev-commit-4426",
+            "kind": "commit",
+            "claim": "The pinned merge commit resolves PR 4426 with subject 'fix(coding-agent): restore terminal on uncaught exception' and changes one implementation file by 37 insertions.",
+            "source": "git show --format=fuller --stat 5998b579585d62491541ee44ef6451dc8695bb86"
+          },
+          {
+            "id": "ev-before-no-handler",
+            "kind": "implementation",
+            "claim": "The first-parent interactive-mode implementation registered SIGTERM, non-Windows SIGHUP, stdout error, and stderr error handlers, but contained no uncaughtException listener or crash finalizer.",
+            "source": "git show 64882c6a516c6fe0e207ee3b114704f965e4eef6:packages/coding-agent/src/modes/interactive/interactive-mode.ts, registerSignalHandlers and adjacent shutdown methods"
+          },
+          {
+            "id": "ev-diff-finalizer",
+            "kind": "diff",
+            "claim": "The change adds uncaughtCrash(error), which guards against repeated shutdown, marks shutdown active, independently attempts handler removal, detached-child cleanup, and ui.stop(), logs the exception, and exits with status 1.",
+            "source": "git diff 64882c6a516c6fe0e207ee3b114704f965e4eef6 5998b579585d62491541ee44ef6451dc8695bb86 -- packages/coding-agent/src/modes/interactive/interactive-mode.ts"
+          },
+          {
+            "id": "ev-diff-listener",
+            "kind": "diff",
+            "claim": "registerSignalHandlers now prepends an uncaughtException listener that delegates to uncaughtCrash and records a matching process.off cleanup callback in signalCleanupHandlers.",
+            "source": "git diff 64882c6a516c6fe0e207ee3b114704f965e4eef6 5998b579585d62491541ee44ef6451dc8695bb86 -- packages/coding-agent/src/modes/interactive/interactive-mode.ts"
+          },
+          {
+            "id": "ev-callsite-init",
+            "kind": "call_site",
+            "claim": "Interactive initialization calls registerSignalHandlers before starting the UI, so the uncaught-exception listener is active while the TUI owns terminal state.",
+            "source": "git show 5998b579585d62491541ee44ef6451dc8695bb86:packages/coding-agent/src/modes/interactive/interactive-mode.ts, InteractiveMode.init"
+          },
+          {
+            "id": "ev-cleanup-lifecycle",
+            "kind": "call_site",
+            "claim": "Normal shutdown and stop paths call unregisterSignalHandlers, which executes and clears all recorded cleanup callbacks, including removal of the new uncaughtException listener.",
+            "source": "git show 5998b579585d62491541ee44ef6451dc8695bb86:packages/coding-agent/src/modes/interactive/interactive-mode.ts, shutdown, stop, registerSignalHandlers, and unregisterSignalHandlers"
+          },
+          {
+            "id": "ev-tui-stop-contract",
+            "kind": "implementation",
+            "claim": "At the pinned ref, TUI.stop shows the cursor and delegates to terminal.stop; terminal.stop disables bracketed paste and keyboard protocols, removes input handlers, pauses stdin, and restores the prior raw-mode state.",
+            "source": "git show 5998b579585d62491541ee44ef6451dc8695bb86:packages/tui/src/tui.ts, TUI.stop; git show 5998b579585d62491541ee44ef6451dc8695bb86:packages/tui/src/terminal.ts, ProcessTerminal.stop"
+          },
+          {
+            "id": "ev-failure-scope",
+            "kind": "commit",
+            "claim": "The implementation commit describes the failure as an uncaught throw, commonly from an extension's asynchronous child-process exit callback, leaving stdin raw and the cursor hidden; it distinguishes this live-terminal case from dead-terminal SIGHUP or EIO handling.",
+            "source": "git show --format=fuller --no-patch 9d84e28692f9483eea5a950ca017174cb641867a"
+          },
+          {
+            "id": "ev-no-tests",
+            "kind": "validation",
+            "claim": "The pinned first-parent diff changes only interactive-mode.ts and adds no automated regression test for the uncaught-exception terminal-restoration path.",
+            "source": "git diff --name-only 64882c6a516c6fe0e207ee3b114704f965e4eef6 5998b579585d62491541ee44ef6451dc8695bb86"
+          },
+          {
+            "id": "ev-diff-check",
+            "kind": "validation",
+            "claim": "git diff --check reports no whitespace errors for the pinned first-parent change.",
+            "source": "git diff --check 64882c6a516c6fe0e207ee3b114704f965e4eef6 5998b579585d62491541ee44ef6451dc8695bb86"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "scope-uncaught-failure-handler-to-interactive-lifecycle",
+            "title": "Scope the uncaught-failure handler to the interactive lifecycle",
+            "description": "Install the last-resort handler before terminal ownership begins and remove it through the same cleanup registry used by other process handlers.",
+            "evidence_ids": [
+              "ev-before-no-handler",
+              "ev-diff-listener",
+              "ev-callsite-init",
+              "ev-cleanup-lifecycle"
+            ],
+            "semantic_action": {
+              "intent": "Ensure uncaught failures are intercepted only while the interactive terminal lifecycle is active, without leaking duplicate or stale process listeners.",
+              "module_role": "interactive process-handler lifecycle owner",
+              "operation": "reconcile",
+              "pre_state": "Interactive mode registers process handlers before starting the TUI, but uncaught exceptions bypass its cleanup lifecycle.",
+              "post_state": "A highest-priority uncaught-exception listener is active during interactive operation and is removed whenever registered handlers are unregistered.",
+              "validation": "Inspect initialization ordering, prependListener registration, matching process.off cleanup, and cleanup-registry reset.",
+              "parameters": [
+                "uncaught failure event name",
+                "crash finalizer callback",
+                "process listener registry",
+                "interactive initialization boundary"
+              ],
+              "evidence_ids": [
+                "ev-diff-listener",
+                "ev-callsite-init",
+                "ev-cleanup-lifecycle"
+              ]
+            }
+          },
+          {
+            "name": "finalize-live-terminal-on-uncaught-failure",
+            "title": "Finalize a live terminal before fatal exit",
+            "description": "On an uncaught failure, enter a guarded terminal state, perform independent best-effort cleanup operations, report the error, and terminate nonzero.",
+            "evidence_ids": [
+              "ev-diff-finalizer",
+              "ev-tui-stop-contract",
+              "ev-failure-scope"
+            ],
+            "semantic_action": {
+              "intent": "Prevent a fatal asynchronous throw from leaving the user's terminal in raw mode, cursor-hidden, or protocol-enabled state.",
+              "module_role": "last-resort interactive resource finalizer",
+              "operation": "repair",
+              "pre_state": "The interactive UI owns a still-live terminal when an uncaught exception reaches the process boundary.",
+              "post_state": "Before nonzero process exit, repeated finalization is blocked and terminal restoration, detached-child cleanup, and handler removal have each been attempted without one cleanup failure suppressing the others.",
+              "validation": "Inspect the shutdown guard, isolated try blocks, ui.stop terminal-restoration contract, diagnostic output, and final exit status.",
+              "parameters": [
+                "uncaught error",
+                "shutdown-state guard",
+                "process-handler cleanup",
+                "tracked detached children",
+                "interactive UI terminal",
+                "fatal exit status"
+              ],
+              "evidence_ids": [
+                "ev-diff-finalizer",
+                "ev-tui-stop-contract",
+                "ev-failure-scope"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "restore-interactive-terminal-on-uncaught-failure",
+            "title": "Restore an interactive terminal on an uncaught process failure",
+            "description": "Add a lifecycle-scoped process boundary that routes uncaught failures through a guarded, best-effort terminal finalizer before fatal exit.",
+            "atomic_names": [
+              "scope-uncaught-failure-handler-to-interactive-lifecycle",
+              "finalize-live-terminal-on-uncaught-failure"
+            ],
+            "evidence_ids": [
+              "ev-before-no-handler",
+              "ev-diff-finalizer",
+              "ev-diff-listener",
+              "ev-callsite-init",
+              "ev-cleanup-lifecycle",
+              "ev-tui-stop-contract",
+              "ev-no-tests"
+            ],
+            "workflow_graph": {
+              "goal": "An uncaught failure during interactive operation exits nonzero without leaving the live terminal in application-controlled state.",
+              "when_to_use": [
+                "A long-running interactive process enables raw input, hides the cursor, or enables terminal protocols that ordinary process termination will not reliably restore.",
+                "Asynchronous callbacks or extension code can throw outside local try/catch boundaries while the terminal remains connected."
+              ],
+              "anti_goals": [
+                "Do not convert uncaught failures into continued execution after potentially inconsistent process state.",
+                "Do not run normal terminal writes when the terminal is already known to be dead or disconnected.",
+                "Do not replace graceful shutdown or signal-specific cleanup paths with the last-resort crash path."
+              ],
+              "not_applicable_when": [
+                "The program does not acquire persistent terminal state requiring restoration.",
+                "The failure path proves the terminal is unavailable, so restoration writes could recursively fail.",
+                "The exception is locally recoverable and does not require process termination."
+              ],
+              "inputs": [
+                "interactive initialization and shutdown boundaries",
+                "terminal restoration primitive",
+                "process-level uncaught-failure event",
+                "cleanup registry for process handlers",
+                "tracked subprocess cleanup primitive",
+                "fatal error and exit-status policy"
+              ],
+              "entry_state": "Interactive mode has started or is about to start, and process-level uncaught throws currently bypass terminal restoration.",
+              "exit_state": "The uncaught-failure listener is lifecycle-scoped, and any intercepted fatal throw attempts independent resource cleanup and terminal restoration before diagnostic output and nonzero exit.",
+              "steps": [
+                {
+                  "action_name": "scope-uncaught-failure-handler-to-interactive-lifecycle",
+                  "role": "establish-contract",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "The interactive component owns terminal state and lacks a process-level uncaught-failure boundary.",
+                  "validation": "Registration occurs before UI start, uses priority ordering, and has a matching cleanup callback exercised by handler unregistration."
+                },
+                {
+                  "action_name": "finalize-live-terminal-on-uncaught-failure",
+                  "role": "repair",
+                  "required": true,
+                  "depends_on": [
+                    "scope-uncaught-failure-handler-to-interactive-lifecycle"
+                  ],
+                  "condition": "An uncaught failure occurs while the terminal is still live.",
+                  "validation": "The handler blocks re-entry, attempts each cleanup independently, invokes the terminal restoration primitive, reports the original error, and exits nonzero."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "scope-uncaught-failure-handler-to-interactive-lifecycle",
+                  "to": "finalize-live-terminal-on-uncaught-failure",
+                  "type": "enables"
+                },
+                {
+                  "from": "finalize-live-terminal-on-uncaught-failure",
+                  "to": "scope-uncaught-failure-handler-to-interactive-lifecycle",
+                  "type": "validates"
+                }
+              ],
+              "validation_ladder": [
+                "Static diff validation: confirm the first-parent change adds only the crash finalizer and lifecycle-managed listener without whitespace errors.",
+                "Lifecycle validation: confirm initialization installs the listener before UI start and normal cleanup removes it.",
+                "Resource-contract validation: confirm the invoked UI stop operation restores the cursor and delegates to terminal cleanup that disables protocols and restores raw mode.",
+                "Deferred behavioral validation: trigger an uncaught asynchronous throw under a pseudo-terminal and assert nonzero exit plus restored terminal settings and cursor state."
+              ],
+              "stop_conditions": [
+                "Stop if no reliable process-level uncaught-failure interception point exists.",
+                "Stop if the available cleanup primitive writes to a terminal that may already be dead; use the established dead-terminal emergency path instead.",
+                "Stop if listener removal cannot be tied to the interactive component's normal lifecycle.",
+                "Do not claim behavioral regression coverage until a pseudo-terminal test or equivalent runtime oracle is present."
+              ],
+              "unresolved_or_deferred": [
+                "No automated test was added for the new crash path.",
+                "The pinned evidence does not show a pseudo-terminal reproduction proving terminal settings after the fatal exit.",
+                "Cleanup failures are intentionally swallowed, so the implementation guarantees best-effort attempts rather than verified restoration."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Can a deterministic pseudo-terminal regression test trigger an asynchronous uncaught throw and assert restored raw mode, visible cursor, disabled bracketed paste and keyboard protocols, detached-child cleanup, and exit status 1?",
+          "Should diagnostic writes also be guarded against stderr failure, given this handler runs at the final process boundary?"
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "scope-uncaught-failure-handler-to-interactive-lifecycle",
+          "title": "Scope the uncaught-failure handler to the interactive lifecycle",
+          "description": "Install the last-resort handler before terminal ownership begins and remove it through the same cleanup registry used by other process handlers.",
+          "evidence_ids": [
+            "ev-before-no-handler",
+            "ev-diff-listener",
+            "ev-callsite-init",
+            "ev-cleanup-lifecycle"
+          ],
+          "semantic_action": {
+            "intent": "Ensure uncaught failures are intercepted only while the interactive terminal lifecycle is active, without leaking duplicate or stale process listeners.",
+            "module_role": "interactive process-handler lifecycle owner",
+            "operation": "reconcile",
+            "pre_state": "Interactive mode registers process handlers before starting the TUI, but uncaught exceptions bypass its cleanup lifecycle.",
+            "post_state": "A highest-priority uncaught-exception listener is active during interactive operation and is removed whenever registered handlers are unregistered.",
+            "validation": "Inspect initialization ordering, prependListener registration, matching process.off cleanup, and cleanup-registry reset.",
+            "parameters": [
+              "uncaught failure event name",
+              "crash finalizer callback",
+              "process listener registry",
+              "interactive initialization boundary"
+            ],
+            "evidence_ids": [
+              "ev-diff-listener",
+              "ev-callsite-init",
+              "ev-cleanup-lifecycle"
+            ]
+          }
+        },
+        {
+          "name": "finalize-live-terminal-on-uncaught-failure",
+          "title": "Finalize a live terminal before fatal exit",
+          "description": "On an uncaught failure, enter a guarded terminal state, perform independent best-effort cleanup operations, report the error, and terminate nonzero.",
+          "evidence_ids": [
+            "ev-diff-finalizer",
+            "ev-tui-stop-contract",
+            "ev-failure-scope"
+          ],
+          "semantic_action": {
+            "intent": "Prevent a fatal asynchronous throw from leaving the user's terminal in raw mode, cursor-hidden, or protocol-enabled state.",
+            "module_role": "last-resort interactive resource finalizer",
+            "operation": "repair",
+            "pre_state": "The interactive UI owns a still-live terminal when an uncaught exception reaches the process boundary.",
+            "post_state": "Before nonzero process exit, repeated finalization is blocked and terminal restoration, detached-child cleanup, and handler removal have each been attempted without one cleanup failure suppressing the others.",
+            "validation": "Inspect the shutdown guard, isolated try blocks, ui.stop terminal-restoration contract, diagnostic output, and final exit status.",
+            "parameters": [
+              "uncaught error",
+              "shutdown-state guard",
+              "process-handler cleanup",
+              "tracked detached children",
+              "interactive UI terminal",
+              "fatal exit status"
+            ],
+            "evidence_ids": [
+              "ev-diff-finalizer",
+              "ev-tui-stop-contract",
+              "ev-failure-scope"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "restore-interactive-terminal-on-uncaught-failure",
+          "title": "Restore an interactive terminal on an uncaught process failure",
+          "description": "Add a lifecycle-scoped process boundary that routes uncaught failures through a guarded, best-effort terminal finalizer before fatal exit.",
+          "atomic_names": [
+            "scope-uncaught-failure-handler-to-interactive-lifecycle",
+            "finalize-live-terminal-on-uncaught-failure"
+          ],
+          "evidence_ids": [
+            "ev-before-no-handler",
+            "ev-diff-finalizer",
+            "ev-diff-listener",
+            "ev-callsite-init",
+            "ev-cleanup-lifecycle",
+            "ev-tui-stop-contract",
+            "ev-no-tests"
+          ],
+          "workflow_graph": {
+            "goal": "An uncaught failure during interactive operation exits nonzero without leaving the live terminal in application-controlled state.",
+            "when_to_use": [
+              "A long-running interactive process enables raw input, hides the cursor, or enables terminal protocols that ordinary process termination will not reliably restore.",
+              "Asynchronous callbacks or extension code can throw outside local try/catch boundaries while the terminal remains connected."
+            ],
+            "anti_goals": [
+              "Do not convert uncaught failures into continued execution after potentially inconsistent process state.",
+              "Do not run normal terminal writes when the terminal is already known to be dead or disconnected.",
+              "Do not replace graceful shutdown or signal-specific cleanup paths with the last-resort crash path."
+            ],
+            "not_applicable_when": [
+              "The program does not acquire persistent terminal state requiring restoration.",
+              "The failure path proves the terminal is unavailable, so restoration writes could recursively fail.",
+              "The exception is locally recoverable and does not require process termination."
+            ],
+            "inputs": [
+              "interactive initialization and shutdown boundaries",
+              "terminal restoration primitive",
+              "process-level uncaught-failure event",
+              "cleanup registry for process handlers",
+              "tracked subprocess cleanup primitive",
+              "fatal error and exit-status policy"
+            ],
+            "entry_state": "Interactive mode has started or is about to start, and process-level uncaught throws currently bypass terminal restoration.",
+            "exit_state": "The uncaught-failure listener is lifecycle-scoped, and any intercepted fatal throw attempts independent resource cleanup and terminal restoration before diagnostic output and nonzero exit.",
+            "steps": [
+              {
+                "action_name": "scope-uncaught-failure-handler-to-interactive-lifecycle",
+                "role": "establish-contract",
+                "required": true,
+                "depends_on": [],
+                "condition": "The interactive component owns terminal state and lacks a process-level uncaught-failure boundary.",
+                "validation": "Registration occurs before UI start, uses priority ordering, and has a matching cleanup callback exercised by handler unregistration."
+              },
+              {
+                "action_name": "finalize-live-terminal-on-uncaught-failure",
+                "role": "repair",
+                "required": true,
+                "depends_on": [
+                  "scope-uncaught-failure-handler-to-interactive-lifecycle"
+                ],
+                "condition": "An uncaught failure occurs while the terminal is still live.",
+                "validation": "The handler blocks re-entry, attempts each cleanup independently, invokes the terminal restoration primitive, reports the original error, and exits nonzero."
+              }
+            ],
+            "edges": [
+              {
+                "from": "scope-uncaught-failure-handler-to-interactive-lifecycle",
+                "to": "finalize-live-terminal-on-uncaught-failure",
+                "type": "enables"
+              },
+              {
+                "from": "finalize-live-terminal-on-uncaught-failure",
+                "to": "scope-uncaught-failure-handler-to-interactive-lifecycle",
+                "type": "validates"
+              }
+            ],
+            "validation_ladder": [
+              "Static diff validation: confirm the first-parent change adds only the crash finalizer and lifecycle-managed listener without whitespace errors.",
+              "Lifecycle validation: confirm initialization installs the listener before UI start and normal cleanup removes it.",
+              "Resource-contract validation: confirm the invoked UI stop operation restores the cursor and delegates to terminal cleanup that disables protocols and restores raw mode.",
+              "Deferred behavioral validation: trigger an uncaught asynchronous throw under a pseudo-terminal and assert nonzero exit plus restored terminal settings and cursor state."
+            ],
+            "stop_conditions": [
+              "Stop if no reliable process-level uncaught-failure interception point exists.",
+              "Stop if the available cleanup primitive writes to a terminal that may already be dead; use the established dead-terminal emergency path instead.",
+              "Stop if listener removal cannot be tied to the interactive component's normal lifecycle.",
+              "Do not claim behavioral regression coverage until a pseudo-terminal test or equivalent runtime oracle is present."
+            ],
+            "unresolved_or_deferred": [
+              "No automated test was added for the new crash path.",
+              "The pinned evidence does not show a pseudo-terminal reproduction proving terminal settings after the fatal exit.",
+              "Cleanup failures are intentionally swallowed, so the implementation guarantees best-effort attempts rather than verified restoration."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Can a deterministic pseudo-terminal regression test trigger an asynchronous uncaught throw and assert restored raw mode, visible cursor, disabled bracketed paste and keyboard protocols, detached-child cleanup, and exit status 1?",
+        "Should diagnostic writes also be guarded against stderr failure, given this handler runs at the final process boundary?"
+      ]
+    },
+    "call_sites": [
+      "Interactive initialization calls registerSignalHandlers before starting the UI, so the uncaught-exception listener is active while the TUI owns terminal state.",
+      "Normal shutdown and stop paths call unregisterSignalHandlers, which executes and clears all recorded cleanup callbacks, including removal of the new uncaughtException listener."
+    ],
+    "tests": []
+  },
+  {
+    "episode_id": "NousResearch__hermes-agent__14901__379b2273d9",
+    "title": "Isolate stdio child-process diagnostics from the interactive terminal",
+    "before": "At parent commit 7db2703b332bbe8afe2c89b1fed2dd8c03cbd9af, the stdio server lifecycle invoked stdio_client(server_params) without an errlog argument. The SDK therefore used its stderr default, allowing child startup banners and logs to write to the parent process's interactive terminal while the terminal UI was rendering.",
+    "after": "At commit 379b2273d95566e8a69eadabceabc6ee08521b49, the process lazily opens and reuses a thread-safe, append-mode, line-buffered diagnostic file with a real file descriptor; falls back first to the null device and finally to parent stderr; writes a best-effort timestamped server-start marker; and supplies the resulting handle as errlog whenever a stdio server is spawned. Normal session initialization, PID tracking, reconnection, and shutdown remain on the existing lifecycle path.",
+    "diff": "The implementation modifies only tools/mcp_tool.py: it adds sys and datetime imports, a locked process-wide stderr-handle cache, diagnostic-sink creation and fallback logic, a timestamped header writer, and changes the single stdio_client call from stdio_client(server_params) to stdio_client(server_params, errlog=_errlog) after obtaining the shared sink. The commit reports 81 insertions and 1 deletion; no test file changed.",
+    "repository": "NousResearch/hermes-agent",
+    "revision": "github-issue-14901",
+    "evidence_ids": [
+      "E1_PARENT_STDIO_DEFAULT",
+      "E2_FAILURE_MECHANISM",
+      "E3_SHARED_SINK",
+      "E4_SINK_FALLBACK",
+      "E5_START_MARKER",
+      "E6_SPAWN_ROUTING",
+      "E7_SCOPED_DIFF",
+      "E8_EXISTING_LIFECYCLE_TEST",
+      "E9_REPORTED_E2E",
+      "E10_NO_CHANGED_TEST"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 14901,
+      "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+      "manifest_metadata": {
+        "category": "subprocess-and-pty-lifecycle",
+        "role": "train_candidate",
+        "case_id": "NousResearch__hermes-agent__14901__subprocess-and-pty-lifecycle",
+        "sample_kind": "verified_implementation_pull_request",
+        "seed_issue": null,
+        "seed_issue_url": null,
+        "seed_relation": null,
+        "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/14901",
+        "provenance": {
+          "classification": "direct_implementation_artifact",
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 14901,
+            "url": "https://github.com/NousResearch/hermes-agent/pull/14901"
+          },
+          "commit": {
+            "sha": "379b2273d95566e8a69eadabceabc6ee08521b49",
+            "subject": "fix(mcp): route stdio subprocess stderr to log file, not user TTY (#14901)",
+            "parents": [
+              "7db2703b332bbe8afe2c89b1fed2dd8c03cbd9af"
+            ],
+            "body_excerpt": "MCP stdio servers' stderr was being dumped directly onto the user's\nterminal during hermes launch. Servers like FastMCP-based ones print a\nlarge ASCII banner at startup; slack-mcp-server emits JSON logs; etc.\nWith prompt_toolkit / Rich rendering the TUI concurrently, these\nunsolicited writes corrupt the terminal state — hanging the session\n~80% of the time for one user with Google Ads Tools + slack-mcp\nconfigured, forcing Ctrl+C and restart loops.\n\nRoot cause: `stdio_client(server_params)` in tools/mcp_tool.py was\ncalled without `errlog=`, and the SDK's default is `sys.stderr` —\ni.e. the real parent-process stderr, which is the TTY.\n\nFix: open a shared, append-mode log at $HERMES_HOME/logs/mcp-stderr.log\n(created once per process, line-buffered, real fd required by asyncio's\nsubprocess machinery) and pass it as `errlog` to every stdio_client.\nEach server's spawn writes a timestamped header so the shared log stays\nreadable when multiple servers are running. Falls back to /dev/null if\nthe log file cannot be opened.\n\nVerified by E2E spawning a subprocess with the log fd as its stderr:\nbanner lines land in the log file, nothing reaches the calling TTY."
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "first_parent_and_changed_files_recorded",
+            "implementation_change_present",
+            "no_test_file_change_observed"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "NousResearch/hermes-agent",
+        "issue_number": 14901,
+        "issue": {
+          "number": 14901,
+          "title": "fix(mcp): route stdio subprocess stderr to log file, not user TTY (#14901)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 14901,
+              "title": "fix(mcp): route stdio subprocess stderr to log file, not user TTY (#14901)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\ttools/mcp_tool.py"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "379b2273d95566e8a69eadabceabc6ee08521b49",
+                "subject": "fix(mcp): route stdio subprocess stderr to log file, not user TTY (#14901)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+        "pinned_ref": "379b2273d95566e8a69eadabceabc6ee08521b49",
+        "resolved_commit": "379b2273d95566e8a69eadabceabc6ee08521b49",
+        "parent_commit": "7db2703b332bbe8afe2c89b1fed2dd8c03cbd9af",
+        "commit_show_stat": "commit 379b2273d95566e8a69eadabceabc6ee08521b49\nAuthor:     Teknium <127238744+teknium1@users.noreply.github.com>\nAuthorDate: Thu Apr 23 21:50:25 2026 -0700\nCommit:     GitHub <noreply@github.com>\nCommitDate: Thu Apr 23 21:50:25 2026 -0700\n\n    fix(mcp): route stdio subprocess stderr to log file, not user TTY (#14901)\n    \n    MCP stdio servers' stderr was being dumped directly onto the user's\n    terminal during hermes launch. Servers like FastMCP-based ones print a\n    large ASCII banner at startup; slack-mcp-server emits JSON logs; etc.\n    With prompt_toolkit / Rich rendering the TUI concurrently, these\n    unsolicited writes corrupt the terminal state — hanging the session\n    ~80% of the time for one user with Google Ads Tools + slack-mcp\n    configured, forcing Ctrl+C and restart loops.\n    \n    Root cause: `stdio_client(server_params)` in tools/mcp_tool.py was\n    called without `errlog=`, and the SDK's default is `sys.stderr` —\n    i.e. the real parent-process stderr, which is the TTY.\n    \n    Fix: open a shared, append-mode log at $HERMES_HOME/logs/mcp-stderr.log\n    (created once per process, line-buffered, real fd required by asyncio's\n    subprocess machinery) and pass it as `errlog` to every stdio_client.\n    Each server's spawn writes a timestamped header so the shared log stays\n    readable when multiple servers are running. Falls back to /dev/null if\n    the log file cannot be opened.\n    \n    Verified by E2E spawning a subprocess with the log fd as its stderr:\n    banner lines land in the log file, nothing reaches the calling TTY.\n\n tools/mcp_tool.py | 82 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-\n 1 file changed, 81 insertions(+), 1 deletion(-)\n",
+        "changed_files_name_status": "M\ttools/mcp_tool.py\n",
+        "linked_issue_numbers": [
+          14901
+        ],
+        "manifest_metadata": {
+          "category": "subprocess-and-pty-lifecycle",
+          "theme": "subprocess and pseudo-terminal lifecycle finalization",
+          "file_sample": [
+            "tools/mcp_tool.py"
+          ],
+          "quality": "implementation_only",
+          "case_id": "NousResearch__hermes-agent__14901__subprocess-and-pty-lifecycle",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_implementation_pull_request",
+          "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/14901",
+          "source": "agent_core_thirteen_category_extraction_v2",
+          "provenance": {
+            "classification": "direct_implementation_artifact",
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 14901,
+              "url": "https://github.com/NousResearch/hermes-agent/pull/14901"
+            },
+            "commit": {
+              "sha": "379b2273d95566e8a69eadabceabc6ee08521b49",
+              "subject": "fix(mcp): route stdio subprocess stderr to log file, not user TTY (#14901)",
+              "parents": [
+                "7db2703b332bbe8afe2c89b1fed2dd8c03cbd9af"
+              ],
+              "body_excerpt": "MCP stdio servers' stderr was being dumped directly onto the user's\nterminal during hermes launch. Servers like FastMCP-based ones print a\nlarge ASCII banner at startup; slack-mcp-server emits JSON logs; etc.\nWith prompt_toolkit / Rich rendering the TUI concurrently, these\nunsolicited writes corrupt the terminal state — hanging the session\n~80% of the time for one user with Google Ads Tools + slack-mcp\nconfigured, forcing Ctrl+C and restart loops.\n\nRoot cause: `stdio_client(server_params)` in tools/mcp_tool.py was\ncalled without `errlog=`, and the SDK's default is `sys.stderr` —\ni.e. the real parent-process stderr, which is the TTY.\n\nFix: open a shared, append-mode log at $HERMES_HOME/logs/mcp-stderr.log\n(created once per process, line-buffered, real fd required by asyncio's\nsubprocess machinery) and pass it as `errlog` to every stdio_client.\nEach server's spawn writes a timestamped header so the shared log stays\nreadable when multiple servers are running. Falls back to /dev/null if\nthe log file cannot be opened.\n\nVerified by E2E spawning a subprocess with the log fd as its stderr:\nbanner lines land in the log file, nothing reaches the calling TTY."
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "first_parent_and_changed_files_recorded",
+              "implementation_change_present",
+              "no_test_file_change_observed"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T10:55:48.536901+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "NousResearch__hermes-agent__14901__379b2273d9",
+          "title": "Isolate stdio child-process diagnostics from the interactive terminal",
+          "before": "At parent commit 7db2703b332bbe8afe2c89b1fed2dd8c03cbd9af, the stdio server lifecycle invoked stdio_client(server_params) without an errlog argument. The SDK therefore used its stderr default, allowing child startup banners and logs to write to the parent process's interactive terminal while the terminal UI was rendering.",
+          "after": "At commit 379b2273d95566e8a69eadabceabc6ee08521b49, the process lazily opens and reuses a thread-safe, append-mode, line-buffered diagnostic file with a real file descriptor; falls back first to the null device and finally to parent stderr; writes a best-effort timestamped server-start marker; and supplies the resulting handle as errlog whenever a stdio server is spawned. Normal session initialization, PID tracking, reconnection, and shutdown remain on the existing lifecycle path.",
+          "diff": "The implementation modifies only tools/mcp_tool.py: it adds sys and datetime imports, a locked process-wide stderr-handle cache, diagnostic-sink creation and fallback logic, a timestamped header writer, and changes the single stdio_client call from stdio_client(server_params) to stdio_client(server_params, errlog=_errlog) after obtaining the shared sink. The commit reports 81 insertions and 1 deletion; no test file changed."
+        },
+        "evidence_units": [
+          {
+            "id": "E1_PARENT_STDIO_DEFAULT",
+            "kind": "implementation",
+            "claim": "The parent implementation called stdio_client(server_params) without supplying errlog at the stdio subprocess-spawn boundary.",
+            "source": "git show 7db2703b332bbe8afe2c89b1fed2dd8c03cbd9af:tools/mcp_tool.py lines 963-972"
+          },
+          {
+            "id": "E2_FAILURE_MECHANISM",
+            "kind": "commit",
+            "claim": "The resolution commit identifies unsolicited child stderr writes to the user's terminal during concurrent prompt_toolkit/Rich rendering as the cause of display corruption and reported hangs.",
+            "source": "git show --format=fuller 379b2273d95566e8a69eadabceabc6ee08521b49; issue-bundle.json /commit_show_stat"
+          },
+          {
+            "id": "E3_SHARED_SINK",
+            "kind": "implementation",
+            "claim": "The new sink provider uses a lock and process-wide cache, creates the profile logs directory, opens mcp-stderr.log in append mode with line buffering and replacement decoding, verifies fileno(), and reuses the handle.",
+            "source": "git show 379b2273d95566e8a69eadabceabc6ee08521b49:tools/mcp_tool.py lines 107-134"
+          },
+          {
+            "id": "E4_SINK_FALLBACK",
+            "kind": "implementation",
+            "claim": "If the diagnostic log cannot be opened, sink acquisition attempts the null device and uses parent stderr only as a final fallback so server startup is not rejected solely because logging setup failed.",
+            "source": "git show 379b2273d95566e8a69eadabceabc6ee08521b49:tools/mcp_tool.py lines 135-143"
+          },
+          {
+            "id": "E5_START_MARKER",
+            "kind": "implementation",
+            "claim": "Before spawning a server, the implementation best-effort writes and flushes a timestamped marker containing the server name into the shared diagnostic stream; marker-write failures are ignored.",
+            "source": "git show 379b2273d95566e8a69eadabceabc6ee08521b49:tools/mcp_tool.py lines 146-159"
+          },
+          {
+            "id": "E6_SPAWN_ROUTING",
+            "kind": "call_site",
+            "claim": "The stdio lifecycle writes the start marker, acquires the sink, and passes it as the errlog argument to stdio_client while retaining the existing PID tracking and client-session initialization flow.",
+            "source": "git show 379b2273d95566e8a69eadabceabc6ee08521b49:tools/mcp_tool.py lines 1005-1060"
+          },
+          {
+            "id": "E7_SCOPED_DIFF",
+            "kind": "diff",
+            "claim": "The pinned change modifies only tools/mcp_tool.py, with 81 insertions and 1 deletion; the behavioral call-site change adds the explicit errlog argument.",
+            "source": "git diff --stat and git diff 7db2703b332bbe8afe2c89b1fed2dd8c03cbd9af 379b2273d95566e8a69eadabceabc6ee08521b49 -- tools/mcp_tool.py"
+          },
+          {
+            "id": "E8_EXISTING_LIFECYCLE_TEST",
+            "kind": "test",
+            "claim": "An existing mocked lifecycle test starts a stdio server, verifies session initialization and tool discovery, and shuts it down, but it does not assert the errlog argument or diagnostic-file behavior.",
+            "source": "git show 379b2273d95566e8a69eadabceabc6ee08521b49:tests/tools/test_mcp_tool.py lines 596-645"
+          },
+          {
+            "id": "E9_REPORTED_E2E",
+            "kind": "validation",
+            "claim": "The commit records an end-to-end check that spawned a subprocess with the log file descriptor as stderr and observed banner lines in the log with no output reaching the calling terminal.",
+            "source": "git show --format=%B 379b2273d95566e8a69eadabceabc6ee08521b49; issue-bundle.json /manifest_metadata/provenance/resolution_artifact and /commit_show_stat"
+          },
+          {
+            "id": "E10_NO_CHANGED_TEST",
+            "kind": "test",
+            "claim": "No test file was added or modified by the pinned implementation commit.",
+            "source": "git diff --name-only 7db2703b332bbe8afe2c89b1fed2dd8c03cbd9af 379b2273d95566e8a69eadabceabc6ee08521b49 -- tests; issue-bundle.json /manifest_metadata/provenance/verification"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "provision-reusable-child-diagnostic-sink",
+            "title": "Provision a reusable file-descriptor-backed diagnostic sink",
+            "description": "Create one process-wide sink suitable for direct child-process stderr attachment, while preserving startup through bounded fallback behavior when the preferred log cannot be opened.",
+            "evidence_ids": [
+              "E3_SHARED_SINK",
+              "E4_SINK_FALLBACK"
+            ],
+            "semantic_action": {
+              "intent": "Provide child processes with a non-interactive diagnostic destination without making optional logging setup a hard startup dependency.",
+              "module_role": "subprocess diagnostic-sink owner",
+              "operation": "provision",
+              "pre_state": "A child process is about to be spawned, but no reusable, file-descriptor-backed diagnostic sink has been acquired for its stderr.",
+              "post_state": "A cached writable handle is available: preferably an append-mode profile log, otherwise the null device, with parent stderr retained only as the final degraded fallback.",
+              "validation": "Verify that repeated acquisition returns the cached handle, the preferred handle exposes fileno(), and forced log-open failure selects the documented fallback path.",
+              "parameters": [
+                "profile log directory",
+                "diagnostic log filename",
+                "process-wide handle cache",
+                "cache lock",
+                "null-device path",
+                "parent stderr fallback"
+              ],
+              "evidence_ids": [
+                "E3_SHARED_SINK",
+                "E4_SINK_FALLBACK"
+              ]
+            }
+          },
+          {
+            "name": "annotate-shared-child-diagnostic-stream",
+            "title": "Mark each child launch in the shared diagnostic stream",
+            "description": "Write a best-effort timestamped producer marker before launch so output from multiple children remains attributable without introducing a pipe or reader thread.",
+            "evidence_ids": [
+              "E5_START_MARKER",
+              "E6_SPAWN_ROUTING"
+            ],
+            "semantic_action": {
+              "intent": "Keep diagnostics from multiple child processes distinguishable in a shared append-only destination.",
+              "module_role": "shared diagnostic-stream annotator",
+              "operation": "annotate",
+              "pre_state": "A shared diagnostic sink has been selected and a named child process is about to start.",
+              "post_state": "When the sink accepts writes, it contains a flushed timestamped start marker identifying the child; marker failure does not block launch.",
+              "validation": "Inspect the sink for a flushed marker containing the supplied child name and confirm that a marker-write exception does not escape the annotation operation.",
+              "parameters": [
+                "diagnostic sink",
+                "child/server name",
+                "launch timestamp"
+              ],
+              "evidence_ids": [
+                "E5_START_MARKER",
+                "E6_SPAWN_ROUTING"
+              ]
+            }
+          },
+          {
+            "name": "route-child-stderr-away-from-interactive-terminal",
+            "title": "Bind child stderr to the selected diagnostic sink",
+            "description": "Pass the selected handle explicitly at the subprocess client boundary so child diagnostics do not use the library's implicit parent-stderr destination.",
+            "evidence_ids": [
+              "E1_PARENT_STDIO_DEFAULT",
+              "E2_FAILURE_MECHANISM",
+              "E6_SPAWN_ROUTING",
+              "E9_REPORTED_E2E"
+            ],
+            "semantic_action": {
+              "intent": "Prevent unsolicited child diagnostics from corrupting or blocking an independently rendered interactive terminal while retaining file-based diagnostics when possible.",
+              "module_role": "stdio subprocess lifecycle owner",
+              "operation": "route",
+              "pre_state": "The stdio client is invoked without an explicit stderr destination, so child diagnostics may inherit the parent process's interactive stderr.",
+              "post_state": "The stdio client receives an explicit errlog handle, while its existing session initialization, PID tracking, reconnect, and shutdown behavior remains in place.",
+              "validation": "Spawn a child that writes a known banner to stderr and prove that the banner reaches the selected sink but not the calling terminal; also exercise the existing start-and-shutdown lifecycle.",
+              "parameters": [
+                "stdio client factory",
+                "server parameters",
+                "diagnostic sink handle",
+                "child stderr payload",
+                "interactive terminal capture"
+              ],
+              "evidence_ids": [
+                "E1_PARENT_STDIO_DEFAULT",
+                "E2_FAILURE_MECHANISM",
+                "E6_SPAWN_ROUTING",
+                "E8_EXISTING_LIFECYCLE_TEST",
+                "E9_REPORTED_E2E"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "isolate-subprocess-diagnostics-from-terminal-ui",
+            "title": "Isolate subprocess diagnostics from an interactive terminal UI",
+            "description": "Establish a reusable file-descriptor-backed diagnostic destination, optionally identify each producer in a shared stream, and explicitly bind child stderr at the spawn boundary without changing the subprocess protocol or lifecycle.",
+            "atomic_names": [
+              "provision-reusable-child-diagnostic-sink",
+              "annotate-shared-child-diagnostic-stream",
+              "route-child-stderr-away-from-interactive-terminal"
+            ],
+            "evidence_ids": [
+              "E1_PARENT_STDIO_DEFAULT",
+              "E2_FAILURE_MECHANISM",
+              "E3_SHARED_SINK",
+              "E4_SINK_FALLBACK",
+              "E5_START_MARKER",
+              "E6_SPAWN_ROUTING",
+              "E7_SCOPED_DIFF",
+              "E8_EXISTING_LIFECYCLE_TEST",
+              "E9_REPORTED_E2E",
+              "E10_NO_CHANGED_TEST"
+            ],
+            "workflow_graph": {
+              "goal": "Ensure diagnostics emitted by stdio-managed child processes do not write into and destabilize the parent application's interactive terminal, while keeping those diagnostics inspectable when the preferred log is available.",
+              "when_to_use": [
+                "A library-managed child process defaults stderr to the parent process's terminal.",
+                "The parent concurrently renders an interactive terminal interface whose state can be corrupted by unsolicited writes.",
+                "Child stderr is diagnostic output rather than the protocol stream used for parent-child communication."
+              ],
+              "anti_goals": [
+                "Do not redirect or modify the child's protocol-bearing stdin or stdout streams.",
+                "Do not redesign PID tracking, session initialization, reconnection, cancellation, or shutdown behavior.",
+                "Do not add a per-line pipe and reader thread solely to prefix diagnostics when a launch marker is sufficient.",
+                "Do not make failure to open an optional diagnostic log prevent the child from starting."
+              ],
+              "not_applicable_when": [
+                "Child stderr is itself a required machine-readable protocol channel.",
+                "The parent intentionally exposes child stderr directly to a non-interactive caller.",
+                "The subprocess API cannot accept a file descriptor or equivalent explicit stderr destination.",
+                "Policy requires startup to fail rather than discard diagnostics when durable logging is unavailable."
+              ],
+              "inputs": [
+                "subprocess spawn call site and stderr-option contract",
+                "preferred diagnostic-log location",
+                "writable null-device fallback",
+                "stable child or server name",
+                "interactive-terminal and diagnostic-sink observation points"
+              ],
+              "entry_state": "A stdio child is launched through a library call that omits the stderr destination, allowing diagnostic output to inherit the interactive parent stderr.",
+              "exit_state": "Every affected stdio spawn explicitly receives the selected diagnostic handle; preferred-path child stderr is written to the shared log rather than the terminal; producer launches are best-effort labeled; and the pre-existing connection lifecycle remains operational.",
+              "steps": [
+                {
+                  "action_name": "provision-reusable-child-diagnostic-sink",
+                  "role": "establish-contract",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "Before the first affected child is spawned, and thereafter through the cached handle.",
+                  "validation": "Confirm a real file descriptor is returned for the preferred append-mode log, repeated calls reuse it, and log-open failure follows the bounded fallback chain."
+                },
+                {
+                  "action_name": "annotate-shared-child-diagnostic-stream",
+                  "role": "implement",
+                  "required": false,
+                  "depends_on": [
+                    "provision-reusable-child-diagnostic-sink"
+                  ],
+                  "condition": "Use when multiple named children can write to the same sink and launch attribution is useful; annotation must remain best effort.",
+                  "validation": "Confirm the marker includes the child identity and timestamp, is flushed before spawn, and cannot abort startup if its write fails."
+                },
+                {
+                  "action_name": "route-child-stderr-away-from-interactive-terminal",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [
+                    "provision-reusable-child-diagnostic-sink"
+                  ],
+                  "condition": "At every subprocess-spawn call site whose implicit stderr destination is the interactive parent stream.",
+                  "validation": "Capture both destinations while a child emits a known stderr banner; require the preferred sink to contain the banner and the terminal capture not to contain it, then confirm initialization and shutdown still complete."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "provision-reusable-child-diagnostic-sink",
+                  "to": "annotate-shared-child-diagnostic-stream",
+                  "type": "enables"
+                },
+                {
+                  "from": "provision-reusable-child-diagnostic-sink",
+                  "to": "route-child-stderr-away-from-interactive-terminal",
+                  "type": "requires"
+                },
+                {
+                  "from": "annotate-shared-child-diagnostic-stream",
+                  "to": "route-child-stderr-away-from-interactive-terminal",
+                  "type": "enables"
+                }
+              ],
+              "validation_ladder": [
+                "Static boundary check: verify each affected spawn supplies an explicit stderr/errlog destination instead of relying on the library default.",
+                "Sink contract check: verify the preferred destination is append-mode, promptly flushed or line-buffered, reusable, and exposes the OS-level descriptor required by subprocess machinery.",
+                "Fallback check: force preferred-log creation failure and confirm startup can proceed through the null-device path; document the final parent-stderr degradation if even that open fails.",
+                "Lifecycle regression check: start the mocked stdio connection, initialize and discover tools, then shut it down successfully.",
+                "End-to-end isolation check: spawn a real child that writes a recognizable stderr payload and assert it appears in the diagnostic log but not in the terminal capture."
+              ],
+              "stop_conditions": [
+                "Stop and redesign if stderr carries required protocol messages rather than diagnostics.",
+                "Stop if the subprocess library cannot attach the chosen sink directly or the sink lacks the required OS-level descriptor.",
+                "Do not claim complete terminal isolation when sink acquisition reaches the final parent-stderr fallback.",
+                "Do not claim automated regression coverage until a test directly asserts routing and terminal non-leakage."
+              ],
+              "unresolved_or_deferred": [
+                "The pinned commit contains no automated test directly asserting the new errlog argument, preferred log contents, fallback selection, or absence of terminal output.",
+                "The reported end-to-end verification is described in the commit message, but its command, fixture, and captured output are not present in the checkout or evidence bundle.",
+                "The process-wide diagnostic handle is not explicitly closed by this change; its intended lifetime is described as once per process, but shutdown cleanup is not separately tested.",
+                "If both the preferred log and null device cannot be opened, the implementation intentionally degrades to parent stderr and therefore cannot guarantee terminal isolation."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "GitHub issue body, comments, review discussion, and status checks are unavailable in the supplied evidence bundle.",
+          "Was the reported end-to-end verification executed in CI or only manually? The available evidence does not establish this.",
+          "Should a future regression test reset and close the process-wide handle between cases to verify preferred, null-device, and final-degradation paths independently?"
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "provision-reusable-child-diagnostic-sink",
+          "title": "Provision a reusable file-descriptor-backed diagnostic sink",
+          "description": "Create one process-wide sink suitable for direct child-process stderr attachment, while preserving startup through bounded fallback behavior when the preferred log cannot be opened.",
+          "evidence_ids": [
+            "E3_SHARED_SINK",
+            "E4_SINK_FALLBACK"
+          ],
+          "semantic_action": {
+            "intent": "Provide child processes with a non-interactive diagnostic destination without making optional logging setup a hard startup dependency.",
+            "module_role": "subprocess diagnostic-sink owner",
+            "operation": "provision",
+            "pre_state": "A child process is about to be spawned, but no reusable, file-descriptor-backed diagnostic sink has been acquired for its stderr.",
+            "post_state": "A cached writable handle is available: preferably an append-mode profile log, otherwise the null device, with parent stderr retained only as the final degraded fallback.",
+            "validation": "Verify that repeated acquisition returns the cached handle, the preferred handle exposes fileno(), and forced log-open failure selects the documented fallback path.",
+            "parameters": [
+              "profile log directory",
+              "diagnostic log filename",
+              "process-wide handle cache",
+              "cache lock",
+              "null-device path",
+              "parent stderr fallback"
+            ],
+            "evidence_ids": [
+              "E3_SHARED_SINK",
+              "E4_SINK_FALLBACK"
+            ]
+          }
+        },
+        {
+          "name": "annotate-shared-child-diagnostic-stream",
+          "title": "Mark each child launch in the shared diagnostic stream",
+          "description": "Write a best-effort timestamped producer marker before launch so output from multiple children remains attributable without introducing a pipe or reader thread.",
+          "evidence_ids": [
+            "E5_START_MARKER",
+            "E6_SPAWN_ROUTING"
+          ],
+          "semantic_action": {
+            "intent": "Keep diagnostics from multiple child processes distinguishable in a shared append-only destination.",
+            "module_role": "shared diagnostic-stream annotator",
+            "operation": "annotate",
+            "pre_state": "A shared diagnostic sink has been selected and a named child process is about to start.",
+            "post_state": "When the sink accepts writes, it contains a flushed timestamped start marker identifying the child; marker failure does not block launch.",
+            "validation": "Inspect the sink for a flushed marker containing the supplied child name and confirm that a marker-write exception does not escape the annotation operation.",
+            "parameters": [
+              "diagnostic sink",
+              "child/server name",
+              "launch timestamp"
+            ],
+            "evidence_ids": [
+              "E5_START_MARKER",
+              "E6_SPAWN_ROUTING"
+            ]
+          }
+        },
+        {
+          "name": "route-child-stderr-away-from-interactive-terminal",
+          "title": "Bind child stderr to the selected diagnostic sink",
+          "description": "Pass the selected handle explicitly at the subprocess client boundary so child diagnostics do not use the library's implicit parent-stderr destination.",
+          "evidence_ids": [
+            "E1_PARENT_STDIO_DEFAULT",
+            "E2_FAILURE_MECHANISM",
+            "E6_SPAWN_ROUTING",
+            "E9_REPORTED_E2E"
+          ],
+          "semantic_action": {
+            "intent": "Prevent unsolicited child diagnostics from corrupting or blocking an independently rendered interactive terminal while retaining file-based diagnostics when possible.",
+            "module_role": "stdio subprocess lifecycle owner",
+            "operation": "route",
+            "pre_state": "The stdio client is invoked without an explicit stderr destination, so child diagnostics may inherit the parent process's interactive stderr.",
+            "post_state": "The stdio client receives an explicit errlog handle, while its existing session initialization, PID tracking, reconnect, and shutdown behavior remains in place.",
+            "validation": "Spawn a child that writes a known banner to stderr and prove that the banner reaches the selected sink but not the calling terminal; also exercise the existing start-and-shutdown lifecycle.",
+            "parameters": [
+              "stdio client factory",
+              "server parameters",
+              "diagnostic sink handle",
+              "child stderr payload",
+              "interactive terminal capture"
+            ],
+            "evidence_ids": [
+              "E1_PARENT_STDIO_DEFAULT",
+              "E2_FAILURE_MECHANISM",
+              "E6_SPAWN_ROUTING",
+              "E8_EXISTING_LIFECYCLE_TEST",
+              "E9_REPORTED_E2E"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "isolate-subprocess-diagnostics-from-terminal-ui",
+          "title": "Isolate subprocess diagnostics from an interactive terminal UI",
+          "description": "Establish a reusable file-descriptor-backed diagnostic destination, optionally identify each producer in a shared stream, and explicitly bind child stderr at the spawn boundary without changing the subprocess protocol or lifecycle.",
+          "atomic_names": [
+            "provision-reusable-child-diagnostic-sink",
+            "annotate-shared-child-diagnostic-stream",
+            "route-child-stderr-away-from-interactive-terminal"
+          ],
+          "evidence_ids": [
+            "E1_PARENT_STDIO_DEFAULT",
+            "E2_FAILURE_MECHANISM",
+            "E3_SHARED_SINK",
+            "E4_SINK_FALLBACK",
+            "E5_START_MARKER",
+            "E6_SPAWN_ROUTING",
+            "E7_SCOPED_DIFF",
+            "E8_EXISTING_LIFECYCLE_TEST",
+            "E9_REPORTED_E2E",
+            "E10_NO_CHANGED_TEST"
+          ],
+          "workflow_graph": {
+            "goal": "Ensure diagnostics emitted by stdio-managed child processes do not write into and destabilize the parent application's interactive terminal, while keeping those diagnostics inspectable when the preferred log is available.",
+            "when_to_use": [
+              "A library-managed child process defaults stderr to the parent process's terminal.",
+              "The parent concurrently renders an interactive terminal interface whose state can be corrupted by unsolicited writes.",
+              "Child stderr is diagnostic output rather than the protocol stream used for parent-child communication."
+            ],
+            "anti_goals": [
+              "Do not redirect or modify the child's protocol-bearing stdin or stdout streams.",
+              "Do not redesign PID tracking, session initialization, reconnection, cancellation, or shutdown behavior.",
+              "Do not add a per-line pipe and reader thread solely to prefix diagnostics when a launch marker is sufficient.",
+              "Do not make failure to open an optional diagnostic log prevent the child from starting."
+            ],
+            "not_applicable_when": [
+              "Child stderr is itself a required machine-readable protocol channel.",
+              "The parent intentionally exposes child stderr directly to a non-interactive caller.",
+              "The subprocess API cannot accept a file descriptor or equivalent explicit stderr destination.",
+              "Policy requires startup to fail rather than discard diagnostics when durable logging is unavailable."
+            ],
+            "inputs": [
+              "subprocess spawn call site and stderr-option contract",
+              "preferred diagnostic-log location",
+              "writable null-device fallback",
+              "stable child or server name",
+              "interactive-terminal and diagnostic-sink observation points"
+            ],
+            "entry_state": "A stdio child is launched through a library call that omits the stderr destination, allowing diagnostic output to inherit the interactive parent stderr.",
+            "exit_state": "Every affected stdio spawn explicitly receives the selected diagnostic handle; preferred-path child stderr is written to the shared log rather than the terminal; producer launches are best-effort labeled; and the pre-existing connection lifecycle remains operational.",
+            "steps": [
+              {
+                "action_name": "provision-reusable-child-diagnostic-sink",
+                "role": "establish-contract",
+                "required": true,
+                "depends_on": [],
+                "condition": "Before the first affected child is spawned, and thereafter through the cached handle.",
+                "validation": "Confirm a real file descriptor is returned for the preferred append-mode log, repeated calls reuse it, and log-open failure follows the bounded fallback chain."
+              },
+              {
+                "action_name": "annotate-shared-child-diagnostic-stream",
+                "role": "implement",
+                "required": false,
+                "depends_on": [
+                  "provision-reusable-child-diagnostic-sink"
+                ],
+                "condition": "Use when multiple named children can write to the same sink and launch attribution is useful; annotation must remain best effort.",
+                "validation": "Confirm the marker includes the child identity and timestamp, is flushed before spawn, and cannot abort startup if its write fails."
+              },
+              {
+                "action_name": "route-child-stderr-away-from-interactive-terminal",
+                "role": "implement",
+                "required": true,
+                "depends_on": [
+                  "provision-reusable-child-diagnostic-sink"
+                ],
+                "condition": "At every subprocess-spawn call site whose implicit stderr destination is the interactive parent stream.",
+                "validation": "Capture both destinations while a child emits a known stderr banner; require the preferred sink to contain the banner and the terminal capture not to contain it, then confirm initialization and shutdown still complete."
+              }
+            ],
+            "edges": [
+              {
+                "from": "provision-reusable-child-diagnostic-sink",
+                "to": "annotate-shared-child-diagnostic-stream",
+                "type": "enables"
+              },
+              {
+                "from": "provision-reusable-child-diagnostic-sink",
+                "to": "route-child-stderr-away-from-interactive-terminal",
+                "type": "requires"
+              },
+              {
+                "from": "annotate-shared-child-diagnostic-stream",
+                "to": "route-child-stderr-away-from-interactive-terminal",
+                "type": "enables"
+              }
+            ],
+            "validation_ladder": [
+              "Static boundary check: verify each affected spawn supplies an explicit stderr/errlog destination instead of relying on the library default.",
+              "Sink contract check: verify the preferred destination is append-mode, promptly flushed or line-buffered, reusable, and exposes the OS-level descriptor required by subprocess machinery.",
+              "Fallback check: force preferred-log creation failure and confirm startup can proceed through the null-device path; document the final parent-stderr degradation if even that open fails.",
+              "Lifecycle regression check: start the mocked stdio connection, initialize and discover tools, then shut it down successfully.",
+              "End-to-end isolation check: spawn a real child that writes a recognizable stderr payload and assert it appears in the diagnostic log but not in the terminal capture."
+            ],
+            "stop_conditions": [
+              "Stop and redesign if stderr carries required protocol messages rather than diagnostics.",
+              "Stop if the subprocess library cannot attach the chosen sink directly or the sink lacks the required OS-level descriptor.",
+              "Do not claim complete terminal isolation when sink acquisition reaches the final parent-stderr fallback.",
+              "Do not claim automated regression coverage until a test directly asserts routing and terminal non-leakage."
+            ],
+            "unresolved_or_deferred": [
+              "The pinned commit contains no automated test directly asserting the new errlog argument, preferred log contents, fallback selection, or absence of terminal output.",
+              "The reported end-to-end verification is described in the commit message, but its command, fixture, and captured output are not present in the checkout or evidence bundle.",
+              "The process-wide diagnostic handle is not explicitly closed by this change; its intended lifetime is described as once per process, but shutdown cleanup is not separately tested.",
+              "If both the preferred log and null device cannot be opened, the implementation intentionally degrades to parent stderr and therefore cannot guarantee terminal isolation."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "GitHub issue body, comments, review discussion, and status checks are unavailable in the supplied evidence bundle.",
+        "Was the reported end-to-end verification executed in CI or only manually? The available evidence does not establish this.",
+        "Should a future regression test reset and close the process-wide handle between cases to verify preferred, null-device, and final-degradation paths independently?"
+      ]
+    },
+    "call_sites": [
+      "The stdio lifecycle writes the start marker, acquires the sink, and passes it as the errlog argument to stdio_client while retaining the existing PID tracking and client-session initialization flow."
+    ],
+    "tests": [
+      "An existing mocked lifecycle test starts a stdio server, verifies session initialization and tool discovery, and shuts it down, but it does not assert the errlog argument or diagnostic-file behavior.",
+      "No test file was added or modified by the pinned implementation commit."
+    ]
+  },
+  {
+    "episode_id": "openai__codex__26734__f2969f36",
+    "title": "Interrupt non-TTY subprocesses without bypassing normal lifecycle completion",
+    "before": "At parent f574946960a4d21e884453ac9963a869153b847d, unified exec rejected every non-empty write_stdin request for a non-TTY process as StdinClosed. Neither the unified process abstraction nor the local/remote exec-server interface exposed a non-consuming signal operation, and spawned-process handles only offered termination, which killed the process and aborted lifecycle helper tasks. Consequently an exact U+0003 Ctrl-C request could not reach a long-running non-TTY process while preserving its signal-handler output and actual exit status.",
+    "after": "At f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519, unified exec recognizes exact U+0003 as an interrupt for non-TTY sessions while continuing to reject other non-TTY stdin. A typed interrupt operation flows through local and remote exec-server implementations to the spawned-process handle; Unix backends send SIGINT to the process group without consuming the terminator or aborting output/wait tasks, while unsupported backends return an explicit error. The existing post-write collection path then drains process output, observes closure, removes the completed session, and reports either the process handler's exit code or 128 plus the terminating signal.",
+    "diff": "The commit changes 19 files. It adds ProcessSignal::Interrupt and process/signal protocol, client, router, handler, registry, local-process, and remote-process support; adds a non-consuming signal method to spawned-process handles and SIGINT process-group delivery on Unix; maps signal-only ExitStatus values to 128+signal; special-cases exact U+0003 in non-TTY write_stdin before the existing output collection path; and adds local/remote exec-server plus end-to-end unified-exec tests for trapped interrupts, default SIGINT exit 130, output draining, session cleanup, and explicit Windows unsupported errors.",
+    "repository": "openai/codex",
+    "revision": "github-issue-26734",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10",
+      "E11",
+      "E12"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "openai/codex",
+      "issue": 26734,
+      "checkout": "/home/chenyujia/tritonToLlvm/codex-agent",
+      "manifest_metadata": {
+        "category": "subprocess-and-pty-lifecycle",
+        "role": "train_candidate",
+        "case_id": "openai__codex__26734__subprocess-and-pty-lifecycle",
+        "sample_kind": "verified_implementation_pull_request",
+        "seed_issue": null,
+        "seed_issue_url": null,
+        "seed_relation": null,
+        "resolution_url": "https://github.com/openai/codex/pull/26734",
+        "provenance": {
+          "classification": "direct_implementation_artifact",
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 26734,
+            "url": "https://github.com/openai/codex/pull/26734"
+          },
+          "commit": {
+            "sha": "f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519",
+            "subject": "[codex] Handle Ctrl-C for non-TTY unified exec (#26734)",
+            "parents": [
+              "f574946960a4d21e884453ac9963a869153b847d"
+            ],
+            "body_excerpt": "## Why\n\nA long-running unified exec process started with `tty: false` could not\nbe interrupted via `write_stdin`: ordinary non-TTY stdin writes are\nrejected once stdin is closed, but an exact U+0003 payload should still\nmap to a process interrupt. The interrupt should flow through the same\nprocess lifecycle path as a real signal so Codex preserves\nprocess-reported output and exit metadata instead of fabricating a\nCtrl-C exit code or tearing down the session early.\n\n## What Changed\n\n- Add `process/signal` to exec-server with `ProcessSignal::Interrupt`\nand an empty response.\n- Add a non-consuming `ProcessHandle::signal` path for spawned\nprocesses; on Unix it sends SIGINT to the process group and leaves\nterminate/hard-kill unchanged.\n- Route non-TTY U+0003 `write_stdin` through `process.signal(...)`\ninstead of `terminate`, then let the normal post-write collection path\ndrain output and observe exit.\n- Add exec-server coverage where a shell `trap INT` handler prints the\nsignal and exits with its own code.\n- Add unified exec coverage where a `tty: false` process traps SIGINT,\nemits output, and exits with its own code.\n\n## Validation\n\n- `just test -p codex-exec-server\nexec_process_signal"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "first_parent_and_changed_files_recorded",
+            "implementation_change_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "openai/codex",
+        "issue_number": 26734,
+        "issue": {
+          "number": 26734,
+          "title": "[codex] Handle Ctrl-C for non-TTY unified exec (#26734)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 26734,
+              "title": "[codex] Handle Ctrl-C for non-TTY unified exec (#26734)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tcodex-rs/core/src/unified_exec/process.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/core/src/unified_exec/process_manager.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/core/src/unified_exec/process_tests.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/core/tests/suite/unified_exec.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/exec-server/src/client.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/exec-server/src/lib.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/exec-server/src/local_process.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/exec-server/src/process.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/exec-server/src/protocol.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/exec-server/src/remote_process.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/exec-server/src/server/handler.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/exec-server/src/server/process_handler.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/exec-server/src/server/registry.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/exec-server/tests/exec_process.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/utils/pty/src/lib.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/utils/pty/src/pipe.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/utils/pty/src/process.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/utils/pty/src/process_group.rs"
+              },
+              {
+                "status_line": "M\tcodex-rs/utils/pty/src/pty.rs"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519",
+                "subject": "[codex] Handle Ctrl-C for non-TTY unified exec (#26734)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/codex-agent",
+        "pinned_ref": "f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519",
+        "resolved_commit": "f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519",
+        "parent_commit": "f574946960a4d21e884453ac9963a869153b847d",
+        "commit_show_stat": "commit f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519\nAuthor:     pakrym-oai <pakrym@openai.com>\nAuthorDate: Tue Jun 9 15:10:17 2026 -0700\nCommit:     GitHub <noreply@github.com>\nCommitDate: Tue Jun 9 15:10:17 2026 -0700\n\n    [codex] Handle Ctrl-C for non-TTY unified exec (#26734)\n    \n    ## Why\n    \n    A long-running unified exec process started with `tty: false` could not\n    be interrupted via `write_stdin`: ordinary non-TTY stdin writes are\n    rejected once stdin is closed, but an exact U+0003 payload should still\n    map to a process interrupt. The interrupt should flow through the same\n    process lifecycle path as a real signal so Codex preserves\n    process-reported output and exit metadata instead of fabricating a\n    Ctrl-C exit code or tearing down the session early.\n    \n    ## What Changed\n    \n    - Add `process/signal` to exec-server with `ProcessSignal::Interrupt`\n    and an empty response.\n    - Add a non-consuming `ProcessHandle::signal` path for spawned\n    processes; on Unix it sends SIGINT to the process group and leaves\n    terminate/hard-kill unchanged.\n    - Route non-TTY U+0003 `write_stdin` through `process.signal(...)`\n    instead of `terminate`, then let the normal post-write collection path\n    drain output and observe exit.\n    - Add exec-server coverage where a shell `trap INT` handler prints the\n    signal and exits with its own code.\n    - Add unified exec coverage where a `tty: false` process traps SIGINT,\n    emits output, and exits with its own code.\n    \n    ## Validation\n    \n    - `just test -p codex-exec-server\n    exec_process_signal_interrupts_process`\n    - `just test -p codex-exec-server`\n    - `just test -p codex-core\n    write_stdin_ctrl_c_interrupts_non_tty_session`\n\n codex-rs/core/src/unified_exec/process.rs          |  15 +-\n codex-rs/core/src/unified_exec/process_manager.rs  |  40 ++--\n codex-rs/core/src/unified_exec/process_tests.rs    |   5 +\n codex-rs/core/tests/suite/unified_exec.rs          | 243 +++++++++++++++++++++\n codex-rs/exec-server/src/client.rs                 |  25 +++\n codex-rs/exec-server/src/lib.rs                    |   3 +\n codex-rs/exec-server/src/local_process.rs          |  54 ++++-\n codex-rs/exec-server/src/process.rs                |   3 +\n codex-rs/exec-server/src/protocol.rs               |  18 ++\n codex-rs/exec-server/src/remote_process.rs         |   6 +\n codex-rs/exec-server/src/server/handler.rs         |  10 +\n codex-rs/exec-server/src/server/process_handler.rs |   9 +\n codex-rs/exec-server/src/server/registry.rs        |   8 +\n codex-rs/exec-server/tests/exec_process.rs         | 125 ++++++++++-\n codex-rs/utils/pty/src/lib.rs                      |   2 +\n codex-rs/utils/pty/src/pipe.rs                     |  20 +-\n codex-rs/utils/pty/src/process.rs                  |  48 ++++\n codex-rs/utils/pty/src/process_group.rs            |  43 ++--\n codex-rs/utils/pty/src/pty.rs                      |  26 ++-\n 19 files changed, 659 insertions(+), 44 deletions(-)\n",
+        "changed_files_name_status": "M\tcodex-rs/core/src/unified_exec/process.rs\nM\tcodex-rs/core/src/unified_exec/process_manager.rs\nM\tcodex-rs/core/src/unified_exec/process_tests.rs\nM\tcodex-rs/core/tests/suite/unified_exec.rs\nM\tcodex-rs/exec-server/src/client.rs\nM\tcodex-rs/exec-server/src/lib.rs\nM\tcodex-rs/exec-server/src/local_process.rs\nM\tcodex-rs/exec-server/src/process.rs\nM\tcodex-rs/exec-server/src/protocol.rs\nM\tcodex-rs/exec-server/src/remote_process.rs\nM\tcodex-rs/exec-server/src/server/handler.rs\nM\tcodex-rs/exec-server/src/server/process_handler.rs\nM\tcodex-rs/exec-server/src/server/registry.rs\nM\tcodex-rs/exec-server/tests/exec_process.rs\nM\tcodex-rs/utils/pty/src/lib.rs\nM\tcodex-rs/utils/pty/src/pipe.rs\nM\tcodex-rs/utils/pty/src/process.rs\nM\tcodex-rs/utils/pty/src/process_group.rs\nM\tcodex-rs/utils/pty/src/pty.rs\n",
+        "linked_issue_numbers": [
+          26734
+        ],
+        "manifest_metadata": {
+          "category": "subprocess-and-pty-lifecycle",
+          "theme": "subprocess and pseudo-terminal lifecycle finalization",
+          "file_sample": [
+            "codex-rs/core/src/unified_exec/process.rs",
+            "codex-rs/core/src/unified_exec/process_manager.rs",
+            "codex-rs/core/src/unified_exec/process_tests.rs",
+            "codex-rs/core/tests/suite/unified_exec.rs",
+            "codex-rs/exec-server/src/client.rs",
+            "codex-rs/exec-server/src/lib.rs",
+            "codex-rs/exec-server/src/local_process.rs",
+            "codex-rs/exec-server/src/process.rs",
+            "codex-rs/exec-server/src/protocol.rs",
+            "codex-rs/exec-server/src/remote_process.rs",
+            "codex-rs/exec-server/src/server/handler.rs",
+            "codex-rs/exec-server/src/server/process_handler.rs",
+            "codex-rs/exec-server/src/server/registry.rs",
+            "codex-rs/exec-server/tests/exec_process.rs",
+            "codex-rs/utils/pty/src/lib.rs",
+            "codex-rs/utils/pty/src/pipe.rs",
+            "codex-rs/utils/pty/src/process.rs",
+            "codex-rs/utils/pty/src/process_group.rs",
+            "codex-rs/utils/pty/src/pty.rs"
+          ],
+          "quality": "implementation_plus_test",
+          "case_id": "openai__codex__26734__subprocess-and-pty-lifecycle",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_implementation_pull_request",
+          "resolution_url": "https://github.com/openai/codex/pull/26734",
+          "source": "agent_core_thirteen_category_extraction_v2",
+          "provenance": {
+            "classification": "direct_implementation_artifact",
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 26734,
+              "url": "https://github.com/openai/codex/pull/26734"
+            },
+            "commit": {
+              "sha": "f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519",
+              "subject": "[codex] Handle Ctrl-C for non-TTY unified exec (#26734)",
+              "parents": [
+                "f574946960a4d21e884453ac9963a869153b847d"
+              ],
+              "body_excerpt": "## Why\n\nA long-running unified exec process started with `tty: false` could not\nbe interrupted via `write_stdin`: ordinary non-TTY stdin writes are\nrejected once stdin is closed, but an exact U+0003 payload should still\nmap to a process interrupt. The interrupt should flow through the same\nprocess lifecycle path as a real signal so Codex preserves\nprocess-reported output and exit metadata instead of fabricating a\nCtrl-C exit code or tearing down the session early.\n\n## What Changed\n\n- Add `process/signal` to exec-server with `ProcessSignal::Interrupt`\nand an empty response.\n- Add a non-consuming `ProcessHandle::signal` path for spawned\nprocesses; on Unix it sends SIGINT to the process group and leaves\nterminate/hard-kill unchanged.\n- Route non-TTY U+0003 `write_stdin` through `process.signal(...)`\ninstead of `terminate`, then let the normal post-write collection path\ndrain output and observe exit.\n- Add exec-server coverage where a shell `trap INT` handler prints the\nsignal and exits with its own code.\n- Add unified exec coverage where a `tty: false` process traps SIGINT,\nemits output, and exits with its own code.\n\n## Validation\n\n- `just test -p codex-exec-server\nexec_process_signal"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "first_parent_and_changed_files_recorded",
+              "implementation_change_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T11:01:40.223318+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "openai__codex__26734__f2969f36",
+          "title": "Interrupt non-TTY subprocesses without bypassing normal lifecycle completion",
+          "before": "At parent f574946960a4d21e884453ac9963a869153b847d, unified exec rejected every non-empty write_stdin request for a non-TTY process as StdinClosed. Neither the unified process abstraction nor the local/remote exec-server interface exposed a non-consuming signal operation, and spawned-process handles only offered termination, which killed the process and aborted lifecycle helper tasks. Consequently an exact U+0003 Ctrl-C request could not reach a long-running non-TTY process while preserving its signal-handler output and actual exit status.",
+          "after": "At f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519, unified exec recognizes exact U+0003 as an interrupt for non-TTY sessions while continuing to reject other non-TTY stdin. A typed interrupt operation flows through local and remote exec-server implementations to the spawned-process handle; Unix backends send SIGINT to the process group without consuming the terminator or aborting output/wait tasks, while unsupported backends return an explicit error. The existing post-write collection path then drains process output, observes closure, removes the completed session, and reports either the process handler's exit code or 128 plus the terminating signal.",
+          "diff": "The commit changes 19 files. It adds ProcessSignal::Interrupt and process/signal protocol, client, router, handler, registry, local-process, and remote-process support; adds a non-consuming signal method to spawned-process handles and SIGINT process-group delivery on Unix; maps signal-only ExitStatus values to 128+signal; special-cases exact U+0003 in non-TTY write_stdin before the existing output collection path; and adds local/remote exec-server plus end-to-end unified-exec tests for trapped interrupts, default SIGINT exit 130, output draining, session cleanup, and explicit Windows unsupported errors."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "Commit f2969f36 has parent f574946960 and states that non-TTY unified-exec processes could not be interrupted through write_stdin; the intended resolution is a real signal path that preserves process-reported output and exit metadata.",
+            "source": "git show -s --format=fuller f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519; issue-bundle.json commit_show_stat"
+          },
+          {
+            "id": "E2",
+            "kind": "diff",
+            "claim": "In the parent, write_stdin returned StdinClosed for every non-empty non-TTY input. The change defines exact U+0003 as INTERRUPT, invokes process.interrupt only for that exact payload, continues rejecting all other non-TTY input, and then proceeds through the existing output collection and state-refresh path.",
+            "source": "git diff f574946960a4d21e884453ac9963a869153b847d f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519 -- codex-rs/core/src/unified_exec/process_manager.rs"
+          },
+          {
+            "id": "E3",
+            "kind": "implementation",
+            "claim": "UnifiedExecProcess gains an async interrupt operation that adapts the same semantic interrupt to either the direct spawned-process handle or the exec-server-backed process handle without invoking terminate, closing output, cancelling collection, or aborting helper tasks.",
+            "source": "git show f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519:codex-rs/core/src/unified_exec/process.rs"
+          },
+          {
+            "id": "E4",
+            "kind": "implementation",
+            "claim": "The exec-server contract adds typed ProcessSignal::Interrupt, SignalParams, an empty SignalResponse, and the process/signal method.",
+            "source": "git show f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519:codex-rs/exec-server/src/protocol.rs"
+          },
+          {
+            "id": "E5",
+            "kind": "call_site",
+            "claim": "Signal requests are carried through the exec-server client/session, ExecProcess interface, remote implementation, RPC router and handler, process handler, and local process implementation, so local and remote execution share the same lifecycle operation.",
+            "source": "git diff f574946960a4d21e884453ac9963a869153b847d f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519 -- codex-rs/exec-server/src/client.rs codex-rs/exec-server/src/process.rs codex-rs/exec-server/src/remote_process.rs codex-rs/exec-server/src/server/registry.rs codex-rs/exec-server/src/server/handler.rs codex-rs/exec-server/src/server/process_handler.rs codex-rs/exec-server/src/local_process.rs"
+          },
+          {
+            "id": "E6",
+            "kind": "implementation",
+            "claim": "ProcessHandle::signal borrows the retained child controller rather than taking it, whereas request_terminate consumes the controller and terminate also aborts reader, writer, and wait tasks. This makes interrupt non-consuming and leaves normal output and exit observation alive.",
+            "source": "git show f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519:codex-rs/utils/pty/src/process.rs"
+          },
+          {
+            "id": "E7",
+            "kind": "implementation",
+            "claim": "Unix pipe and PTY backends translate Interrupt to SIGINT for the entire process group. Backends without supported signaling return an Unsupported error saying that process interrupt is not supported; hard-kill behavior remains separate.",
+            "source": "git show f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519:codex-rs/utils/pty/src/process_group.rs; git show f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519:codex-rs/utils/pty/src/pipe.rs; git show f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519:codex-rs/utils/pty/src/pty.rs"
+          },
+          {
+            "id": "E8",
+            "kind": "implementation",
+            "claim": "Exit-status normalization now preserves ordinary process exit codes and maps Unix signal termination to 128 plus the signal number, replacing the previous -1 fallback for signal-only statuses in pipe and PTY wait paths.",
+            "source": "git diff f574946960a4d21e884453ac9963a869153b847d f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519 -- codex-rs/utils/pty/src/process.rs codex-rs/utils/pty/src/pipe.rs codex-rs/utils/pty/src/pty.rs"
+          },
+          {
+            "id": "E9",
+            "kind": "test",
+            "claim": "Exec-server integration tests exercise both local and remote backends with a non-TTY shell that traps SIGINT, emits signal:2, and exits 7; reads must retain the handler output, exit code 7, and closed state.",
+            "source": "git show f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519:codex-rs/exec-server/tests/exec_process.rs, test exec_process_signal_interrupts_process"
+          },
+          {
+            "id": "E10",
+            "kind": "test",
+            "claim": "End-to-end unified-exec tests send exact U+0003 to non-TTY sessions and verify a trapped interrupt preserves handler output and exit code 42, a default SIGINT reports exit code 130, and the completed process is removed from the session map.",
+            "source": "git show f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519:codex-rs/core/tests/suite/unified_exec.rs, tests write_stdin_ctrl_c_interrupts_non_tty_session and write_stdin_ctrl_c_default_interrupt_reports_130_for_non_tty_session"
+          },
+          {
+            "id": "E11",
+            "kind": "test",
+            "claim": "Windows-specific exec-server and unified-exec tests require non-TTY interrupt attempts to fail explicitly with the unsupported-backend message rather than pretending the process was interrupted.",
+            "source": "git show f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519:codex-rs/exec-server/tests/exec_process.rs, test exec_process_signal_reports_unsupported_on_windows; git show f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519:codex-rs/core/tests/suite/unified_exec.rs, test write_stdin_ctrl_c_reports_unsupported_interrupt_to_model_on_windows"
+          },
+          {
+            "id": "E12",
+            "kind": "validation",
+            "claim": "The commit records targeted exec-server and unified-exec test commands as validation, but the available bundle contains no CI status or captured command results.",
+            "source": "git show -s --format=%B f2969f36e8b6aa2aefcd625d2a9fc8425bb2a519; issue-bundle.json metadata_unavailable and limitations"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "classify-non-tty-interrupt-control-input",
+            "title": "Recognize only the interrupt control payload on closed non-TTY stdin",
+            "description": "Treat an exact interrupt control character as a lifecycle-control request while preserving the existing rejection of ordinary input when a non-TTY process has no writable stdin.",
+            "evidence_ids": [
+              "E2",
+              "E10"
+            ],
+            "semantic_action": {
+              "intent": "Allow a caller to request interruption of a running non-TTY subprocess without reopening or weakening its closed-stdin contract.",
+              "module_role": "interactive process-control request dispatcher",
+              "operation": "classify",
+              "pre_state": "A running session is non-TTY, its ordinary stdin is unavailable, and a write-style control request contains a non-empty payload.",
+              "post_state": "Exact U+0003 is routed as an interrupt operation; every other non-empty payload still fails as closed stdin.",
+              "validation": "Start a long-running non-TTY session, submit exact U+0003 and observe interruption; separately retain the established oracle that ordinary non-TTY writes return StdinClosed.",
+              "parameters": [
+                "session identifier",
+                "TTY mode",
+                "input payload",
+                "interrupt sentinel U+0003"
+              ],
+              "evidence_ids": [
+                "E2",
+                "E10"
+              ]
+            }
+          },
+          {
+            "name": "propagate-nonconsuming-process-interrupt",
+            "title": "Propagate an interrupt without consuming lifecycle ownership",
+            "description": "Expose one typed interrupt operation across direct and remote process abstractions, deliver it to the Unix process group, retain output/wait machinery, and report unsupported platforms explicitly.",
+            "evidence_ids": [
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E9",
+              "E11"
+            ],
+            "semantic_action": {
+              "intent": "Deliver a graceful interrupt to the subprocess and its descendants while keeping the session alive long enough to observe the process's own response.",
+              "module_role": "subprocess lifecycle-control transport and backend adapter",
+              "operation": "propagate",
+              "pre_state": "A process handle remains registered and owns a child controller plus active output and exit observers.",
+              "post_state": "Supported backends receive an interrupt at process-group scope without consuming the controller or aborting observers; unsupported backends return a specific capability error; hard termination remains a distinct operation.",
+              "validation": "Across local and remote backends, a shell SIGINT handler must run, emit output, exit with its chosen code, and close normally; on an unsupported backend the request must return the documented unsupported error.",
+              "parameters": [
+                "process identifier",
+                "abstract interrupt signal",
+                "local or remote transport",
+                "process-group identifier",
+                "backend signal capability"
+              ],
+              "evidence_ids": [
+                "E3",
+                "E4",
+                "E5",
+                "E6",
+                "E7",
+                "E9",
+                "E11"
+              ]
+            }
+          },
+          {
+            "name": "reconcile-interrupt-completion-metadata",
+            "title": "Drain interrupted-process output and preserve its real exit result",
+            "description": "After sending the interrupt, continue the normal collection and completion path so handler output and actual exit metadata determine the result, including conventional 128-plus-signal status for default Unix signal termination.",
+            "evidence_ids": [
+              "E2",
+              "E6",
+              "E8",
+              "E9",
+              "E10"
+            ],
+            "semantic_action": {
+              "intent": "Prevent control handling from fabricating an exit code, discarding late output, or clearing the session before the subprocess reaches an observable terminal state.",
+              "module_role": "process completion and result reconciler",
+              "operation": "reconcile",
+              "pre_state": "An interrupt has been delivered while output readers and the process wait observer remain active.",
+              "post_state": "Available output is drained, normal closure is observed, the completed session is cleared, explicit handler exit codes are retained, and signal-only Unix termination is represented as 128 plus the signal number.",
+              "validation": "A trapped interrupt must expose its final output and custom exit code; a default SIGINT must report 130; both results must omit a live process identifier after completion.",
+              "parameters": [
+                "output buffer and notifications",
+                "process exit status",
+                "signal number",
+                "session registry entry",
+                "collection deadline"
+              ],
+              "evidence_ids": [
+                "E2",
+                "E6",
+                "E8",
+                "E9",
+                "E10"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "add-lifecycle-safe-non-tty-interrupt",
+            "title": "Add lifecycle-safe interruption for a non-TTY subprocess",
+            "description": "A partial-order resolution chain for translating a write-style interrupt sentinel into a real subprocess signal while maintaining stdin restrictions, transport parity, output draining, exit-status fidelity, session cleanup, and explicit platform limitations.",
+            "atomic_names": [
+              "classify-non-tty-interrupt-control-input",
+              "propagate-nonconsuming-process-interrupt",
+              "reconcile-interrupt-completion-metadata"
+            ],
+            "evidence_ids": [
+              "E1",
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E10",
+              "E11"
+            ],
+            "workflow_graph": {
+              "goal": "Let a caller interrupt a long-running non-TTY subprocess through an existing session-control surface and receive the subprocess's genuine final output and exit metadata.",
+              "when_to_use": [
+                "A long-running process is managed as a persistent session but was launched without a TTY or writable stdin.",
+                "The existing control surface represents Ctrl-C as an exact control-character payload.",
+                "Graceful interruption must run process signal handlers and preserve normal output and exit observation across local or remote execution."
+              ],
+              "anti_goals": [
+                "Do not enable arbitrary stdin writes for processes whose stdin is closed.",
+                "Do not replace interrupt with hard termination or abort lifecycle observers immediately after signaling.",
+                "Do not fabricate a Ctrl-C exit code when the process can report its own handler-selected exit code.",
+                "Do not silently claim interrupt support on a backend that cannot implement it.",
+                "Do not redesign unrelated process start, read, termination, or hard-kill semantics."
+              ],
+              "not_applicable_when": [
+                "The process is attached to an interactive TTY whose existing input path already provides terminal Ctrl-C semantics.",
+                "The request is ordinary process input rather than the exact interrupt sentinel.",
+                "No retained process handle or backend signaling capability exists and the caller cannot accept an explicit unsupported result.",
+                "Immediate unconditional hard-kill, rather than graceful interrupt handling and result collection, is the required behavior."
+              ],
+              "inputs": [
+                "running session identifier",
+                "session TTY and stdin state",
+                "incoming control payload",
+                "abstract interrupt signal representation",
+                "local or remote process backend",
+                "process-group identity on supported systems",
+                "output and exit observers"
+              ],
+              "entry_state": "A non-TTY subprocess remains registered and running, ordinary stdin writes are closed or rejected, and the caller needs Ctrl-C-like interruption without losing lifecycle evidence.",
+              "exit_state": "On a supported backend the process group has received the interrupt, final output and authentic exit metadata have been collected, and a completed process is removed from the session registry; on an unsupported backend the caller receives a specific capability error without a fabricated successful interruption.",
+              "steps": [
+                {
+                  "action_name": "classify-non-tty-interrupt-control-input",
+                  "role": "establish-contract",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "The request targets a non-TTY session and contains non-empty write-style input.",
+                  "validation": "Exact U+0003 selects interrupt handling, while another non-empty payload retains the closed-stdin failure."
+                },
+                {
+                  "action_name": "propagate-nonconsuming-process-interrupt",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [
+                    "classify-non-tty-interrupt-control-input"
+                  ],
+                  "condition": "The payload was classified as an interrupt and the process remains addressable.",
+                  "validation": "Local and remote Unix-backed executions invoke a signal handler without terminating observer tasks; unsupported backends return the explicit unsupported error."
+                },
+                {
+                  "action_name": "reconcile-interrupt-completion-metadata",
+                  "role": "reconcile",
+                  "required": true,
+                  "depends_on": [
+                    "propagate-nonconsuming-process-interrupt"
+                  ],
+                  "condition": "Interrupt delivery succeeded and lifecycle observers remain active.",
+                  "validation": "Handler output and custom exit code are retained, default SIGINT produces 130, closure is observed, and no live session identifier remains."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "classify-non-tty-interrupt-control-input",
+                  "to": "propagate-nonconsuming-process-interrupt",
+                  "type": "enables"
+                },
+                {
+                  "from": "propagate-nonconsuming-process-interrupt",
+                  "to": "reconcile-interrupt-completion-metadata",
+                  "type": "enables"
+                },
+                {
+                  "from": "reconcile-interrupt-completion-metadata",
+                  "to": "propagate-nonconsuming-process-interrupt",
+                  "type": "validates"
+                }
+              ],
+              "validation_ladder": [
+                "Unit/contract level: confirm the process abstraction accepts the typed interrupt operation while ordinary non-TTY input remains rejected.",
+                "Backend integration level: run a non-TTY process with a SIGINT trap through both local and remote execution; require trap output, its chosen exit code, and closed state.",
+                "End-to-end lifecycle level: send exact U+0003 through the session-control tool; require drained trap output, authentic exit metadata, and removal of the completed session.",
+                "Default-signal level: interrupt a process without a handler and require conventional Unix exit code 130.",
+                "Capability boundary: on an unsupported backend, require a model-visible unsupported-interrupt error and no fabricated success."
+              ],
+              "stop_conditions": [
+                "Stop and defer if the session cannot distinguish the exact interrupt sentinel from ordinary input.",
+                "Stop and report unsupported if the backend cannot deliver the requested signal; do not fall back silently to hard-kill.",
+                "Stop and treat the implementation as incomplete if signaling consumes the process controller or aborts output/wait observers before final state is collected.",
+                "Stop and treat validation as failed if handler output, handler-selected exit status, default signal status, or session cleanup is lost."
+              ],
+              "unresolved_or_deferred": [
+                "The bundle does not include CI results or logs proving that the validation commands recorded in the commit completed successfully.",
+                "The implemented signal vocabulary contains only Interrupt; behavior and portability for additional signal types remain outside this episode.",
+                "Windows non-TTY interruption remains explicitly unsupported by this change."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Were all validation commands listed in the commit executed successfully? The GitHub bundle omits status checks and contains no test logs.",
+          "The checkout worktree appears broadly deleted relative to the index, so evidence was read from pinned Git objects rather than relying on working-tree files."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "classify-non-tty-interrupt-control-input",
+          "title": "Recognize only the interrupt control payload on closed non-TTY stdin",
+          "description": "Treat an exact interrupt control character as a lifecycle-control request while preserving the existing rejection of ordinary input when a non-TTY process has no writable stdin.",
+          "evidence_ids": [
+            "E2",
+            "E10"
+          ],
+          "semantic_action": {
+            "intent": "Allow a caller to request interruption of a running non-TTY subprocess without reopening or weakening its closed-stdin contract.",
+            "module_role": "interactive process-control request dispatcher",
+            "operation": "classify",
+            "pre_state": "A running session is non-TTY, its ordinary stdin is unavailable, and a write-style control request contains a non-empty payload.",
+            "post_state": "Exact U+0003 is routed as an interrupt operation; every other non-empty payload still fails as closed stdin.",
+            "validation": "Start a long-running non-TTY session, submit exact U+0003 and observe interruption; separately retain the established oracle that ordinary non-TTY writes return StdinClosed.",
+            "parameters": [
+              "session identifier",
+              "TTY mode",
+              "input payload",
+              "interrupt sentinel U+0003"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E10"
+            ]
+          }
+        },
+        {
+          "name": "propagate-nonconsuming-process-interrupt",
+          "title": "Propagate an interrupt without consuming lifecycle ownership",
+          "description": "Expose one typed interrupt operation across direct and remote process abstractions, deliver it to the Unix process group, retain output/wait machinery, and report unsupported platforms explicitly.",
+          "evidence_ids": [
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E9",
+            "E11"
+          ],
+          "semantic_action": {
+            "intent": "Deliver a graceful interrupt to the subprocess and its descendants while keeping the session alive long enough to observe the process's own response.",
+            "module_role": "subprocess lifecycle-control transport and backend adapter",
+            "operation": "propagate",
+            "pre_state": "A process handle remains registered and owns a child controller plus active output and exit observers.",
+            "post_state": "Supported backends receive an interrupt at process-group scope without consuming the controller or aborting observers; unsupported backends return a specific capability error; hard termination remains a distinct operation.",
+            "validation": "Across local and remote backends, a shell SIGINT handler must run, emit output, exit with its chosen code, and close normally; on an unsupported backend the request must return the documented unsupported error.",
+            "parameters": [
+              "process identifier",
+              "abstract interrupt signal",
+              "local or remote transport",
+              "process-group identifier",
+              "backend signal capability"
+            ],
+            "evidence_ids": [
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E9",
+              "E11"
+            ]
+          }
+        },
+        {
+          "name": "reconcile-interrupt-completion-metadata",
+          "title": "Drain interrupted-process output and preserve its real exit result",
+          "description": "After sending the interrupt, continue the normal collection and completion path so handler output and actual exit metadata determine the result, including conventional 128-plus-signal status for default Unix signal termination.",
+          "evidence_ids": [
+            "E2",
+            "E6",
+            "E8",
+            "E9",
+            "E10"
+          ],
+          "semantic_action": {
+            "intent": "Prevent control handling from fabricating an exit code, discarding late output, or clearing the session before the subprocess reaches an observable terminal state.",
+            "module_role": "process completion and result reconciler",
+            "operation": "reconcile",
+            "pre_state": "An interrupt has been delivered while output readers and the process wait observer remain active.",
+            "post_state": "Available output is drained, normal closure is observed, the completed session is cleared, explicit handler exit codes are retained, and signal-only Unix termination is represented as 128 plus the signal number.",
+            "validation": "A trapped interrupt must expose its final output and custom exit code; a default SIGINT must report 130; both results must omit a live process identifier after completion.",
+            "parameters": [
+              "output buffer and notifications",
+              "process exit status",
+              "signal number",
+              "session registry entry",
+              "collection deadline"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E6",
+              "E8",
+              "E9",
+              "E10"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "add-lifecycle-safe-non-tty-interrupt",
+          "title": "Add lifecycle-safe interruption for a non-TTY subprocess",
+          "description": "A partial-order resolution chain for translating a write-style interrupt sentinel into a real subprocess signal while maintaining stdin restrictions, transport parity, output draining, exit-status fidelity, session cleanup, and explicit platform limitations.",
+          "atomic_names": [
+            "classify-non-tty-interrupt-control-input",
+            "propagate-nonconsuming-process-interrupt",
+            "reconcile-interrupt-completion-metadata"
+          ],
+          "evidence_ids": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10",
+            "E11"
+          ],
+          "workflow_graph": {
+            "goal": "Let a caller interrupt a long-running non-TTY subprocess through an existing session-control surface and receive the subprocess's genuine final output and exit metadata.",
+            "when_to_use": [
+              "A long-running process is managed as a persistent session but was launched without a TTY or writable stdin.",
+              "The existing control surface represents Ctrl-C as an exact control-character payload.",
+              "Graceful interruption must run process signal handlers and preserve normal output and exit observation across local or remote execution."
+            ],
+            "anti_goals": [
+              "Do not enable arbitrary stdin writes for processes whose stdin is closed.",
+              "Do not replace interrupt with hard termination or abort lifecycle observers immediately after signaling.",
+              "Do not fabricate a Ctrl-C exit code when the process can report its own handler-selected exit code.",
+              "Do not silently claim interrupt support on a backend that cannot implement it.",
+              "Do not redesign unrelated process start, read, termination, or hard-kill semantics."
+            ],
+            "not_applicable_when": [
+              "The process is attached to an interactive TTY whose existing input path already provides terminal Ctrl-C semantics.",
+              "The request is ordinary process input rather than the exact interrupt sentinel.",
+              "No retained process handle or backend signaling capability exists and the caller cannot accept an explicit unsupported result.",
+              "Immediate unconditional hard-kill, rather than graceful interrupt handling and result collection, is the required behavior."
+            ],
+            "inputs": [
+              "running session identifier",
+              "session TTY and stdin state",
+              "incoming control payload",
+              "abstract interrupt signal representation",
+              "local or remote process backend",
+              "process-group identity on supported systems",
+              "output and exit observers"
+            ],
+            "entry_state": "A non-TTY subprocess remains registered and running, ordinary stdin writes are closed or rejected, and the caller needs Ctrl-C-like interruption without losing lifecycle evidence.",
+            "exit_state": "On a supported backend the process group has received the interrupt, final output and authentic exit metadata have been collected, and a completed process is removed from the session registry; on an unsupported backend the caller receives a specific capability error without a fabricated successful interruption.",
+            "steps": [
+              {
+                "action_name": "classify-non-tty-interrupt-control-input",
+                "role": "establish-contract",
+                "required": true,
+                "depends_on": [],
+                "condition": "The request targets a non-TTY session and contains non-empty write-style input.",
+                "validation": "Exact U+0003 selects interrupt handling, while another non-empty payload retains the closed-stdin failure."
+              },
+              {
+                "action_name": "propagate-nonconsuming-process-interrupt",
+                "role": "implement",
+                "required": true,
+                "depends_on": [
+                  "classify-non-tty-interrupt-control-input"
+                ],
+                "condition": "The payload was classified as an interrupt and the process remains addressable.",
+                "validation": "Local and remote Unix-backed executions invoke a signal handler without terminating observer tasks; unsupported backends return the explicit unsupported error."
+              },
+              {
+                "action_name": "reconcile-interrupt-completion-metadata",
+                "role": "reconcile",
+                "required": true,
+                "depends_on": [
+                  "propagate-nonconsuming-process-interrupt"
+                ],
+                "condition": "Interrupt delivery succeeded and lifecycle observers remain active.",
+                "validation": "Handler output and custom exit code are retained, default SIGINT produces 130, closure is observed, and no live session identifier remains."
+              }
+            ],
+            "edges": [
+              {
+                "from": "classify-non-tty-interrupt-control-input",
+                "to": "propagate-nonconsuming-process-interrupt",
+                "type": "enables"
+              },
+              {
+                "from": "propagate-nonconsuming-process-interrupt",
+                "to": "reconcile-interrupt-completion-metadata",
+                "type": "enables"
+              },
+              {
+                "from": "reconcile-interrupt-completion-metadata",
+                "to": "propagate-nonconsuming-process-interrupt",
+                "type": "validates"
+              }
+            ],
+            "validation_ladder": [
+              "Unit/contract level: confirm the process abstraction accepts the typed interrupt operation while ordinary non-TTY input remains rejected.",
+              "Backend integration level: run a non-TTY process with a SIGINT trap through both local and remote execution; require trap output, its chosen exit code, and closed state.",
+              "End-to-end lifecycle level: send exact U+0003 through the session-control tool; require drained trap output, authentic exit metadata, and removal of the completed session.",
+              "Default-signal level: interrupt a process without a handler and require conventional Unix exit code 130.",
+              "Capability boundary: on an unsupported backend, require a model-visible unsupported-interrupt error and no fabricated success."
+            ],
+            "stop_conditions": [
+              "Stop and defer if the session cannot distinguish the exact interrupt sentinel from ordinary input.",
+              "Stop and report unsupported if the backend cannot deliver the requested signal; do not fall back silently to hard-kill.",
+              "Stop and treat the implementation as incomplete if signaling consumes the process controller or aborts output/wait observers before final state is collected.",
+              "Stop and treat validation as failed if handler output, handler-selected exit status, default signal status, or session cleanup is lost."
+            ],
+            "unresolved_or_deferred": [
+              "The bundle does not include CI results or logs proving that the validation commands recorded in the commit completed successfully.",
+              "The implemented signal vocabulary contains only Interrupt; behavior and portability for additional signal types remain outside this episode.",
+              "Windows non-TTY interruption remains explicitly unsupported by this change."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Were all validation commands listed in the commit executed successfully? The GitHub bundle omits status checks and contains no test logs.",
+        "The checkout worktree appears broadly deleted relative to the index, so evidence was read from pinned Git objects rather than relying on working-tree files."
+      ]
+    },
+    "call_sites": [
+      "Signal requests are carried through the exec-server client/session, ExecProcess interface, remote implementation, RPC router and handler, process handler, and local process implementation, so local and remote execution share the same lifecycle operation."
+    ],
+    "tests": [
+      "Exec-server integration tests exercise both local and remote backends with a non-TTY shell that traps SIGINT, emits signal:2, and exits 7; reads must retain the handler output, exit code 7, and closed state.",
+      "End-to-end unified-exec tests send exact U+0003 to non-TTY sessions and verify a trapped interrupt preserves handler output and exit code 42, a default SIGINT reports exit code 130, and the completed process is removed from the session map.",
+      "Windows-specific exec-server and unified-exec tests require non-TTY interrupt attempts to fail explicitly with the unsupported-backend message rather than pretending the process was interrupted."
+    ]
+  },
+  {
+    "episode_id": "google-gemini__gemini-cli__29379__4577750d",
+    "title": "Synchronize native PTY exit with public lifecycle completion and make finalization resilient",
+    "before": "At parent 09e048fd61bc56df18676211f65703e7f0075f3a, PTY execution completed only from the public pty.onExit callback. On Windows ConPTY, native process termination could occur without that callback when the data pipe remained open, leaving the execution result unresolved and the PTY reported active. A resize requested before the first data event could also remain deferred inside the PTY implementation and throw after native process exit. In addition, exceptions from output listeners could reject the serialized processing chain or interrupt final rendering and exit notification, preventing cleanup and result completion.",
+    "after": "At 4577750da8e9fcee42297a2f54fbae18c0fa6324, the service observes the Windows PTY agent's native exit callback and exit-code state, schedules a 150 ms drain window, and invokes the same idempotent exit handler if the public exit event is lost. It suppresses only post-exit resize operations and the PTY library's specific already-exited resize error. Output emission, processing-chain rejection, final rendering, and exit-listener failures are contained so cleanup and result completion continue. Active PTY state is removed during finalization and activity/resize checks consult ownership and native-exit state.",
+    "diff": "The commit modifies packages/core/src/services/shellExecutionService.ts and its tests. It introduces a typed internal Windows-agent adapter; wraps agent resize; extracts an idempotent handlePtyExit path shared by public and native exit signals; adds a resettable 150 ms native-exit fallback; makes output and finalization callbacks exception-tolerant; treats rejected output processing as drained for finalization; removes active ownership before asynchronous log cleanup; and tightens activity and resize checks. Three regression tests cover a missing public exit event, a deferred post-exit resize, and an output-listener exception during shutdown.",
+    "repository": "google-gemini/gemini-cli",
+    "revision": "github-issue-29379",
+    "evidence_ids": [
+      "ev-commit-1",
+      "ev-before-1",
+      "ev-before-2",
+      "ev-diff-1",
+      "ev-impl-exit-1",
+      "ev-impl-exit-2",
+      "ev-impl-state-1",
+      "ev-test-exit-1",
+      "ev-impl-resize-1",
+      "ev-test-resize-1",
+      "ev-callsite-resize-1",
+      "ev-impl-output-1",
+      "ev-test-output-1",
+      "ev-validation-1",
+      "ev-bundle-limit-1"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 29379,
+      "checkout": "/home/chenyujia/tritonToLlvm/gemini-cli",
+      "manifest_metadata": {
+        "category": "subprocess-and-pty-lifecycle",
+        "role": "train_candidate",
+        "case_id": "google-gemini__gemini-cli__29379__subprocess-and-pty-lifecycle",
+        "sample_kind": "verified_implementation_pull_request",
+        "seed_issue": null,
+        "seed_issue_url": null,
+        "seed_relation": null,
+        "resolution_url": "https://github.com/google-gemini/gemini-cli/pull/29379",
+        "provenance": {
+          "classification": "direct_implementation_artifact",
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 29379,
+            "url": "https://github.com/google-gemini/gemini-cli/pull/29379"
+          },
+          "commit": {
+            "sha": "4577750da8e9fcee42297a2f54fbae18c0fa6324",
+            "subject": "fix(core): synchronize ConPTY process exit lifecycle and harden PTY output finalization (#29379)",
+            "parents": [
+              "09e048fd61bc56df18676211f65703e7f0075f3a"
+            ],
+            "body_excerpt": "Co-authored-by: David Pierce <davidapierce@google.com>"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "first_parent_and_changed_files_recorded",
+            "implementation_change_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "google-gemini/gemini-cli",
+        "issue_number": 29379,
+        "issue": {
+          "number": 29379,
+          "title": "fix(core): synchronize ConPTY process exit lifecycle and harden PTY output finalization (#29379)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 29379,
+              "title": "fix(core): synchronize ConPTY process exit lifecycle and harden PTY output finalization (#29379)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tpackages/core/src/services/shellExecutionService.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/core/src/services/shellExecutionService.ts"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "4577750da8e9fcee42297a2f54fbae18c0fa6324",
+                "subject": "fix(core): synchronize ConPTY process exit lifecycle and harden PTY output finalization (#29379)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/gemini-cli",
+        "pinned_ref": "4577750da8e9fcee42297a2f54fbae18c0fa6324",
+        "resolved_commit": "4577750da8e9fcee42297a2f54fbae18c0fa6324",
+        "parent_commit": "09e048fd61bc56df18676211f65703e7f0075f3a",
+        "commit_show_stat": "commit 4577750da8e9fcee42297a2f54fbae18c0fa6324\nAuthor:     jvargassanchez-dot <jvargassanchez@google.com>\nAuthorDate: Fri Sep 18 16:34:08 2026 +0000\nCommit:     GitHub <noreply@github.com>\nCommitDate: Fri Sep 18 16:34:08 2026 +0000\n\n    fix(core): synchronize ConPTY process exit lifecycle and harden PTY output finalization (#29379)\n    \n    Co-authored-by: David Pierce <davidapierce@google.com>\n\n .../src/services/shellExecutionService.test.ts     | 219 +++++++++++++++++\n .../core/src/services/shellExecutionService.ts     | 272 ++++++++++++++++-----\n 2 files changed, 428 insertions(+), 63 deletions(-)\n",
+        "changed_files_name_status": "M\tpackages/core/src/services/shellExecutionService.test.ts\nM\tpackages/core/src/services/shellExecutionService.ts\n",
+        "linked_issue_numbers": [
+          29379
+        ],
+        "manifest_metadata": {
+          "category": "subprocess-and-pty-lifecycle",
+          "theme": "subprocess and pseudo-terminal lifecycle finalization",
+          "file_sample": [
+            "packages/core/src/services/shellExecutionService.test.ts",
+            "packages/core/src/services/shellExecutionService.ts"
+          ],
+          "quality": "implementation_plus_test",
+          "case_id": "google-gemini__gemini-cli__29379__subprocess-and-pty-lifecycle",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_implementation_pull_request",
+          "resolution_url": "https://github.com/google-gemini/gemini-cli/pull/29379",
+          "source": "agent_core_thirteen_category_extraction_v2",
+          "provenance": {
+            "classification": "direct_implementation_artifact",
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 29379,
+              "url": "https://github.com/google-gemini/gemini-cli/pull/29379"
+            },
+            "commit": {
+              "sha": "4577750da8e9fcee42297a2f54fbae18c0fa6324",
+              "subject": "fix(core): synchronize ConPTY process exit lifecycle and harden PTY output finalization (#29379)",
+              "parents": [
+                "09e048fd61bc56df18676211f65703e7f0075f3a"
+              ],
+              "body_excerpt": "Co-authored-by: David Pierce <davidapierce@google.com>"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "first_parent_and_changed_files_recorded",
+              "implementation_change_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T11:06:54.833861+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "google-gemini__gemini-cli__29379__4577750d",
+          "title": "Synchronize native PTY exit with public lifecycle completion and make finalization resilient",
+          "before": "At parent 09e048fd61bc56df18676211f65703e7f0075f3a, PTY execution completed only from the public pty.onExit callback. On Windows ConPTY, native process termination could occur without that callback when the data pipe remained open, leaving the execution result unresolved and the PTY reported active. A resize requested before the first data event could also remain deferred inside the PTY implementation and throw after native process exit. In addition, exceptions from output listeners could reject the serialized processing chain or interrupt final rendering and exit notification, preventing cleanup and result completion.",
+          "after": "At 4577750da8e9fcee42297a2f54fbae18c0fa6324, the service observes the Windows PTY agent's native exit callback and exit-code state, schedules a 150 ms drain window, and invokes the same idempotent exit handler if the public exit event is lost. It suppresses only post-exit resize operations and the PTY library's specific already-exited resize error. Output emission, processing-chain rejection, final rendering, and exit-listener failures are contained so cleanup and result completion continue. Active PTY state is removed during finalization and activity/resize checks consult ownership and native-exit state.",
+          "diff": "The commit modifies packages/core/src/services/shellExecutionService.ts and its tests. It introduces a typed internal Windows-agent adapter; wraps agent resize; extracts an idempotent handlePtyExit path shared by public and native exit signals; adds a resettable 150 ms native-exit fallback; makes output and finalization callbacks exception-tolerant; treats rejected output processing as drained for finalization; removes active ownership before asynchronous log cleanup; and tightens activity and resize checks. Three regression tests cover a missing public exit event, a deferred post-exit resize, and an output-listener exception during shutdown."
+        },
+        "evidence_units": [
+          {
+            "id": "ev-commit-1",
+            "kind": "commit",
+            "claim": "Commit 4577750da8e9fcee42297a2f54fbae18c0fa6324 is the implementation-bearing resolution for PR/issue 29379, with parent 09e048fd61bc56df18676211f65703e7f0075f3a and two modified files.",
+            "source": "git show --format=fuller --stat 4577750da8e9fcee42297a2f54fbae18c0fa6324; issue-bundle.json linked_pull_requests[0]"
+          },
+          {
+            "id": "ev-before-1",
+            "kind": "implementation",
+            "claim": "The parent implementation registered finalization exclusively through pty.onExit; the callback set exited, destroyed the PTY, waited for processingChain or abort, then finalized and completed the lifecycle result.",
+            "source": "git show 09e048fd61bc56df18676211f65703e7f0075f3a:packages/core/src/services/shellExecutionService.ts, former onExit/finalize block around lines 1339-1451"
+          },
+          {
+            "id": "ev-before-2",
+            "kind": "implementation",
+            "claim": "In the parent, output and binary events called consumers without exception containment, processingChain had no rejection recovery, final render called render(true) directly, and the exit event listener was invoked directly.",
+            "source": "git show 09e048fd61bc56df18676211f65703e7f0075f3a:packages/core/src/services/shellExecutionService.ts, former renderFn, handleOutput, and finalize blocks around lines 1240-1451"
+          },
+          {
+            "id": "ev-diff-1",
+            "kind": "diff",
+            "claim": "The change defines the internal Windows PTY agent fields used to detect native termination and explains that public onExit may be lost because socket closure can lag or never occur, while pre-ready resize callbacks may execute after process exit.",
+            "source": "git diff 09e048fd61bc56df18676211f65703e7f0075f3a 4577750da8e9fcee42297a2f54fbae18c0fa6324 -- packages/core/src/services/shellExecutionService.ts; WindowsPtyAgentInternal documentation and DestroyablePty extension"
+          },
+          {
+            "id": "ev-impl-exit-1",
+            "kind": "implementation",
+            "claim": "The implementation wraps the native process-exit callback in a finally block, records the native exit code, and schedules a resettable 150 ms fallback that calls the shared exit handler if public PTY exit has not arrived.",
+            "source": "git show 4577750da8e9fcee42297a2f54fbae18c0fa6324:packages/core/src/services/shellExecutionService.ts, scheduleNativeExitFallback and _$onProcessExit wrapper around lines 1541-1578"
+          },
+          {
+            "id": "ev-impl-exit-2",
+            "kind": "implementation",
+            "claim": "The shared exit handler is idempotent, cancels the fallback timer, destroys the PTY, finalizes output and history, deletes active PTY ownership, and completes the lifecycle result; the normal pty.onExit callback delegates to it.",
+            "source": "git show 4577750da8e9fcee42297a2f54fbae18c0fa6324:packages/core/src/services/shellExecutionService.ts, handlePtyExit/finalize and pty.onExit delegation around lines 1371-1591"
+          },
+          {
+            "id": "ev-impl-state-1",
+            "kind": "implementation",
+            "claim": "Activity reporting now returns false when neither PTY nor child-process ownership exists, and resizePty returns without resizing when the internal agent already has an exit code.",
+            "source": "git show 4577750da8e9fcee42297a2f54fbae18c0fa6324:packages/core/src/services/shellExecutionService.ts, isPtyActive around line 1678 and resizePty around lines 1816-1827"
+          },
+          {
+            "id": "ev-test-exit-1",
+            "kind": "test",
+            "claim": "A regression test simulates native Windows agent exit without invoking pty.onExit, advances beyond the flush window, and asserts that the result resolves with exit code 0 and the PID is no longer active.",
+            "source": "git show 4577750da8e9fcee42297a2f54fbae18c0fa6324:packages/core/src/services/shellExecutionService.test.ts, test 'should resolve execution when Windows ConPTY native _agent._$onProcessExit fires but pty.onExit is lost due to ConPTY pipe retention'"
+          },
+          {
+            "id": "ev-impl-resize-1",
+            "kind": "implementation",
+            "claim": "The service replaces the agent resize function with a guard that ignores calls after native exit and suppresses only the known already-exited PTY error, rethrowing unrelated errors.",
+            "source": "git show 4577750da8e9fcee42297a2f54fbae18c0fa6324:packages/core/src/services/shellExecutionService.ts, agent.resize wrapper around lines 1118-1135"
+          },
+          {
+            "id": "ev-test-resize-1",
+            "kind": "test",
+            "claim": "A regression test queues resize before PTY readiness, triggers native exit, flushes the deferred resize during the first data event, and asserts that the flush does not throw.",
+            "source": "git show 4577750da8e9fcee42297a2f54fbae18c0fa6324:packages/core/src/services/shellExecutionService.test.ts, test 'should prevent deferred WindowsTerminal _agent.resize from throwing synchronously during _socket data event after process exit'"
+          },
+          {
+            "id": "ev-callsite-resize-1",
+            "kind": "call_site",
+            "claim": "The public resizePty operation is the lifecycle boundary through which terminal-size changes reach an active PTY; the fix also guards the deeper deferred agent resize because the exception can occur after the public call returns.",
+            "source": "git show 4577750da8e9fcee42297a2f54fbae18c0fa6324:packages/core/src/services/shellExecutionService.ts, static resizePty implementation and WindowsPtyAgentInternal rationale"
+          },
+          {
+            "id": "ev-impl-output-1",
+            "kind": "implementation",
+            "claim": "Output, binary-progress, final-render, and exit-listener callbacks are wrapped with warning-and-continue handling, and processingChain gains a terminal catch so one rejected chunk does not poison subsequent shutdown processing.",
+            "source": "git show 4577750da8e9fcee42297a2f54fbae18c0fa6324:packages/core/src/services/shellExecutionService.ts, renderFn, handleOutput, and handlePtyExit/finalize changes around lines 1293-1539"
+          },
+          {
+            "id": "ev-test-output-1",
+            "kind": "test",
+            "claim": "A regression test makes the downstream data-event listener throw once, then emits public PTY exit and asserts that result completion wins a 500 ms race and preserves exit code 0.",
+            "source": "git show 4577750da8e9fcee42297a2f54fbae18c0fa6324:packages/core/src/services/shellExecutionService.test.ts, test 'should still finalize and resolve execution when pty.onExit fires even if an output chunk handler in processingChain rejected'"
+          },
+          {
+            "id": "ev-validation-1",
+            "kind": "validation",
+            "claim": "The added test suite supplies direct behavioral oracles for all three corrected failure modes: native-exit fallback completion, safe deferred resize, and finalization after output-handler failure.",
+            "source": "git show --stat and git show 4577750da8e9fcee42297a2f54fbae18c0fa6324 -- packages/core/src/services/shellExecutionService.test.ts"
+          },
+          {
+            "id": "ev-bundle-limit-1",
+            "kind": "issue",
+            "claim": "The evidence bundle identifies this as a training candidate with implementation plus tests but records that the issue body, comments, reviews, timeline, and status checks are unavailable.",
+            "source": "/home/chenyujia/tritonToLlvm/arex-skill-graph/data/skill-extraction/agent-core-thirteen-category-extraction-v2/codex-5.6-sol-contract-v2-20261001/10-subprocess-and-pty-lifecycle/google-gemini__gemini-cli__29379/issue-bundle.json"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "reconcile-native-exit-with-pty-completion",
+            "title": "Reconcile native process exit with PTY lifecycle completion",
+            "description": "Observe a lower-level process-exit signal, allow a bounded output-drain interval, and route a missing public exit notification through the same idempotent cleanup and result-completion path.",
+            "evidence_ids": [
+              "ev-before-1",
+              "ev-diff-1",
+              "ev-impl-exit-1",
+              "ev-impl-exit-2",
+              "ev-impl-state-1",
+              "ev-test-exit-1"
+            ],
+            "semantic_action": {
+              "intent": "Ensure a terminated subprocess cannot leave its PTY execution result pending merely because the public exit event is lost.",
+              "module_role": "PTY lifecycle coordinator",
+              "operation": "reconcile",
+              "pre_state": "The native process has reported an exit code, while the public PTY exit callback may still be pending or permanently absent and the execution is still marked active.",
+              "post_state": "After a bounded drain window, exactly one shared exit path destroys the PTY, records completion, removes active ownership, and resolves the execution with the native exit code unless the public exit path completed first.",
+              "validation": "Simulate native exit without public PTY exit, advance beyond the drain window, and assert result resolution, preserved exit code, and inactive lifecycle state.",
+              "parameters": [
+                "pty process handle",
+                "native exit callback",
+                "native exit code",
+                "public exit event",
+                "output drain duration",
+                "execution identifier",
+                "active-resource registry"
+              ],
+              "evidence_ids": [
+                "ev-impl-exit-1",
+                "ev-impl-exit-2",
+                "ev-impl-state-1",
+                "ev-test-exit-1"
+              ]
+            }
+          },
+          {
+            "name": "guard-deferred-resize-after-process-exit",
+            "title": "Neutralize deferred resize work after process exit",
+            "description": "Guard the actual deferred resize target with native-exit state so a resize queued while the PTY was unready cannot crash cleanup when executed after termination.",
+            "evidence_ids": [
+              "ev-diff-1",
+              "ev-impl-resize-1",
+              "ev-test-resize-1",
+              "ev-callsite-resize-1",
+              "ev-impl-state-1"
+            ],
+            "semantic_action": {
+              "intent": "Prevent asynchronously deferred terminal resize work from throwing after the underlying process has exited.",
+              "module_role": "PTY control-operation adapter",
+              "operation": "guard",
+              "pre_state": "A resize request may have been queued before PTY readiness and can execute after native process termination, outside the original caller's synchronous error boundary.",
+              "post_state": "Resize work becomes a no-op when native exit is known; the specific already-exited resize error is contained, while unrelated resize errors remain observable.",
+              "validation": "Queue a resize before readiness, mark the native process exited, flush the deferred callback, and assert that it does not throw.",
+              "parameters": [
+                "PTY agent",
+                "terminal columns",
+                "terminal rows",
+                "native exit-code state",
+                "known post-exit resize error"
+              ],
+              "evidence_ids": [
+                "ev-impl-resize-1",
+                "ev-test-resize-1",
+                "ev-callsite-resize-1"
+              ]
+            }
+          },
+          {
+            "name": "isolate-output-failures-from-finalization",
+            "title": "Keep output failures from blocking process finalization",
+            "description": "Contain consumer and rendering exceptions at output boundaries and make shutdown wait tolerate an already-rejected processing chain so cleanup and lifecycle completion still run.",
+            "evidence_ids": [
+              "ev-before-2",
+              "ev-impl-output-1",
+              "ev-impl-exit-2",
+              "ev-test-output-1"
+            ],
+            "semantic_action": {
+              "intent": "Guarantee process cleanup and result resolution even when downstream output handling fails.",
+              "module_role": "PTY output and finalization pipeline",
+              "operation": "isolate",
+              "pre_state": "A data, binary-progress, final-render, or exit-event consumer can throw, or an earlier output task can reject while process exit is being finalized.",
+              "post_state": "Output failures are logged and contained; the shutdown barrier settles, final cleanup executes, and the process result resolves with its exit information.",
+              "validation": "Make a data-event consumer throw, emit process exit, and assert that execution resolves before a timeout with the expected exit code.",
+              "parameters": [
+                "serialized output-processing chain",
+                "output event consumer",
+                "lifecycle event emitter",
+                "final renderer",
+                "exit notification",
+                "completion result"
+              ],
+              "evidence_ids": [
+                "ev-impl-output-1",
+                "ev-impl-exit-2",
+                "ev-test-output-1"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "harden-pty-exit-and-finalization-lifecycle",
+            "title": "Make PTY termination deterministic across asynchronous exit and output paths",
+            "description": "A partial-order resolution workflow for PTY integrations where native process exit, public exit delivery, deferred control operations, and output callbacks can become desynchronized.",
+            "atomic_names": [
+              "guard-deferred-resize-after-process-exit",
+              "isolate-output-failures-from-finalization",
+              "reconcile-native-exit-with-pty-completion"
+            ],
+            "evidence_ids": [
+              "ev-before-1",
+              "ev-before-2",
+              "ev-diff-1",
+              "ev-impl-exit-1",
+              "ev-impl-exit-2",
+              "ev-impl-state-1",
+              "ev-test-exit-1",
+              "ev-impl-resize-1",
+              "ev-test-resize-1",
+              "ev-impl-output-1",
+              "ev-test-output-1",
+              "ev-validation-1"
+            ],
+            "workflow_graph": {
+              "goal": "Ensure that a natively terminated PTY process reaches exactly one completed lifecycle state after bounded output draining, without deferred resize or output-consumer failures preventing cleanup.",
+              "when_to_use": [
+                "A PTY-backed subprocess can terminate at the operating-system layer without reliably producing the library's public exit event.",
+                "Control operations may be queued internally and execute after process termination.",
+                "Output or lifecycle event consumers are outside the lifecycle owner's trust boundary and may throw during output processing or shutdown."
+              ],
+              "anti_goals": [
+                "Do not immediately finalize at the native exit signal when a short bounded window is needed to drain trailing PTY output.",
+                "Do not suppress arbitrary resize, rendering, or consumer errors indiscriminately; contain only errors whose failure must not block lifecycle completion, and preserve logging or rethrow unrelated control errors.",
+                "Do not create separate cleanup implementations for native and public exit signals.",
+                "Do not change command semantics, output formatting, or successful interactive behavior beyond lifecycle hardening."
+              ],
+              "not_applicable_when": [
+                "The subprocess API provides one authoritative exit signal that is guaranteed to fire only after output has drained and no lower-level termination signal is available or needed.",
+                "No PTY, deferred control-operation queue, or asynchronous output-finalization pipeline is involved.",
+                "The desired behavior is to keep a process logically active after confirmed native termination."
+              ],
+              "inputs": [
+                "PTY process handle and public exit subscription",
+                "native process-exit signal or queryable exit state",
+                "execution identifier and active-resource registry",
+                "serialized output-processing chain",
+                "output/render/exit consumers",
+                "bounded output-drain duration",
+                "PTY control operations that may be deferred"
+              ],
+              "entry_state": "A PTY execution is registered as active; output and control callbacks may still be pending; public exit delivery is not sufficient to prove timely native termination completion.",
+              "exit_state": "Native or public exit has selected one idempotent finalization path; trailing output received during the bounded window has been processed as far as possible; listener failures cannot block cleanup; PTY ownership is removed; and the execution result is resolved with exit metadata.",
+              "steps": [
+                {
+                  "action_name": "guard-deferred-resize-after-process-exit",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "The PTY implementation can defer resize or another control operation beyond the initiating call.",
+                  "validation": "A control operation queued before readiness executes after native exit without throwing, while unrelated errors are not silently swallowed."
+                },
+                {
+                  "action_name": "isolate-output-failures-from-finalization",
+                  "role": "repair",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "Output, rendering, or exit consumers can throw or reject independently of process state.",
+                  "validation": "An injected output-consumer exception does not prevent the public exit path from resolving the execution result."
+                },
+                {
+                  "action_name": "reconcile-native-exit-with-pty-completion",
+                  "role": "reconcile",
+                  "required": true,
+                  "depends_on": [
+                    "guard-deferred-resize-after-process-exit",
+                    "isolate-output-failures-from-finalization"
+                  ],
+                  "condition": "A native exit signal or already-populated native exit code is observable before reliable public exit completion.",
+                  "validation": "With the public exit event withheld, native exit resolves the result after the drain window, records the exit code, and clears active state."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "guard-deferred-resize-after-process-exit",
+                  "to": "reconcile-native-exit-with-pty-completion",
+                  "type": "enables"
+                },
+                {
+                  "from": "isolate-output-failures-from-finalization",
+                  "to": "reconcile-native-exit-with-pty-completion",
+                  "type": "enables"
+                },
+                {
+                  "from": "reconcile-native-exit-with-pty-completion",
+                  "to": "isolate-output-failures-from-finalization",
+                  "type": "validates"
+                }
+              ],
+              "validation_ladder": [
+                "Unit-test the post-exit control-operation guard by flushing a previously deferred resize after native termination.",
+                "Unit-test ordinary public-exit finalization with a throwing output consumer and a bounded completion timeout.",
+                "Unit-test the missing-public-exit scenario using the native exit signal, the complete drain interval, result metadata, and active-resource state.",
+                "Confirm both native and public exit signals converge on one idempotent finalizer so duplicate completion and cleanup are prevented."
+              ],
+              "stop_conditions": [
+                "Stop if there is no trustworthy native termination signal or exit state to reconcile with the public lifecycle.",
+                "Stop if no bounded drain policy can be justified; an unbounded wait recreates the hang, while immediate cleanup may discard output.",
+                "Stop if the proposed interception requires swallowing unrelated operational errors or bypassing the normal shared cleanup path.",
+                "Stop and defer promotion if the regression tests cannot establish result resolution and resource-state cleanup."
+              ],
+              "unresolved_or_deferred": [
+                "The evidence bundle does not include PR discussion, review rationale, or CI/status-check results.",
+                "The regression tests are present as direct validation oracles, but this extraction did not establish an independent local test-run result because the supplied working tree has its tracked files removed; evidence was inspected from the pinned Git objects.",
+                "The 150 ms drain duration is repository-specific evidence and should remain a configurable parameter rather than a universal constant."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Were the three regression tests executed successfully in CI for PR 29379? Status-check metadata is unavailable in the supplied evidence bundle.",
+          "What measurements or PTY-library guarantees motivated the specific 150 ms drain interval? The implementation and tests establish the value used, but not a cross-project timing rule.",
+          "The commit comment and test describe a Windows ConPTY-specific lost-exit mechanism; applicability to other PTY implementations requires independent evidence."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "reconcile-native-exit-with-pty-completion",
+          "title": "Reconcile native process exit with PTY lifecycle completion",
+          "description": "Observe a lower-level process-exit signal, allow a bounded output-drain interval, and route a missing public exit notification through the same idempotent cleanup and result-completion path.",
+          "evidence_ids": [
+            "ev-before-1",
+            "ev-diff-1",
+            "ev-impl-exit-1",
+            "ev-impl-exit-2",
+            "ev-impl-state-1",
+            "ev-test-exit-1"
+          ],
+          "semantic_action": {
+            "intent": "Ensure a terminated subprocess cannot leave its PTY execution result pending merely because the public exit event is lost.",
+            "module_role": "PTY lifecycle coordinator",
+            "operation": "reconcile",
+            "pre_state": "The native process has reported an exit code, while the public PTY exit callback may still be pending or permanently absent and the execution is still marked active.",
+            "post_state": "After a bounded drain window, exactly one shared exit path destroys the PTY, records completion, removes active ownership, and resolves the execution with the native exit code unless the public exit path completed first.",
+            "validation": "Simulate native exit without public PTY exit, advance beyond the drain window, and assert result resolution, preserved exit code, and inactive lifecycle state.",
+            "parameters": [
+              "pty process handle",
+              "native exit callback",
+              "native exit code",
+              "public exit event",
+              "output drain duration",
+              "execution identifier",
+              "active-resource registry"
+            ],
+            "evidence_ids": [
+              "ev-impl-exit-1",
+              "ev-impl-exit-2",
+              "ev-impl-state-1",
+              "ev-test-exit-1"
+            ]
+          }
+        },
+        {
+          "name": "guard-deferred-resize-after-process-exit",
+          "title": "Neutralize deferred resize work after process exit",
+          "description": "Guard the actual deferred resize target with native-exit state so a resize queued while the PTY was unready cannot crash cleanup when executed after termination.",
+          "evidence_ids": [
+            "ev-diff-1",
+            "ev-impl-resize-1",
+            "ev-test-resize-1",
+            "ev-callsite-resize-1",
+            "ev-impl-state-1"
+          ],
+          "semantic_action": {
+            "intent": "Prevent asynchronously deferred terminal resize work from throwing after the underlying process has exited.",
+            "module_role": "PTY control-operation adapter",
+            "operation": "guard",
+            "pre_state": "A resize request may have been queued before PTY readiness and can execute after native process termination, outside the original caller's synchronous error boundary.",
+            "post_state": "Resize work becomes a no-op when native exit is known; the specific already-exited resize error is contained, while unrelated resize errors remain observable.",
+            "validation": "Queue a resize before readiness, mark the native process exited, flush the deferred callback, and assert that it does not throw.",
+            "parameters": [
+              "PTY agent",
+              "terminal columns",
+              "terminal rows",
+              "native exit-code state",
+              "known post-exit resize error"
+            ],
+            "evidence_ids": [
+              "ev-impl-resize-1",
+              "ev-test-resize-1",
+              "ev-callsite-resize-1"
+            ]
+          }
+        },
+        {
+          "name": "isolate-output-failures-from-finalization",
+          "title": "Keep output failures from blocking process finalization",
+          "description": "Contain consumer and rendering exceptions at output boundaries and make shutdown wait tolerate an already-rejected processing chain so cleanup and lifecycle completion still run.",
+          "evidence_ids": [
+            "ev-before-2",
+            "ev-impl-output-1",
+            "ev-impl-exit-2",
+            "ev-test-output-1"
+          ],
+          "semantic_action": {
+            "intent": "Guarantee process cleanup and result resolution even when downstream output handling fails.",
+            "module_role": "PTY output and finalization pipeline",
+            "operation": "isolate",
+            "pre_state": "A data, binary-progress, final-render, or exit-event consumer can throw, or an earlier output task can reject while process exit is being finalized.",
+            "post_state": "Output failures are logged and contained; the shutdown barrier settles, final cleanup executes, and the process result resolves with its exit information.",
+            "validation": "Make a data-event consumer throw, emit process exit, and assert that execution resolves before a timeout with the expected exit code.",
+            "parameters": [
+              "serialized output-processing chain",
+              "output event consumer",
+              "lifecycle event emitter",
+              "final renderer",
+              "exit notification",
+              "completion result"
+            ],
+            "evidence_ids": [
+              "ev-impl-output-1",
+              "ev-impl-exit-2",
+              "ev-test-output-1"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "harden-pty-exit-and-finalization-lifecycle",
+          "title": "Make PTY termination deterministic across asynchronous exit and output paths",
+          "description": "A partial-order resolution workflow for PTY integrations where native process exit, public exit delivery, deferred control operations, and output callbacks can become desynchronized.",
+          "atomic_names": [
+            "guard-deferred-resize-after-process-exit",
+            "isolate-output-failures-from-finalization",
+            "reconcile-native-exit-with-pty-completion"
+          ],
+          "evidence_ids": [
+            "ev-before-1",
+            "ev-before-2",
+            "ev-diff-1",
+            "ev-impl-exit-1",
+            "ev-impl-exit-2",
+            "ev-impl-state-1",
+            "ev-test-exit-1",
+            "ev-impl-resize-1",
+            "ev-test-resize-1",
+            "ev-impl-output-1",
+            "ev-test-output-1",
+            "ev-validation-1"
+          ],
+          "workflow_graph": {
+            "goal": "Ensure that a natively terminated PTY process reaches exactly one completed lifecycle state after bounded output draining, without deferred resize or output-consumer failures preventing cleanup.",
+            "when_to_use": [
+              "A PTY-backed subprocess can terminate at the operating-system layer without reliably producing the library's public exit event.",
+              "Control operations may be queued internally and execute after process termination.",
+              "Output or lifecycle event consumers are outside the lifecycle owner's trust boundary and may throw during output processing or shutdown."
+            ],
+            "anti_goals": [
+              "Do not immediately finalize at the native exit signal when a short bounded window is needed to drain trailing PTY output.",
+              "Do not suppress arbitrary resize, rendering, or consumer errors indiscriminately; contain only errors whose failure must not block lifecycle completion, and preserve logging or rethrow unrelated control errors.",
+              "Do not create separate cleanup implementations for native and public exit signals.",
+              "Do not change command semantics, output formatting, or successful interactive behavior beyond lifecycle hardening."
+            ],
+            "not_applicable_when": [
+              "The subprocess API provides one authoritative exit signal that is guaranteed to fire only after output has drained and no lower-level termination signal is available or needed.",
+              "No PTY, deferred control-operation queue, or asynchronous output-finalization pipeline is involved.",
+              "The desired behavior is to keep a process logically active after confirmed native termination."
+            ],
+            "inputs": [
+              "PTY process handle and public exit subscription",
+              "native process-exit signal or queryable exit state",
+              "execution identifier and active-resource registry",
+              "serialized output-processing chain",
+              "output/render/exit consumers",
+              "bounded output-drain duration",
+              "PTY control operations that may be deferred"
+            ],
+            "entry_state": "A PTY execution is registered as active; output and control callbacks may still be pending; public exit delivery is not sufficient to prove timely native termination completion.",
+            "exit_state": "Native or public exit has selected one idempotent finalization path; trailing output received during the bounded window has been processed as far as possible; listener failures cannot block cleanup; PTY ownership is removed; and the execution result is resolved with exit metadata.",
+            "steps": [
+              {
+                "action_name": "guard-deferred-resize-after-process-exit",
+                "role": "implement",
+                "required": true,
+                "depends_on": [],
+                "condition": "The PTY implementation can defer resize or another control operation beyond the initiating call.",
+                "validation": "A control operation queued before readiness executes after native exit without throwing, while unrelated errors are not silently swallowed."
+              },
+              {
+                "action_name": "isolate-output-failures-from-finalization",
+                "role": "repair",
+                "required": true,
+                "depends_on": [],
+                "condition": "Output, rendering, or exit consumers can throw or reject independently of process state.",
+                "validation": "An injected output-consumer exception does not prevent the public exit path from resolving the execution result."
+              },
+              {
+                "action_name": "reconcile-native-exit-with-pty-completion",
+                "role": "reconcile",
+                "required": true,
+                "depends_on": [
+                  "guard-deferred-resize-after-process-exit",
+                  "isolate-output-failures-from-finalization"
+                ],
+                "condition": "A native exit signal or already-populated native exit code is observable before reliable public exit completion.",
+                "validation": "With the public exit event withheld, native exit resolves the result after the drain window, records the exit code, and clears active state."
+              }
+            ],
+            "edges": [
+              {
+                "from": "guard-deferred-resize-after-process-exit",
+                "to": "reconcile-native-exit-with-pty-completion",
+                "type": "enables"
+              },
+              {
+                "from": "isolate-output-failures-from-finalization",
+                "to": "reconcile-native-exit-with-pty-completion",
+                "type": "enables"
+              },
+              {
+                "from": "reconcile-native-exit-with-pty-completion",
+                "to": "isolate-output-failures-from-finalization",
+                "type": "validates"
+              }
+            ],
+            "validation_ladder": [
+              "Unit-test the post-exit control-operation guard by flushing a previously deferred resize after native termination.",
+              "Unit-test ordinary public-exit finalization with a throwing output consumer and a bounded completion timeout.",
+              "Unit-test the missing-public-exit scenario using the native exit signal, the complete drain interval, result metadata, and active-resource state.",
+              "Confirm both native and public exit signals converge on one idempotent finalizer so duplicate completion and cleanup are prevented."
+            ],
+            "stop_conditions": [
+              "Stop if there is no trustworthy native termination signal or exit state to reconcile with the public lifecycle.",
+              "Stop if no bounded drain policy can be justified; an unbounded wait recreates the hang, while immediate cleanup may discard output.",
+              "Stop if the proposed interception requires swallowing unrelated operational errors or bypassing the normal shared cleanup path.",
+              "Stop and defer promotion if the regression tests cannot establish result resolution and resource-state cleanup."
+            ],
+            "unresolved_or_deferred": [
+              "The evidence bundle does not include PR discussion, review rationale, or CI/status-check results.",
+              "The regression tests are present as direct validation oracles, but this extraction did not establish an independent local test-run result because the supplied working tree has its tracked files removed; evidence was inspected from the pinned Git objects.",
+              "The 150 ms drain duration is repository-specific evidence and should remain a configurable parameter rather than a universal constant."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Were the three regression tests executed successfully in CI for PR 29379? Status-check metadata is unavailable in the supplied evidence bundle.",
+        "What measurements or PTY-library guarantees motivated the specific 150 ms drain interval? The implementation and tests establish the value used, but not a cross-project timing rule.",
+        "The commit comment and test describe a Windows ConPTY-specific lost-exit mechanism; applicability to other PTY implementations requires independent evidence."
+      ]
+    },
+    "call_sites": [
+      "The public resizePty operation is the lifecycle boundary through which terminal-size changes reach an active PTY; the fix also guards the deeper deferred agent resize because the exception can occur after the public call returns."
+    ],
+    "tests": [
+      "A regression test simulates native Windows agent exit without invoking pty.onExit, advances beyond the flush window, and asserts that the result resolves with exit code 0 and the PID is no longer active.",
+      "A regression test queues resize before PTY readiness, triggers native exit, flushes the deferred resize during the first data event, and asserts that the flush does not throw.",
+      "A regression test makes the downstream data-event listener throw once, then emits public PTY exit and asserts that result completion wins a 500 ms race and preserves exit code 0."
+    ]
+  }
+]

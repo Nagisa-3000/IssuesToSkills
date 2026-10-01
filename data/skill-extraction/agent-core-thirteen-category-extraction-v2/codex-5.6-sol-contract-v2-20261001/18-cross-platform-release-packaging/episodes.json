@@ -1,0 +1,2928 @@
+[
+  {
+    "episode_id": "Aider-AI__aider__4899__861a1e4d",
+    "title": "Extend package installation and validation through Python 3.14 across Linux and Windows",
+    "before": "At first parent 265d8a473b5d5bf001db321b251674a120ad75da, package metadata admitted Python >=3.10,<3.13 and advertised classifiers only through 3.12. Linux and Windows source-test and published-package-check matrices covered 3.10-3.12. Base dependency inputs used a single scipy<1.16 constraint, the help input used numpy<2, and the generated base requirements pinned NumPy 1.26.4 and SciPy 1.15.3 without interpreter-specific alternatives or the Python 3.13+ audioop compatibility package.",
+    "after": "At merge commit 861a1e4d154f268547a06497cc380e5a5dc8483a, package metadata admits Python >=3.10,<3.15 and advertises 3.13 and 3.14. Dedicated compatibility inputs select NumPy and SciPy ranges by interpreter version and add audioop-lts for Python >=3.13; the compilation pipeline preserves these markers in the generated base requirements instead of replacing them with one resolved pin. The help dependency input is aligned with the new NumPy split and explicitly requires a compatible Torch floor. Linux and Windows source-test matrices and published-package installation checks cover every supported interpreter from 3.10 through 3.14.",
+    "diff": "The implementation changed 15 files with 56 insertions and 42 deletions. It widened requires-python and classifiers; added requirements/python-compat.in and requirements/pydub.in; included the compatibility input from the base requirements; changed the compilation post-processing to remove resolved tree-sitter, NumPy, and SciPy pins before appending maintained marker-based compatibility inputs; regenerated base, common, browser, development, and help requirement artifacts; and expanded four Linux/Windows CI matrices from 3.10-3.12 to 3.10-3.14. No repository test file was changed, and the evidence bundle contains no status-check results.",
+    "repository": "Aider-AI/aider",
+    "revision": "github-issue-4899",
+    "evidence_ids": [
+      "ev-commit-01",
+      "ev-diff-01",
+      "ev-impl-01",
+      "ev-impl-02",
+      "ev-call-01",
+      "ev-impl-03",
+      "ev-diff-02",
+      "ev-diff-03",
+      "ev-test-01",
+      "ev-validation-01",
+      "ev-validation-02",
+      "ev-limitation-01"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "Aider-AI/aider",
+      "issue": 4899,
+      "checkout": "/home/chenyujia/tritonToLlvm/aider-agent",
+      "manifest_metadata": {
+        "category": "cross-platform-release-packaging",
+        "role": "train_candidate",
+        "case_id": "Aider-AI__aider__4899__cross-platform-release-packaging",
+        "sample_kind": "verified_implementation_pull_request",
+        "seed_issue": null,
+        "seed_issue_url": null,
+        "seed_relation": null,
+        "resolution_url": "https://github.com/Aider-AI/aider/pull/4899",
+        "provenance": {
+          "classification": "direct_implementation_artifact",
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 4899,
+            "url": "https://github.com/Aider-AI/aider/pull/4899"
+          },
+          "commit": {
+            "sha": "861a1e4d154f268547a06497cc380e5a5dc8483a",
+            "subject": "Merge pull request #4899 from turian/codex/python-3-14-support",
+            "parents": [
+              "265d8a473b5d5bf001db321b251674a120ad75da",
+              "975e5a899168444cba6f85d57070cb0012deb75d"
+            ],
+            "body_excerpt": "Add Python 3.13 and 3.14 support"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "first_parent_and_changed_files_recorded",
+            "implementation_change_present",
+            "no_test_file_change_observed"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "Aider-AI/aider",
+        "issue_number": 4899,
+        "issue": {
+          "number": 4899,
+          "title": "Merge pull request #4899 from turian/codex/python-3-14-support",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 4899,
+              "title": "Merge pull request #4899 from turian/codex/python-3-14-support",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\t.github/workflows/check_pypi_version.yml"
+              },
+              {
+                "status_line": "M\t.github/workflows/ubuntu-tests.yml"
+              },
+              {
+                "status_line": "M\t.github/workflows/windows-tests.yml"
+              },
+              {
+                "status_line": "M\t.github/workflows/windows_check_pypi_version.yml"
+              },
+              {
+                "status_line": "M\tpyproject.toml"
+              },
+              {
+                "status_line": "M\trequirements.txt"
+              },
+              {
+                "status_line": "M\trequirements/common-constraints.txt"
+              },
+              {
+                "status_line": "A\trequirements/pydub.in"
+              },
+              {
+                "status_line": "A\trequirements/python-compat.in"
+              },
+              {
+                "status_line": "M\trequirements/requirements-browser.txt"
+              },
+              {
+                "status_line": "M\trequirements/requirements-dev.txt"
+              },
+              {
+                "status_line": "M\trequirements/requirements-help.in"
+              },
+              {
+                "status_line": "M\trequirements/requirements-help.txt"
+              },
+              {
+                "status_line": "M\trequirements/requirements.in"
+              },
+              {
+                "status_line": "M\tscripts/pip-compile.sh"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "861a1e4d154f268547a06497cc380e5a5dc8483a",
+                "subject": "Merge pull request #4899 from turian/codex/python-3-14-support"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/aider-agent",
+        "pinned_ref": "861a1e4d154f268547a06497cc380e5a5dc8483a",
+        "resolved_commit": "861a1e4d154f268547a06497cc380e5a5dc8483a",
+        "parent_commit": "265d8a473b5d5bf001db321b251674a120ad75da",
+        "commit_show_stat": "commit 861a1e4d154f268547a06497cc380e5a5dc8483a\nMerge: 265d8a47 975e5a89\nAuthor:     paul-gauthier <69695708+paul-gauthier@users.noreply.github.com>\nAuthorDate: Mon Mar 9 15:00:45 2026 -0700\nCommit:     GitHub <noreply@github.com>\nCommitDate: Mon Mar 9 15:00:45 2026 -0700\n\n    Merge pull request #4899 from turian/codex/python-3-14-support\n    \n    Add Python 3.13 and 3.14 support\n\n .github/workflows/check_pypi_version.yml         |  2 +-\n .github/workflows/ubuntu-tests.yml               |  2 +-\n .github/workflows/windows-tests.yml              |  2 +-\n .github/workflows/windows_check_pypi_version.yml |  2 +-\n pyproject.toml                                   |  4 +++-\n requirements.txt                                 | 22 +++++++++++++++-------\n requirements/common-constraints.txt              | 15 +++++++--------\n requirements/pydub.in                            |  2 ++\n requirements/python-compat.in                    | 11 +++++++++++\n requirements/requirements-browser.txt            |  3 +--\n requirements/requirements-dev.txt                |  2 +-\n requirements/requirements-help.in                | 12 ++++++------\n requirements/requirements-help.txt               |  7 +++----\n requirements/requirements.in                     |  8 +-------\n scripts/pip-compile.sh                           |  4 ++--\n 15 files changed, 56 insertions(+), 42 deletions(-)\n",
+        "changed_files_name_status": "M\t.github/workflows/check_pypi_version.yml\nM\t.github/workflows/ubuntu-tests.yml\nM\t.github/workflows/windows-tests.yml\nM\t.github/workflows/windows_check_pypi_version.yml\nM\tpyproject.toml\nM\trequirements.txt\nM\trequirements/common-constraints.txt\nA\trequirements/pydub.in\nA\trequirements/python-compat.in\nM\trequirements/requirements-browser.txt\nM\trequirements/requirements-dev.txt\nM\trequirements/requirements-help.in\nM\trequirements/requirements-help.txt\nM\trequirements/requirements.in\nM\tscripts/pip-compile.sh\n",
+        "linked_issue_numbers": [
+          4899
+        ],
+        "manifest_metadata": {
+          "category": "cross-platform-release-packaging",
+          "theme": "cross-platform release asset completeness and packaging",
+          "file_sample": [
+            ".github/workflows/check_pypi_version.yml",
+            ".github/workflows/ubuntu-tests.yml",
+            ".github/workflows/windows-tests.yml",
+            ".github/workflows/windows_check_pypi_version.yml",
+            "pyproject.toml",
+            "requirements.txt",
+            "requirements/common-constraints.txt",
+            "requirements/pydub.in",
+            "requirements/python-compat.in",
+            "requirements/requirements-browser.txt",
+            "requirements/requirements-dev.txt",
+            "requirements/requirements-help.in",
+            "requirements/requirements-help.txt",
+            "requirements/requirements.in",
+            "scripts/pip-compile.sh"
+          ],
+          "quality": "implementation_only",
+          "case_id": "Aider-AI__aider__4899__cross-platform-release-packaging",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_implementation_pull_request",
+          "resolution_url": "https://github.com/Aider-AI/aider/pull/4899",
+          "source": "agent_core_thirteen_category_extraction_v2",
+          "provenance": {
+            "classification": "direct_implementation_artifact",
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 4899,
+              "url": "https://github.com/Aider-AI/aider/pull/4899"
+            },
+            "commit": {
+              "sha": "861a1e4d154f268547a06497cc380e5a5dc8483a",
+              "subject": "Merge pull request #4899 from turian/codex/python-3-14-support",
+              "parents": [
+                "265d8a473b5d5bf001db321b251674a120ad75da",
+                "975e5a899168444cba6f85d57070cb0012deb75d"
+              ],
+              "body_excerpt": "Add Python 3.13 and 3.14 support"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "first_parent_and_changed_files_recorded",
+              "implementation_change_present",
+              "no_test_file_change_observed"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T10:49:52.965190+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "Aider-AI__aider__4899__861a1e4d",
+          "title": "Extend package installation and validation through Python 3.14 across Linux and Windows",
+          "before": "At first parent 265d8a473b5d5bf001db321b251674a120ad75da, package metadata admitted Python >=3.10,<3.13 and advertised classifiers only through 3.12. Linux and Windows source-test and published-package-check matrices covered 3.10-3.12. Base dependency inputs used a single scipy<1.16 constraint, the help input used numpy<2, and the generated base requirements pinned NumPy 1.26.4 and SciPy 1.15.3 without interpreter-specific alternatives or the Python 3.13+ audioop compatibility package.",
+          "after": "At merge commit 861a1e4d154f268547a06497cc380e5a5dc8483a, package metadata admits Python >=3.10,<3.15 and advertises 3.13 and 3.14. Dedicated compatibility inputs select NumPy and SciPy ranges by interpreter version and add audioop-lts for Python >=3.13; the compilation pipeline preserves these markers in the generated base requirements instead of replacing them with one resolved pin. The help dependency input is aligned with the new NumPy split and explicitly requires a compatible Torch floor. Linux and Windows source-test matrices and published-package installation checks cover every supported interpreter from 3.10 through 3.14.",
+          "diff": "The implementation changed 15 files with 56 insertions and 42 deletions. It widened requires-python and classifiers; added requirements/python-compat.in and requirements/pydub.in; included the compatibility input from the base requirements; changed the compilation post-processing to remove resolved tree-sitter, NumPy, and SciPy pins before appending maintained marker-based compatibility inputs; regenerated base, common, browser, development, and help requirement artifacts; and expanded four Linux/Windows CI matrices from 3.10-3.12 to 3.10-3.14. No repository test file was changed, and the evidence bundle contains no status-check results."
+        },
+        "evidence_units": [
+          {
+            "id": "ev-commit-01",
+            "kind": "commit",
+            "claim": "The pinned merge commit resolves PR #4899, has first parent 265d8a473b5d5bf001db321b251674a120ad75da, and records the resolution as adding Python 3.13 and 3.14 support.",
+            "source": "git show --format=fuller --stat 861a1e4d154f268547a06497cc380e5a5dc8483a; issue-bundle.json linked_pull_requests[0] and commit_show_stat"
+          },
+          {
+            "id": "ev-diff-01",
+            "kind": "diff",
+            "claim": "The package contract changed from requires-python >=3.10,<3.13 with classifiers through 3.12 to >=3.10,<3.15 with added 3.13 and 3.14 classifiers.",
+            "source": "git diff 265d8a473b5d5bf001db321b251674a120ad75da 861a1e4d154f268547a06497cc380e5a5dc8483a -- pyproject.toml"
+          },
+          {
+            "id": "ev-impl-01",
+            "kind": "implementation",
+            "claim": "The new compatibility input partitions NumPy and SciPy constraints at Python 3.11: older interpreters retain pre-2 NumPy and pre-1.16 SciPy, while newer interpreters receive ranges that include Python 3.14-capable releases.",
+            "source": "git show 861a1e4d154f268547a06497cc380e5a5dc8483a:requirements/python-compat.in"
+          },
+          {
+            "id": "ev-impl-02",
+            "kind": "implementation",
+            "claim": "A separate compatibility input adds audioop-lts>=0.2.2 only for Python >=3.13, with a comment identifying it as removable when upstream support lands.",
+            "source": "git show 861a1e4d154f268547a06497cc380e5a5dc8483a:requirements/pydub.in"
+          },
+          {
+            "id": "ev-call-01",
+            "kind": "call_site",
+            "claim": "The base dependency input now includes python-compat.in, making its interpreter-specific constraints part of normal base dependency resolution.",
+            "source": "git show 861a1e4d154f268547a06497cc380e5a5dc8483a:requirements/requirements.in, line containing '-r python-compat.in'"
+          },
+          {
+            "id": "ev-impl-03",
+            "kind": "implementation",
+            "claim": "The dependency compilation script filters resolved tree-sitter, NumPy, and SciPy assignments from the temporary base lock and appends the maintained tree-sitter, Python-compatibility, and audio compatibility inputs to requirements.txt.",
+            "source": "git show 861a1e4d154f268547a06497cc380e5a5dc8483a:scripts/pip-compile.sh, base compilation and grep/cat pipeline"
+          },
+          {
+            "id": "ev-diff-02",
+            "kind": "diff",
+            "claim": "The generated base requirements replaced unconditional NumPy and SciPy pins with interpreter markers and included audioop-lts for Python >=3.13.",
+            "source": "git diff 265d8a473b5d5bf001db321b251674a120ad75da 861a1e4d154f268547a06497cc380e5a5dc8483a -- requirements.txt"
+          },
+          {
+            "id": "ev-diff-03",
+            "kind": "diff",
+            "claim": "The help dependency input adopted the same interpreter-specific NumPy split, added torch>=2.3.0, retained interpreter-specific scikit-learn constraints, and its compiled artifact was regenerated with newer compatible NumPy and SciPy selections.",
+            "source": "git diff 265d8a473b5d5bf001db321b251674a120ad75da 861a1e4d154f268547a06497cc380e5a5dc8483a -- requirements/requirements-help.in requirements/requirements-help.txt requirements/common-constraints.txt"
+          },
+          {
+            "id": "ev-test-01",
+            "kind": "test",
+            "claim": "Ubuntu and Windows source-test workflows now create jobs for Python 3.10, 3.11, 3.12, 3.13, and 3.14; each job installs the package and runs pytest.",
+            "source": "git show 861a1e4d154f268547a06497cc380e5a5dc8483a:.github/workflows/ubuntu-tests.yml; git show 861a1e4d154f268547a06497cc380e5a5dc8483a:.github/workflows/windows-tests.yml"
+          },
+          {
+            "id": "ev-validation-01",
+            "kind": "validation",
+            "claim": "Scheduled Linux and Windows published-package checks now install aider-chat and compare its reported version with the latest release tag on Python 3.10 through 3.14.",
+            "source": "git show 861a1e4d154f268547a06497cc380e5a5dc8483a:.github/workflows/check_pypi_version.yml; git show 861a1e4d154f268547a06497cc380e5a5dc8483a:.github/workflows/windows_check_pypi_version.yml"
+          },
+          {
+            "id": "ev-validation-02",
+            "kind": "validation",
+            "claim": "The complete first-parent patch passes Git whitespace-error validation.",
+            "source": "git diff --check 265d8a473b5d5bf001db321b251674a120ad75da 861a1e4d154f268547a06497cc380e5a5dc8483a returned success with no output"
+          },
+          {
+            "id": "ev-limitation-01",
+            "kind": "validation",
+            "claim": "No test file changed, and PR reviews and status-check results are unavailable; the checkout establishes configured validation coverage but not observed CI success.",
+            "source": "issue-bundle.json manifest_metadata.provenance.verification and linked_pull_requests[0].pull_request.metadata_unavailable"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "align-supported-runtime-contract",
+            "title": "Align package metadata with the expanded runtime range",
+            "description": "Update the install-time interpreter bound and published compatibility classifiers together so package tooling and consumers see the same supported runtime range.",
+            "evidence_ids": [
+              "ev-diff-01",
+              "ev-commit-01"
+            ],
+            "semantic_action": {
+              "intent": "Allow package installers to admit the newly supported interpreter releases while accurately advertising that support.",
+              "module_role": "package compatibility contract",
+              "operation": "align",
+              "pre_state": "The package excludes interpreters at or above 3.13 and advertises compatibility only through 3.12.",
+              "post_state": "The package admits supported interpreters through 3.14 and advertises classifiers for every newly admitted minor release.",
+              "validation": "Inspect the built-project metadata source and verify that the upper interpreter bound and runtime classifiers describe the same supported set; the pinned diff proves alignment through 3.14.",
+              "parameters": [
+                "minimum_supported_runtime=3.10",
+                "new_supported_runtimes=[3.13,3.14]",
+                "exclusive_upper_bound=3.15",
+                "metadata_file=pyproject.toml"
+              ],
+              "evidence_ids": [
+                "ev-diff-01"
+              ]
+            }
+          },
+          {
+            "name": "partition-dependencies-by-runtime-capability",
+            "title": "Partition dependency constraints by runtime capability",
+            "description": "Replace universal dependency pins with environment-marked ranges and add a conditional compatibility backport where newer interpreters removed a required standard-library facility.",
+            "evidence_ids": [
+              "ev-impl-01",
+              "ev-impl-02",
+              "ev-call-01",
+              "ev-diff-02",
+              "ev-diff-03"
+            ],
+            "semantic_action": {
+              "intent": "Keep one package installable across old and new interpreter releases whose binary dependency support and standard-library facilities differ.",
+              "module_role": "cross-runtime dependency policy",
+              "operation": "partition",
+              "pre_state": "A single NumPy/SciPy constraint serves all interpreters, newer supported interpreters lack compatible selections, and Python 3.13+ needs an audio compatibility dependency that is not declared.",
+              "post_state": "Environment markers select dependency ranges compatible with each interpreter cohort, and the compatibility backport is installed only on runtimes that need it.",
+              "validation": "Resolve or inspect requirements under representatives on both sides of each marker boundary and confirm exactly one compatible NumPy range, one compatible SciPy range, and conditional audioop-lts selection; the committed generated requirements expose these marker branches.",
+              "parameters": [
+                "runtime_boundary=3.11",
+                "backport_boundary=3.13",
+                "dependency_slots=[numpy,scipy,audioop-lts]",
+                "compatibility_inputs=[requirements/python-compat.in,requirements/pydub.in]"
+              ],
+              "evidence_ids": [
+                "ev-impl-01",
+                "ev-impl-02",
+                "ev-call-01",
+                "ev-diff-02"
+              ]
+            }
+          },
+          {
+            "name": "preserve-runtime-markers-in-generated-requirements",
+            "title": "Preserve runtime markers in generated release requirements",
+            "description": "Reconcile resolver output with maintained compatibility inputs so a lock generated on one host does not collapse cross-runtime alternatives into host-specific unconditional pins.",
+            "evidence_ids": [
+              "ev-impl-03",
+              "ev-diff-02",
+              "ev-diff-03"
+            ],
+            "semantic_action": {
+              "intent": "Produce distributable requirements whose dependency choices remain valid across the full supported interpreter range.",
+              "module_role": "dependency artifact generation pipeline",
+              "operation": "reconcile",
+              "pre_state": "The compilation pipeline emits single resolved NumPy and SciPy assignments selected in the compiler's environment, losing cross-runtime alternatives in the base release requirements.",
+              "post_state": "The generated base requirements omit host-resolved assignments for compatibility-sensitive packages and contain the maintained marker-based alternatives plus the conditional backport.",
+              "validation": "Run the compilation pipeline, then assert that the final base requirements contain the marker-based alternatives and no unconditional NumPy or SciPy assignment; the committed script and regenerated artifact demonstrate this transformation.",
+              "parameters": [
+                "temporary_resolver_output=tmp.requirements.txt",
+                "generated_artifact=requirements.txt",
+                "filtered_packages=[tree-sitter,numpy,scipy]",
+                "appended_policy_inputs=[requirements/tree-sitter.in,requirements/python-compat.in,requirements/pydub.in]"
+              ],
+              "evidence_ids": [
+                "ev-impl-03",
+                "ev-diff-02"
+              ]
+            }
+          },
+          {
+            "name": "expand-cross-platform-runtime-validation",
+            "title": "Expand cross-platform validation to every supported runtime",
+            "description": "Add each newly supported interpreter to both source-test and published-package installation checks on Linux and Windows.",
+            "evidence_ids": [
+              "ev-test-01",
+              "ev-validation-01",
+              "ev-limitation-01"
+            ],
+            "semantic_action": {
+              "intent": "Exercise source installation, the test suite, and released-package installation across every advertised interpreter on both supported CI operating-system families.",
+              "module_role": "cross-platform compatibility validation",
+              "operation": "expand",
+              "pre_state": "Automated source and published-package checks cover Python 3.10-3.12, leaving newly admitted 3.13 and 3.14 configurations unexercised.",
+              "post_state": "Linux and Windows matrices configure Python 3.10-3.14 for source installation and tests, and scheduled release checks configure the same range for published-package installation and version verification.",
+              "validation": "For each operating system and supported interpreter, require source installation followed by pytest and published-package installation followed by release-version comparison; the workflows configure these jobs, although their execution results are unavailable in the evidence bundle.",
+              "parameters": [
+                "operating_systems=[ubuntu-latest,windows-latest]",
+                "supported_runtimes=[3.10,3.11,3.12,3.13,3.14]",
+                "source_oracle=pytest",
+                "release_oracle=installed-version-equals-latest-tag"
+              ],
+              "evidence_ids": [
+                "ev-test-01",
+                "ev-validation-01",
+                "ev-limitation-01"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "extend-cross-platform-package-runtime-support",
+            "title": "Extend a packaged application across new interpreter releases",
+            "description": "Coordinate metadata, runtime-sensitive dependency policy, generated release artifacts, and Linux/Windows validation when adding interpreter versions whose dependency availability differs from older supported versions.",
+            "atomic_names": [
+              "align-supported-runtime-contract",
+              "partition-dependencies-by-runtime-capability",
+              "preserve-runtime-markers-in-generated-requirements",
+              "expand-cross-platform-runtime-validation"
+            ],
+            "evidence_ids": [
+              "ev-commit-01",
+              "ev-diff-01",
+              "ev-impl-01",
+              "ev-impl-02",
+              "ev-call-01",
+              "ev-impl-03",
+              "ev-diff-02",
+              "ev-diff-03",
+              "ev-test-01",
+              "ev-validation-01",
+              "ev-validation-02",
+              "ev-limitation-01"
+            ],
+            "workflow_graph": {
+              "goal": "Make source and released-package installation support the expanded interpreter range on Linux and Windows without breaking dependency resolution for older supported interpreters.",
+              "when_to_use": [
+                "Package metadata must admit one or more new interpreter releases.",
+                "At least one dependency or removed standard-library module requires different treatment across old and new interpreter cohorts.",
+                "The repository commits generated dependency artifacts and validates installation on multiple operating systems."
+              ],
+              "anti_goals": [
+                "Do not drop an older supported interpreter merely to use one unconditional modern dependency pin.",
+                "Do not claim runtime support solely by changing package classifiers or the interpreter upper bound.",
+                "Do not let a lock generated on one host replace cross-runtime marker branches with host-specific pins.",
+                "Do not broaden unrelated application behavior or optimize dependency versions beyond what compatibility requires."
+              ],
+              "not_applicable_when": [
+                "The project distributes no Python package or does not declare interpreter compatibility.",
+                "All supported runtimes resolve the same dependency set and no generated artifact can collapse environment-specific choices.",
+                "The requested interpreter is unavailable in the target CI platforms or required dependencies have no viable compatible release or backport."
+              ],
+              "inputs": [
+                "Current and proposed supported interpreter ranges",
+                "Package metadata and classifiers",
+                "Direct and transitive dependency compatibility by interpreter",
+                "Generated-requirements compilation pipeline",
+                "Supported operating-system CI workflows",
+                "Source-test and published-package installation oracles"
+              ],
+              "entry_state": "The package supports Python 3.10-3.12, excludes 3.13+, uses dependency constraints that cannot represent the complete old/new runtime compatibility split, and validates only the older range.",
+              "exit_state": "Metadata, dependency policy, generated artifacts, source-test matrices, and published-package checks consistently cover Python 3.10-3.14 on Linux and Windows, with runtime markers preserving older-interpreter compatibility.",
+              "steps": [
+                {
+                  "action_name": "align-supported-runtime-contract",
+                  "role": "establish-contract",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "The proposed runtimes are intended to become publicly supported.",
+                  "validation": "The interpreter bound and classifiers enumerate the same expanded support range."
+                },
+                {
+                  "action_name": "partition-dependencies-by-runtime-capability",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [
+                    "align-supported-runtime-contract"
+                  ],
+                  "condition": "Dependency wheels, supported versions, or standard-library facilities differ across the supported interpreter range.",
+                  "validation": "Each runtime cohort selects compatible dependency ranges, and compatibility backports are limited to runtimes that need them."
+                },
+                {
+                  "action_name": "preserve-runtime-markers-in-generated-requirements",
+                  "role": "reconcile",
+                  "required": true,
+                  "depends_on": [
+                    "partition-dependencies-by-runtime-capability"
+                  ],
+                  "condition": "Release dependencies are generated through a resolver that can emit host-specific unconditional pins.",
+                  "validation": "Regenerated release requirements retain marker branches and contain no conflicting unconditional assignments for compatibility-sensitive packages."
+                },
+                {
+                  "action_name": "expand-cross-platform-runtime-validation",
+                  "role": "validate",
+                  "required": true,
+                  "depends_on": [
+                    "align-supported-runtime-contract",
+                    "preserve-runtime-markers-in-generated-requirements"
+                  ],
+                  "condition": "The repository supports Linux and Windows and publishes an installable package.",
+                  "validation": "Every supported interpreter has Linux and Windows source-install/test jobs and published-package installation/version-check jobs."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "align-supported-runtime-contract",
+                  "to": "partition-dependencies-by-runtime-capability",
+                  "type": "requires"
+                },
+                {
+                  "from": "partition-dependencies-by-runtime-capability",
+                  "to": "preserve-runtime-markers-in-generated-requirements",
+                  "type": "enables"
+                },
+                {
+                  "from": "align-supported-runtime-contract",
+                  "to": "expand-cross-platform-runtime-validation",
+                  "type": "requires"
+                },
+                {
+                  "from": "preserve-runtime-markers-in-generated-requirements",
+                  "to": "expand-cross-platform-runtime-validation",
+                  "type": "validates"
+                }
+              ],
+              "validation_ladder": [
+                "Statically verify that metadata bounds and classifiers agree on Python 3.10-3.14.",
+                "Regenerate dependency artifacts and verify that compatibility-sensitive packages retain mutually exclusive runtime markers without unconditional conflicting pins.",
+                "Install the source package and run pytest for every supported interpreter on Linux and Windows.",
+                "Install the published package for every supported interpreter on Linux and Windows and compare its reported version with the latest release tag.",
+                "Require observed CI status results before treating configured workflow coverage as proven execution success."
+              ],
+              "stop_conditions": [
+                "Stop if any newly admitted interpreter has no viable dependency set or required compatibility backport.",
+                "Stop if generated artifacts cannot preserve the runtime-specific policy without conflicting assignments.",
+                "Stop promotion if either operating-system family lacks source-install/test coverage for a claimed supported runtime.",
+                "Defer success claims when CI execution or release-install results are unavailable."
+              ],
+              "unresolved_or_deferred": [
+                "PR review discussion and status-check results are unavailable in the GitHub evidence bundle.",
+                "No repository test file was added or modified; validation is expressed through expanded existing workflows.",
+                "Actual dependency resolution and test outcomes for all ten operating-system/interpreter combinations were not observed during extraction.",
+                "The comment in requirements/pydub.in makes future removal of audioop-lts conditional on upstream Python 3.13+ support, which was not evaluated here."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Did all Linux and Windows jobs for Python 3.13 and 3.14 pass on PR #4899? The supplied bundle omits status checks.",
+          "Did the scheduled published-package checks subsequently succeed on Python 3.13 and 3.14 after release? No run results are present.",
+          "Are macOS x86 dependency constraints still relevant after the help-stack changes? The diff removes an old commented note but provides no platform validation evidence."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "align-supported-runtime-contract",
+          "title": "Align package metadata with the expanded runtime range",
+          "description": "Update the install-time interpreter bound and published compatibility classifiers together so package tooling and consumers see the same supported runtime range.",
+          "evidence_ids": [
+            "ev-diff-01",
+            "ev-commit-01"
+          ],
+          "semantic_action": {
+            "intent": "Allow package installers to admit the newly supported interpreter releases while accurately advertising that support.",
+            "module_role": "package compatibility contract",
+            "operation": "align",
+            "pre_state": "The package excludes interpreters at or above 3.13 and advertises compatibility only through 3.12.",
+            "post_state": "The package admits supported interpreters through 3.14 and advertises classifiers for every newly admitted minor release.",
+            "validation": "Inspect the built-project metadata source and verify that the upper interpreter bound and runtime classifiers describe the same supported set; the pinned diff proves alignment through 3.14.",
+            "parameters": [
+              "minimum_supported_runtime=3.10",
+              "new_supported_runtimes=[3.13,3.14]",
+              "exclusive_upper_bound=3.15",
+              "metadata_file=pyproject.toml"
+            ],
+            "evidence_ids": [
+              "ev-diff-01"
+            ]
+          }
+        },
+        {
+          "name": "partition-dependencies-by-runtime-capability",
+          "title": "Partition dependency constraints by runtime capability",
+          "description": "Replace universal dependency pins with environment-marked ranges and add a conditional compatibility backport where newer interpreters removed a required standard-library facility.",
+          "evidence_ids": [
+            "ev-impl-01",
+            "ev-impl-02",
+            "ev-call-01",
+            "ev-diff-02",
+            "ev-diff-03"
+          ],
+          "semantic_action": {
+            "intent": "Keep one package installable across old and new interpreter releases whose binary dependency support and standard-library facilities differ.",
+            "module_role": "cross-runtime dependency policy",
+            "operation": "partition",
+            "pre_state": "A single NumPy/SciPy constraint serves all interpreters, newer supported interpreters lack compatible selections, and Python 3.13+ needs an audio compatibility dependency that is not declared.",
+            "post_state": "Environment markers select dependency ranges compatible with each interpreter cohort, and the compatibility backport is installed only on runtimes that need it.",
+            "validation": "Resolve or inspect requirements under representatives on both sides of each marker boundary and confirm exactly one compatible NumPy range, one compatible SciPy range, and conditional audioop-lts selection; the committed generated requirements expose these marker branches.",
+            "parameters": [
+              "runtime_boundary=3.11",
+              "backport_boundary=3.13",
+              "dependency_slots=[numpy,scipy,audioop-lts]",
+              "compatibility_inputs=[requirements/python-compat.in,requirements/pydub.in]"
+            ],
+            "evidence_ids": [
+              "ev-impl-01",
+              "ev-impl-02",
+              "ev-call-01",
+              "ev-diff-02"
+            ]
+          }
+        },
+        {
+          "name": "preserve-runtime-markers-in-generated-requirements",
+          "title": "Preserve runtime markers in generated release requirements",
+          "description": "Reconcile resolver output with maintained compatibility inputs so a lock generated on one host does not collapse cross-runtime alternatives into host-specific unconditional pins.",
+          "evidence_ids": [
+            "ev-impl-03",
+            "ev-diff-02",
+            "ev-diff-03"
+          ],
+          "semantic_action": {
+            "intent": "Produce distributable requirements whose dependency choices remain valid across the full supported interpreter range.",
+            "module_role": "dependency artifact generation pipeline",
+            "operation": "reconcile",
+            "pre_state": "The compilation pipeline emits single resolved NumPy and SciPy assignments selected in the compiler's environment, losing cross-runtime alternatives in the base release requirements.",
+            "post_state": "The generated base requirements omit host-resolved assignments for compatibility-sensitive packages and contain the maintained marker-based alternatives plus the conditional backport.",
+            "validation": "Run the compilation pipeline, then assert that the final base requirements contain the marker-based alternatives and no unconditional NumPy or SciPy assignment; the committed script and regenerated artifact demonstrate this transformation.",
+            "parameters": [
+              "temporary_resolver_output=tmp.requirements.txt",
+              "generated_artifact=requirements.txt",
+              "filtered_packages=[tree-sitter,numpy,scipy]",
+              "appended_policy_inputs=[requirements/tree-sitter.in,requirements/python-compat.in,requirements/pydub.in]"
+            ],
+            "evidence_ids": [
+              "ev-impl-03",
+              "ev-diff-02"
+            ]
+          }
+        },
+        {
+          "name": "expand-cross-platform-runtime-validation",
+          "title": "Expand cross-platform validation to every supported runtime",
+          "description": "Add each newly supported interpreter to both source-test and published-package installation checks on Linux and Windows.",
+          "evidence_ids": [
+            "ev-test-01",
+            "ev-validation-01",
+            "ev-limitation-01"
+          ],
+          "semantic_action": {
+            "intent": "Exercise source installation, the test suite, and released-package installation across every advertised interpreter on both supported CI operating-system families.",
+            "module_role": "cross-platform compatibility validation",
+            "operation": "expand",
+            "pre_state": "Automated source and published-package checks cover Python 3.10-3.12, leaving newly admitted 3.13 and 3.14 configurations unexercised.",
+            "post_state": "Linux and Windows matrices configure Python 3.10-3.14 for source installation and tests, and scheduled release checks configure the same range for published-package installation and version verification.",
+            "validation": "For each operating system and supported interpreter, require source installation followed by pytest and published-package installation followed by release-version comparison; the workflows configure these jobs, although their execution results are unavailable in the evidence bundle.",
+            "parameters": [
+              "operating_systems=[ubuntu-latest,windows-latest]",
+              "supported_runtimes=[3.10,3.11,3.12,3.13,3.14]",
+              "source_oracle=pytest",
+              "release_oracle=installed-version-equals-latest-tag"
+            ],
+            "evidence_ids": [
+              "ev-test-01",
+              "ev-validation-01",
+              "ev-limitation-01"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "extend-cross-platform-package-runtime-support",
+          "title": "Extend a packaged application across new interpreter releases",
+          "description": "Coordinate metadata, runtime-sensitive dependency policy, generated release artifacts, and Linux/Windows validation when adding interpreter versions whose dependency availability differs from older supported versions.",
+          "atomic_names": [
+            "align-supported-runtime-contract",
+            "partition-dependencies-by-runtime-capability",
+            "preserve-runtime-markers-in-generated-requirements",
+            "expand-cross-platform-runtime-validation"
+          ],
+          "evidence_ids": [
+            "ev-commit-01",
+            "ev-diff-01",
+            "ev-impl-01",
+            "ev-impl-02",
+            "ev-call-01",
+            "ev-impl-03",
+            "ev-diff-02",
+            "ev-diff-03",
+            "ev-test-01",
+            "ev-validation-01",
+            "ev-validation-02",
+            "ev-limitation-01"
+          ],
+          "workflow_graph": {
+            "goal": "Make source and released-package installation support the expanded interpreter range on Linux and Windows without breaking dependency resolution for older supported interpreters.",
+            "when_to_use": [
+              "Package metadata must admit one or more new interpreter releases.",
+              "At least one dependency or removed standard-library module requires different treatment across old and new interpreter cohorts.",
+              "The repository commits generated dependency artifacts and validates installation on multiple operating systems."
+            ],
+            "anti_goals": [
+              "Do not drop an older supported interpreter merely to use one unconditional modern dependency pin.",
+              "Do not claim runtime support solely by changing package classifiers or the interpreter upper bound.",
+              "Do not let a lock generated on one host replace cross-runtime marker branches with host-specific pins.",
+              "Do not broaden unrelated application behavior or optimize dependency versions beyond what compatibility requires."
+            ],
+            "not_applicable_when": [
+              "The project distributes no Python package or does not declare interpreter compatibility.",
+              "All supported runtimes resolve the same dependency set and no generated artifact can collapse environment-specific choices.",
+              "The requested interpreter is unavailable in the target CI platforms or required dependencies have no viable compatible release or backport."
+            ],
+            "inputs": [
+              "Current and proposed supported interpreter ranges",
+              "Package metadata and classifiers",
+              "Direct and transitive dependency compatibility by interpreter",
+              "Generated-requirements compilation pipeline",
+              "Supported operating-system CI workflows",
+              "Source-test and published-package installation oracles"
+            ],
+            "entry_state": "The package supports Python 3.10-3.12, excludes 3.13+, uses dependency constraints that cannot represent the complete old/new runtime compatibility split, and validates only the older range.",
+            "exit_state": "Metadata, dependency policy, generated artifacts, source-test matrices, and published-package checks consistently cover Python 3.10-3.14 on Linux and Windows, with runtime markers preserving older-interpreter compatibility.",
+            "steps": [
+              {
+                "action_name": "align-supported-runtime-contract",
+                "role": "establish-contract",
+                "required": true,
+                "depends_on": [],
+                "condition": "The proposed runtimes are intended to become publicly supported.",
+                "validation": "The interpreter bound and classifiers enumerate the same expanded support range."
+              },
+              {
+                "action_name": "partition-dependencies-by-runtime-capability",
+                "role": "implement",
+                "required": true,
+                "depends_on": [
+                  "align-supported-runtime-contract"
+                ],
+                "condition": "Dependency wheels, supported versions, or standard-library facilities differ across the supported interpreter range.",
+                "validation": "Each runtime cohort selects compatible dependency ranges, and compatibility backports are limited to runtimes that need them."
+              },
+              {
+                "action_name": "preserve-runtime-markers-in-generated-requirements",
+                "role": "reconcile",
+                "required": true,
+                "depends_on": [
+                  "partition-dependencies-by-runtime-capability"
+                ],
+                "condition": "Release dependencies are generated through a resolver that can emit host-specific unconditional pins.",
+                "validation": "Regenerated release requirements retain marker branches and contain no conflicting unconditional assignments for compatibility-sensitive packages."
+              },
+              {
+                "action_name": "expand-cross-platform-runtime-validation",
+                "role": "validate",
+                "required": true,
+                "depends_on": [
+                  "align-supported-runtime-contract",
+                  "preserve-runtime-markers-in-generated-requirements"
+                ],
+                "condition": "The repository supports Linux and Windows and publishes an installable package.",
+                "validation": "Every supported interpreter has Linux and Windows source-install/test jobs and published-package installation/version-check jobs."
+              }
+            ],
+            "edges": [
+              {
+                "from": "align-supported-runtime-contract",
+                "to": "partition-dependencies-by-runtime-capability",
+                "type": "requires"
+              },
+              {
+                "from": "partition-dependencies-by-runtime-capability",
+                "to": "preserve-runtime-markers-in-generated-requirements",
+                "type": "enables"
+              },
+              {
+                "from": "align-supported-runtime-contract",
+                "to": "expand-cross-platform-runtime-validation",
+                "type": "requires"
+              },
+              {
+                "from": "preserve-runtime-markers-in-generated-requirements",
+                "to": "expand-cross-platform-runtime-validation",
+                "type": "validates"
+              }
+            ],
+            "validation_ladder": [
+              "Statically verify that metadata bounds and classifiers agree on Python 3.10-3.14.",
+              "Regenerate dependency artifacts and verify that compatibility-sensitive packages retain mutually exclusive runtime markers without unconditional conflicting pins.",
+              "Install the source package and run pytest for every supported interpreter on Linux and Windows.",
+              "Install the published package for every supported interpreter on Linux and Windows and compare its reported version with the latest release tag.",
+              "Require observed CI status results before treating configured workflow coverage as proven execution success."
+            ],
+            "stop_conditions": [
+              "Stop if any newly admitted interpreter has no viable dependency set or required compatibility backport.",
+              "Stop if generated artifacts cannot preserve the runtime-specific policy without conflicting assignments.",
+              "Stop promotion if either operating-system family lacks source-install/test coverage for a claimed supported runtime.",
+              "Defer success claims when CI execution or release-install results are unavailable."
+            ],
+            "unresolved_or_deferred": [
+              "PR review discussion and status-check results are unavailable in the GitHub evidence bundle.",
+              "No repository test file was added or modified; validation is expressed through expanded existing workflows.",
+              "Actual dependency resolution and test outcomes for all ten operating-system/interpreter combinations were not observed during extraction.",
+              "The comment in requirements/pydub.in makes future removal of audioop-lts conditional on upstream Python 3.13+ support, which was not evaluated here."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Did all Linux and Windows jobs for Python 3.13 and 3.14 pass on PR #4899? The supplied bundle omits status checks.",
+        "Did the scheduled published-package checks subsequently succeed on Python 3.13 and 3.14 after release? No run results are present.",
+        "Are macOS x86 dependency constraints still relevant after the help-stack changes? The diff removes an old commented note but provides no platform validation evidence."
+      ]
+    },
+    "call_sites": [
+      "The base dependency input now includes python-compat.in, making its interpreter-specific constraints part of normal base dependency resolution."
+    ],
+    "tests": [
+      "Ubuntu and Windows source-test workflows now create jobs for Python 3.10, 3.11, 3.12, 3.13, and 3.14; each job installs the package and runs pytest."
+    ]
+  },
+  {
+    "episode_id": "earendil-works__pi__4458__93708de6",
+    "title": "Add an architecture-specific Windows release artifact across build, packaging, and publication",
+    "before": "At first parent ac75abee43cc2b3ebbaf616b98a5c5a9c51b804d, the release builder's default target matrix contained macOS ARM64/x64, Linux ARM64/x64, and Windows x64. Only Windows x64 received a .exe name, the win32_x64 koffi native module, ZIP packaging, ZIP extraction, and release upload. The CI workflow used Bun 1.2.20.",
+    "after": "At pinned merge 93708de65d34ecceb2b86f626d18c2df356bd70c, the default matrix also builds Windows ARM64 using Bun 1.3.10, installs its clipboard and image native dependencies, emits pi.exe, selects and copies koffi's win32_arm64 module, creates and extracts pi-windows-arm64.zip, and includes that archive in both release creation and fallback upload. A remaining inconsistency prevents explicitly selecting windows-arm64 through --platform because the validation case still accepts only windows-x64 while its error message lists both.",
+    "diff": "The merge changes two files with 21 insertions and 11 deletions. scripts/build-binaries.sh adds the ARM64 target, dependencies, directory, and artifact documentation; generalizes four Windows-specific branches from an x64 equality check to the Windows platform family; maps the target architecture to the correct native-module directory; and retains ZIP packaging for Windows. .github/workflows/build-binaries.yml upgrades Bun from 1.2.20 to 1.3.10 and adds the new ZIP to release create/upload commands. No test file changed and no successful CI or runtime result is present in the evidence bundle.",
+    "repository": "earendil-works/pi",
+    "revision": "github-issue-4458",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "earendil-works/pi",
+      "issue": 4458,
+      "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+      "manifest_metadata": {
+        "category": "cross-platform-release-packaging",
+        "role": "train_candidate",
+        "case_id": "earendil-works__pi__4458__cross-platform-release-packaging",
+        "sample_kind": "verified_implementation_pull_request",
+        "seed_issue": null,
+        "seed_issue_url": null,
+        "seed_relation": null,
+        "resolution_url": "https://github.com/earendil-works/pi/pull/4458",
+        "provenance": {
+          "classification": "direct_implementation_artifact",
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 4458,
+            "url": "https://github.com/earendil-works/pi/pull/4458"
+          },
+          "commit": {
+            "sha": "93708de65d34ecceb2b86f626d18c2df356bd70c",
+            "subject": "Merge pull request #4458 from brianmichel/brian/add-windows-arm-binary",
+            "parents": [
+              "ac75abee43cc2b3ebbaf616b98a5c5a9c51b804d",
+              "c786efda9dfa76225e2a1bd17f62d504f5fccf88"
+            ],
+            "body_excerpt": "Add Windows ARM64 Binary Output"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "first_parent_and_changed_files_recorded",
+            "implementation_change_present",
+            "no_test_file_change_observed"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "earendil-works/pi",
+        "issue_number": 4458,
+        "issue": {
+          "number": 4458,
+          "title": "Merge pull request #4458 from brianmichel/brian/add-windows-arm-binary",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 4458,
+              "title": "Merge pull request #4458 from brianmichel/brian/add-windows-arm-binary",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\t.github/workflows/build-binaries.yml"
+              },
+              {
+                "status_line": "M\tscripts/build-binaries.sh"
+              },
+              {
+                "status_line": "M\tAGENTS.md"
+              },
+              {
+                "status_line": "M\tpackage-lock.json"
+              },
+              {
+                "status_line": "M\tpackages/agent/docs/agent-harness.md"
+              },
+              {
+                "status_line": "M\tpackages/agent/package.json"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/agent.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/agent-harness.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/compaction/compaction.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/env/nodejs.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/execution-env.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/prompt-templates.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/session/repo/shared.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/session/storage/memory.ts"
+              },
+              {
+                "status_line": "A\tpackages/agent/src/harness/session/uuid.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/skills.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/types.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/utils/shell-output.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/harness/utils/truncate.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/index.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/src/types.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/test/harness/agent-harness-stream.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/test/harness/agent-harness.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/test/harness/compaction.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/test/harness/nodejs-env.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/test/harness/prompt-templates.test.ts"
+              },
+              {
+                "status_line": "A\tpackages/agent/test/harness/session-uuid.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/test/harness/skills.test.ts"
+              },
+              {
+                "status_line": "A\tpackages/agent/test/harness/truncate.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/agent/test/scratch/simple.ts"
+              },
+              {
+                "status_line": "A\tpackages/agent/vitest.harness.config.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/CHANGELOG.md"
+              },
+              {
+                "status_line": "M\tpackages/ai/package.json"
+              },
+              {
+                "status_line": "M\tpackages/ai/scripts/generate-models.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/models.generated.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/providers/amazon-bedrock.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/src/providers/openai-codex-responses.ts"
+              },
+              {
+                "status_line": "A\tpackages/ai/src/utils/node-http-proxy.ts"
+              },
+              {
+                "status_line": "A\tpackages/ai/test/node-http-proxy.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/test/openai-codex-stream.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/package.json"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/core/bash-executor.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/core/session-manager.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/core/tools/render-utils.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/modes/interactive/components/bash-execution.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/modes/interactive/theme/theme.ts"
+              },
+              {
+                "status_line": "A\tpackages/coding-agent/src/utils/ansi.ts"
+              },
+              {
+                "status_line": "A\tpackages/coding-agent/src/utils/highlight-js-lib-index.d.ts"
+              },
+              {
+                "status_line": "A\tpackages/coding-agent/src/utils/html.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/utils/mime.ts"
+              },
+              {
+                "status_line": "A\tpackages/coding-agent/src/utils/syntax-highlight.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/src/utils/tools-manager.ts"
+              },
+              {
+                "status_line": "A\tpackages/coding-agent/test/ansi-utils.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/test/oauth-selector.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/test/suite/regressions/3217-scoped-model-order.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/test/suite/regressions/4167-thinking-toggle-pending-tool-render.test.ts"
+              },
+              {
+                "status_line": "A\tpackages/coding-agent/test/syntax-highlight.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/test/tool-execution-component.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/coding-agent/tsconfig.build.json"
+              },
+              {
+                "status_line": "M\tpackages/tui/CHANGELOG.md"
+              },
+              {
+                "status_line": "M\tpackages/tui/src/components/image.ts"
+              },
+              {
+                "status_line": "M\tpackages/tui/src/components/markdown.ts"
+              },
+              {
+                "status_line": "M\tpackages/tui/src/terminal-image.ts"
+              },
+              {
+                "status_line": "M\tpackages/tui/test/terminal-image.test.ts"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "93708de65d34ecceb2b86f626d18c2df356bd70c",
+                "subject": "Merge pull request #4458 from brianmichel/brian/add-windows-arm-binary"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+        "pinned_ref": "93708de65d34ecceb2b86f626d18c2df356bd70c",
+        "resolved_commit": "93708de65d34ecceb2b86f626d18c2df356bd70c",
+        "parent_commit": "ac75abee43cc2b3ebbaf616b98a5c5a9c51b804d",
+        "commit_show_stat": "commit 93708de65d34ecceb2b86f626d18c2df356bd70c\nMerge: ac75abee c786efda\nAuthor:     Mario Zechner <badlogicgames@gmail.com>\nAuthorDate: Thu May 14 22:41:13 2026 +0200\nCommit:     GitHub <noreply@github.com>\nCommitDate: Thu May 14 22:41:13 2026 +0200\n\n    Merge pull request #4458 from brianmichel/brian/add-windows-arm-binary\n    \n    Add Windows ARM64 Binary Output\n\n .github/workflows/build-binaries.yml |  4 +++-\n scripts/build-binaries.sh            | 28 ++++++++++++++++++----------\n 2 files changed, 21 insertions(+), 11 deletions(-)\n",
+        "changed_files_name_status": "M\t.github/workflows/build-binaries.yml\nM\tscripts/build-binaries.sh\nM\tAGENTS.md\nM\tpackage-lock.json\nM\tpackages/agent/docs/agent-harness.md\nM\tpackages/agent/package.json\nM\tpackages/agent/src/agent.ts\nM\tpackages/agent/src/harness/agent-harness.ts\nM\tpackages/agent/src/harness/compaction/compaction.ts\nM\tpackages/agent/src/harness/env/nodejs.ts\nM\tpackages/agent/src/harness/execution-env.ts\nM\tpackages/agent/src/harness/prompt-templates.ts\nM\tpackages/agent/src/harness/session/repo/shared.ts\nM\tpackages/agent/src/harness/session/storage/memory.ts\nA\tpackages/agent/src/harness/session/uuid.ts\nM\tpackages/agent/src/harness/skills.ts\nM\tpackages/agent/src/harness/types.ts\nM\tpackages/agent/src/harness/utils/shell-output.ts\nM\tpackages/agent/src/harness/utils/truncate.ts\nM\tpackages/agent/src/index.ts\nM\tpackages/agent/src/types.ts\nM\tpackages/agent/test/harness/agent-harness-stream.test.ts\nM\tpackages/agent/test/harness/agent-harness.test.ts\nM\tpackages/agent/test/harness/compaction.test.ts\nM\tpackages/agent/test/harness/nodejs-env.test.ts\nM\tpackages/agent/test/harness/prompt-templates.test.ts\nA\tpackages/agent/test/harness/session-uuid.test.ts\nM\tpackages/agent/test/harness/skills.test.ts\nA\tpackages/agent/test/harness/truncate.test.ts\nM\tpackages/agent/test/scratch/simple.ts\nA\tpackages/agent/vitest.harness.config.ts\nM\tpackages/ai/CHANGELOG.md\nM\tpackages/ai/package.json\nM\tpackages/ai/scripts/generate-models.ts\nM\tpackages/ai/src/models.generated.ts\nM\tpackages/ai/src/providers/amazon-bedrock.ts\nM\tpackages/ai/src/providers/openai-codex-responses.ts\nA\tpackages/ai/src/utils/node-http-proxy.ts\nA\tpackages/ai/test/node-http-proxy.test.ts\nM\tpackages/ai/test/openai-codex-stream.test.ts\nM\tpackages/coding-agent/package.json\nM\tpackages/coding-agent/src/core/bash-executor.ts\nM\tpackages/coding-agent/src/core/session-manager.ts\nM\tpackages/coding-agent/src/core/tools/render-utils.ts\nM\tpackages/coding-agent/src/modes/interactive/components/bash-execution.ts\nM\tpackages/coding-agent/src/modes/interactive/theme/theme.ts\nA\tpackages/coding-agent/src/utils/ansi.ts\nA\tpackages/coding-agent/src/utils/highlight-js-lib-index.d.ts\nA\tpackages/coding-agent/src/utils/html.ts\nM\tpackages/coding-agent/src/utils/mime.ts\nA\tpackages/coding-agent/src/utils/syntax-highlight.ts\nM\tpackages/coding-agent/src/utils/tools-manager.ts\nA\tpackages/coding-agent/test/ansi-utils.test.ts\nM\tpackages/coding-agent/test/oauth-selector.test.ts\nM\tpackages/coding-agent/test/suite/regressions/3217-scoped-model-order.test.ts\nM\tpackages/coding-agent/test/suite/regressions/4167-thinking-toggle-pending-tool-render.test.ts\nA\tpackages/coding-agent/test/syntax-highlight.test.ts\nM\tpackages/coding-agent/test/tool-execution-component.test.ts\nM\tpackages/coding-agent/tsconfig.build.json\nM\tpackages/tui/CHANGELOG.md\nM\tpackages/tui/src/components/image.ts\nM\tpackages/tui/src/components/markdown.ts\nM\tpackages/tui/src/terminal-image.ts\nM\tpackages/tui/test/terminal-image.test.ts\n",
+        "linked_issue_numbers": [
+          4458
+        ],
+        "manifest_metadata": {
+          "category": "cross-platform-release-packaging",
+          "theme": "cross-platform release asset completeness and packaging",
+          "file_sample": [
+            ".github/workflows/build-binaries.yml",
+            "scripts/build-binaries.sh"
+          ],
+          "quality": "implementation_only",
+          "case_id": "earendil-works__pi__4458__cross-platform-release-packaging",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_implementation_pull_request",
+          "resolution_url": "https://github.com/earendil-works/pi/pull/4458",
+          "source": "agent_core_thirteen_category_extraction_v2",
+          "provenance": {
+            "classification": "direct_implementation_artifact",
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 4458,
+              "url": "https://github.com/earendil-works/pi/pull/4458"
+            },
+            "commit": {
+              "sha": "93708de65d34ecceb2b86f626d18c2df356bd70c",
+              "subject": "Merge pull request #4458 from brianmichel/brian/add-windows-arm-binary",
+              "parents": [
+                "ac75abee43cc2b3ebbaf616b98a5c5a9c51b804d",
+                "c786efda9dfa76225e2a1bd17f62d504f5fccf88"
+              ],
+              "body_excerpt": "Add Windows ARM64 Binary Output"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "first_parent_and_changed_files_recorded",
+              "implementation_change_present",
+              "no_test_file_change_observed"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T10:53:02.838786+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "earendil-works__pi__4458__93708de6",
+          "title": "Add an architecture-specific Windows release artifact across build, packaging, and publication",
+          "before": "At first parent ac75abee43cc2b3ebbaf616b98a5c5a9c51b804d, the release builder's default target matrix contained macOS ARM64/x64, Linux ARM64/x64, and Windows x64. Only Windows x64 received a .exe name, the win32_x64 koffi native module, ZIP packaging, ZIP extraction, and release upload. The CI workflow used Bun 1.2.20.",
+          "after": "At pinned merge 93708de65d34ecceb2b86f626d18c2df356bd70c, the default matrix also builds Windows ARM64 using Bun 1.3.10, installs its clipboard and image native dependencies, emits pi.exe, selects and copies koffi's win32_arm64 module, creates and extracts pi-windows-arm64.zip, and includes that archive in both release creation and fallback upload. A remaining inconsistency prevents explicitly selecting windows-arm64 through --platform because the validation case still accepts only windows-x64 while its error message lists both.",
+          "diff": "The merge changes two files with 21 insertions and 11 deletions. scripts/build-binaries.sh adds the ARM64 target, dependencies, directory, and artifact documentation; generalizes four Windows-specific branches from an x64 equality check to the Windows platform family; maps the target architecture to the correct native-module directory; and retains ZIP packaging for Windows. .github/workflows/build-binaries.yml upgrades Bun from 1.2.20 to 1.3.10 and adds the new ZIP to release create/upload commands. No test file changed and no successful CI or runtime result is present in the evidence bundle."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "The pinned merge resolves PR 4458 as “Add Windows ARM64 Binary Output” and changes only the binary build script and release workflow relative to its first parent.",
+            "source": "git show --format=fuller --stat 93708de65d34ecceb2b86f626d18c2df356bd70c; issue-bundle.json provenance.commit"
+          },
+          {
+            "id": "E2",
+            "kind": "implementation",
+            "claim": "The first-parent builder supported five default targets and applied executable naming, koffi copying, ZIP creation, and ZIP extraction only when the target equaled windows-x64.",
+            "source": "git show ac75abee43cc2b3ebbaf616b98a5c5a9c51b804d:scripts/build-binaries.sh, lines 92-164"
+          },
+          {
+            "id": "E3",
+            "kind": "diff",
+            "claim": "The change adds Windows ARM64 native clipboard and image dependencies, an output directory, and the target to the default platform matrix.",
+            "source": "git diff ac75abee43cc2b3ebbaf616b98a5c5a9c51b804d 93708de65d34ecceb2b86f626d18c2df356bd70c -- scripts/build-binaries.sh; resulting lines 62-104"
+          },
+          {
+            "id": "E4",
+            "kind": "implementation",
+            "claim": "All Windows-family targets now compile to pi.exe and are packaged as ZIP files; the koffi directory is selected as win32_arm64 for Windows ARM64 and win32_x64 otherwise.",
+            "source": "git show 93708de65d34ecceb2b86f626d18c2df356bd70c:scripts/build-binaries.sh, lines 106-162"
+          },
+          {
+            "id": "E5",
+            "kind": "call_site",
+            "claim": "The packaged koffi module is consumed only on Windows to enable virtual-terminal input; failure to load it is caught and degrades modified-key handling rather than terminating the application.",
+            "source": "git show 93708de65d34ecceb2b86f626d18c2df356bd70c:packages/tui/src/terminal.ts, Terminal.start and enableWindowsVTInput methods, approximately lines 90-230"
+          },
+          {
+            "id": "E6",
+            "kind": "validation",
+            "claim": "After creating every archive, the build script deletes its staging directory and extracts the archive again, providing a structural archive-readability check but not executing the target binary.",
+            "source": "git show 93708de65d34ecceb2b86f626d18c2df356bd70c:scripts/build-binaries.sh, lines 149-173"
+          },
+          {
+            "id": "E7",
+            "kind": "implementation",
+            "claim": "The release workflow invokes the full build script and supplies pi-windows-arm64.zip to both release creation and fallback upload with clobber behavior.",
+            "source": "git show 93708de65d34ecceb2b86f626d18c2df356bd70c:.github/workflows/build-binaries.yml, lines 39-40 and 57-81"
+          },
+          {
+            "id": "E8",
+            "kind": "implementation",
+            "claim": "The CI toolchain is upgraded from Bun 1.2.20 to 1.3.10; the feature-branch commit describes 1.3.10 as the minimum required version for Windows ARM.",
+            "source": "git show c786efda9dfa76225e2a1bd17f62d504f5fccf88; pinned .github/workflows/build-binaries.yml lines 28-31"
+          },
+          {
+            "id": "E9",
+            "kind": "test",
+            "claim": "No test file changed in the pinned merge, and the evidence bundle records no observed test-file change or status-check result.",
+            "source": "git diff --name-only ac75abee43cc2b3ebbaf616b98a5c5a9c51b804d 93708de65d34ecceb2b86f626d18c2df356bd70c; issue-bundle.json manifest_metadata.provenance.verification and PR metadata_unavailable"
+          },
+          {
+            "id": "E10",
+            "kind": "diff",
+            "claim": "The explicit platform validator still accepts windows-x64 but not windows-arm64, although the help and error text advertise windows-arm64; therefore the new target is reached by the default all-platform build but rejected by --platform windows-arm64.",
+            "source": "git show 93708de65d34ecceb2b86f626d18c2df356bd70c:scripts/build-binaries.sh, lines 9-20 and 46-57"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "extend-release-target-contract",
+            "title": "Extend the release target contract and prerequisites",
+            "description": "Add a new architecture target consistently to the default build matrix, output layout, architecture-specific dependency installation, and minimum compiler/runtime version.",
+            "evidence_ids": [
+              "E3",
+              "E8",
+              "E10"
+            ],
+            "semantic_action": {
+              "intent": "Make the release builder capable of compiling the newly supported operating-system and architecture pair with its required native dependencies.",
+              "module_role": "release target and toolchain contract",
+              "operation": "extend",
+              "pre_state": "The build matrix and installed native dependencies cover the operating system only for another architecture, and the configured compiler version predates support for the new target.",
+              "post_state": "The default build matrix allocates the new target, installs its architecture-specific dependencies, and runs on a compiler version identified as supporting that target.",
+              "validation": "Run the unfiltered release builder and verify it reaches the new target without a missing target, compiler, dependency, or output-directory failure. Explicit single-target validation remains unresolved for this episode.",
+              "parameters": [
+                "target operating-system family",
+                "target architecture",
+                "compiler target identifier",
+                "minimum compiler version",
+                "architecture-specific dependency packages",
+                "artifact staging directory"
+              ],
+              "evidence_ids": [
+                "E3",
+                "E8",
+                "E10"
+              ]
+            }
+          },
+          {
+            "name": "package-platform-native-payload",
+            "title": "Package the correct native payload for each architecture",
+            "description": "Generalize operating-system packaging behavior while retaining an explicit architecture-to-native-module mapping.",
+            "evidence_ids": [
+              "E4",
+              "E5",
+              "E6"
+            ],
+            "semantic_action": {
+              "intent": "Produce an archive whose executable naming, format, and native runtime payload match the target platform and architecture.",
+              "module_role": "platform artifact assembler",
+              "operation": "map",
+              "pre_state": "Packaging logic recognizes only one architecture as belonging to the operating-system family and hardcodes that architecture's native-module directory.",
+              "post_state": "Every target in the operating-system family receives the family-specific executable and archive format, while each architecture receives its matching native module.",
+              "validation": "Inspect the staged archive for the family-specific executable and the native module under the architecture-selected directory, then successfully extract the archive using the family-specific extraction path.",
+              "parameters": [
+                "target platform identifier",
+                "operating-system family pattern",
+                "executable name",
+                "archive format",
+                "native module package",
+                "architecture-to-module-directory mapping"
+              ],
+              "evidence_ids": [
+                "E4",
+                "E5",
+                "E6"
+              ]
+            }
+          },
+          {
+            "name": "publish-complete-release-artifact-set",
+            "title": "Publish the new artifact in every release path",
+            "description": "Add the generated architecture artifact to both initial release creation and existing-release replacement paths.",
+            "evidence_ids": [
+              "E1",
+              "E7"
+            ],
+            "semantic_action": {
+              "intent": "Ensure users can obtain the newly built target artifact from the release distribution surface.",
+              "module_role": "release artifact publisher",
+              "operation": "reconcile",
+              "pre_state": "The build can produce or is being extended to produce an artifact that is absent from the release creation and fallback upload lists.",
+              "post_state": "The artifact is named in both release creation and fallback replacement commands.",
+              "validation": "For a release tag, verify that either creation succeeds with the artifact or the fallback upload replaces it, and that the release exposes the expected artifact name.",
+              "parameters": [
+                "release tag",
+                "artifact filename",
+                "release creation command",
+                "fallback upload command"
+              ],
+              "evidence_ids": [
+                "E1",
+                "E7"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "add-architecture-release-artifact-end-to-end",
+            "title": "Add a new architecture to a cross-platform binary release",
+            "description": "Extend an existing operating-system release target to another architecture by aligning toolchain support, dependencies, platform-family packaging, architecture-specific native payloads, archive validation, and publication.",
+            "atomic_names": [
+              "extend-release-target-contract",
+              "package-platform-native-payload",
+              "publish-complete-release-artifact-set"
+            ],
+            "evidence_ids": [
+              "E1",
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E10"
+            ],
+            "workflow_graph": {
+              "goal": "A full release build produces an architecture-correct archive for the new target and makes it available through every release publication path.",
+              "when_to_use": [
+                "A supported operating-system family lacks a release artifact for one hardware architecture.",
+                "The binary includes optional or external native components whose packaged payload must match the target architecture.",
+                "Release publication enumerates artifact filenames explicitly."
+              ],
+              "anti_goals": [
+                "Do not embed every platform's native modules into every compiled binary.",
+                "Do not change archive conventions for already-supported operating-system families without a separate requirement.",
+                "Do not treat artifact generation alone as completion when release upload lists are explicit.",
+                "Do not claim runtime compatibility from archive extraction alone."
+              ],
+              "not_applicable_when": [
+                "The deliverable is architecture-neutral and has no target-specific compiler, dependency, native payload, or artifact naming requirements.",
+                "Artifacts are generated and discovered dynamically from a single authoritative target manifest without platform-specific packaging branches.",
+                "The compiler or required native dependencies do not support the requested target."
+              ],
+              "inputs": [
+                "Existing target matrix and platform-family packaging rules",
+                "New operating-system and architecture identifier",
+                "Compiler support and minimum version",
+                "Architecture-specific native dependency package names",
+                "Architecture-to-native-module path mapping",
+                "Expected release artifact filename",
+                "Release creation and fallback upload paths"
+              ],
+              "entry_state": "A release pipeline produces artifacts for the operating-system family on at least one architecture, but the requested architecture is absent from one or more of compilation, native dependency staging, packaging, validation, or publication.",
+              "exit_state": "The default release build selects the new architecture, compiles it with supported tooling, stages matching native payloads, creates and re-extracts the expected archive, and includes that archive in both release creation and fallback upload; any unsupported explicit-selection path is recorded rather than hidden.",
+              "steps": [
+                {
+                  "action_name": "extend-release-target-contract",
+                  "role": "establish-contract",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "The requested platform/architecture is supported by the compiler and required native packages.",
+                  "validation": "The default matrix contains the target, its staging directory and native dependencies exist, and CI selects a compiler version that supports it."
+                },
+                {
+                  "action_name": "package-platform-native-payload",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [
+                    "extend-release-target-contract"
+                  ],
+                  "condition": "The target belongs to a platform family with distinct executable, archive, or native-module rules.",
+                  "validation": "The built archive uses the platform-family executable and archive conventions, contains the architecture-matched native module, and can be extracted."
+                },
+                {
+                  "action_name": "publish-complete-release-artifact-set",
+                  "role": "reconcile",
+                  "required": true,
+                  "depends_on": [
+                    "package-platform-native-payload"
+                  ],
+                  "condition": "Release creation or update enumerates artifact names explicitly.",
+                  "validation": "Both initial creation and fallback upload reference the exact generated artifact filename."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "extend-release-target-contract",
+                  "to": "package-platform-native-payload",
+                  "type": "enables"
+                },
+                {
+                  "from": "package-platform-native-payload",
+                  "to": "publish-complete-release-artifact-set",
+                  "type": "requires"
+                },
+                {
+                  "from": "package-platform-native-payload",
+                  "to": "publish-complete-release-artifact-set",
+                  "type": "validates"
+                }
+              ],
+              "validation_ladder": [
+                "Static contract check: the target, dependencies, staging directory, compiler target, native-module mapping, archive name, and publication name agree.",
+                "Build check: the full default target matrix completes the new target using the required compiler version.",
+                "Package check: the archive contains the family-specific executable and architecture-specific native payload.",
+                "Structural check: delete the staging directory and successfully extract the produced archive.",
+                "Publication check: verify the release exposes the expected artifact after either creation or fallback upload.",
+                "Runtime check, deferred in this episode: execute the artifact on the target architecture and exercise functionality that loads the packaged native module."
+              ],
+              "stop_conditions": [
+                "Stop if the compiler does not support the target at the pinned toolchain version and no reviewed upgrade is available.",
+                "Stop if required architecture-specific dependencies or native modules cannot be resolved.",
+                "Stop if the produced artifact name differs from the name consumed by release publication.",
+                "Do not declare complete runtime support when only static inspection or archive extraction has been observed."
+              ],
+              "unresolved_or_deferred": [
+                "The pinned implementation does not admit windows-arm64 through explicit --platform selection even though it advertises that value; default all-platform builds do include it.",
+                "No test file, CI status, build log, released asset listing, or target-machine execution result is available.",
+                "Archive extraction validates structure only; execution and native-module loading on Windows ARM64 are deferred."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Did PR 4458 pass an actual Windows ARM64 build and target-machine smoke test? PR status checks are unavailable.",
+          "Was omission of windows-arm64 from the explicit --platform validation case intentional or an implementation defect? The surrounding documentation and default matrix indicate a defect, but no review discussion is available.",
+          "Did release publication at or after the pinned commit expose a usable pi-windows-arm64.zip? No release asset evidence is included."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "extend-release-target-contract",
+          "title": "Extend the release target contract and prerequisites",
+          "description": "Add a new architecture target consistently to the default build matrix, output layout, architecture-specific dependency installation, and minimum compiler/runtime version.",
+          "evidence_ids": [
+            "E3",
+            "E8",
+            "E10"
+          ],
+          "semantic_action": {
+            "intent": "Make the release builder capable of compiling the newly supported operating-system and architecture pair with its required native dependencies.",
+            "module_role": "release target and toolchain contract",
+            "operation": "extend",
+            "pre_state": "The build matrix and installed native dependencies cover the operating system only for another architecture, and the configured compiler version predates support for the new target.",
+            "post_state": "The default build matrix allocates the new target, installs its architecture-specific dependencies, and runs on a compiler version identified as supporting that target.",
+            "validation": "Run the unfiltered release builder and verify it reaches the new target without a missing target, compiler, dependency, or output-directory failure. Explicit single-target validation remains unresolved for this episode.",
+            "parameters": [
+              "target operating-system family",
+              "target architecture",
+              "compiler target identifier",
+              "minimum compiler version",
+              "architecture-specific dependency packages",
+              "artifact staging directory"
+            ],
+            "evidence_ids": [
+              "E3",
+              "E8",
+              "E10"
+            ]
+          }
+        },
+        {
+          "name": "package-platform-native-payload",
+          "title": "Package the correct native payload for each architecture",
+          "description": "Generalize operating-system packaging behavior while retaining an explicit architecture-to-native-module mapping.",
+          "evidence_ids": [
+            "E4",
+            "E5",
+            "E6"
+          ],
+          "semantic_action": {
+            "intent": "Produce an archive whose executable naming, format, and native runtime payload match the target platform and architecture.",
+            "module_role": "platform artifact assembler",
+            "operation": "map",
+            "pre_state": "Packaging logic recognizes only one architecture as belonging to the operating-system family and hardcodes that architecture's native-module directory.",
+            "post_state": "Every target in the operating-system family receives the family-specific executable and archive format, while each architecture receives its matching native module.",
+            "validation": "Inspect the staged archive for the family-specific executable and the native module under the architecture-selected directory, then successfully extract the archive using the family-specific extraction path.",
+            "parameters": [
+              "target platform identifier",
+              "operating-system family pattern",
+              "executable name",
+              "archive format",
+              "native module package",
+              "architecture-to-module-directory mapping"
+            ],
+            "evidence_ids": [
+              "E4",
+              "E5",
+              "E6"
+            ]
+          }
+        },
+        {
+          "name": "publish-complete-release-artifact-set",
+          "title": "Publish the new artifact in every release path",
+          "description": "Add the generated architecture artifact to both initial release creation and existing-release replacement paths.",
+          "evidence_ids": [
+            "E1",
+            "E7"
+          ],
+          "semantic_action": {
+            "intent": "Ensure users can obtain the newly built target artifact from the release distribution surface.",
+            "module_role": "release artifact publisher",
+            "operation": "reconcile",
+            "pre_state": "The build can produce or is being extended to produce an artifact that is absent from the release creation and fallback upload lists.",
+            "post_state": "The artifact is named in both release creation and fallback replacement commands.",
+            "validation": "For a release tag, verify that either creation succeeds with the artifact or the fallback upload replaces it, and that the release exposes the expected artifact name.",
+            "parameters": [
+              "release tag",
+              "artifact filename",
+              "release creation command",
+              "fallback upload command"
+            ],
+            "evidence_ids": [
+              "E1",
+              "E7"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "add-architecture-release-artifact-end-to-end",
+          "title": "Add a new architecture to a cross-platform binary release",
+          "description": "Extend an existing operating-system release target to another architecture by aligning toolchain support, dependencies, platform-family packaging, architecture-specific native payloads, archive validation, and publication.",
+          "atomic_names": [
+            "extend-release-target-contract",
+            "package-platform-native-payload",
+            "publish-complete-release-artifact-set"
+          ],
+          "evidence_ids": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10"
+          ],
+          "workflow_graph": {
+            "goal": "A full release build produces an architecture-correct archive for the new target and makes it available through every release publication path.",
+            "when_to_use": [
+              "A supported operating-system family lacks a release artifact for one hardware architecture.",
+              "The binary includes optional or external native components whose packaged payload must match the target architecture.",
+              "Release publication enumerates artifact filenames explicitly."
+            ],
+            "anti_goals": [
+              "Do not embed every platform's native modules into every compiled binary.",
+              "Do not change archive conventions for already-supported operating-system families without a separate requirement.",
+              "Do not treat artifact generation alone as completion when release upload lists are explicit.",
+              "Do not claim runtime compatibility from archive extraction alone."
+            ],
+            "not_applicable_when": [
+              "The deliverable is architecture-neutral and has no target-specific compiler, dependency, native payload, or artifact naming requirements.",
+              "Artifacts are generated and discovered dynamically from a single authoritative target manifest without platform-specific packaging branches.",
+              "The compiler or required native dependencies do not support the requested target."
+            ],
+            "inputs": [
+              "Existing target matrix and platform-family packaging rules",
+              "New operating-system and architecture identifier",
+              "Compiler support and minimum version",
+              "Architecture-specific native dependency package names",
+              "Architecture-to-native-module path mapping",
+              "Expected release artifact filename",
+              "Release creation and fallback upload paths"
+            ],
+            "entry_state": "A release pipeline produces artifacts for the operating-system family on at least one architecture, but the requested architecture is absent from one or more of compilation, native dependency staging, packaging, validation, or publication.",
+            "exit_state": "The default release build selects the new architecture, compiles it with supported tooling, stages matching native payloads, creates and re-extracts the expected archive, and includes that archive in both release creation and fallback upload; any unsupported explicit-selection path is recorded rather than hidden.",
+            "steps": [
+              {
+                "action_name": "extend-release-target-contract",
+                "role": "establish-contract",
+                "required": true,
+                "depends_on": [],
+                "condition": "The requested platform/architecture is supported by the compiler and required native packages.",
+                "validation": "The default matrix contains the target, its staging directory and native dependencies exist, and CI selects a compiler version that supports it."
+              },
+              {
+                "action_name": "package-platform-native-payload",
+                "role": "implement",
+                "required": true,
+                "depends_on": [
+                  "extend-release-target-contract"
+                ],
+                "condition": "The target belongs to a platform family with distinct executable, archive, or native-module rules.",
+                "validation": "The built archive uses the platform-family executable and archive conventions, contains the architecture-matched native module, and can be extracted."
+              },
+              {
+                "action_name": "publish-complete-release-artifact-set",
+                "role": "reconcile",
+                "required": true,
+                "depends_on": [
+                  "package-platform-native-payload"
+                ],
+                "condition": "Release creation or update enumerates artifact names explicitly.",
+                "validation": "Both initial creation and fallback upload reference the exact generated artifact filename."
+              }
+            ],
+            "edges": [
+              {
+                "from": "extend-release-target-contract",
+                "to": "package-platform-native-payload",
+                "type": "enables"
+              },
+              {
+                "from": "package-platform-native-payload",
+                "to": "publish-complete-release-artifact-set",
+                "type": "requires"
+              },
+              {
+                "from": "package-platform-native-payload",
+                "to": "publish-complete-release-artifact-set",
+                "type": "validates"
+              }
+            ],
+            "validation_ladder": [
+              "Static contract check: the target, dependencies, staging directory, compiler target, native-module mapping, archive name, and publication name agree.",
+              "Build check: the full default target matrix completes the new target using the required compiler version.",
+              "Package check: the archive contains the family-specific executable and architecture-specific native payload.",
+              "Structural check: delete the staging directory and successfully extract the produced archive.",
+              "Publication check: verify the release exposes the expected artifact after either creation or fallback upload.",
+              "Runtime check, deferred in this episode: execute the artifact on the target architecture and exercise functionality that loads the packaged native module."
+            ],
+            "stop_conditions": [
+              "Stop if the compiler does not support the target at the pinned toolchain version and no reviewed upgrade is available.",
+              "Stop if required architecture-specific dependencies or native modules cannot be resolved.",
+              "Stop if the produced artifact name differs from the name consumed by release publication.",
+              "Do not declare complete runtime support when only static inspection or archive extraction has been observed."
+            ],
+            "unresolved_or_deferred": [
+              "The pinned implementation does not admit windows-arm64 through explicit --platform selection even though it advertises that value; default all-platform builds do include it.",
+              "No test file, CI status, build log, released asset listing, or target-machine execution result is available.",
+              "Archive extraction validates structure only; execution and native-module loading on Windows ARM64 are deferred."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Did PR 4458 pass an actual Windows ARM64 build and target-machine smoke test? PR status checks are unavailable.",
+        "Was omission of windows-arm64 from the explicit --platform validation case intentional or an implementation defect? The surrounding documentation and default matrix indicate a defect, but no review discussion is available.",
+        "Did release publication at or after the pinned commit expose a usable pi-windows-arm64.zip? No release asset evidence is included."
+      ]
+    },
+    "call_sites": [
+      "The packaged koffi module is consumed only on Windows to enable virtual-terminal input; failure to load it is caught and degrades modified-key handling rather than terminating the application."
+    ],
+    "tests": [
+      "No test file changed in the pinned merge, and the evidence bundle records no observed test-file change or status-check result."
+    ]
+  },
+  {
+    "episode_id": "NousResearch__hermes-agent__36134__fa4ebaa8b5",
+    "title": "Restore the desktop packaging toolchain in isolated installer stages and report missing prerequisites as failure",
+    "before": "At parent commit 77bb64813cb987ad80236219a20c6cb549b40049, the explicitly requested desktop stage entered the checkout and called the desktop builder without first restoring the managed Node directory to PATH. Because each stage ran in a separate process, npm could be absent even when Node had been provisioned earlier. The builder treated that condition as a successful skip by warning and returning 0, allowing the stage protocol to emit an ok result despite producing no desktop application.",
+    "after": "At fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f, the desktop stage calls the Node prerequisite resolver before invoking the builder. The builder also retries prerequisite resolution when npm is absent and returns 1 with remediation guidance if npm remains unavailable. That nonzero result flows through the existing stage protocol as a failed JSON result, while successful builds continue to require a recognized desktop application artifact.",
+    "diff": "The single-file change to scripts/install.sh adds 17 lines and removes 2. It inserts check_node into the desktop stage, replaces the missing-npm warning and successful return with a self-provisioning attempt followed by an explicit error and return 1, and documents why an explicitly requested desktop package must not silently degrade. No test file was changed.",
+    "repository": "NousResearch/hermes-agent",
+    "revision": "github-issue-36134",
+    "evidence_ids": [
+      "ev-commit-identity",
+      "ev-diff-scope",
+      "ev-before-desktop-stage",
+      "ev-before-silent-skip",
+      "ev-managed-toolchain",
+      "ev-stage-restores-toolchain",
+      "ev-builder-guard",
+      "ev-explicit-request-boundary",
+      "ev-build-oracle",
+      "ev-stage-failure-propagation",
+      "ev-reported-runtime-verification",
+      "ev-static-validation",
+      "ev-test-coverage-limit"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 36134,
+      "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+      "manifest_metadata": {
+        "category": "cross-platform-release-packaging",
+        "role": "train_candidate",
+        "case_id": "NousResearch__hermes-agent__36134__cross-platform-release-packaging",
+        "sample_kind": "verified_implementation_pull_request",
+        "seed_issue": null,
+        "seed_issue_url": null,
+        "seed_relation": null,
+        "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/36134",
+        "provenance": {
+          "classification": "direct_implementation_artifact",
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 36134,
+            "url": "https://github.com/NousResearch/hermes-agent/pull/36134"
+          },
+          "commit": {
+            "sha": "fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f",
+            "subject": "fix(install): build desktop in 'desktop' stage on macOS/Linux instead of silently skipping (#36134)",
+            "parents": [
+              "77bb64813cb987ad80236219a20c6cb549b40049"
+            ],
+            "body_excerpt": "The thin installer (apps/bootstrap-installer) drives install.sh stage-by-stage,\neach in its own process. The `desktop` stage never called check_node, so the\nHermes-managed Node provisioned earlier (at $HERMES_HOME/node/bin) wasn't on\nPATH. install_desktop's `command -v npm` check then failed and the build was\nskipped — yet the stage still reported {\"ok\":true,\"skipped\":false}, so the\ninstaller showed \"Installation Complete\" and only failed at the end with\n\"Couldn't find a built Hermes desktop ... the desktop build step may have been\nskipped or failed.\"\n\nFix:\n- Call check_node in the `desktop` stage (mirrors every other Node-dependent\n  stage) so the managed Node is on PATH (or installed).\n- Make install_desktop self-provision via check_node and hard-fail (return 1)\n  if npm is still unavailable, instead of a silent `return 0`. The desktop\n  stage only runs when a build is explicitly requested (--include-desktop), so\n  an unavailable toolchain is a real failure, not graceful degradation.\n\nVerified on macOS arm64: the `desktop` stage now builds\nrelease/mac-arm64/Hermes.app, which matches resolve_hermes_desktop_exe, so the\ninstaller's \"Launch Hermes\" succeeds."
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "first_parent_and_changed_files_recorded",
+            "implementation_change_present",
+            "no_test_file_change_observed"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "NousResearch/hermes-agent",
+        "issue_number": 36134,
+        "issue": {
+          "number": 36134,
+          "title": "fix(install): build desktop in 'desktop' stage on macOS/Linux instead of silently skipping (#36134)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 36134,
+              "title": "fix(install): build desktop in 'desktop' stage on macOS/Linux instead of silently skipping (#36134)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tscripts/install.sh"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f",
+                "subject": "fix(install): build desktop in 'desktop' stage on macOS/Linux instead of silently skipping (#36134)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+        "pinned_ref": "fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f",
+        "resolved_commit": "fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f",
+        "parent_commit": "77bb64813cb987ad80236219a20c6cb549b40049",
+        "commit_show_stat": "commit fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f\nAuthor:     brooklyn! <brooklyn.bb.nicholson@gmail.com>\nAuthorDate: Sun May 31 19:03:10 2026 -0500\nCommit:     GitHub <noreply@github.com>\nCommitDate: Sun May 31 19:03:10 2026 -0500\n\n    fix(install): build desktop in 'desktop' stage on macOS/Linux instead of silently skipping (#36134)\n    \n    The thin installer (apps/bootstrap-installer) drives install.sh stage-by-stage,\n    each in its own process. The `desktop` stage never called check_node, so the\n    Hermes-managed Node provisioned earlier (at $HERMES_HOME/node/bin) wasn't on\n    PATH. install_desktop's `command -v npm` check then failed and the build was\n    skipped — yet the stage still reported {\"ok\":true,\"skipped\":false}, so the\n    installer showed \"Installation Complete\" and only failed at the end with\n    \"Couldn't find a built Hermes desktop ... the desktop build step may have been\n    skipped or failed.\"\n    \n    Fix:\n    - Call check_node in the `desktop` stage (mirrors every other Node-dependent\n      stage) so the managed Node is on PATH (or installed).\n    - Make install_desktop self-provision via check_node and hard-fail (return 1)\n      if npm is still unavailable, instead of a silent `return 0`. The desktop\n      stage only runs when a build is explicitly requested (--include-desktop), so\n      an unavailable toolchain is a real failure, not graceful degradation.\n    \n    Verified on macOS arm64: the `desktop` stage now builds\n    release/mac-arm64/Hermes.app, which matches resolve_hermes_desktop_exe, so the\n    installer's \"Launch Hermes\" succeeds.\n\n scripts/install.sh | 19 +++++++++++++++++--\n 1 file changed, 17 insertions(+), 2 deletions(-)\n",
+        "changed_files_name_status": "M\tscripts/install.sh\n",
+        "linked_issue_numbers": [
+          36134
+        ],
+        "manifest_metadata": {
+          "category": "cross-platform-release-packaging",
+          "theme": "cross-platform release asset completeness and packaging",
+          "file_sample": [
+            "scripts/install.sh"
+          ],
+          "quality": "implementation_only",
+          "case_id": "NousResearch__hermes-agent__36134__cross-platform-release-packaging",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_implementation_pull_request",
+          "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/36134",
+          "source": "agent_core_thirteen_category_extraction_v2",
+          "provenance": {
+            "classification": "direct_implementation_artifact",
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 36134,
+              "url": "https://github.com/NousResearch/hermes-agent/pull/36134"
+            },
+            "commit": {
+              "sha": "fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f",
+              "subject": "fix(install): build desktop in 'desktop' stage on macOS/Linux instead of silently skipping (#36134)",
+              "parents": [
+                "77bb64813cb987ad80236219a20c6cb549b40049"
+              ],
+              "body_excerpt": "The thin installer (apps/bootstrap-installer) drives install.sh stage-by-stage,\neach in its own process. The `desktop` stage never called check_node, so the\nHermes-managed Node provisioned earlier (at $HERMES_HOME/node/bin) wasn't on\nPATH. install_desktop's `command -v npm` check then failed and the build was\nskipped — yet the stage still reported {\"ok\":true,\"skipped\":false}, so the\ninstaller showed \"Installation Complete\" and only failed at the end with\n\"Couldn't find a built Hermes desktop ... the desktop build step may have been\nskipped or failed.\"\n\nFix:\n- Call check_node in the `desktop` stage (mirrors every other Node-dependent\n  stage) so the managed Node is on PATH (or installed).\n- Make install_desktop self-provision via check_node and hard-fail (return 1)\n  if npm is still unavailable, instead of a silent `return 0`. The desktop\n  stage only runs when a build is explicitly requested (--include-desktop), so\n  an unavailable toolchain is a real failure, not graceful degradation.\n\nVerified on macOS arm64: the `desktop` stage now builds\nrelease/mac-arm64/Hermes.app, which matches resolve_hermes_desktop_exe, so the\ninstaller's \"Launch Hermes\" succeeds."
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "first_parent_and_changed_files_recorded",
+              "implementation_change_present",
+              "no_test_file_change_observed"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T10:57:13.057627+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "NousResearch__hermes-agent__36134__fa4ebaa8b5",
+          "title": "Restore the desktop packaging toolchain in isolated installer stages and report missing prerequisites as failure",
+          "before": "At parent commit 77bb64813cb987ad80236219a20c6cb549b40049, the explicitly requested desktop stage entered the checkout and called the desktop builder without first restoring the managed Node directory to PATH. Because each stage ran in a separate process, npm could be absent even when Node had been provisioned earlier. The builder treated that condition as a successful skip by warning and returning 0, allowing the stage protocol to emit an ok result despite producing no desktop application.",
+          "after": "At fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f, the desktop stage calls the Node prerequisite resolver before invoking the builder. The builder also retries prerequisite resolution when npm is absent and returns 1 with remediation guidance if npm remains unavailable. That nonzero result flows through the existing stage protocol as a failed JSON result, while successful builds continue to require a recognized desktop application artifact.",
+          "diff": "The single-file change to scripts/install.sh adds 17 lines and removes 2. It inserts check_node into the desktop stage, replaces the missing-npm warning and successful return with a self-provisioning attempt followed by an explicit error and return 1, and documents why an explicitly requested desktop package must not silently degrade. No test file was changed."
+        },
+        "evidence_units": [
+          {
+            "id": "ev-commit-identity",
+            "kind": "commit",
+            "claim": "The pinned implementation commit is fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f, its first parent is 77bb64813cb987ad80236219a20c6cb549b40049, and it resolves PR/issue 36134.",
+            "source": "git log -1 --format='%H%n%P%n%s%n%b' fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f; issue-bundle.json linked_pull_requests[0]"
+          },
+          {
+            "id": "ev-diff-scope",
+            "kind": "diff",
+            "claim": "The resolution modifies only scripts/install.sh, with 17 insertions and 2 deletions.",
+            "source": "git diff --numstat and --name-status 77bb64813cb987ad80236219a20c6cb549b40049 fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f"
+          },
+          {
+            "id": "ev-before-desktop-stage",
+            "kind": "diff",
+            "claim": "In the parent state, the desktop stage resolved installation layout and directory state, then called install_desktop without calling check_node in that stage process.",
+            "source": "git show 77bb64813cb987ad80236219a20c6cb549b40049:scripts/install.sh, run_stage_body desktop branch corresponding to post-change lines 2481-2490"
+          },
+          {
+            "id": "ev-before-silent-skip",
+            "kind": "diff",
+            "claim": "In the parent state, install_desktop warned that Node.js or npm was not on PATH and returned 0, so absence of the required packaging toolchain was treated as success.",
+            "source": "git show 77bb64813cb987ad80236219a20c6cb549b40049:scripts/install.sh, install_desktop missing-npm branch"
+          },
+          {
+            "id": "ev-managed-toolchain",
+            "kind": "implementation",
+            "claim": "check_node accepts an existing node command, otherwise detects the managed executable under $HERMES_HOME/node/bin and prepends that directory to PATH, or delegates to install_node.",
+            "source": "git show fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f:scripts/install.sh lines 818-843"
+          },
+          {
+            "id": "ev-stage-restores-toolchain",
+            "kind": "implementation",
+            "claim": "The post-change desktop stage calls check_node before install_desktop, restoring or provisioning the stage-local Node toolchain before packaging starts.",
+            "source": "git show fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f:scripts/install.sh lines 2481-2490"
+          },
+          {
+            "id": "ev-builder-guard",
+            "kind": "implementation",
+            "claim": "The post-change desktop builder calls check_node when npm is initially unavailable, checks npm again, emits an error and retry guidance, and returns 1 if the prerequisite remains unavailable.",
+            "source": "git show fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f:scripts/install.sh lines 2332-2348"
+          },
+          {
+            "id": "ev-explicit-request-boundary",
+            "kind": "implementation",
+            "claim": "The code documents that desktop packaging is invoked through the desktop stage or --include-desktop and that the application's own first-launch bootstrap must not request a rebuild of itself.",
+            "source": "git show fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f:scripts/install.sh lines 2326-2331"
+          },
+          {
+            "id": "ev-build-oracle",
+            "kind": "implementation",
+            "claim": "After dependency installation and npm run pack, install_desktop requires either release/mac-arm64/Hermes.app or release/mac/Hermes.app to exist and returns failure when neither artifact is found.",
+            "source": "git show fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f:scripts/install.sh, install_desktop artifact-selection block following the build command"
+          },
+          {
+            "id": "ev-stage-failure-propagation",
+            "kind": "call_site",
+            "claim": "run_stage_protocol executes the selected stage in a subshell, captures its exit code, emits ok:false with the exit code when nonzero, and returns that code to its caller.",
+            "source": "git show fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f:scripts/install.sh lines 2505-2538 and immediately following return statement"
+          },
+          {
+            "id": "ev-reported-runtime-verification",
+            "kind": "commit",
+            "claim": "The commit records manual verification on macOS arm64: the desktop stage produced release/mac-arm64/Hermes.app and the installer could launch it.",
+            "source": "commit body of fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f"
+          },
+          {
+            "id": "ev-static-validation",
+            "kind": "validation",
+            "claim": "The changed installer has valid Bash syntax and the patch contains no whitespace errors.",
+            "source": "Successful local commands: bash -n <(git show fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f:scripts/install.sh); git diff --check 77bb64813cb987ad80236219a20c6cb549b40049 fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f"
+          },
+          {
+            "id": "ev-test-coverage-limit",
+            "kind": "test_inventory",
+            "claim": "No automated test file was changed, and the pinned tree exposes a PowerShell stage-protocol test but no corresponding shell installer test for this behavior.",
+            "source": "git diff --name-status 77bb64813cb987ad80236219a20c6cb549b40049 fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f; git ls-tree -r --name-only fa4ebaa8b58be1e37ea623269ebf2c5d87437e7f scripts/tests"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "restore-isolated-stage-toolchain",
+            "title": "Restore the packaging toolchain inside an isolated stage",
+            "description": "Re-establish a prerequisite in the process that consumes it instead of assuming PATH mutations from an earlier installer stage remain available.",
+            "evidence_ids": [
+              "ev-before-desktop-stage",
+              "ev-managed-toolchain",
+              "ev-stage-restores-toolchain",
+              "ev-explicit-request-boundary"
+            ],
+            "semantic_action": {
+              "intent": "Ensure an explicitly requested packaging stage can discover or provision its required runtime even when earlier stages executed in separate processes.",
+              "module_role": "isolated installer-stage prerequisite coordinator",
+              "operation": "reconcile",
+              "pre_state": "A packaging stage starts in a new process, and a tool provisioned by an earlier stage may exist in managed storage without being present on the current PATH.",
+              "post_state": "Before packaging is invoked, the current stage has run the prerequisite resolver that discovers the system runtime, restores the managed runtime to PATH, or attempts installation.",
+              "validation": "Run the packaging stage with the managed runtime present outside the initial PATH and verify that prerequisite resolution adds it to PATH and packaging proceeds to its build and artifact checks.",
+              "parameters": [
+                "packaging_stage",
+                "prerequisite_resolver",
+                "managed_runtime_directory",
+                "executable_name",
+                "process_environment"
+              ],
+              "evidence_ids": [
+                "ev-managed-toolchain",
+                "ev-stage-restores-toolchain",
+                "ev-reported-runtime-verification"
+              ]
+            }
+          },
+          {
+            "name": "fail-requested-packaging-on-missing-toolchain",
+            "title": "Fail requested packaging when its toolchain remains unavailable",
+            "description": "Convert a false-success prerequisite skip into an actionable nonzero failure that the installer protocol can report accurately.",
+            "evidence_ids": [
+              "ev-before-silent-skip",
+              "ev-builder-guard",
+              "ev-stage-failure-propagation",
+              "ev-build-oracle"
+            ],
+            "semantic_action": {
+              "intent": "Prevent an installer from reporting completion when an explicitly requested package cannot be built because its required executable is unavailable.",
+              "module_role": "package build prerequisite guard and stage-result contract",
+              "operation": "guard",
+              "pre_state": "Packaging was explicitly requested, but its required executable is unavailable after the permitted discovery or provisioning attempt.",
+              "post_state": "The builder emits actionable remediation, returns a nonzero status, and the enclosing stage protocol reports failure instead of successful completion.",
+              "validation": "Run the stage with the required executable unavailable after prerequisite resolution; verify a nonzero exit and an ok:false stage result. On the success path, verify that the expected packaged artifact exists before accepting completion.",
+              "parameters": [
+                "required_executable",
+                "package_build_request",
+                "remediation_command",
+                "stage_result_protocol",
+                "expected_artifact_paths"
+              ],
+              "evidence_ids": [
+                "ev-builder-guard",
+                "ev-stage-failure-propagation",
+                "ev-build-oracle",
+                "ev-reported-runtime-verification"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "make-isolated-packaging-stage-truthful",
+            "title": "Make an isolated packaging stage restore prerequisites and report truthful completion",
+            "description": "Use this workflow when a multi-process installer can lose an earlier stage's environment changes and consequently skip an explicitly requested package while still reporting success.",
+            "atomic_names": [
+              "restore-isolated-stage-toolchain",
+              "fail-requested-packaging-on-missing-toolchain"
+            ],
+            "evidence_ids": [
+              "ev-before-desktop-stage",
+              "ev-before-silent-skip",
+              "ev-managed-toolchain",
+              "ev-stage-restores-toolchain",
+              "ev-builder-guard",
+              "ev-stage-failure-propagation",
+              "ev-build-oracle",
+              "ev-reported-runtime-verification",
+              "ev-static-validation"
+            ],
+            "workflow_graph": {
+              "goal": "An explicitly requested packaging stage either produces a recognized launchable artifact or terminates with an actionable failure that is visible through the installer protocol.",
+              "when_to_use": [
+                "Installer stages run in separate processes or otherwise do not inherit PATH mutations from prerequisite stages.",
+                "A packaging stage depends on a runtime that may have been installed into an application-managed directory.",
+                "The current behavior can skip a requested build and still report successful completion."
+              ],
+              "anti_goals": [
+                "Do not make optional command-line or first-launch flows rebuild the desktop application when they did not request packaging.",
+                "Do not treat signing, notarization, or distributable image production as part of this prerequisite-restoration fix.",
+                "Do not accept process success alone when the expected packaged artifact is absent.",
+                "Do not replace the managed toolchain policy with an unrelated packaging system."
+              ],
+              "not_applicable_when": [
+                "All stages execute in one process with guaranteed environment inheritance and the prerequisite is already enforced at the packaging boundary.",
+                "Packaging is genuinely optional and the caller's contract explicitly permits a reported skipped result.",
+                "The failure is caused by the package build itself or an unrecognized output path rather than prerequisite discovery."
+              ],
+              "inputs": [
+                "Packaging-stage identifier and explicit-request signal",
+                "Prerequisite resolver capable of discovering, restoring, or provisioning the runtime",
+                "Managed runtime installation directory and required executable name",
+                "Stage result protocol that maps exit status to success or failure",
+                "Expected output artifact paths"
+              ],
+              "entry_state": "The installer has reached an explicitly requested packaging stage, but the new stage process may not contain the runtime path established earlier and may currently turn a missing executable into successful completion.",
+              "exit_state": "The stage restores or provisions its runtime before building; if the executable remains missing it returns and reports failure, and if building succeeds it confirms a recognized artifact before completion.",
+              "steps": [
+                {
+                  "action_name": "restore-isolated-stage-toolchain",
+                  "role": "reconcile",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "The packaging stage runs in an isolated process and depends on a runtime whose managed installation may not be on the current PATH.",
+                  "validation": "With only the managed runtime available, verify that the stage-local resolver exposes the required executable before the builder executes."
+                },
+                {
+                  "action_name": "fail-requested-packaging-on-missing-toolchain",
+                  "role": "establish-contract",
+                  "required": true,
+                  "depends_on": [
+                    "restore-isolated-stage-toolchain"
+                  ],
+                  "condition": "After prerequisite reconciliation, enforce the result contract for both unavailable-toolchain and completed-build outcomes.",
+                  "validation": "Verify that unresolved prerequisite absence produces nonzero status and ok:false, while the success path is accepted only after a recognized package artifact exists."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "restore-isolated-stage-toolchain",
+                  "to": "fail-requested-packaging-on-missing-toolchain",
+                  "type": "enables"
+                }
+              ],
+              "validation_ladder": [
+                "Run Bash syntax validation and patch whitespace validation.",
+                "Exercise prerequisite reconciliation with the managed runtime installed but omitted from the initial PATH.",
+                "Exercise the negative path with the required executable still unavailable and assert nonzero exit plus an ok:false stage result.",
+                "Exercise the positive packaging path and assert that one of the supported application artifact paths exists.",
+                "Perform an end-to-end installer launch check using the produced application artifact on each supported packaging architecture."
+              ],
+              "stop_conditions": [
+                "Stop and report failure if prerequisite reconciliation cannot expose the required executable.",
+                "Stop and report failure if dependency installation or the package build command returns nonzero.",
+                "Stop and report failure if the build command completes but no recognized artifact is found.",
+                "Defer promotion beyond a candidate workflow until automated shell-stage coverage or equivalent repeatable validation is available."
+              ],
+              "unresolved_or_deferred": [
+                "No automated test for the shell desktop-stage behavior was added or found at the pinned ref.",
+                "The commit reports macOS arm64 runtime verification, but equivalent Linux behavior and other macOS architectures were not evidenced.",
+                "Bootstrap-installer call-site blobs were unavailable in the partial checkout, so consumer behavior beyond the installer script and commit record could not be independently inspected."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Can a repeatable shell-stage test simulate a managed runtime absent from initial PATH and assert both the success and failure JSON frames?",
+          "Was the change exercised on Linux, macOS x64, and environments where runtime installation itself fails?",
+          "The GitHub bundle lacks PR body, reviews, comments, timeline, and status checks, so no CI result or reviewer-confirmed validation is available."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "restore-isolated-stage-toolchain",
+          "title": "Restore the packaging toolchain inside an isolated stage",
+          "description": "Re-establish a prerequisite in the process that consumes it instead of assuming PATH mutations from an earlier installer stage remain available.",
+          "evidence_ids": [
+            "ev-before-desktop-stage",
+            "ev-managed-toolchain",
+            "ev-stage-restores-toolchain",
+            "ev-explicit-request-boundary"
+          ],
+          "semantic_action": {
+            "intent": "Ensure an explicitly requested packaging stage can discover or provision its required runtime even when earlier stages executed in separate processes.",
+            "module_role": "isolated installer-stage prerequisite coordinator",
+            "operation": "reconcile",
+            "pre_state": "A packaging stage starts in a new process, and a tool provisioned by an earlier stage may exist in managed storage without being present on the current PATH.",
+            "post_state": "Before packaging is invoked, the current stage has run the prerequisite resolver that discovers the system runtime, restores the managed runtime to PATH, or attempts installation.",
+            "validation": "Run the packaging stage with the managed runtime present outside the initial PATH and verify that prerequisite resolution adds it to PATH and packaging proceeds to its build and artifact checks.",
+            "parameters": [
+              "packaging_stage",
+              "prerequisite_resolver",
+              "managed_runtime_directory",
+              "executable_name",
+              "process_environment"
+            ],
+            "evidence_ids": [
+              "ev-managed-toolchain",
+              "ev-stage-restores-toolchain",
+              "ev-reported-runtime-verification"
+            ]
+          }
+        },
+        {
+          "name": "fail-requested-packaging-on-missing-toolchain",
+          "title": "Fail requested packaging when its toolchain remains unavailable",
+          "description": "Convert a false-success prerequisite skip into an actionable nonzero failure that the installer protocol can report accurately.",
+          "evidence_ids": [
+            "ev-before-silent-skip",
+            "ev-builder-guard",
+            "ev-stage-failure-propagation",
+            "ev-build-oracle"
+          ],
+          "semantic_action": {
+            "intent": "Prevent an installer from reporting completion when an explicitly requested package cannot be built because its required executable is unavailable.",
+            "module_role": "package build prerequisite guard and stage-result contract",
+            "operation": "guard",
+            "pre_state": "Packaging was explicitly requested, but its required executable is unavailable after the permitted discovery or provisioning attempt.",
+            "post_state": "The builder emits actionable remediation, returns a nonzero status, and the enclosing stage protocol reports failure instead of successful completion.",
+            "validation": "Run the stage with the required executable unavailable after prerequisite resolution; verify a nonzero exit and an ok:false stage result. On the success path, verify that the expected packaged artifact exists before accepting completion.",
+            "parameters": [
+              "required_executable",
+              "package_build_request",
+              "remediation_command",
+              "stage_result_protocol",
+              "expected_artifact_paths"
+            ],
+            "evidence_ids": [
+              "ev-builder-guard",
+              "ev-stage-failure-propagation",
+              "ev-build-oracle",
+              "ev-reported-runtime-verification"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "make-isolated-packaging-stage-truthful",
+          "title": "Make an isolated packaging stage restore prerequisites and report truthful completion",
+          "description": "Use this workflow when a multi-process installer can lose an earlier stage's environment changes and consequently skip an explicitly requested package while still reporting success.",
+          "atomic_names": [
+            "restore-isolated-stage-toolchain",
+            "fail-requested-packaging-on-missing-toolchain"
+          ],
+          "evidence_ids": [
+            "ev-before-desktop-stage",
+            "ev-before-silent-skip",
+            "ev-managed-toolchain",
+            "ev-stage-restores-toolchain",
+            "ev-builder-guard",
+            "ev-stage-failure-propagation",
+            "ev-build-oracle",
+            "ev-reported-runtime-verification",
+            "ev-static-validation"
+          ],
+          "workflow_graph": {
+            "goal": "An explicitly requested packaging stage either produces a recognized launchable artifact or terminates with an actionable failure that is visible through the installer protocol.",
+            "when_to_use": [
+              "Installer stages run in separate processes or otherwise do not inherit PATH mutations from prerequisite stages.",
+              "A packaging stage depends on a runtime that may have been installed into an application-managed directory.",
+              "The current behavior can skip a requested build and still report successful completion."
+            ],
+            "anti_goals": [
+              "Do not make optional command-line or first-launch flows rebuild the desktop application when they did not request packaging.",
+              "Do not treat signing, notarization, or distributable image production as part of this prerequisite-restoration fix.",
+              "Do not accept process success alone when the expected packaged artifact is absent.",
+              "Do not replace the managed toolchain policy with an unrelated packaging system."
+            ],
+            "not_applicable_when": [
+              "All stages execute in one process with guaranteed environment inheritance and the prerequisite is already enforced at the packaging boundary.",
+              "Packaging is genuinely optional and the caller's contract explicitly permits a reported skipped result.",
+              "The failure is caused by the package build itself or an unrecognized output path rather than prerequisite discovery."
+            ],
+            "inputs": [
+              "Packaging-stage identifier and explicit-request signal",
+              "Prerequisite resolver capable of discovering, restoring, or provisioning the runtime",
+              "Managed runtime installation directory and required executable name",
+              "Stage result protocol that maps exit status to success or failure",
+              "Expected output artifact paths"
+            ],
+            "entry_state": "The installer has reached an explicitly requested packaging stage, but the new stage process may not contain the runtime path established earlier and may currently turn a missing executable into successful completion.",
+            "exit_state": "The stage restores or provisions its runtime before building; if the executable remains missing it returns and reports failure, and if building succeeds it confirms a recognized artifact before completion.",
+            "steps": [
+              {
+                "action_name": "restore-isolated-stage-toolchain",
+                "role": "reconcile",
+                "required": true,
+                "depends_on": [],
+                "condition": "The packaging stage runs in an isolated process and depends on a runtime whose managed installation may not be on the current PATH.",
+                "validation": "With only the managed runtime available, verify that the stage-local resolver exposes the required executable before the builder executes."
+              },
+              {
+                "action_name": "fail-requested-packaging-on-missing-toolchain",
+                "role": "establish-contract",
+                "required": true,
+                "depends_on": [
+                  "restore-isolated-stage-toolchain"
+                ],
+                "condition": "After prerequisite reconciliation, enforce the result contract for both unavailable-toolchain and completed-build outcomes.",
+                "validation": "Verify that unresolved prerequisite absence produces nonzero status and ok:false, while the success path is accepted only after a recognized package artifact exists."
+              }
+            ],
+            "edges": [
+              {
+                "from": "restore-isolated-stage-toolchain",
+                "to": "fail-requested-packaging-on-missing-toolchain",
+                "type": "enables"
+              }
+            ],
+            "validation_ladder": [
+              "Run Bash syntax validation and patch whitespace validation.",
+              "Exercise prerequisite reconciliation with the managed runtime installed but omitted from the initial PATH.",
+              "Exercise the negative path with the required executable still unavailable and assert nonzero exit plus an ok:false stage result.",
+              "Exercise the positive packaging path and assert that one of the supported application artifact paths exists.",
+              "Perform an end-to-end installer launch check using the produced application artifact on each supported packaging architecture."
+            ],
+            "stop_conditions": [
+              "Stop and report failure if prerequisite reconciliation cannot expose the required executable.",
+              "Stop and report failure if dependency installation or the package build command returns nonzero.",
+              "Stop and report failure if the build command completes but no recognized artifact is found.",
+              "Defer promotion beyond a candidate workflow until automated shell-stage coverage or equivalent repeatable validation is available."
+            ],
+            "unresolved_or_deferred": [
+              "No automated test for the shell desktop-stage behavior was added or found at the pinned ref.",
+              "The commit reports macOS arm64 runtime verification, but equivalent Linux behavior and other macOS architectures were not evidenced.",
+              "Bootstrap-installer call-site blobs were unavailable in the partial checkout, so consumer behavior beyond the installer script and commit record could not be independently inspected."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Can a repeatable shell-stage test simulate a managed runtime absent from initial PATH and assert both the success and failure JSON frames?",
+        "Was the change exercised on Linux, macOS x64, and environments where runtime installation itself fails?",
+        "The GitHub bundle lacks PR body, reviews, comments, timeline, and status checks, so no CI result or reviewer-confirmed validation is available."
+      ]
+    },
+    "call_sites": [
+      "run_stage_protocol executes the selected stage in a subshell, captures its exit code, emits ok:false with the exit code when nonzero, and returns that code to its caller."
+    ],
+    "tests": [
+      "No automated test file was changed, and the pinned tree exposes a PowerShell stage-protocol test but no corresponding shell installer test for this behavior."
+    ]
+  },
+  {
+    "episode_id": "google-gemini__gemini-cli__19171__a5fd5d0b",
+    "title": "Publish the prebuilt CLI bundle with platform-specific optional dependencies",
+    "before": "At parent commit 55db3c776c86798938ccf386f53b1d5593c37468, the release action built the workspace packages and generated the root bundle, but the public npm CLI publish path did not stage that bundle inside packages/cli or rewrite the CLI manifest for a self-contained bundled artifact. packages/cli/package.json still published files from dist, pointed the gemini executable and main entry to dist/index.js, and retained workspace/runtime dependencies, development dependencies, scripts, and release-time configuration.",
+    "after": "At a5fd5d0b9fcafcc2eb1cc92e8e6405716dbb103f, non-GitHub npm releases run a preparation script after bundle generation and before CLI publication. The script requires the root bundle directory, replaces packages/cli/bundle with its contents, changes the package allowlist and executable entry to bundle/ and bundle/gemini.js, removes dependency, development, script, main, and configuration fields made unnecessary or unsuitable by bundling, and copies the root platform-sensitive optional dependencies into the published CLI manifest while defensively excluding the development-only bundle tool.",
+    "diff": "The commit adds scripts/prepare-npm-release.js and a seven-line conditional invocation in .github/actions/publish-release/action.yml. The new 67-line script performs a fail-fast bundle precondition check, replaces the package-local bundle directory, and transforms packages/cli/package.json into the manifest for a bundled npm CLI. No test file was added or changed; validation evidence is limited to the script's explicit failure path, the release action's ordering and registry condition, and the resulting manifest transformation encoded by the implementation.",
+    "repository": "google-gemini/gemini-cli",
+    "revision": "github-issue-19171",
+    "evidence_ids": [
+      "ev-commit-1",
+      "ev-before-manifest-1",
+      "ev-build-1",
+      "ev-optional-input-1",
+      "ev-stage-1",
+      "ev-manifest-1",
+      "ev-publish-hook-1",
+      "ev-validation-1",
+      "ev-validation-2",
+      "ev-tests-1"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 19171,
+      "checkout": "/home/chenyujia/tritonToLlvm/gemini-cli",
+      "manifest_metadata": {
+        "category": "cross-platform-release-packaging",
+        "role": "train_candidate",
+        "case_id": "google-gemini__gemini-cli__19171__cross-platform-release-packaging",
+        "sample_kind": "verified_implementation_pull_request",
+        "seed_issue": null,
+        "seed_issue_url": null,
+        "seed_relation": null,
+        "resolution_url": "https://github.com/google-gemini/gemini-cli/pull/19171",
+        "provenance": {
+          "classification": "direct_implementation_artifact",
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 19171,
+            "url": "https://github.com/google-gemini/gemini-cli/pull/19171"
+          },
+          "commit": {
+            "sha": "a5fd5d0b9fcafcc2eb1cc92e8e6405716dbb103f",
+            "subject": "feat(release): ship esbuild bundle in npm package (#19171)",
+            "parents": [
+              "55db3c776c86798938ccf386f53b1d5593c37468"
+            ],
+            "body_excerpt": "Co-authored-by: Yuna Seol <yunaseol@gmail.com>"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "first_parent_and_changed_files_recorded",
+            "implementation_change_present",
+            "no_test_file_change_observed"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "google-gemini/gemini-cli",
+        "issue_number": 19171,
+        "issue": {
+          "number": 19171,
+          "title": "feat(release): ship esbuild bundle in npm package (#19171)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 19171,
+              "title": "feat(release): ship esbuild bundle in npm package (#19171)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\t.github/actions/publish-release/action.yml"
+              },
+              {
+                "status_line": "A\tscripts/prepare-npm-release.js"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "a5fd5d0b9fcafcc2eb1cc92e8e6405716dbb103f",
+                "subject": "feat(release): ship esbuild bundle in npm package (#19171)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/gemini-cli",
+        "pinned_ref": "a5fd5d0b9fcafcc2eb1cc92e8e6405716dbb103f",
+        "resolved_commit": "a5fd5d0b9fcafcc2eb1cc92e8e6405716dbb103f",
+        "parent_commit": "55db3c776c86798938ccf386f53b1d5593c37468",
+        "commit_show_stat": "commit a5fd5d0b9fcafcc2eb1cc92e8e6405716dbb103f\nAuthor:     Gen Zhang <genneth@gmail.com>\nAuthorDate: Wed Mar 4 22:18:54 2026 +0000\nCommit:     GitHub <noreply@github.com>\nCommitDate: Wed Mar 4 22:18:54 2026 +0000\n\n    feat(release): ship esbuild bundle in npm package (#19171)\n    \n    Co-authored-by: Yuna Seol <yunaseol@gmail.com>\n\n .github/actions/publish-release/action.yml |  7 ++++\n scripts/prepare-npm-release.js             | 67 ++++++++++++++++++++++++++++++\n 2 files changed, 74 insertions(+)\n",
+        "changed_files_name_status": "M\t.github/actions/publish-release/action.yml\nA\tscripts/prepare-npm-release.js\n",
+        "linked_issue_numbers": [
+          19171
+        ],
+        "manifest_metadata": {
+          "category": "cross-platform-release-packaging",
+          "theme": "cross-platform release asset completeness and packaging",
+          "file_sample": [
+            ".github/actions/publish-release/action.yml",
+            "scripts/prepare-npm-release.js"
+          ],
+          "quality": "implementation_only",
+          "case_id": "google-gemini__gemini-cli__19171__cross-platform-release-packaging",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_implementation_pull_request",
+          "resolution_url": "https://github.com/google-gemini/gemini-cli/pull/19171",
+          "source": "agent_core_thirteen_category_extraction_v2",
+          "provenance": {
+            "classification": "direct_implementation_artifact",
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 19171,
+              "url": "https://github.com/google-gemini/gemini-cli/pull/19171"
+            },
+            "commit": {
+              "sha": "a5fd5d0b9fcafcc2eb1cc92e8e6405716dbb103f",
+              "subject": "feat(release): ship esbuild bundle in npm package (#19171)",
+              "parents": [
+                "55db3c776c86798938ccf386f53b1d5593c37468"
+              ],
+              "body_excerpt": "Co-authored-by: Yuna Seol <yunaseol@gmail.com>"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "first_parent_and_changed_files_recorded",
+              "implementation_change_present",
+              "no_test_file_change_observed"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T11:02:48.579697+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "google-gemini__gemini-cli__19171__a5fd5d0b",
+          "title": "Publish the prebuilt CLI bundle with platform-specific optional dependencies",
+          "before": "At parent commit 55db3c776c86798938ccf386f53b1d5593c37468, the release action built the workspace packages and generated the root bundle, but the public npm CLI publish path did not stage that bundle inside packages/cli or rewrite the CLI manifest for a self-contained bundled artifact. packages/cli/package.json still published files from dist, pointed the gemini executable and main entry to dist/index.js, and retained workspace/runtime dependencies, development dependencies, scripts, and release-time configuration.",
+          "after": "At a5fd5d0b9fcafcc2eb1cc92e8e6405716dbb103f, non-GitHub npm releases run a preparation script after bundle generation and before CLI publication. The script requires the root bundle directory, replaces packages/cli/bundle with its contents, changes the package allowlist and executable entry to bundle/ and bundle/gemini.js, removes dependency, development, script, main, and configuration fields made unnecessary or unsuitable by bundling, and copies the root platform-sensitive optional dependencies into the published CLI manifest while defensively excluding the development-only bundle tool.",
+          "diff": "The commit adds scripts/prepare-npm-release.js and a seven-line conditional invocation in .github/actions/publish-release/action.yml. The new 67-line script performs a fail-fast bundle precondition check, replaces the package-local bundle directory, and transforms packages/cli/package.json into the manifest for a bundled npm CLI. No test file was added or changed; validation evidence is limited to the script's explicit failure path, the release action's ordering and registry condition, and the resulting manifest transformation encoded by the implementation."
+        },
+        "evidence_units": [
+          {
+            "id": "ev-commit-1",
+            "kind": "commit",
+            "claim": "Commit a5fd5d0b9fcafcc2eb1cc92e8e6405716dbb103f has parent 55db3c776c86798938ccf386f53b1d5593c37468, is titled \"feat(release): ship esbuild bundle in npm package (#19171)\", and changes only .github/actions/publish-release/action.yml and scripts/prepare-npm-release.js with 74 insertions.",
+            "source": "git show --stat --format=fuller a5fd5d0b9fcafcc2eb1cc92e8e6405716dbb103f; issue-bundle.json linked pull request 19171"
+          },
+          {
+            "id": "ev-before-manifest-1",
+            "kind": "diff",
+            "claim": "In the parent state, packages/cli/package.json allowed only dist, mapped gemini and main to dist/index.js, and contained runtime dependencies, devDependencies, scripts, and config.",
+            "source": "git cat-file -p a5fd5d0b^:packages/cli/package.json"
+          },
+          {
+            "id": "ev-build-1",
+            "kind": "call_site",
+            "claim": "The release action already runs `npm run bundle` before package publication, establishing the root bundle as an input available to the newly added preparation step.",
+            "source": "a5fd5d0b:.github/actions/publish-release/action.yml lines 128-139"
+          },
+          {
+            "id": "ev-optional-input-1",
+            "kind": "implementation",
+            "claim": "The root manifest supplies optional native packages for multiple operating-system and architecture variants, including Darwin, Linux, and Windows node-pty packages, plus keytar and node-pty.",
+            "source": "git cat-file -p a5fd5d0b:package.json lines 144-154"
+          },
+          {
+            "id": "ev-stage-1",
+            "kind": "implementation",
+            "claim": "The preparation script resolves bundle at the release working directory, fails with exit status 1 when it is absent, otherwise removes any prior packages/cli/bundle and recursively copies the generated bundle into that package directory.",
+            "source": "a5fd5d0b:scripts/prepare-npm-release.js lines 11-38"
+          },
+          {
+            "id": "ev-manifest-1",
+            "kind": "implementation",
+            "claim": "The preparation script clones root optionalDependencies, removes gemini-cli-devtools defensively, changes the CLI package files allowlist to bundle/, maps the gemini executable to bundle/gemini.js, deletes dependencies, devDependencies, scripts, main, and config, then assigns the filtered optional dependencies and writes the manifest.",
+            "source": "a5fd5d0b:scripts/prepare-npm-release.js lines 40-67"
+          },
+          {
+            "id": "ev-publish-hook-1",
+            "kind": "call_site",
+            "claim": "The release action invokes the preparation script after core installation and before the CLI token and `npm publish` steps, only when the target registry is not GitHub Packages.",
+            "source": "a5fd5d0b:.github/actions/publish-release/action.yml lines 180-225"
+          },
+          {
+            "id": "ev-validation-1",
+            "kind": "validation",
+            "claim": "The implementation provides a local precondition oracle: preparation cannot continue without a generated root bundle and emits an instruction to run `npm run bundle` before exiting unsuccessfully.",
+            "source": "a5fd5d0b:scripts/prepare-npm-release.js lines 24-38"
+          },
+          {
+            "id": "ev-validation-2",
+            "kind": "validation",
+            "claim": "The release pipeline's existing CLI publication command supports dry-run mode and consumes the package only after the manifest and bundle preparation step, providing the nearest encoded packaging-level validation point, although the evidence bundle contains no status-check result.",
+            "source": "a5fd5d0b:.github/actions/publish-release/action.yml lines 195-225; issue-bundle.json metadata_unavailable status checks"
+          },
+          {
+            "id": "ev-tests-1",
+            "kind": "test",
+            "claim": "No test or specification file changed in the pinned commit, and the supplied bundle explicitly records `no_test_file_change_observed`; therefore no automated regression oracle specific to the new preparation script is established by this episode.",
+            "source": "git diff --name-only a5fd5d0b^ a5fd5d0b; issue-bundle.json manifest_metadata.provenance.verification"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "require-and-stage-generated-release-bundle",
+            "title": "Require and stage the generated release bundle",
+            "description": "Fail before packaging when the generated artifact is missing; otherwise replace the package-local artifact directory with the freshly generated bundle so publication consumes the intended build output.",
+            "evidence_ids": [
+              "ev-build-1",
+              "ev-stage-1",
+              "ev-validation-1"
+            ],
+            "semantic_action": {
+              "intent": "Ensure the publishable package contains the freshly generated executable bundle and never silently publishes without it.",
+              "module_role": "release artifact staging boundary",
+              "operation": "stage",
+              "pre_state": "The release build is expected to have produced a root bundle, while the package-local bundle may be absent or stale.",
+              "post_state": "The package-local bundle is a recursive copy of the generated root bundle, or preparation has stopped with a nonzero exit before publication.",
+              "validation": "Assert that a missing source bundle exits with status 1; for a present bundle, verify the destination was replaced and contains the generated executable artifact.",
+              "parameters": [
+                "release working directory",
+                "generated bundle directory",
+                "package-local artifact directory",
+                "generated executable filename"
+              ],
+              "evidence_ids": [
+                "ev-build-1",
+                "ev-stage-1",
+                "ev-validation-1"
+              ]
+            }
+          },
+          {
+            "name": "reconcile-package-manifest-for-bundled-runtime",
+            "title": "Reconcile the package manifest with a bundled runtime",
+            "description": "Convert a source-oriented workspace package manifest into a bundle-oriented publication contract while preserving runtime-selected platform support through filtered optional dependencies.",
+            "evidence_ids": [
+              "ev-before-manifest-1",
+              "ev-optional-input-1",
+              "ev-manifest-1"
+            ],
+            "semantic_action": {
+              "intent": "Make the published package execute the bundled entry point without shipping source-build dependency metadata, while retaining optional native packages selected by the install platform.",
+              "module_role": "publishable package manifest owner",
+              "operation": "reconcile",
+              "pre_state": "The package manifest targets compiled source output, exposes workspace/runtime and development metadata, and does not declare the generated bundle as its published executable.",
+              "post_state": "The manifest publishes only the bundle directory, maps the executable to the bundled entry, omits fields superseded by bundling, and carries filtered root optional dependencies for supported platforms.",
+              "validation": "Read the transformed manifest and verify the files and executable fields target the bundle, removed fields are absent, and optional dependencies equal the root optional set minus explicitly excluded development-only entries.",
+              "parameters": [
+                "root package manifest",
+                "publishable package manifest",
+                "bundle directory name",
+                "CLI executable name",
+                "bundled entry path",
+                "optional-dependency exclusion set"
+              ],
+              "evidence_ids": [
+                "ev-before-manifest-1",
+                "ev-optional-input-1",
+                "ev-manifest-1"
+              ]
+            }
+          },
+          {
+            "name": "gate-bundled-preparation-by-publication-target",
+            "title": "Gate bundled preparation by publication target",
+            "description": "Insert bundle staging and manifest reconciliation immediately before CLI publication for the registry path that consumes the bundled npm layout, without changing the distinct GitHub Packages preparation path.",
+            "evidence_ids": [
+              "ev-publish-hook-1",
+              "ev-validation-2"
+            ],
+            "semantic_action": {
+              "intent": "Apply the bundled package layout only to publication targets whose release contract expects it.",
+              "module_role": "release publication orchestrator",
+              "operation": "gate",
+              "pre_state": "The release workflow has generated the bundle and may publish through registry-specific preparation paths, but the public npm path does not yet invoke bundled-package preparation.",
+              "post_state": "Eligible registry releases prepare the bundled CLI before authentication and publication, while the excluded registry retains its separate preparation behavior.",
+              "validation": "Inspect the workflow condition and ordering, then run the eligible path in dry-run mode to confirm preparation precedes the package publication command; confirm the excluded registry skips this step.",
+              "parameters": [
+                "target registry URL",
+                "excluded registry URL",
+                "release working directory",
+                "preparation command",
+                "CLI publish step"
+              ],
+              "evidence_ids": [
+                "ev-publish-hook-1",
+                "ev-validation-2"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "package-prebuilt-cli-with-cross-platform-optionals",
+            "title": "Package a prebuilt CLI without losing platform-specific runtime support",
+            "description": "A release workflow for staging a generated executable bundle, aligning the package manifest with that bundle, preserving install-time optional native variants, and applying the transformation only to the intended publication target.",
+            "atomic_names": [
+              "require-and-stage-generated-release-bundle",
+              "reconcile-package-manifest-for-bundled-runtime",
+              "gate-bundled-preparation-by-publication-target"
+            ],
+            "evidence_ids": [
+              "ev-before-manifest-1",
+              "ev-build-1",
+              "ev-optional-input-1",
+              "ev-stage-1",
+              "ev-manifest-1",
+              "ev-publish-hook-1",
+              "ev-validation-1",
+              "ev-validation-2",
+              "ev-tests-1"
+            ],
+            "workflow_graph": {
+              "goal": "Publish a self-contained prebuilt CLI bundle whose executable and package contents agree with the manifest and whose optional native dependencies remain selectable across supported platforms.",
+              "when_to_use": [
+                "A release pipeline already generates a bundled executable, but the package manifest and files allowlist still describe source-oriented or separately compiled output.",
+                "The package needs optional native dependencies selected by operating system or architecture even though ordinary runtime dependencies are absorbed into the bundle.",
+                "Different publication targets require distinct package preparation behavior."
+              ],
+              "anti_goals": [
+                "Do not redesign the bundler or change the runtime behavior of the generated executable.",
+                "Do not remove platform-specific optional dependencies merely because ordinary dependencies are bundled.",
+                "Do not apply the bundled manifest transformation to registry paths with a separate packaging contract.",
+                "Do not treat successful bundle generation alone as proof that the final package tarball is complete."
+              ],
+              "not_applicable_when": [
+                "The published package intentionally ships source or compiled module trees and expects consumers to install its ordinary dependency graph.",
+                "No prebuilt bundle is generated before publication.",
+                "All publication targets share an identical package-layout contract and no target-specific gate is needed.",
+                "Platform-specific components are embedded in the bundle and the package has no install-time optional dependency contract."
+              ],
+              "inputs": [
+                "release working directory",
+                "generated bundle directory and expected executable",
+                "publishable package manifest",
+                "root optional-dependency manifest",
+                "development-only optional-dependency exclusions",
+                "target registry identity",
+                "CLI package name and dry-run publication command"
+              ],
+              "entry_state": "The release pipeline can generate a root executable bundle, but the CLI package still describes dist-based contents and dependencies, and the public registry path has no bundle-specific preparation immediately before publication.",
+              "exit_state": "For each eligible publication, the fresh bundle is staged in the package, the package manifest exposes only the bundled executable plus filtered cross-platform optional dependencies, and preparation completes before the CLI publication command; missing bundle input halts publication.",
+              "steps": [
+                {
+                  "action_name": "require-and-stage-generated-release-bundle",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "The release target uses the bundled-package contract and bundle generation has been scheduled.",
+                  "validation": "The source bundle must exist; absence exits nonzero, while presence replaces the package-local bundle with the generated artifact tree."
+                },
+                {
+                  "action_name": "reconcile-package-manifest-for-bundled-runtime",
+                  "role": "reconcile",
+                  "required": true,
+                  "depends_on": [
+                    "require-and-stage-generated-release-bundle"
+                  ],
+                  "condition": "Bundle staging succeeded and the publishable package manifest is readable.",
+                  "validation": "The package allowlist and executable point to the bundle, obsolete source-build fields are absent, and filtered root optional dependencies are present."
+                },
+                {
+                  "action_name": "gate-bundled-preparation-by-publication-target",
+                  "role": "establish-contract",
+                  "required": true,
+                  "depends_on": [
+                    "require-and-stage-generated-release-bundle",
+                    "reconcile-package-manifest-for-bundled-runtime"
+                  ],
+                  "condition": "The release workflow supports more than one registry packaging contract.",
+                  "validation": "The eligible registry path invokes preparation before CLI publication, and the excluded registry path skips it; use publication dry-run as the encoded package-level check."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "require-and-stage-generated-release-bundle",
+                  "to": "reconcile-package-manifest-for-bundled-runtime",
+                  "type": "enables"
+                },
+                {
+                  "from": "reconcile-package-manifest-for-bundled-runtime",
+                  "to": "gate-bundled-preparation-by-publication-target",
+                  "type": "enables"
+                },
+                {
+                  "from": "gate-bundled-preparation-by-publication-target",
+                  "to": "require-and-stage-generated-release-bundle",
+                  "type": "requires"
+                },
+                {
+                  "from": "gate-bundled-preparation-by-publication-target",
+                  "to": "reconcile-package-manifest-for-bundled-runtime",
+                  "type": "requires"
+                }
+              ],
+              "validation_ladder": [
+                "Precondition: verify the generated bundle directory exists and contains the expected executable before mutating the package.",
+                "Filesystem: verify the previous package-local bundle is replaced by the generated artifact tree.",
+                "Manifest: verify files and bin resolve to the staged bundle; verify bundled-away fields are absent; compare optional dependencies with the authoritative root set after exclusions.",
+                "Pipeline: verify the transformation is conditionally ordered after bundle generation and before CLI publication.",
+                "Package: execute the existing npm publication dry-run for the eligible registry path and inspect the packed artifact; this is recommended by the workflow contract but no successful run is present in the supplied evidence.",
+                "Regression: add isolated tests for missing-bundle failure, stale-destination replacement, manifest rewriting, optional-dependency filtering, and registry gating; these tests are deferred because the pinned change added none."
+              ],
+              "stop_conditions": [
+                "Stop before manifest mutation and publication if the generated bundle is missing.",
+                "Stop if the expected bundled executable is absent after staging.",
+                "Stop if the transformed manifest still points outside the published files allowlist.",
+                "Stop if required platform-specific optional dependencies are lost or development-only exclusions remain.",
+                "Do not apply this workflow to a publication target whose packaging contract requires the original manifest layout."
+              ],
+              "unresolved_or_deferred": [
+                "The evidence bundle lacks PR discussion, reviews, status checks, and issue body, so the motivating production failure and successful CI results cannot be independently established.",
+                "No automated test specific to the preparation script or registry condition was added in the pinned change.",
+                "The pinned evidence does not include an inspected npm pack tarball or a recorded successful dry-run, so final artifact completeness is not directly proven.",
+                "The development-only exclusion is defensive at the pinned state: the inspected root optionalDependencies list does not contain gemini-cli-devtools, although the script explicitly removes it."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Did CI or a release dry-run inspect the resulting npm tarball and execute bundle/gemini.js on each supported operating-system and architecture variant? The supplied GitHub bundle has no status-check or review metadata.",
+          "Should the preparation script receive direct automated coverage for failure atomicity and manifest preservation beyond the explicitly removed fields?",
+          "Is destructive in-place mutation of packages/cli/package.json acceptable for all release retries, or should release preparation operate on a disposable staging tree? The pinned change does not document that lifecycle contract."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "require-and-stage-generated-release-bundle",
+          "title": "Require and stage the generated release bundle",
+          "description": "Fail before packaging when the generated artifact is missing; otherwise replace the package-local artifact directory with the freshly generated bundle so publication consumes the intended build output.",
+          "evidence_ids": [
+            "ev-build-1",
+            "ev-stage-1",
+            "ev-validation-1"
+          ],
+          "semantic_action": {
+            "intent": "Ensure the publishable package contains the freshly generated executable bundle and never silently publishes without it.",
+            "module_role": "release artifact staging boundary",
+            "operation": "stage",
+            "pre_state": "The release build is expected to have produced a root bundle, while the package-local bundle may be absent or stale.",
+            "post_state": "The package-local bundle is a recursive copy of the generated root bundle, or preparation has stopped with a nonzero exit before publication.",
+            "validation": "Assert that a missing source bundle exits with status 1; for a present bundle, verify the destination was replaced and contains the generated executable artifact.",
+            "parameters": [
+              "release working directory",
+              "generated bundle directory",
+              "package-local artifact directory",
+              "generated executable filename"
+            ],
+            "evidence_ids": [
+              "ev-build-1",
+              "ev-stage-1",
+              "ev-validation-1"
+            ]
+          }
+        },
+        {
+          "name": "reconcile-package-manifest-for-bundled-runtime",
+          "title": "Reconcile the package manifest with a bundled runtime",
+          "description": "Convert a source-oriented workspace package manifest into a bundle-oriented publication contract while preserving runtime-selected platform support through filtered optional dependencies.",
+          "evidence_ids": [
+            "ev-before-manifest-1",
+            "ev-optional-input-1",
+            "ev-manifest-1"
+          ],
+          "semantic_action": {
+            "intent": "Make the published package execute the bundled entry point without shipping source-build dependency metadata, while retaining optional native packages selected by the install platform.",
+            "module_role": "publishable package manifest owner",
+            "operation": "reconcile",
+            "pre_state": "The package manifest targets compiled source output, exposes workspace/runtime and development metadata, and does not declare the generated bundle as its published executable.",
+            "post_state": "The manifest publishes only the bundle directory, maps the executable to the bundled entry, omits fields superseded by bundling, and carries filtered root optional dependencies for supported platforms.",
+            "validation": "Read the transformed manifest and verify the files and executable fields target the bundle, removed fields are absent, and optional dependencies equal the root optional set minus explicitly excluded development-only entries.",
+            "parameters": [
+              "root package manifest",
+              "publishable package manifest",
+              "bundle directory name",
+              "CLI executable name",
+              "bundled entry path",
+              "optional-dependency exclusion set"
+            ],
+            "evidence_ids": [
+              "ev-before-manifest-1",
+              "ev-optional-input-1",
+              "ev-manifest-1"
+            ]
+          }
+        },
+        {
+          "name": "gate-bundled-preparation-by-publication-target",
+          "title": "Gate bundled preparation by publication target",
+          "description": "Insert bundle staging and manifest reconciliation immediately before CLI publication for the registry path that consumes the bundled npm layout, without changing the distinct GitHub Packages preparation path.",
+          "evidence_ids": [
+            "ev-publish-hook-1",
+            "ev-validation-2"
+          ],
+          "semantic_action": {
+            "intent": "Apply the bundled package layout only to publication targets whose release contract expects it.",
+            "module_role": "release publication orchestrator",
+            "operation": "gate",
+            "pre_state": "The release workflow has generated the bundle and may publish through registry-specific preparation paths, but the public npm path does not yet invoke bundled-package preparation.",
+            "post_state": "Eligible registry releases prepare the bundled CLI before authentication and publication, while the excluded registry retains its separate preparation behavior.",
+            "validation": "Inspect the workflow condition and ordering, then run the eligible path in dry-run mode to confirm preparation precedes the package publication command; confirm the excluded registry skips this step.",
+            "parameters": [
+              "target registry URL",
+              "excluded registry URL",
+              "release working directory",
+              "preparation command",
+              "CLI publish step"
+            ],
+            "evidence_ids": [
+              "ev-publish-hook-1",
+              "ev-validation-2"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "package-prebuilt-cli-with-cross-platform-optionals",
+          "title": "Package a prebuilt CLI without losing platform-specific runtime support",
+          "description": "A release workflow for staging a generated executable bundle, aligning the package manifest with that bundle, preserving install-time optional native variants, and applying the transformation only to the intended publication target.",
+          "atomic_names": [
+            "require-and-stage-generated-release-bundle",
+            "reconcile-package-manifest-for-bundled-runtime",
+            "gate-bundled-preparation-by-publication-target"
+          ],
+          "evidence_ids": [
+            "ev-before-manifest-1",
+            "ev-build-1",
+            "ev-optional-input-1",
+            "ev-stage-1",
+            "ev-manifest-1",
+            "ev-publish-hook-1",
+            "ev-validation-1",
+            "ev-validation-2",
+            "ev-tests-1"
+          ],
+          "workflow_graph": {
+            "goal": "Publish a self-contained prebuilt CLI bundle whose executable and package contents agree with the manifest and whose optional native dependencies remain selectable across supported platforms.",
+            "when_to_use": [
+              "A release pipeline already generates a bundled executable, but the package manifest and files allowlist still describe source-oriented or separately compiled output.",
+              "The package needs optional native dependencies selected by operating system or architecture even though ordinary runtime dependencies are absorbed into the bundle.",
+              "Different publication targets require distinct package preparation behavior."
+            ],
+            "anti_goals": [
+              "Do not redesign the bundler or change the runtime behavior of the generated executable.",
+              "Do not remove platform-specific optional dependencies merely because ordinary dependencies are bundled.",
+              "Do not apply the bundled manifest transformation to registry paths with a separate packaging contract.",
+              "Do not treat successful bundle generation alone as proof that the final package tarball is complete."
+            ],
+            "not_applicable_when": [
+              "The published package intentionally ships source or compiled module trees and expects consumers to install its ordinary dependency graph.",
+              "No prebuilt bundle is generated before publication.",
+              "All publication targets share an identical package-layout contract and no target-specific gate is needed.",
+              "Platform-specific components are embedded in the bundle and the package has no install-time optional dependency contract."
+            ],
+            "inputs": [
+              "release working directory",
+              "generated bundle directory and expected executable",
+              "publishable package manifest",
+              "root optional-dependency manifest",
+              "development-only optional-dependency exclusions",
+              "target registry identity",
+              "CLI package name and dry-run publication command"
+            ],
+            "entry_state": "The release pipeline can generate a root executable bundle, but the CLI package still describes dist-based contents and dependencies, and the public registry path has no bundle-specific preparation immediately before publication.",
+            "exit_state": "For each eligible publication, the fresh bundle is staged in the package, the package manifest exposes only the bundled executable plus filtered cross-platform optional dependencies, and preparation completes before the CLI publication command; missing bundle input halts publication.",
+            "steps": [
+              {
+                "action_name": "require-and-stage-generated-release-bundle",
+                "role": "implement",
+                "required": true,
+                "depends_on": [],
+                "condition": "The release target uses the bundled-package contract and bundle generation has been scheduled.",
+                "validation": "The source bundle must exist; absence exits nonzero, while presence replaces the package-local bundle with the generated artifact tree."
+              },
+              {
+                "action_name": "reconcile-package-manifest-for-bundled-runtime",
+                "role": "reconcile",
+                "required": true,
+                "depends_on": [
+                  "require-and-stage-generated-release-bundle"
+                ],
+                "condition": "Bundle staging succeeded and the publishable package manifest is readable.",
+                "validation": "The package allowlist and executable point to the bundle, obsolete source-build fields are absent, and filtered root optional dependencies are present."
+              },
+              {
+                "action_name": "gate-bundled-preparation-by-publication-target",
+                "role": "establish-contract",
+                "required": true,
+                "depends_on": [
+                  "require-and-stage-generated-release-bundle",
+                  "reconcile-package-manifest-for-bundled-runtime"
+                ],
+                "condition": "The release workflow supports more than one registry packaging contract.",
+                "validation": "The eligible registry path invokes preparation before CLI publication, and the excluded registry path skips it; use publication dry-run as the encoded package-level check."
+              }
+            ],
+            "edges": [
+              {
+                "from": "require-and-stage-generated-release-bundle",
+                "to": "reconcile-package-manifest-for-bundled-runtime",
+                "type": "enables"
+              },
+              {
+                "from": "reconcile-package-manifest-for-bundled-runtime",
+                "to": "gate-bundled-preparation-by-publication-target",
+                "type": "enables"
+              },
+              {
+                "from": "gate-bundled-preparation-by-publication-target",
+                "to": "require-and-stage-generated-release-bundle",
+                "type": "requires"
+              },
+              {
+                "from": "gate-bundled-preparation-by-publication-target",
+                "to": "reconcile-package-manifest-for-bundled-runtime",
+                "type": "requires"
+              }
+            ],
+            "validation_ladder": [
+              "Precondition: verify the generated bundle directory exists and contains the expected executable before mutating the package.",
+              "Filesystem: verify the previous package-local bundle is replaced by the generated artifact tree.",
+              "Manifest: verify files and bin resolve to the staged bundle; verify bundled-away fields are absent; compare optional dependencies with the authoritative root set after exclusions.",
+              "Pipeline: verify the transformation is conditionally ordered after bundle generation and before CLI publication.",
+              "Package: execute the existing npm publication dry-run for the eligible registry path and inspect the packed artifact; this is recommended by the workflow contract but no successful run is present in the supplied evidence.",
+              "Regression: add isolated tests for missing-bundle failure, stale-destination replacement, manifest rewriting, optional-dependency filtering, and registry gating; these tests are deferred because the pinned change added none."
+            ],
+            "stop_conditions": [
+              "Stop before manifest mutation and publication if the generated bundle is missing.",
+              "Stop if the expected bundled executable is absent after staging.",
+              "Stop if the transformed manifest still points outside the published files allowlist.",
+              "Stop if required platform-specific optional dependencies are lost or development-only exclusions remain.",
+              "Do not apply this workflow to a publication target whose packaging contract requires the original manifest layout."
+            ],
+            "unresolved_or_deferred": [
+              "The evidence bundle lacks PR discussion, reviews, status checks, and issue body, so the motivating production failure and successful CI results cannot be independently established.",
+              "No automated test specific to the preparation script or registry condition was added in the pinned change.",
+              "The pinned evidence does not include an inspected npm pack tarball or a recorded successful dry-run, so final artifact completeness is not directly proven.",
+              "The development-only exclusion is defensive at the pinned state: the inspected root optionalDependencies list does not contain gemini-cli-devtools, although the script explicitly removes it."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Did CI or a release dry-run inspect the resulting npm tarball and execute bundle/gemini.js on each supported operating-system and architecture variant? The supplied GitHub bundle has no status-check or review metadata.",
+        "Should the preparation script receive direct automated coverage for failure atomicity and manifest preservation beyond the explicitly removed fields?",
+        "Is destructive in-place mutation of packages/cli/package.json acceptable for all release retries, or should release preparation operate on a disposable staging tree? The pinned change does not document that lifecycle contract."
+      ]
+    },
+    "call_sites": [
+      "The release action already runs `npm run bundle` before package publication, establishing the root bundle as an input available to the newly added preparation step.",
+      "The release action invokes the preparation script after core installation and before the CLI token and `npm publish` steps, only when the target registry is not GitHub Packages."
+    ],
+    "tests": [
+      "No test or specification file changed in the pinned commit, and the supplied bundle explicitly records `no_test_file_change_observed`; therefore no automated regression oracle specific to the new preparation script is established by this episode."
+    ]
+  }
+]

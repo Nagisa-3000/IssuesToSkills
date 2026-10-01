@@ -1,0 +1,95 @@
+{
+  "source": "local_git_pinned_ref",
+  "repository": "NousResearch/hermes-agent",
+  "issue_number": 35399,
+  "issue": {
+    "number": 35399,
+    "title": "fix(file-tools): anchor relative-path resolution to absolute base; report resolved path (#35399)",
+    "body": null,
+    "metadata_unavailable": [
+      "issue body",
+      "comments",
+      "timeline",
+      "author/review discussion"
+    ]
+  },
+  "comments": [],
+  "timeline": [],
+  "linked_pull_requests": [
+    {
+      "pull_request": {
+        "number": 35399,
+        "title": "fix(file-tools): anchor relative-path resolution to absolute base; report resolved path (#35399)",
+        "metadata_unavailable": [
+          "PR body",
+          "reviews",
+          "status checks"
+        ]
+      },
+      "files": [
+        {
+          "status_line": "A\ttests/tools/test_file_tools_cwd_resolution.py"
+        },
+        {
+          "status_line": "M\ttools/file_tools.py"
+        }
+      ],
+      "commits": [
+        {
+          "sha": "96643b4a52b118477b07c838e30eb8ae7372062c",
+          "subject": "fix(file-tools): anchor relative-path resolution to absolute base; report resolved path (#35399)"
+        }
+      ]
+    }
+  ],
+  "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+  "pinned_ref": "96643b4a52b118477b07c838e30eb8ae7372062c",
+  "resolved_commit": "96643b4a52b118477b07c838e30eb8ae7372062c",
+  "parent_commit": "0c6e133c0434ec856d4aea2b08f216f36c0e7dac",
+  "commit_show_stat": "commit 96643b4a52b118477b07c838e30eb8ae7372062c\nAuthor:     Teknium <127238744+teknium1@users.noreply.github.com>\nAuthorDate: Sat May 30 07:55:36 2026 -0700\nCommit:     GitHub <noreply@github.com>\nCommitDate: Sat May 30 07:55:36 2026 -0700\n\n    fix(file-tools): anchor relative-path resolution to absolute base; report resolved path (#35399)\n    \n    Relative paths in write_file/patch could resolve against the agent PROCESS cwd\n    instead of the terminal's working directory. In a git-worktree session with a\n    stale TERMINAL_CWD='.' (a relative base), early edits silently landed in the\n    MAIN checkout, verified there, and reported success — while the agent inspected\n    the worktree and saw nothing, misreading it as the patch tool no-op'ing.\n    \n    - _resolve_base_dir(): resolution base is now ALWAYS absolute. A relative\n      TERMINAL_CWD is anchored to the process cwd once, deterministically, instead\n      of being left to resolve()-time cwd. Live terminal cwd stays authoritative.\n    - write_file/patch pass the resolved absolute path to the shell FileOps layer\n      so the tool layer and shell layer can't disagree about which file is edited.\n    - Responses now report the absolute resolved_path and files_modified, so a\n      wrong-cwd mismatch is visible on the first call.\n    - _path_resolution_warning(): emits a _warning when a relative path resolves\n      OUTSIDE the live terminal cwd (e.g. a worktree session writing into main).\n    \n    Validation: 11 new unit tests + 43 live E2E assertions (worktree routing,\n    mid-session cd, V4A patches, divergence warning, absolute paths, consecutive\n    patches); 466 existing file/path/terminal tests green.\n\n tests/tools/test_file_tools_cwd_resolution.py | 197 ++++++++++++++++++++++++++\n tools/file_tools.py                           | 113 +++++++++++++--\n 2 files changed, 300 insertions(+), 10 deletions(-)\n",
+  "changed_files_name_status": "A\ttests/tools/test_file_tools_cwd_resolution.py\nM\ttools/file_tools.py\n",
+  "linked_issue_numbers": [
+    35399
+  ],
+  "manifest_metadata": {
+    "category": "path-root-and-worktree-resolution",
+    "theme": "canonical path resolution against the intended repository or worktree root",
+    "file_sample": [
+      "tests/tools/test_file_tools_cwd_resolution.py",
+      "tools/file_tools.py"
+    ],
+    "quality": "implementation_plus_test",
+    "case_id": "NousResearch__hermes-agent__35399__path-root-and-worktree-resolution",
+    "role": "train_candidate",
+    "split": "train_candidate",
+    "sample_kind": "verified_implementation_pull_request",
+    "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/35399",
+    "source": "agent_core_thirteen_category_extraction_v2",
+    "provenance": {
+      "classification": "direct_implementation_artifact",
+      "resolution_artifact": {
+        "type": "pull_request",
+        "number": 35399,
+        "url": "https://github.com/NousResearch/hermes-agent/pull/35399"
+      },
+      "commit": {
+        "sha": "96643b4a52b118477b07c838e30eb8ae7372062c",
+        "subject": "fix(file-tools): anchor relative-path resolution to absolute base; report resolved path (#35399)",
+        "parents": [
+          "0c6e133c0434ec856d4aea2b08f216f36c0e7dac"
+        ],
+        "body_excerpt": "Relative paths in write_file/patch could resolve against the agent PROCESS cwd\ninstead of the terminal's working directory. In a git-worktree session with a\nstale TERMINAL_CWD='.' (a relative base), early edits silently landed in the\nMAIN checkout, verified there, and reported success — while the agent inspected\nthe worktree and saw nothing, misreading it as the patch tool no-op'ing.\n\n- _resolve_base_dir(): resolution base is now ALWAYS absolute. A relative\n  TERMINAL_CWD is anchored to the process cwd once, deterministically, instead\n  of being left to resolve()-time cwd. Live terminal cwd stays authoritative.\n- write_file/patch pass the resolved absolute path to the shell FileOps layer\n  so the tool layer and shell layer can't disagree about which file is edited.\n- Responses now report the absolute resolved_path and files_modified, so a\n  wrong-cwd mismatch is visible on the first call.\n- _path_resolution_warning(): emits a _warning when a relative path resolves\n  OUTSIDE the live terminal cwd (e.g. a worktree session writing into main).\n\nValidation: 11 new unit tests + 43 live E2E assertions (worktree routing,\nmid-session cd, V4A patches, divergence warning, absolute paths, cons"
+      },
+      "verification": [
+        "local_git_commit_resolved",
+        "first_parent_and_changed_files_recorded",
+        "implementation_change_present",
+        "test_or_spec_change_present"
+      ]
+    }
+  },
+  "fetched_at": "2026-10-01T10:56:58.256936+00:00",
+  "limitations": [
+    "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "source": "local_git_pinned_ref",
+  "repository": "openai/codex",
+  "issue_number": 46508,
+  "issue": {
+    "number": 46508,
+    "title": "Refresh the model catalog before turns after auth changes (#46508)",
+    "body": null,
+    "metadata_unavailable": [
+      "issue body",
+      "comments",
+      "timeline",
+      "author/review discussion"
+    ]
+  },
+  "comments": [],
+  "timeline": [],
+  "linked_pull_requests": [
+    {
+      "pull_request": {
+        "number": 46508,
+        "title": "Refresh the model catalog before turns after auth changes (#46508)",
+        "metadata_unavailable": [
+          "PR body",
+          "reviews",
+          "status checks"
+        ]
+      },
+      "files": [
+        {
+          "status_line": "M\tcodex-rs/core/src/session/turn_context.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/src/tasks/mod.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/tests/suite/models_cache_auth.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/model-provider/src/models_endpoint.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/models-manager/src/manager.rs"
+        }
+      ],
+      "commits": [
+        {
+          "sha": "2b842962883f2e01526b9c64e383cb2375123a5d",
+          "subject": "Refresh the model catalog before turns after auth changes (#46508)"
+        }
+      ]
+    }
+  ],
+  "checkout": "/home/chenyujia/tritonToLlvm/codex-agent",
+  "pinned_ref": "2b842962883f2e01526b9c64e383cb2375123a5d",
+  "resolved_commit": "2b842962883f2e01526b9c64e383cb2375123a5d",
+  "parent_commit": "8003609cc703dbf014159055e63a684901855edc",
+  "commit_show_stat": "commit 2b842962883f2e01526b9c64e383cb2375123a5d\nAuthor:     jif <jif@openai.com>\nAuthorDate: Fri Sep 18 11:34:39 2026 +0000\nCommit:     copyberry <copyberry@app.openai.com>\nCommitDate: Fri Sep 18 23:26:12 2026 +0000\n\n    Refresh the model catalog before turns after auth changes (#46508)\n    \n    ## Why\n    \n    Credential changes can leave the in-memory model catalog associated with a different identity, causing subsequent turns to use bundled model metadata instead of the active credentials' catalog.\n    \n    ## What changed\n    \n    - Refresh mismatched catalogs before user turns and mailbox-triggered wakeups, resolving lazy command credentials before comparing identities.\n    - Reuse a matching cache or fetch models with a five-second deadline covering auth resolution and cache access. Preserve fallback behavior on failure or timeout; static catalogs need no refresh.\n    - Recheck the active turn after discovery so an interrupted wakeup does not continue starting a turn.\n    \n    ## Testing\n    \n    Add coverage for user and mailbox turns after credential rotation, including switching back after another identity replaces the shared catalog. Verify refreshed context windows and request behavior, fallback on discovery failure or auth timeout, and command-auth token rotation.\n    \n    GitOrigin-RevId: 7e4ad25f1c4476e2023225731924af28c1181767\n\n codex-rs/core/src/session/turn_context.rs      |   9 +\n codex-rs/core/src/tasks/mod.rs                 |  14 ++\n codex-rs/core/tests/suite/models_cache_auth.rs | 221 +++++++++++++++++++++++++\n codex-rs/model-provider/src/models_endpoint.rs |  10 +-\n codex-rs/models-manager/src/manager.rs         |  39 +++++\n 5 files changed, 291 insertions(+), 2 deletions(-)\n",
+  "changed_files_name_status": "M\tcodex-rs/core/src/session/turn_context.rs\nM\tcodex-rs/core/src/tasks/mod.rs\nM\tcodex-rs/core/tests/suite/models_cache_auth.rs\nM\tcodex-rs/model-provider/src/models_endpoint.rs\nM\tcodex-rs/models-manager/src/manager.rs\n",
+  "linked_issue_numbers": [
+    46508
+  ],
+  "manifest_metadata": {
+    "category": "model-catalog-and-capability-metadata",
+    "theme": "model catalog freshness and capability metadata",
+    "file_sample": [
+      "codex-rs/core/src/session/turn_context.rs",
+      "codex-rs/core/src/tasks/mod.rs",
+      "codex-rs/core/tests/suite/models_cache_auth.rs",
+      "codex-rs/model-provider/src/models_endpoint.rs",
+      "codex-rs/models-manager/src/manager.rs"
+    ],
+    "quality": "implementation_plus_test",
+    "case_id": "openai__codex__46508__model-catalog-and-capability-metadata",
+    "role": "train_candidate",
+    "split": "train_candidate",
+    "sample_kind": "verified_implementation_pull_request",
+    "resolution_url": "https://github.com/openai/codex/pull/46508",
+    "source": "agent_core_thirteen_category_extraction_v2",
+    "provenance": {
+      "classification": "direct_implementation_artifact",
+      "resolution_artifact": {
+        "type": "pull_request",
+        "number": 46508,
+        "url": "https://github.com/openai/codex/pull/46508"
+      },
+      "commit": {
+        "sha": "2b842962883f2e01526b9c64e383cb2375123a5d",
+        "subject": "Refresh the model catalog before turns after auth changes (#46508)",
+        "parents": [
+          "8003609cc703dbf014159055e63a684901855edc"
+        ],
+        "body_excerpt": "## Why\n\nCredential changes can leave the in-memory model catalog associated with a different identity, causing subsequent turns to use bundled model metadata instead of the active credentials' catalog.\n\n## What changed\n\n- Refresh mismatched catalogs before user turns and mailbox-triggered wakeups, resolving lazy command credentials before comparing identities.\n- Reuse a matching cache or fetch models with a five-second deadline covering auth resolution and cache access. Preserve fallback behavior on failure or timeout; static catalogs need no refresh.\n- Recheck the active turn after discovery so an interrupted wakeup does not continue starting a turn.\n\n## Testing\n\nAdd coverage for user and mailbox turns after credential rotation, including switching back after another identity replaces the shared catalog. Verify refreshed context windows and request behavior, fallback on discovery failure or auth timeout, and command-auth token rotation.\n\nGitOrigin-RevId: 7e4ad25f1c4476e2023225731924af28c1181767"
+      },
+      "verification": [
+        "local_git_commit_resolved",
+        "first_parent_and_changed_files_recorded",
+        "implementation_change_present",
+        "test_or_spec_change_present"
+      ]
+    }
+  },
+  "fetched_at": "2026-10-01T10:57:41.734608+00:00",
+  "limitations": [
+    "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "source": "local_git_pinned_ref",
+  "repository": "NousResearch/hermes-agent",
+  "issue_number": 26011,
+  "issue": {
+    "number": 26011,
+    "title": "fix(tui): restrict fast-echo bypass to ASCII so Vietnamese/CJK/IME input renders correctly (#26011)",
+    "body": null,
+    "metadata_unavailable": [
+      "issue body",
+      "comments",
+      "timeline",
+      "author/review discussion"
+    ]
+  },
+  "comments": [],
+  "timeline": [],
+  "linked_pull_requests": [
+    {
+      "pull_request": {
+        "number": 26011,
+        "title": "fix(tui): restrict fast-echo bypass to ASCII so Vietnamese/CJK/IME input renders correctly (#26011)",
+        "metadata_unavailable": [
+          "PR body",
+          "reviews",
+          "status checks"
+        ]
+      },
+      "files": [
+        {
+          "status_line": "A\tui-tui/src/__tests__/textInputFastEcho.test.ts"
+        },
+        {
+          "status_line": "M\tui-tui/src/components/textInput.tsx"
+        }
+      ],
+      "commits": [
+        {
+          "sha": "9fb40e6a3d6338b6a6a616010de7a16672148924",
+          "subject": "fix(tui): restrict fast-echo bypass to ASCII so Vietnamese/CJK/IME input renders correctly (#26011)"
+        }
+      ]
+    }
+  ],
+  "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+  "pinned_ref": "9fb40e6a3d6338b6a6a616010de7a16672148924",
+  "resolved_commit": "9fb40e6a3d6338b6a6a616010de7a16672148924",
+  "parent_commit": "d5416284f11ccbc735c8357f0ab35ce5f683ccc3",
+  "commit_show_stat": "commit 9fb40e6a3d6338b6a6a616010de7a16672148924\nAuthor:     brooklyn! <brooklyn.bb.nicholson@gmail.com>\nAuthorDate: Fri May 15 07:41:50 2026 -0700\nCommit:     GitHub <noreply@github.com>\nCommitDate: Fri May 15 09:41:50 2026 -0500\n\n    fix(tui): restrict fast-echo bypass to ASCII so Vietnamese/CJK/IME input renders correctly (#26011)\n    \n    * fix(tui): restrict fast-echo bypass to ASCII so Vietnamese/CJK/IME input renders correctly\n    \n    The composer's fast-echo path (canFastAppend / canFastBackspace) writes\n    characters straight to stdout to skip an Ink re-render on the hot\n    typing path. The previous guard only checked\n    'stringWidth(text) === text.length', which lets a lot of non-ASCII\n    through:\n    \n      - Vietnamese precomposed letters (ề, ắ, ờ, ự, ...) report width 1 and\n        length 1, but a Vietnamese Telex / IME stack produces them across\n        multiple keystrokes; the intermediate composition state must be\n        drawn by Ink so the rendered cell, the stored value, and the\n        cursor column stay in lockstep when the final commit replaces the\n        preview.\n      - NFD combining marks (U+0300..U+036F) are zero-width but length 1,\n        so even a passing equality lets them slip and silently desync the\n        cell column.\n      - CJK/East-Asian wide and emoji rejected only because their length\n        differs, but the boundary was shape-shaped, not intent-shaped.\n    \n    User-visible bug from the original report:\n      Example: eê noiói nge neène\n      -> the bypass committed the IME preview char before the diacritic\n         replaced it, leaving doubled letters on screen.\n    \n    Fix: gate fast-echo on pure printable ASCII (0x20-0x7e). The\n    performance-critical English typing path is unchanged; everything else\n    goes through the normal Ink render path so layout stays accurate.\n    \n    Also extracts the shape preconditions as pure exported helpers\n    (canFastAppendShape / canFastBackspaceShape) so the regression matrix\n    is testable without spinning up a TextInput.\n    \n    Tests: ui-tui/src/__tests__/textInputFastEcho.test.ts adds 20 cases\n    covering ASCII still works, Vietnamese precomposed + NFD, CJK, emoji,\n    NBSP / Latin-1, ANSI / control bytes, multi-line, and end-of-line\n    preconditions. Verified RED on the previous guard (11 of 20 fail) and\n    GREEN on the new guard.\n    \n    Refs: #5221, #7443, #17602, #17603 (similar wide-char rendering bugs).\n    \n    * docs(tui): clarify Vietnamese char terminology in regression comment\n    \n    Address Copilot review: 'single byte width' implied UTF-8 byte semantics,\n    but the relevant property is JS code units (`text.length === 1`) and\n    display width (`stringWidth === 1`). Reworded to match.\n\n ui-tui/src/__tests__/textInputFastEcho.test.ts | 136 +++++++++++++++++++++++++\n ui-tui/src/components/textInput.tsx            | 101 ++++++++++++++----\n 2 files changed, 218 insertions(+), 19 deletions(-)\n",
+  "changed_files_name_status": "A\tui-tui/src/__tests__/textInputFastEcho.test.ts\nM\tui-tui/src/components/textInput.tsx\n",
+  "linked_issue_numbers": [
+    26011
+  ],
+  "manifest_metadata": {
+    "category": "unicode-width-and-terminal-rendering",
+    "theme": "Unicode-safe width calculation, wrapping, and terminal rendering",
+    "file_sample": [
+      "ui-tui/src/__tests__/textInputFastEcho.test.ts",
+      "ui-tui/src/components/textInput.tsx"
+    ],
+    "quality": "implementation_plus_test",
+    "case_id": "NousResearch__hermes-agent__26011__unicode-width-and-terminal-rendering",
+    "role": "train_candidate",
+    "split": "train_candidate",
+    "sample_kind": "verified_implementation_pull_request",
+    "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/26011",
+    "source": "agent_core_thirteen_category_extraction_v2",
+    "provenance": {
+      "classification": "direct_implementation_artifact",
+      "resolution_artifact": {
+        "type": "pull_request",
+        "number": 26011,
+        "url": "https://github.com/NousResearch/hermes-agent/pull/26011"
+      },
+      "commit": {
+        "sha": "9fb40e6a3d6338b6a6a616010de7a16672148924",
+        "subject": "fix(tui): restrict fast-echo bypass to ASCII so Vietnamese/CJK/IME input renders correctly (#26011)",
+        "parents": [
+          "d5416284f11ccbc735c8357f0ab35ce5f683ccc3"
+        ],
+        "body_excerpt": "* fix(tui): restrict fast-echo bypass to ASCII so Vietnamese/CJK/IME input renders correctly\n\nThe composer's fast-echo path (canFastAppend / canFastBackspace) writes\ncharacters straight to stdout to skip an Ink re-render on the hot\ntyping path. The previous guard only checked\n'stringWidth(text) === text.length', which lets a lot of non-ASCII\nthrough:\n\n  - Vietnamese precomposed letters (ề, ắ, ờ, ự, ...) report width 1 and\n    length 1, but a Vietnamese Telex / IME stack produces them across\n    multiple keystrokes; the intermediate composition state must be\n    drawn by Ink so the rendered cell, the stored value, and the\n    cursor column stay in lockstep when the final commit replaces the\n    preview.\n  - NFD combining marks (U+0300..U+036F) are zero-width but length 1,\n    so even a passing equality lets them slip and silently desync the\n    cell column.\n  - CJK/East-Asian wide and emoji rejected only because their length\n    differs, but the boundary was shape-shaped, not intent-shaped.\n\nUser-visible bug from the original report:\n  Example: eê noiói nge neène\n  -> the bypass committed the IME preview char before the diacritic\n     replaced it, leaving doubled letters on screen.\n"
+      },
+      "verification": [
+        "local_git_commit_resolved",
+        "first_parent_and_changed_files_recorded",
+        "implementation_change_present",
+        "test_or_spec_change_present"
+      ]
+    }
+  },
+  "fetched_at": "2026-10-01T10:59:17.855588+00:00",
+  "limitations": [
+    "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+  ]
+}

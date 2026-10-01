@@ -1,0 +1,2163 @@
+[
+  {
+    "episode_id": "Aider-AI__aider__4748__fb05748a",
+    "title": "Keep dynamically discovered provider error registries catchable",
+    "before": "At first parent 1354e0bfa4847c1a71b9eea7374847a786d81c1b, the provider-error registry treated every exported name ending in \"Error\" as an exception and explicitly registered litellm.ErrorEventError. ErrorEventError was an ordinary class rather than a BaseException subclass, so the generated tuple could contain a non-catchable class. Runtime handlers using that tuple in an except clause could consequently raise TypeError instead of handling the provider exception.",
+    "after": "At merge commit fb05748ace65bea780e0766b14b0904fbaac5f7f, discovery considers an \"Error\" export only when its object is a BaseException subclass, and the known non-exception ErrorEventError entry is removed from the configured registry. The tuple consumed by retry and reporting handlers therefore excludes that invalid member while retaining the configured provider exception classes.",
+    "diff": "The change modifies aider/exceptions.py in two inseparable parts: it removes ExInfo(\"ErrorEventError\", True, None) from EXCEPTIONS and strengthens the dynamic discovery predicate from a name-suffix check to `var.endswith(\"Error\") and issubclass(getattr(litellm, var), BaseException)`. No test file changed. Existing tests construct the registry, inspect its tuple, and exercise a RateLimitError through a call site whose except clause consumes that tuple.",
+    "repository": "Aider-AI/aider",
+    "revision": "github-issue-4748",
+    "evidence_ids": [
+      "ev-commit-merge",
+      "ev-commit-cause",
+      "ev-before-registry",
+      "ev-before-discovery",
+      "ev-diff-filter",
+      "ev-diff-prune",
+      "ev-after-registry",
+      "ev-call-coder",
+      "ev-call-model",
+      "ev-test-registry",
+      "ev-test-runtime-catch",
+      "ev-no-test-change"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "Aider-AI/aider",
+      "issue": 4748,
+      "checkout": "/home/chenyujia/tritonToLlvm/aider-agent",
+      "manifest_metadata": {
+        "category": "provider-error-payload-normalization",
+        "role": "train_candidate",
+        "case_id": "Aider-AI__aider__4748__provider-error-payload-normalization",
+        "sample_kind": "verified_implementation_pull_request",
+        "seed_issue": null,
+        "seed_issue_url": null,
+        "seed_relation": null,
+        "resolution_url": "https://github.com/Aider-AI/aider/pull/4748",
+        "provenance": {
+          "classification": "direct_implementation_artifact",
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 4748,
+            "url": "https://github.com/Aider-AI/aider/pull/4748"
+          },
+          "commit": {
+            "sha": "fb05748ace65bea780e0766b14b0904fbaac5f7f",
+            "subject": "Merge pull request #4748 from claui/fix-litellm-exception-list-regression",
+            "parents": [
+              "1354e0bfa4847c1a71b9eea7374847a786d81c1b",
+              "08165c57a21636d0f995abf55de33fd9bbbcee94"
+            ],
+            "body_excerpt": "Fix regression in the LiteLLM exception list"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "first_parent_and_changed_files_recorded",
+            "implementation_change_present",
+            "no_test_file_change_observed"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "Aider-AI/aider",
+        "issue_number": 4748,
+        "issue": {
+          "number": 4748,
+          "title": "Merge pull request #4748 from claui/fix-litellm-exception-list-regression",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 4748,
+              "title": "Merge pull request #4748 from claui/fix-litellm-exception-list-regression",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\taider/exceptions.py"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "fb05748ace65bea780e0766b14b0904fbaac5f7f",
+                "subject": "Merge pull request #4748 from claui/fix-litellm-exception-list-regression"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/aider-agent",
+        "pinned_ref": "fb05748ace65bea780e0766b14b0904fbaac5f7f",
+        "resolved_commit": "fb05748ace65bea780e0766b14b0904fbaac5f7f",
+        "parent_commit": "1354e0bfa4847c1a71b9eea7374847a786d81c1b",
+        "commit_show_stat": "commit fb05748ace65bea780e0766b14b0904fbaac5f7f\nMerge: 1354e0bf 08165c57\nAuthor:     paul-gauthier <69695708+paul-gauthier@users.noreply.github.com>\nAuthorDate: Sun Jan 4 11:40:30 2026 -0400\nCommit:     GitHub <noreply@github.com>\nCommitDate: Sun Jan 4 11:40:30 2026 -0400\n\n    Merge pull request #4748 from claui/fix-litellm-exception-list-regression\n    \n    Fix regression in the LiteLLM exception list\n\n aider/exceptions.py | 6 ++++--\n 1 file changed, 4 insertions(+), 2 deletions(-)\n",
+        "changed_files_name_status": "M\taider/exceptions.py\n",
+        "linked_issue_numbers": [
+          4748
+        ],
+        "manifest_metadata": {
+          "category": "provider-error-payload-normalization",
+          "theme": "preserve and normalize provider error payloads",
+          "file_sample": [
+            "aider/exceptions.py"
+          ],
+          "quality": "implementation_only",
+          "case_id": "Aider-AI__aider__4748__provider-error-payload-normalization",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_implementation_pull_request",
+          "resolution_url": "https://github.com/Aider-AI/aider/pull/4748",
+          "source": "agent_core_thirteen_category_extraction_v2",
+          "provenance": {
+            "classification": "direct_implementation_artifact",
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 4748,
+              "url": "https://github.com/Aider-AI/aider/pull/4748"
+            },
+            "commit": {
+              "sha": "fb05748ace65bea780e0766b14b0904fbaac5f7f",
+              "subject": "Merge pull request #4748 from claui/fix-litellm-exception-list-regression",
+              "parents": [
+                "1354e0bfa4847c1a71b9eea7374847a786d81c1b",
+                "08165c57a21636d0f995abf55de33fd9bbbcee94"
+              ],
+              "body_excerpt": "Fix regression in the LiteLLM exception list"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "first_parent_and_changed_files_recorded",
+              "implementation_change_present",
+              "no_test_file_change_observed"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T10:49:52.956954+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "Aider-AI__aider__4748__fb05748a",
+          "title": "Keep dynamically discovered provider error registries catchable",
+          "before": "At first parent 1354e0bfa4847c1a71b9eea7374847a786d81c1b, the provider-error registry treated every exported name ending in \"Error\" as an exception and explicitly registered litellm.ErrorEventError. ErrorEventError was an ordinary class rather than a BaseException subclass, so the generated tuple could contain a non-catchable class. Runtime handlers using that tuple in an except clause could consequently raise TypeError instead of handling the provider exception.",
+          "after": "At merge commit fb05748ace65bea780e0766b14b0904fbaac5f7f, discovery considers an \"Error\" export only when its object is a BaseException subclass, and the known non-exception ErrorEventError entry is removed from the configured registry. The tuple consumed by retry and reporting handlers therefore excludes that invalid member while retaining the configured provider exception classes.",
+          "diff": "The change modifies aider/exceptions.py in two inseparable parts: it removes ExInfo(\"ErrorEventError\", True, None) from EXCEPTIONS and strengthens the dynamic discovery predicate from a name-suffix check to `var.endswith(\"Error\") and issubclass(getattr(litellm, var), BaseException)`. No test file changed. Existing tests construct the registry, inspect its tuple, and exercise a RateLimitError through a call site whose except clause consumes that tuple."
+        },
+        "evidence_units": [
+          {
+            "id": "ev-commit-merge",
+            "kind": "commit",
+            "claim": "Pinned ref fb05748ace65bea780e0766b14b0904fbaac5f7f is a merge of first parent 1354e0bfa4847c1a71b9eea7374847a786d81c1b and implementation commit 08165c57a21636d0f995abf55de33fd9bbbcee94, with the subject identifying PR #4748 and a LiteLLM exception-list regression fix.",
+            "source": "git show --format=fuller --stat fb05748ace65bea780e0766b14b0904fbaac5f7f; issue-bundle.json resolved_commit, parent_commit, and provenance.commit"
+          },
+          {
+            "id": "ev-commit-cause",
+            "kind": "commit",
+            "claim": "Implementation commit 08165c57 records the observed failure as `TypeError: catching classes that do not inherit from BaseException is not allowed`, explains that ErrorEventError is a regular class, and states that discovery must include only actual exception classes.",
+            "source": "git show --format=fuller 08165c57a21636d0f995abf55de33fd9bbbcee94"
+          },
+          {
+            "id": "ev-before-registry",
+            "kind": "implementation",
+            "claim": "The first-parent EXCEPTIONS registry explicitly contains ExInfo(\"ErrorEventError\", True, None).",
+            "source": "git show 1354e0bfa4847c1a71b9eea7374847a786d81c1b:aider/exceptions.py, EXCEPTIONS definition"
+          },
+          {
+            "id": "ev-before-discovery",
+            "kind": "implementation",
+            "claim": "The first-parent discovery loop classifies every litellm export whose name ends with \"Error\" without checking whether the exported object inherits from BaseException.",
+            "source": "git show 1354e0bfa4847c1a71b9eea7374847a786d81c1b:aider/exceptions.py, LiteLLMExceptions._load"
+          },
+          {
+            "id": "ev-diff-filter",
+            "kind": "diff",
+            "claim": "The implementation adds a BaseException-subclass condition to the suffix-based discovery predicate and documents that ErrorEventError is a regular class whose name merely ends with \"Error\".",
+            "source": "git diff 1354e0bfa4847c1a71b9eea7374847a786d81c1b fb05748ace65bea780e0766b14b0904fbaac5f7f -- aider/exceptions.py, hunk in LiteLLMExceptions._load"
+          },
+          {
+            "id": "ev-diff-prune",
+            "kind": "diff",
+            "claim": "The implementation removes ErrorEventError from the configured exception metadata list, preventing the subsequent registry-loading loop from inserting the non-exception class into the catch tuple.",
+            "source": "git diff 1354e0bfa4847c1a71b9eea7374847a786d81c1b fb05748ace65bea780e0766b14b0904fbaac5f7f -- aider/exceptions.py, EXCEPTIONS hunk"
+          },
+          {
+            "id": "ev-after-registry",
+            "kind": "implementation",
+            "claim": "At the pinned ref, LiteLLMExceptions loads configured provider classes into a class-to-metadata mapping and exceptions_tuple returns the mapping's class keys as the tuple used by exception handlers; ErrorEventError is no longer configured.",
+            "source": "git show fb05748ace65bea780e0766b14b0904fbaac5f7f:aider/exceptions.py, EXCEPTIONS and LiteLLMExceptions._load/exceptions_tuple"
+          },
+          {
+            "id": "ev-call-coder",
+            "kind": "call_site",
+            "claim": "The main coding request paths instantiate LiteLLMExceptions and use exceptions_tuple directly in except clauses before consulting get_ex_info for retry, context-window, and reporting behavior.",
+            "source": "git show fb05748ace65bea780e0766b14b0904fbaac5f7f:aider/coders/base_coder.py, lines 1451-1468 and 1813-1818"
+          },
+          {
+            "id": "ev-call-model",
+            "kind": "call_site",
+            "claim": "The simple model request retry loop also catches exceptions using the generated tuple and then uses its metadata to decide whether to retry.",
+            "source": "git show fb05748ace65bea780e0766b14b0904fbaac5f7f:aider/models.py, lines 1004-1007 and 1031-1040"
+          },
+          {
+            "id": "ev-test-registry",
+            "kind": "test",
+            "claim": "Existing tests instantiate LiteLLMExceptions, require the registry to be nonempty, and require exceptions_tuple to return a nonempty tuple.",
+            "source": "git show fb05748ace65bea780e0766b14b0904fbaac5f7f:tests/basic/test_exceptions.py, lines 4-14"
+          },
+          {
+            "id": "ev-test-runtime-catch",
+            "kind": "test",
+            "claim": "An existing send-chat test makes the completion dependency raise RateLimitError and exercises simple_send_with_retries, whose implementation catches through LiteLLMExceptions.exceptions_tuple; this path is capable of exposing an invalid class encountered in the catch tuple.",
+            "source": "git show fb05748ace65bea780e0766b14b0904fbaac5f7f:tests/basic/test_sendchat.py, lines 22-41, together with aider/models.py lines 1004-1040 at the pinned ref"
+          },
+          {
+            "id": "ev-no-test-change",
+            "kind": "validation",
+            "claim": "The recorded PR changes only aider/exceptions.py; the supplied GitHub evidence bundle reports that no test-file change was observed and that status-check metadata is unavailable.",
+            "source": "issue-bundle.json linked_pull_requests[0].files and manifest_metadata.provenance.verification; git diff --name-status 1354e0bfa4847c1a71b9eea7374847a786d81c1b fb05748ace65bea780e0766b14b0904fbaac5f7f"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "normalize-discovered-error-types-by-catchability",
+            "title": "Keep only catchable types in a dynamic error registry",
+            "description": "Reconcile name-based provider error discovery and explicit metadata so the tuple supplied to language-level exception handlers contains only BaseException subclasses. The discovery guard and removal of the known invalid configured member form one operation because either change alone leaves a failure mode: filtering discovery alone does not remove an explicitly configured ordinary class, while pruning only the known class leaves future suffix-matching ordinary classes misclassified.",
+            "evidence_ids": [
+              "ev-commit-cause",
+              "ev-before-registry",
+              "ev-before-discovery",
+              "ev-diff-filter",
+              "ev-diff-prune",
+              "ev-after-registry",
+              "ev-call-coder",
+              "ev-call-model",
+              "ev-test-runtime-catch"
+            ],
+            "semantic_action": {
+              "intent": "Prevent provider request handlers from failing with a catch-clause TypeError caused by ordinary classes being included in a dynamically assembled exception tuple.",
+              "module_role": "provider exception classification and retry-metadata registry",
+              "operation": "normalize",
+              "pre_state": "Provider exports are classified by an error-like name alone, and at least one configured registry member is an ordinary class that cannot legally participate in an except tuple.",
+              "post_state": "Discovered error-like exports must inherit from BaseException, and known ordinary classes are absent from the configured registry, so the produced handler tuple contains the intended catchable provider error types.",
+              "validation": "Construct the registry, assert every emitted tuple member is a class derived from BaseException and the known ordinary error-like export is absent, then raise a later-listed provider exception through a real consumer's except tuple and verify metadata-driven handling occurs without TypeError. The checkout contains construction/tuple tests and a RateLimitError retry-path test, but no new explicit all-members-catchable assertion.",
+              "parameters": [
+                "provider_module: runtime module whose exports are inspected",
+                "name_predicate: convention identifying candidate error exports",
+                "exception_base: BaseException or the language/runtime catchability root",
+                "configured_error_metadata: explicit error-type policy entries",
+                "known_non_exception_export: litellm.ErrorEventError",
+                "consumer_catch_tuple: LiteLLMExceptions.exceptions_tuple()"
+              ],
+              "evidence_ids": [
+                "ev-before-registry",
+                "ev-before-discovery",
+                "ev-diff-filter",
+                "ev-diff-prune",
+                "ev-after-registry",
+                "ev-call-coder",
+                "ev-call-model",
+                "ev-test-registry",
+                "ev-test-runtime-catch"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "repair-dynamic-provider-exception-registry",
+            "title": "Repair a provider exception registry that admits non-catchable classes",
+            "description": "Use when a provider adapter builds an exception-handling tuple from exported names and runtime handling fails because an error-like export is not an actual exception type. Establish catchability as the registry invariant, reconcile both discovery and explicit metadata, and validate through registry-level and real catch-path oracles.",
+            "atomic_names": [
+              "normalize-discovered-error-types-by-catchability"
+            ],
+            "evidence_ids": [
+              "ev-commit-cause",
+              "ev-before-registry",
+              "ev-before-discovery",
+              "ev-diff-filter",
+              "ev-diff-prune",
+              "ev-call-coder",
+              "ev-call-model",
+              "ev-test-registry",
+              "ev-test-runtime-catch",
+              "ev-no-test-change"
+            ],
+            "workflow_graph": {
+              "goal": "Ensure a dynamically assembled provider exception registry can be safely used by retry and reporting handlers without changing their existing error-specific policies.",
+              "when_to_use": [
+                "A runtime error reports that a class in an except clause does not inherit from the language's exception base.",
+                "A provider module exposes ordinary classes whose names satisfy the adapter's error-name convention.",
+                "An adapter constructs a catch tuple by combining provider-module discovery with an explicit metadata registry."
+              ],
+              "anti_goals": [
+                "Do not classify an export as an exception solely because its name ends with an error-like suffix.",
+                "Do not add retry metadata for an ordinary provider payload or event class merely to satisfy a discovery-list consistency check.",
+                "Do not change retry decisions, user-facing descriptions, or handling semantics for valid provider exceptions unless separate evidence requires it.",
+                "Do not normalize provider error message or payload contents; this episode concerns exception-type classification and catchability."
+              ],
+              "not_applicable_when": [
+                "The provider adapter receives only serialized error payloads and never constructs a language-level exception tuple.",
+                "All candidate registry values are already statically guaranteed to inherit from the runtime exception base.",
+                "The failure is caused by malformed provider payload fields rather than a non-catchable class in an exception registry."
+              ],
+              "inputs": [
+                "The provider module or namespace inspected at runtime",
+                "The current explicit exception metadata registry",
+                "The runtime exception base class and catch semantics",
+                "Call sites that consume the generated exception tuple",
+                "Registry and request-path tests capable of exercising exception handling"
+              ],
+              "entry_state": "An error-like naming convention and explicit registry can admit an ordinary class, and downstream request handlers consume the resulting classes directly in except clauses.",
+              "exit_state": "Discovery admits only catchable exception subclasses, explicitly configured non-exception entries are removed, valid exception metadata remains intact, and representative consumers can catch and process a provider exception without a catch-clause TypeError.",
+              "steps": [
+                {
+                  "action_name": "normalize-discovered-error-types-by-catchability",
+                  "role": "repair",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "Apply when inspection establishes that name-based discovery or explicit metadata includes a type that is not derived from the runtime exception base.",
+                  "validation": "Verify the registry's emitted tuple contains only BaseException subclasses and excludes the identified ordinary class; then exercise a consumer with a representative provider exception whose handling consults retry metadata."
+                }
+              ],
+              "edges": [],
+              "validation_ladder": [
+                "Static diff check: confirm discovery combines the naming convention with a catchability/subclass predicate and the known invalid explicit entry is absent.",
+                "Registry check: instantiate the adapter and assert the emitted exception tuple is nonempty and every member is a BaseException subclass.",
+                "Focused regression check: assert the identified ordinary error-like export is not present in the emitted tuple.",
+                "Consumer check: raise a representative provider exception through a retry or reporting call site and verify normal metadata-driven handling occurs without TypeError.",
+                "Project check: run the focused exception and send-chat test modules in the pinned dependency environment."
+              ],
+              "stop_conditions": [
+                "Stop and defer if the allegedly invalid provider export cannot be inspected or its inheritance relationship cannot be established.",
+                "Stop if consumers do not use the registry in language-level exception handling; this workflow would address the wrong boundary.",
+                "Do not claim complete validation if only registry construction is tested and no catch path or all-members-catchable assertion is available.",
+                "Stop and investigate separately if subclass inspection itself encounters non-class exports matching the name convention, because the pinned implementation assumes such matching exports are classes."
+              ],
+              "unresolved_or_deferred": [
+                "No test was added by PR #4748 that directly asserts every tuple member inherits from BaseException or that ErrorEventError is absent.",
+                "The supplied bundle contains no CI/status-check results, and tests were not executed during this extraction because the checkout environment lacks the pinned runtime dependency.",
+                "The implementation calls issubclass directly after name matching; behavior for a matching non-class export is not covered by the change or tests.",
+                "The supplied routing label mentions provider error payload normalization, but the checkout evidence supports the narrower reusable capability of provider exception-type normalization and catchability enforcement."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Were the existing exception and send-chat tests executed successfully for PR #4748? Status-check metadata is unavailable in the supplied bundle.",
+          "Does the supported provider namespace guarantee that every export ending in \"Error\" is a class? If not, an `isinstance(candidate, type)` guard may be needed before issubclass, but this episode contains no evidence of such a failure.",
+          "A direct regression assertion for exclusion of ordinary error-like classes is absent, so validation strength is limited to the implementation diff, existing registry tests, and an existing consumer catch-path test."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "normalize-discovered-error-types-by-catchability",
+          "title": "Keep only catchable types in a dynamic error registry",
+          "description": "Reconcile name-based provider error discovery and explicit metadata so the tuple supplied to language-level exception handlers contains only BaseException subclasses. The discovery guard and removal of the known invalid configured member form one operation because either change alone leaves a failure mode: filtering discovery alone does not remove an explicitly configured ordinary class, while pruning only the known class leaves future suffix-matching ordinary classes misclassified.",
+          "evidence_ids": [
+            "ev-commit-cause",
+            "ev-before-registry",
+            "ev-before-discovery",
+            "ev-diff-filter",
+            "ev-diff-prune",
+            "ev-after-registry",
+            "ev-call-coder",
+            "ev-call-model",
+            "ev-test-runtime-catch"
+          ],
+          "semantic_action": {
+            "intent": "Prevent provider request handlers from failing with a catch-clause TypeError caused by ordinary classes being included in a dynamically assembled exception tuple.",
+            "module_role": "provider exception classification and retry-metadata registry",
+            "operation": "normalize",
+            "pre_state": "Provider exports are classified by an error-like name alone, and at least one configured registry member is an ordinary class that cannot legally participate in an except tuple.",
+            "post_state": "Discovered error-like exports must inherit from BaseException, and known ordinary classes are absent from the configured registry, so the produced handler tuple contains the intended catchable provider error types.",
+            "validation": "Construct the registry, assert every emitted tuple member is a class derived from BaseException and the known ordinary error-like export is absent, then raise a later-listed provider exception through a real consumer's except tuple and verify metadata-driven handling occurs without TypeError. The checkout contains construction/tuple tests and a RateLimitError retry-path test, but no new explicit all-members-catchable assertion.",
+            "parameters": [
+              "provider_module: runtime module whose exports are inspected",
+              "name_predicate: convention identifying candidate error exports",
+              "exception_base: BaseException or the language/runtime catchability root",
+              "configured_error_metadata: explicit error-type policy entries",
+              "known_non_exception_export: litellm.ErrorEventError",
+              "consumer_catch_tuple: LiteLLMExceptions.exceptions_tuple()"
+            ],
+            "evidence_ids": [
+              "ev-before-registry",
+              "ev-before-discovery",
+              "ev-diff-filter",
+              "ev-diff-prune",
+              "ev-after-registry",
+              "ev-call-coder",
+              "ev-call-model",
+              "ev-test-registry",
+              "ev-test-runtime-catch"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "repair-dynamic-provider-exception-registry",
+          "title": "Repair a provider exception registry that admits non-catchable classes",
+          "description": "Use when a provider adapter builds an exception-handling tuple from exported names and runtime handling fails because an error-like export is not an actual exception type. Establish catchability as the registry invariant, reconcile both discovery and explicit metadata, and validate through registry-level and real catch-path oracles.",
+          "atomic_names": [
+            "normalize-discovered-error-types-by-catchability"
+          ],
+          "evidence_ids": [
+            "ev-commit-cause",
+            "ev-before-registry",
+            "ev-before-discovery",
+            "ev-diff-filter",
+            "ev-diff-prune",
+            "ev-call-coder",
+            "ev-call-model",
+            "ev-test-registry",
+            "ev-test-runtime-catch",
+            "ev-no-test-change"
+          ],
+          "workflow_graph": {
+            "goal": "Ensure a dynamically assembled provider exception registry can be safely used by retry and reporting handlers without changing their existing error-specific policies.",
+            "when_to_use": [
+              "A runtime error reports that a class in an except clause does not inherit from the language's exception base.",
+              "A provider module exposes ordinary classes whose names satisfy the adapter's error-name convention.",
+              "An adapter constructs a catch tuple by combining provider-module discovery with an explicit metadata registry."
+            ],
+            "anti_goals": [
+              "Do not classify an export as an exception solely because its name ends with an error-like suffix.",
+              "Do not add retry metadata for an ordinary provider payload or event class merely to satisfy a discovery-list consistency check.",
+              "Do not change retry decisions, user-facing descriptions, or handling semantics for valid provider exceptions unless separate evidence requires it.",
+              "Do not normalize provider error message or payload contents; this episode concerns exception-type classification and catchability."
+            ],
+            "not_applicable_when": [
+              "The provider adapter receives only serialized error payloads and never constructs a language-level exception tuple.",
+              "All candidate registry values are already statically guaranteed to inherit from the runtime exception base.",
+              "The failure is caused by malformed provider payload fields rather than a non-catchable class in an exception registry."
+            ],
+            "inputs": [
+              "The provider module or namespace inspected at runtime",
+              "The current explicit exception metadata registry",
+              "The runtime exception base class and catch semantics",
+              "Call sites that consume the generated exception tuple",
+              "Registry and request-path tests capable of exercising exception handling"
+            ],
+            "entry_state": "An error-like naming convention and explicit registry can admit an ordinary class, and downstream request handlers consume the resulting classes directly in except clauses.",
+            "exit_state": "Discovery admits only catchable exception subclasses, explicitly configured non-exception entries are removed, valid exception metadata remains intact, and representative consumers can catch and process a provider exception without a catch-clause TypeError.",
+            "steps": [
+              {
+                "action_name": "normalize-discovered-error-types-by-catchability",
+                "role": "repair",
+                "required": true,
+                "depends_on": [],
+                "condition": "Apply when inspection establishes that name-based discovery or explicit metadata includes a type that is not derived from the runtime exception base.",
+                "validation": "Verify the registry's emitted tuple contains only BaseException subclasses and excludes the identified ordinary class; then exercise a consumer with a representative provider exception whose handling consults retry metadata."
+              }
+            ],
+            "edges": [],
+            "validation_ladder": [
+              "Static diff check: confirm discovery combines the naming convention with a catchability/subclass predicate and the known invalid explicit entry is absent.",
+              "Registry check: instantiate the adapter and assert the emitted exception tuple is nonempty and every member is a BaseException subclass.",
+              "Focused regression check: assert the identified ordinary error-like export is not present in the emitted tuple.",
+              "Consumer check: raise a representative provider exception through a retry or reporting call site and verify normal metadata-driven handling occurs without TypeError.",
+              "Project check: run the focused exception and send-chat test modules in the pinned dependency environment."
+            ],
+            "stop_conditions": [
+              "Stop and defer if the allegedly invalid provider export cannot be inspected or its inheritance relationship cannot be established.",
+              "Stop if consumers do not use the registry in language-level exception handling; this workflow would address the wrong boundary.",
+              "Do not claim complete validation if only registry construction is tested and no catch path or all-members-catchable assertion is available.",
+              "Stop and investigate separately if subclass inspection itself encounters non-class exports matching the name convention, because the pinned implementation assumes such matching exports are classes."
+            ],
+            "unresolved_or_deferred": [
+              "No test was added by PR #4748 that directly asserts every tuple member inherits from BaseException or that ErrorEventError is absent.",
+              "The supplied bundle contains no CI/status-check results, and tests were not executed during this extraction because the checkout environment lacks the pinned runtime dependency.",
+              "The implementation calls issubclass directly after name matching; behavior for a matching non-class export is not covered by the change or tests.",
+              "The supplied routing label mentions provider error payload normalization, but the checkout evidence supports the narrower reusable capability of provider exception-type normalization and catchability enforcement."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Were the existing exception and send-chat tests executed successfully for PR #4748? Status-check metadata is unavailable in the supplied bundle.",
+        "Does the supported provider namespace guarantee that every export ending in \"Error\" is a class? If not, an `isinstance(candidate, type)` guard may be needed before issubclass, but this episode contains no evidence of such a failure.",
+        "A direct regression assertion for exclusion of ordinary error-like classes is absent, so validation strength is limited to the implementation diff, existing registry tests, and an existing consumer catch-path test."
+      ]
+    },
+    "call_sites": [
+      "The main coding request paths instantiate LiteLLMExceptions and use exceptions_tuple directly in except clauses before consulting get_ex_info for retry, context-window, and reporting behavior.",
+      "The simple model request retry loop also catches exceptions using the generated tuple and then uses its metadata to decide whether to retry."
+    ],
+    "tests": [
+      "Existing tests instantiate LiteLLMExceptions, require the registry to be nonempty, and require exceptions_tuple to return a nonempty tuple.",
+      "An existing send-chat test makes the completion dependency raise RateLimitError and exercises simple_send_with_retries, whose implementation catches through LiteLLMExceptions.exceptions_tuple; this path is capable of exposing an invalid class encountered in the catch tuple."
+    ]
+  },
+  {
+    "episode_id": "earendil-works__pi__7205__4523528b",
+    "title": "Reject runtime wrapper instances as provider error bodies",
+    "before": "At parent commit 66cd061ab468aeae9fd2e38715d3931f7f77f569, provider error normalization treated every non-null object with enumerable keys as a usable body. Node-style streams with a pipe method were excluded, but class instances and wrapper objects without pipe were JSON-serialized. Downstream formatting could then select serialized implementation internals instead of the diagnostic Error.message.",
+    "after": "At commit 4523528b21c66084fdece7ed3ffa10888bc5ac60, object-valued body candidates are accepted only when non-empty and their prototype is Object.prototype or null. Class instances and response wrappers are rejected, leaving body undefined so downstream formatting preserves Error.message; strings and plain parsed JSON objects remain supported.",
+    "diff": "The change replaced isNonEmptyObject with isPlainNonEmptyObject for both the nested error field and response-body field. The new predicate checks value type, null, prototype identity, and enumerable-key count. Three regression tests cover rejection of a response-body class instance, rejection of a nested-error class instance, and continued serialization of a plain parsed JSON object. No provider call sites or formatter branches were changed.",
+    "repository": "earendil-works/pi",
+    "revision": "github-issue-7205",
+    "evidence_ids": [
+      "ev-commit-1",
+      "ev-before-1",
+      "ev-diff-1",
+      "ev-implementation-1",
+      "ev-callsite-1",
+      "ev-callsite-2",
+      "ev-callsite-3",
+      "ev-test-1",
+      "ev-test-2",
+      "ev-test-3",
+      "ev-validation-1"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "earendil-works/pi",
+      "issue": 7205,
+      "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+      "manifest_metadata": {
+        "category": "provider-error-payload-normalization",
+        "role": "train_candidate",
+        "case_id": "earendil-works__pi__7205__provider-error-payload-normalization",
+        "sample_kind": "verified_implementation_pull_request",
+        "seed_issue": null,
+        "seed_issue_url": null,
+        "seed_relation": null,
+        "resolution_url": "https://github.com/earendil-works/pi/pull/7205",
+        "provenance": {
+          "classification": "direct_implementation_artifact",
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 7205,
+            "url": "https://github.com/earendil-works/pi/pull/7205"
+          },
+          "commit": {
+            "sha": "4523528b21c66084fdece7ed3ffa10888bc5ac60",
+            "subject": "fix(ai): treat only plain objects as provider error bodies (#7205)",
+            "parents": [
+              "66cd061ab468aeae9fd2e38715d3931f7f77f569"
+            ],
+            "body_excerpt": "pickBodyText serialized any non-empty object into the error body. SDK error\nfields can hold class instances instead of parsed bodies - AWS SDK v3's\n$response.body is an HTTP stream/response wrapper - and stringifying one\nproduced garbage like {\"_events\":...} as the body, which then replaced\nerror.message in the composed display string. error.message is where the SDK\nputs the real deserialized exception text (\"Input is too long...\", schema\nvalidation details), so the one useful string was discarded for noise.\n\nThe existing pipe-based stream sniffing only covers node-style streams; web\nReadableStreams (pipeTo/pipeThrough, no pipe) and non-stream wrapper classes\nslipped through. Require Object.prototype/null prototype before serializing\na candidate body - parsed JSON bodies are plain objects by construction, so\nreal gateway bodies still surface."
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "first_parent_and_changed_files_recorded",
+            "implementation_change_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "earendil-works/pi",
+        "issue_number": 7205,
+        "issue": {
+          "number": 7205,
+          "title": "fix(ai): treat only plain objects as provider error bodies (#7205)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 7205,
+              "title": "fix(ai): treat only plain objects as provider error bodies (#7205)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tpackages/ai/src/utils/error-body.ts"
+              },
+              {
+                "status_line": "M\tpackages/ai/test/error-body.test.ts"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "4523528b21c66084fdece7ed3ffa10888bc5ac60",
+                "subject": "fix(ai): treat only plain objects as provider error bodies (#7205)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+        "pinned_ref": "4523528b21c66084fdece7ed3ffa10888bc5ac60",
+        "resolved_commit": "4523528b21c66084fdece7ed3ffa10888bc5ac60",
+        "parent_commit": "66cd061ab468aeae9fd2e38715d3931f7f77f569",
+        "commit_show_stat": "commit 4523528b21c66084fdece7ed3ffa10888bc5ac60\nAuthor:     Erik Ogenvik <erik@ogenvik.org>\nAuthorDate: Fri Jul 31 09:38:54 2026 +0200\nCommit:     GitHub <noreply@github.com>\nCommitDate: Fri Jul 31 09:38:54 2026 +0200\n\n    fix(ai): treat only plain objects as provider error bodies (#7205)\n    \n    pickBodyText serialized any non-empty object into the error body. SDK error\n    fields can hold class instances instead of parsed bodies - AWS SDK v3's\n    $response.body is an HTTP stream/response wrapper - and stringifying one\n    produced garbage like {\"_events\":...} as the body, which then replaced\n    error.message in the composed display string. error.message is where the SDK\n    puts the real deserialized exception text (\"Input is too long...\", schema\n    validation details), so the one useful string was discarded for noise.\n    \n    The existing pipe-based stream sniffing only covers node-style streams; web\n    ReadableStreams (pipeTo/pipeThrough, no pipe) and non-stream wrapper classes\n    slipped through. Require Object.prototype/null prototype before serializing\n    a candidate body - parsed JSON bodies are plain objects by construction, so\n    real gateway bodies still surface.\n\n packages/ai/src/utils/error-body.ts | 25 +++++++++++++++---\n packages/ai/test/error-body.test.ts | 51 +++++++++++++++++++++++++++++++++++++\n 2 files changed, 72 insertions(+), 4 deletions(-)\n",
+        "changed_files_name_status": "M\tpackages/ai/src/utils/error-body.ts\nM\tpackages/ai/test/error-body.test.ts\n",
+        "linked_issue_numbers": [
+          7205
+        ],
+        "manifest_metadata": {
+          "category": "provider-error-payload-normalization",
+          "theme": "preserve and normalize provider error payloads",
+          "file_sample": [
+            "packages/ai/src/utils/error-body.ts",
+            "packages/ai/test/error-body.test.ts"
+          ],
+          "quality": "implementation_plus_test",
+          "case_id": "earendil-works__pi__7205__provider-error-payload-normalization",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_implementation_pull_request",
+          "resolution_url": "https://github.com/earendil-works/pi/pull/7205",
+          "source": "agent_core_thirteen_category_extraction_v2",
+          "provenance": {
+            "classification": "direct_implementation_artifact",
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 7205,
+              "url": "https://github.com/earendil-works/pi/pull/7205"
+            },
+            "commit": {
+              "sha": "4523528b21c66084fdece7ed3ffa10888bc5ac60",
+              "subject": "fix(ai): treat only plain objects as provider error bodies (#7205)",
+              "parents": [
+                "66cd061ab468aeae9fd2e38715d3931f7f77f569"
+              ],
+              "body_excerpt": "pickBodyText serialized any non-empty object into the error body. SDK error\nfields can hold class instances instead of parsed bodies - AWS SDK v3's\n$response.body is an HTTP stream/response wrapper - and stringifying one\nproduced garbage like {\"_events\":...} as the body, which then replaced\nerror.message in the composed display string. error.message is where the SDK\nputs the real deserialized exception text (\"Input is too long...\", schema\nvalidation details), so the one useful string was discarded for noise.\n\nThe existing pipe-based stream sniffing only covers node-style streams; web\nReadableStreams (pipeTo/pipeThrough, no pipe) and non-stream wrapper classes\nslipped through. Require Object.prototype/null prototype before serializing\na candidate body - parsed JSON bodies are plain objects by construction, so\nreal gateway bodies still surface."
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "first_parent_and_changed_files_recorded",
+              "implementation_change_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T10:53:17.215675+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "earendil-works__pi__7205__4523528b",
+          "title": "Reject runtime wrapper instances as provider error bodies",
+          "before": "At parent commit 66cd061ab468aeae9fd2e38715d3931f7f77f569, provider error normalization treated every non-null object with enumerable keys as a usable body. Node-style streams with a pipe method were excluded, but class instances and wrapper objects without pipe were JSON-serialized. Downstream formatting could then select serialized implementation internals instead of the diagnostic Error.message.",
+          "after": "At commit 4523528b21c66084fdece7ed3ffa10888bc5ac60, object-valued body candidates are accepted only when non-empty and their prototype is Object.prototype or null. Class instances and response wrappers are rejected, leaving body undefined so downstream formatting preserves Error.message; strings and plain parsed JSON objects remain supported.",
+          "diff": "The change replaced isNonEmptyObject with isPlainNonEmptyObject for both the nested error field and response-body field. The new predicate checks value type, null, prototype identity, and enumerable-key count. Three regression tests cover rejection of a response-body class instance, rejection of a nested-error class instance, and continued serialization of a plain parsed JSON object. No provider call sites or formatter branches were changed."
+        },
+        "evidence_units": [
+          {
+            "id": "ev-commit-1",
+            "kind": "commit",
+            "claim": "The pinned implementation commit is 4523528b21c66084fdece7ed3ffa10888bc5ac60, its parent is 66cd061ab468aeae9fd2e38715d3931f7f77f569, and it changes the shared error-body utility plus its unit test.",
+            "source": "git show --format=fuller --stat 4523528b21c66084fdece7ed3ffa10888bc5ac60; issue-bundle.json resolved_commit, parent_commit, and changed_files_name_status"
+          },
+          {
+            "id": "ev-before-1",
+            "kind": "implementation",
+            "claim": "The parent implementation serialized any non-null, non-empty object found in error.error or error.$response.body, except response bodies recognized by the separate pipe-method stream check.",
+            "source": "git show 66cd061ab468aeae9fd2e38715d3931f7f77f569:packages/ai/src/utils/error-body.ts, pickBodyText, isReadableStreamLike, and isNonEmptyObject"
+          },
+          {
+            "id": "ev-diff-1",
+            "kind": "diff",
+            "claim": "The pinned change replaces both generic non-empty-object checks with a plain-object predicate that accepts only Object.prototype or null prototypes and still requires at least one enumerable key.",
+            "source": "git diff 66cd061ab468aeae9fd2e38715d3931f7f77f569 4523528b21c66084fdece7ed3ffa10888bc5ac60 -- packages/ai/src/utils/error-body.ts"
+          },
+          {
+            "id": "ev-implementation-1",
+            "kind": "implementation",
+            "claim": "After the change, string bodies remain directly usable, pipe-like response streams remain excluded, class-instance object bodies are rejected, and non-empty plain objects remain JSON-serialized.",
+            "source": "git show 4523528b21c66084fdece7ed3ffa10888bc5ac60:packages/ai/src/utils/error-body.ts lines 84-116"
+          },
+          {
+            "id": "ev-callsite-1",
+            "kind": "call_site",
+            "claim": "The normalized result controls displayed provider failures: the shared formatter uses Error.message whenever no accepted body exists, while otherwise it may format status and body.",
+            "source": "git show 4523528b21c66084fdece7ed3ffa10888bc5ac60:packages/ai/src/utils/error-body.ts lines 38-53 and 119-135"
+          },
+          {
+            "id": "ev-callsite-2",
+            "kind": "call_site",
+            "claim": "The Bedrock error adapter explicitly chooses normalized status and body only when messageCarriesBody is false and both values exist; otherwise it uses the normalized message.",
+            "source": "git show 4523528b21c66084fdece7ed3ffa10888bc5ac60:packages/ai/src/api/bedrock-converse-stream.ts lines 350-373"
+          },
+          {
+            "id": "ev-callsite-3",
+            "kind": "call_site",
+            "claim": "At the pinned ref, the shared normalizer or formatter is used by Bedrock, OpenAI-compatible, Azure OpenAI, Google, and image-provider error paths, so the classification boundary is shared across multiple adapters.",
+            "source": "git grep -n -E 'normalizeProviderError|formatProviderError' 4523528b21c66084fdece7ed3ffa10888bc5ac60 -- packages/ai/src"
+          },
+          {
+            "id": "ev-test-1",
+            "kind": "test",
+            "claim": "A regression test supplies a response-body class instance without a pipe method and asserts that no body is extracted, the useful 'Input is too long' message remains, and messageCarriesBody is true.",
+            "source": "git show 4523528b21c66084fdece7ed3ffa10888bc5ac60:packages/ai/test/error-body.test.ts lines 88-108"
+          },
+          {
+            "id": "ev-test-2",
+            "kind": "test",
+            "claim": "A regression test supplies a class instance in the nested error field and asserts that it is not serialized and that 'TLS handshake failed' remains the normalized message.",
+            "source": "git show 4523528b21c66084fdece7ed3ffa10888bc5ac60:packages/ai/test/error-body.test.ts lines 110-125"
+          },
+          {
+            "id": "ev-test-3",
+            "kind": "test",
+            "claim": "A compatibility test supplies a non-empty plain parsed JSON body and asserts that it is still serialized and marked as separate from the opaque SDK message.",
+            "source": "git show 4523528b21c66084fdece7ed3ffa10888bc5ac60:packages/ai/test/error-body.test.ts lines 127-137"
+          },
+          {
+            "id": "ev-validation-1",
+            "kind": "validation",
+            "claim": "The added assertions jointly define the validation oracle: reject non-plain runtime objects from both supported object-valued slots while continuing to surface legitimate plain structured payloads.",
+            "source": "git diff 66cd061ab468aeae9fd2e38715d3931f7f77f569 4523528b21c66084fdece7ed3ffa10888bc5ac60 -- packages/ai/test/error-body.test.ts"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "admit-only-plain-structured-error-bodies",
+            "title": "Accept only plain structured objects as error bodies",
+            "description": "Guard object-valued provider error fields by prototype and content before serialization. Preserve string bodies and non-empty plain parsed payloads, but treat class instances, response wrappers, streams, nulls, and empty objects as absent bodies so diagnostic messages are not displaced by serialized internals.",
+            "evidence_ids": [
+              "ev-before-1",
+              "ev-diff-1",
+              "ev-implementation-1",
+              "ev-callsite-1",
+              "ev-callsite-2",
+              "ev-test-1",
+              "ev-test-2",
+              "ev-test-3",
+              "ev-validation-1"
+            ],
+            "semantic_action": {
+              "intent": "Prevent runtime transport or SDK wrapper state from replacing a useful provider diagnostic while retaining legitimate structured error payloads.",
+              "module_role": "Shared provider-error payload classifier and normalizer",
+              "operation": "guard",
+              "pre_state": "An error has an object-valued candidate in a supported body slot, and the existing normalizer would serialize any non-empty object unless it exposed a node-style pipe method.",
+              "post_state": "Only non-empty objects with Object.prototype or null prototype are serialized as structured bodies; rejected runtime objects yield no body, causing downstream formatting to retain the diagnostic message.",
+              "validation": "Exercise both object-valued body slots with class instances and assert body is undefined and the original message survives; exercise a non-empty plain object and assert its serialized payload still becomes the normalized body.",
+              "parameters": [
+                "thrown error value",
+                "candidate body slot: nested error field or response body field",
+                "candidate runtime value",
+                "candidate prototype",
+                "enumerable body fields",
+                "fallback diagnostic message"
+              ],
+              "evidence_ids": [
+                "ev-before-1",
+                "ev-diff-1",
+                "ev-implementation-1",
+                "ev-callsite-1",
+                "ev-callsite-2",
+                "ev-test-1",
+                "ev-test-2",
+                "ev-test-3",
+                "ev-validation-1"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "normalize-ambiguous-provider-error-object-payloads",
+            "title": "Normalize ambiguous object-valued provider error payloads without losing diagnostics",
+            "description": "Tighten a shared error-normalization boundary when SDK fields may contain either parsed payloads or runtime wrapper instances. Establish the accepted structured-body shape, apply it consistently to every object-valued candidate slot, and validate both rejection and compatibility behavior.",
+            "atomic_names": [
+              "admit-only-plain-structured-error-bodies"
+            ],
+            "evidence_ids": [
+              "ev-commit-1",
+              "ev-before-1",
+              "ev-diff-1",
+              "ev-implementation-1",
+              "ev-callsite-1",
+              "ev-callsite-2",
+              "ev-callsite-3",
+              "ev-test-1",
+              "ev-test-2",
+              "ev-test-3",
+              "ev-validation-1"
+            ],
+            "workflow_graph": {
+              "goal": "Ensure displayed provider failures use genuine structured payloads when available and otherwise preserve the useful diagnostic message instead of serialized SDK or transport internals.",
+              "when_to_use": [
+                "A provider or transport SDK stores heterogeneous values in fields treated as error bodies.",
+                "Displayed errors contain serialized wrapper internals or stream state instead of the exception message.",
+                "Existing filtering recognizes only a specific runtime capability, such as a pipe method, and misses other class-based wrappers."
+              ],
+              "anti_goals": [
+                "Do not remove support for string error bodies.",
+                "Do not suppress non-empty plain parsed JSON payloads merely because they are object-valued.",
+                "Do not redesign provider-specific call sites or error-message prefixes when the defect is in the shared payload-admission boundary.",
+                "Do not infer body legitimacy from serializability or enumerable keys alone."
+              ],
+              "not_applicable_when": [
+                "The candidate payload is already governed by a reliable typed or schema-validated body contract.",
+                "The error corruption occurs after normalization and is unrelated to selecting an object-valued body.",
+                "The runtime value must intentionally support custom-prototype records as documented payloads; this exact plain-object rule would require a different compatibility contract."
+              ],
+              "inputs": [
+                "Representative failing error containing a runtime wrapper or class instance",
+                "The object-valued fields probed as possible bodies",
+                "The fallback diagnostic message that must survive rejection",
+                "Representative legitimate string and plain structured bodies",
+                "Downstream formatter behavior when normalized body is absent or present"
+              ],
+              "entry_state": "The normalizer accepts non-empty arbitrary objects as bodies, allowing serializable wrapper state to supersede the diagnostic message.",
+              "exit_state": "All supported object-valued body slots share a plain-object admission rule; wrapper instances are absent bodies, diagnostic messages survive, and legitimate plain structured payloads remain visible.",
+              "steps": [
+                {
+                  "action_name": "admit-only-plain-structured-error-bodies",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "Apply when a body slot can contain either parsed structured data or SDK/transport runtime objects.",
+                  "validation": "Regression assertions reject class instances in each supported object-valued slot and retain their messages, while a plain parsed object remains serializable as the body."
+                }
+              ],
+              "edges": [],
+              "validation_ladder": [
+                "Unit-check a class-instance response body without a node-style pipe method: body must be absent and the diagnostic message must survive.",
+                "Unit-check a class instance in the alternate nested error slot: body must be absent and the diagnostic message must remain exact.",
+                "Compatibility-check a non-empty plain parsed object: it must still serialize into the normalized body.",
+                "Confirm downstream formatting selects the message when no body is admitted and selects status/body only for an admitted separate body.",
+                "Inspect all shared-normalizer call sites to verify the central guard covers affected adapters without provider-specific duplication."
+              ],
+              "stop_conditions": [
+                "Stop if the failing value is a documented custom-prototype payload that must be surfaced; define a different admissibility contract before changing behavior.",
+                "Stop if no downstream path prefers the normalized body over the message, because the observed symptom then has another cause.",
+                "Stop if representative legitimate structured payloads cannot be distinguished from runtime wrappers with an evidence-backed invariant."
+              ],
+              "unresolved_or_deferred": [
+                "The available GitHub bundle contains no PR discussion, review, or status-check results.",
+                "No test execution result for the pinned commit is available in the supplied evidence; validation is grounded in the committed regression assertions.",
+                "Whether cross-realm plain objects should be accepted is not addressed by the implementation or tests."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "The pinned implementation defines plain objects by same-realm prototype identity; evidence does not establish expected behavior for cross-realm objects or documented custom-prototype payload records.",
+          "The issue bundle lacks the original issue body, PR body, comments, reviews, and status checks, so the repository diff, call sites, commit message, and committed tests are the available behavioral evidence."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "admit-only-plain-structured-error-bodies",
+          "title": "Accept only plain structured objects as error bodies",
+          "description": "Guard object-valued provider error fields by prototype and content before serialization. Preserve string bodies and non-empty plain parsed payloads, but treat class instances, response wrappers, streams, nulls, and empty objects as absent bodies so diagnostic messages are not displaced by serialized internals.",
+          "evidence_ids": [
+            "ev-before-1",
+            "ev-diff-1",
+            "ev-implementation-1",
+            "ev-callsite-1",
+            "ev-callsite-2",
+            "ev-test-1",
+            "ev-test-2",
+            "ev-test-3",
+            "ev-validation-1"
+          ],
+          "semantic_action": {
+            "intent": "Prevent runtime transport or SDK wrapper state from replacing a useful provider diagnostic while retaining legitimate structured error payloads.",
+            "module_role": "Shared provider-error payload classifier and normalizer",
+            "operation": "guard",
+            "pre_state": "An error has an object-valued candidate in a supported body slot, and the existing normalizer would serialize any non-empty object unless it exposed a node-style pipe method.",
+            "post_state": "Only non-empty objects with Object.prototype or null prototype are serialized as structured bodies; rejected runtime objects yield no body, causing downstream formatting to retain the diagnostic message.",
+            "validation": "Exercise both object-valued body slots with class instances and assert body is undefined and the original message survives; exercise a non-empty plain object and assert its serialized payload still becomes the normalized body.",
+            "parameters": [
+              "thrown error value",
+              "candidate body slot: nested error field or response body field",
+              "candidate runtime value",
+              "candidate prototype",
+              "enumerable body fields",
+              "fallback diagnostic message"
+            ],
+            "evidence_ids": [
+              "ev-before-1",
+              "ev-diff-1",
+              "ev-implementation-1",
+              "ev-callsite-1",
+              "ev-callsite-2",
+              "ev-test-1",
+              "ev-test-2",
+              "ev-test-3",
+              "ev-validation-1"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "normalize-ambiguous-provider-error-object-payloads",
+          "title": "Normalize ambiguous object-valued provider error payloads without losing diagnostics",
+          "description": "Tighten a shared error-normalization boundary when SDK fields may contain either parsed payloads or runtime wrapper instances. Establish the accepted structured-body shape, apply it consistently to every object-valued candidate slot, and validate both rejection and compatibility behavior.",
+          "atomic_names": [
+            "admit-only-plain-structured-error-bodies"
+          ],
+          "evidence_ids": [
+            "ev-commit-1",
+            "ev-before-1",
+            "ev-diff-1",
+            "ev-implementation-1",
+            "ev-callsite-1",
+            "ev-callsite-2",
+            "ev-callsite-3",
+            "ev-test-1",
+            "ev-test-2",
+            "ev-test-3",
+            "ev-validation-1"
+          ],
+          "workflow_graph": {
+            "goal": "Ensure displayed provider failures use genuine structured payloads when available and otherwise preserve the useful diagnostic message instead of serialized SDK or transport internals.",
+            "when_to_use": [
+              "A provider or transport SDK stores heterogeneous values in fields treated as error bodies.",
+              "Displayed errors contain serialized wrapper internals or stream state instead of the exception message.",
+              "Existing filtering recognizes only a specific runtime capability, such as a pipe method, and misses other class-based wrappers."
+            ],
+            "anti_goals": [
+              "Do not remove support for string error bodies.",
+              "Do not suppress non-empty plain parsed JSON payloads merely because they are object-valued.",
+              "Do not redesign provider-specific call sites or error-message prefixes when the defect is in the shared payload-admission boundary.",
+              "Do not infer body legitimacy from serializability or enumerable keys alone."
+            ],
+            "not_applicable_when": [
+              "The candidate payload is already governed by a reliable typed or schema-validated body contract.",
+              "The error corruption occurs after normalization and is unrelated to selecting an object-valued body.",
+              "The runtime value must intentionally support custom-prototype records as documented payloads; this exact plain-object rule would require a different compatibility contract."
+            ],
+            "inputs": [
+              "Representative failing error containing a runtime wrapper or class instance",
+              "The object-valued fields probed as possible bodies",
+              "The fallback diagnostic message that must survive rejection",
+              "Representative legitimate string and plain structured bodies",
+              "Downstream formatter behavior when normalized body is absent or present"
+            ],
+            "entry_state": "The normalizer accepts non-empty arbitrary objects as bodies, allowing serializable wrapper state to supersede the diagnostic message.",
+            "exit_state": "All supported object-valued body slots share a plain-object admission rule; wrapper instances are absent bodies, diagnostic messages survive, and legitimate plain structured payloads remain visible.",
+            "steps": [
+              {
+                "action_name": "admit-only-plain-structured-error-bodies",
+                "role": "implement",
+                "required": true,
+                "depends_on": [],
+                "condition": "Apply when a body slot can contain either parsed structured data or SDK/transport runtime objects.",
+                "validation": "Regression assertions reject class instances in each supported object-valued slot and retain their messages, while a plain parsed object remains serializable as the body."
+              }
+            ],
+            "edges": [],
+            "validation_ladder": [
+              "Unit-check a class-instance response body without a node-style pipe method: body must be absent and the diagnostic message must survive.",
+              "Unit-check a class instance in the alternate nested error slot: body must be absent and the diagnostic message must remain exact.",
+              "Compatibility-check a non-empty plain parsed object: it must still serialize into the normalized body.",
+              "Confirm downstream formatting selects the message when no body is admitted and selects status/body only for an admitted separate body.",
+              "Inspect all shared-normalizer call sites to verify the central guard covers affected adapters without provider-specific duplication."
+            ],
+            "stop_conditions": [
+              "Stop if the failing value is a documented custom-prototype payload that must be surfaced; define a different admissibility contract before changing behavior.",
+              "Stop if no downstream path prefers the normalized body over the message, because the observed symptom then has another cause.",
+              "Stop if representative legitimate structured payloads cannot be distinguished from runtime wrappers with an evidence-backed invariant."
+            ],
+            "unresolved_or_deferred": [
+              "The available GitHub bundle contains no PR discussion, review, or status-check results.",
+              "No test execution result for the pinned commit is available in the supplied evidence; validation is grounded in the committed regression assertions.",
+              "Whether cross-realm plain objects should be accepted is not addressed by the implementation or tests."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "The pinned implementation defines plain objects by same-realm prototype identity; evidence does not establish expected behavior for cross-realm objects or documented custom-prototype payload records.",
+        "The issue bundle lacks the original issue body, PR body, comments, reviews, and status checks, so the repository diff, call sites, commit message, and committed tests are the available behavioral evidence."
+      ]
+    },
+    "call_sites": [
+      "The normalized result controls displayed provider failures: the shared formatter uses Error.message whenever no accepted body exists, while otherwise it may format status and body.",
+      "The Bedrock error adapter explicitly chooses normalized status and body only when messageCarriesBody is false and both values exist; otherwise it uses the normalized message.",
+      "At the pinned ref, the shared normalizer or formatter is used by Bedrock, OpenAI-compatible, Azure OpenAI, Google, and image-provider error paths, so the classification boundary is shared across multiple adapters."
+    ],
+    "tests": [
+      "A regression test supplies a response-body class instance without a pipe method and asserts that no body is extracted, the useful 'Input is too long' message remains, and messageCarriesBody is true.",
+      "A regression test supplies a class instance in the nested error field and asserts that it is not serialized and that 'TLS handshake failed' remains the normalized message.",
+      "A compatibility test supplies a non-empty plain parsed JSON body and asserts that it is still serialized and marked as separate from the opaque SDK message."
+    ]
+  },
+  {
+    "episode_id": "NousResearch__hermes-agent__3096__712cebc40f",
+    "title": "Add bounded provider error details to failed API-call diagnostics",
+    "before": "At parent commit 45f57c2012b05879339d3a79433b1ca2ed94ff5a, the shared API-call exception handler printed the exception type, provider, model, endpoint, and a cleaned 150-character exception message. Although it already extracted api_error.status_code for recovery decisions, the diagnostic header did not display that status, and it never displayed api_error.body, so request-specific provider explanations could be hidden.",
+    "after": "At commit 712cebc40f2e156036e55ca313f12fda82e35bff, the shared exception handler appends a truthy status code to the failure header as `[HTTP <status>]`. For HTTP 400 only, it also reads the exception body, converts a nonempty body to text, truncates it to 300 characters, and prints it as a separate Details line. Existing retry, fallback, compression, interruption, and client-error classification behavior remains outside the changed block.",
+    "diff": "The implementation modifies only run_agent.py with seven insertions and one replacement: it derives a conditional status suffix for the existing failure header and adds a guarded HTTP-400 body-display branch after the cleaned error line. No test file changed, and `git diff --check` reports no whitespace errors.",
+    "repository": "NousResearch/hermes-agent",
+    "revision": "github-issue-3096",
+    "evidence_ids": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 3096,
+      "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+      "manifest_metadata": {
+        "category": "provider-error-payload-normalization",
+        "role": "train_candidate",
+        "case_id": "NousResearch__hermes-agent__3096__provider-error-payload-normalization",
+        "sample_kind": "verified_implementation_pull_request",
+        "seed_issue": null,
+        "seed_issue_url": null,
+        "seed_relation": null,
+        "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/3096",
+        "provenance": {
+          "classification": "direct_implementation_artifact",
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 3096,
+            "url": "https://github.com/NousResearch/hermes-agent/pull/3096"
+          },
+          "commit": {
+            "sha": "712cebc40f2e156036e55ca313f12fda82e35bff",
+            "subject": "fix(logging): show HTTP status code and 400 body in API error output (#3096)",
+            "parents": [
+              "45f57c2012b05879339d3a79433b1ca2ed94ff5a"
+            ],
+            "body_excerpt": "When an API call fails, the terminal output now includes the HTTP status\ncode in the header line and, for 400 errors, the response body from the\nprovider (truncated to 300 chars). Makes it much easier to diagnose\nissues like invalid model names or malformed requests that were\npreviously hidden behind generic error messages.\n\nSalvaged from PR #2646 by Mibayy. Fixes #2644."
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "first_parent_and_changed_files_recorded",
+            "implementation_change_present",
+            "no_test_file_change_observed"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "NousResearch/hermes-agent",
+        "issue_number": 3096,
+        "issue": {
+          "number": 3096,
+          "title": "fix(logging): show HTTP status code and 400 body in API error output (#3096)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 3096,
+              "title": "fix(logging): show HTTP status code and 400 body in API error output (#3096)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\trun_agent.py"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "712cebc40f2e156036e55ca313f12fda82e35bff",
+                "subject": "fix(logging): show HTTP status code and 400 body in API error output (#3096)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+        "pinned_ref": "712cebc40f2e156036e55ca313f12fda82e35bff",
+        "resolved_commit": "712cebc40f2e156036e55ca313f12fda82e35bff",
+        "parent_commit": "45f57c2012b05879339d3a79433b1ca2ed94ff5a",
+        "commit_show_stat": "commit 712cebc40f2e156036e55ca313f12fda82e35bff\nAuthor:     Teknium <127238744+teknium1@users.noreply.github.com>\nAuthorDate: Wed Mar 25 17:47:55 2026 -0700\nCommit:     GitHub <noreply@github.com>\nCommitDate: Wed Mar 25 17:47:55 2026 -0700\n\n    fix(logging): show HTTP status code and 400 body in API error output (#3096)\n    \n    When an API call fails, the terminal output now includes the HTTP status\n    code in the header line and, for 400 errors, the response body from the\n    provider (truncated to 300 chars). Makes it much easier to diagnose\n    issues like invalid model names or malformed requests that were\n    previously hidden behind generic error messages.\n    \n    Salvaged from PR #2646 by Mibayy. Fixes #2644.\n\n run_agent.py | 8 +++++++-\n 1 file changed, 7 insertions(+), 1 deletion(-)\n",
+        "changed_files_name_status": "M\trun_agent.py\n",
+        "linked_issue_numbers": [
+          2644,
+          2646
+        ],
+        "manifest_metadata": {
+          "category": "provider-error-payload-normalization",
+          "theme": "preserve and normalize provider error payloads",
+          "file_sample": [
+            "run_agent.py"
+          ],
+          "quality": "implementation_only",
+          "case_id": "NousResearch__hermes-agent__3096__provider-error-payload-normalization",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_implementation_pull_request",
+          "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/3096",
+          "source": "agent_core_thirteen_category_extraction_v2",
+          "provenance": {
+            "classification": "direct_implementation_artifact",
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 3096,
+              "url": "https://github.com/NousResearch/hermes-agent/pull/3096"
+            },
+            "commit": {
+              "sha": "712cebc40f2e156036e55ca313f12fda82e35bff",
+              "subject": "fix(logging): show HTTP status code and 400 body in API error output (#3096)",
+              "parents": [
+                "45f57c2012b05879339d3a79433b1ca2ed94ff5a"
+              ],
+              "body_excerpt": "When an API call fails, the terminal output now includes the HTTP status\ncode in the header line and, for 400 errors, the response body from the\nprovider (truncated to 300 chars). Makes it much easier to diagnose\nissues like invalid model names or malformed requests that were\npreviously hidden behind generic error messages.\n\nSalvaged from PR #2646 by Mibayy. Fixes #2644."
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "first_parent_and_changed_files_recorded",
+              "implementation_change_present",
+              "no_test_file_change_observed"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T10:56:13.710002+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "NousResearch__hermes-agent__3096__712cebc40f",
+          "title": "Add bounded provider error details to failed API-call diagnostics",
+          "before": "At parent commit 45f57c2012b05879339d3a79433b1ca2ed94ff5a, the shared API-call exception handler printed the exception type, provider, model, endpoint, and a cleaned 150-character exception message. Although it already extracted api_error.status_code for recovery decisions, the diagnostic header did not display that status, and it never displayed api_error.body, so request-specific provider explanations could be hidden.",
+          "after": "At commit 712cebc40f2e156036e55ca313f12fda82e35bff, the shared exception handler appends a truthy status code to the failure header as `[HTTP <status>]`. For HTTP 400 only, it also reads the exception body, converts a nonempty body to text, truncates it to 300 characters, and prints it as a separate Details line. Existing retry, fallback, compression, interruption, and client-error classification behavior remains outside the changed block.",
+          "diff": "The implementation modifies only run_agent.py with seven insertions and one replacement: it derives a conditional status suffix for the existing failure header and adds a guarded HTTP-400 body-display branch after the cleaned error line. No test file changed, and `git diff --check` reports no whitespace errors."
+        },
+        "evidence_units": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "claim": "Commit 712cebc40f2e156036e55ca313f12fda82e35bff is the implementation-bearing resolution for PR/issue 3096, has parent 45f57c2012b05879339d3a79433b1ca2ed94ff5a, and describes exposing HTTP status plus a 300-character HTTP-400 response body.",
+            "source": "issue-bundle.json fields resolved_commit, parent_commit, linked_pull_requests, and commit_show_stat; `git show --format=fuller 712cebc40f2e156036e55ca313f12fda82e35bff`"
+          },
+          {
+            "id": "E2",
+            "kind": "implementation",
+            "claim": "The shared exception handler obtains `status_code` from `api_error.status_code` before logging and uses the same value in later recovery and client-error decisions.",
+            "source": "run_agent.py at 712cebc40f, shared `except Exception as api_error` block around lines 6310-6580"
+          },
+          {
+            "id": "E3",
+            "kind": "diff",
+            "claim": "Before the change, the failure header ended at the exception type and the diagnostic block printed no provider response body.",
+            "source": "`git show 45f57c2012b05879339d3a79433b1ca2ed94ff5a:run_agent.py`, exception diagnostic block around former lines 6371-6378"
+          },
+          {
+            "id": "E4",
+            "kind": "implementation",
+            "claim": "After the change, a truthy status code is formatted as ` [HTTP {status_code}]` and appended to the API-call failure header; absent or false-valued status codes add no suffix.",
+            "source": "`git show 712cebc40f2e156036e55ca313f12fda82e35bff:run_agent.py`, lines 6371-6373"
+          },
+          {
+            "id": "E5",
+            "kind": "implementation",
+            "claim": "For status code 400, the handler reads `api_error.body`, stringifies a nonempty value, truncates it to 300 characters, and emits a Details line only when the resulting value is nonempty.",
+            "source": "`git show 712cebc40f2e156036e55ca313f12fda82e35bff:run_agent.py`, lines 6379-6384"
+          },
+          {
+            "id": "E6",
+            "kind": "call_site",
+            "claim": "Both streaming and non-streaming provider requests execute inside the try block handled by this shared exception path, through `_interruptible_streaming_api_call` and `_interruptible_api_call` respectively.",
+            "source": "`git show 712cebc40f2e156036e55ca313f12fda82e35bff:run_agent.py`, API dispatch and enclosing try/except around lines 5940-6310"
+          },
+          {
+            "id": "E7",
+            "kind": "implementation",
+            "claim": "The pre-existing cleaned Error line remains separate: `_clean_error_message` collapses whitespace, replaces HTML pages with a generic message, and truncates ordinary exception text to 150 characters, while the new Details branch supplies bounded body context specifically for HTTP 400.",
+            "source": "`git show 712cebc40f2e156036e55ca313f12fda82e35bff:run_agent.py`, `_clean_error_message` around lines 1817-1841 and exception diagnostics around lines 6378-6384"
+          },
+          {
+            "id": "E8",
+            "kind": "diff",
+            "claim": "The pinned commit changes only run_agent.py, with seven insertions and one deletion; no test file is included in the change.",
+            "source": "`git show --stat --oneline --no-renames 712cebc40f2e156036e55ca313f12fda82e35bff`; `git diff --numstat 712cebc40f^ 712cebc40f -- run_agent.py`"
+          },
+          {
+            "id": "E9",
+            "kind": "validation",
+            "claim": "The exact parent-to-pinned implementation diff passes Git whitespace validation.",
+            "source": "Successful `git diff --check 712cebc40f^ 712cebc40f` with no output"
+          },
+          {
+            "id": "E10",
+            "kind": "test",
+            "claim": "No automated test or test-file modification accompanies the diagnostic behavior change, so runtime formatting, branch selection, and truncation are not demonstrated by a committed test oracle.",
+            "source": "issue-bundle.json provenance verification entry `no_test_file_change_observed`; pinned commit changed-files list contains only `M run_agent.py`"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "annotate-failure-with-http-status",
+            "title": "Include available HTTP status in failure diagnostics",
+            "description": "Adapt an API exception's optional status metadata into the primary failure header without changing output for exceptions that lack a usable status.",
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E6"
+            ],
+            "semantic_action": {
+              "intent": "Make the transport-level failure category immediately visible when a provider request raises an exception.",
+              "module_role": "Shared provider-call failure diagnostics",
+              "operation": "adapt",
+              "pre_state": "The exception handler has caught a failed provider call and may have extracted a status code, but the primary diagnostic header reports only the exception type.",
+              "post_state": "When status metadata is truthy, the primary failure header contains the HTTP status; otherwise the header retains its prior shape.",
+              "validation": "Exercise the shared exception path once with a status-bearing exception and once without status metadata, then assert that only the former header contains the `[HTTP <status>]` suffix. The checked-in diff establishes the formatting rule, but no committed runtime test supplies this oracle.",
+              "parameters": [
+                "caught provider exception",
+                "optional HTTP status code",
+                "exception type",
+                "attempt count",
+                "maximum retries",
+                "diagnostic output sink"
+              ],
+              "evidence_ids": [
+                "E2",
+                "E3",
+                "E4",
+                "E6",
+                "E10"
+              ]
+            }
+          },
+          {
+            "name": "surface-bounded-bad-request-body",
+            "title": "Show bounded details for bad-request failures",
+            "description": "Expose a provider's nonempty HTTP-400 response body in a separate diagnostic line while bounding its displayed representation to 300 characters and leaving other statuses unchanged.",
+            "evidence_ids": [
+              "E3",
+              "E5",
+              "E6",
+              "E7"
+            ],
+            "semantic_action": {
+              "intent": "Preserve actionable provider explanations for malformed requests or invalid request parameters without emitting an unbounded payload for every failure.",
+              "module_role": "Provider error-payload diagnostic adapter",
+              "operation": "normalize",
+              "pre_state": "A provider call has raised an exception classified with status 400, and useful response-body details may exist outside the cleaned exception message.",
+              "post_state": "A nonempty HTTP-400 body is converted to text, limited to its first 300 characters, and printed as Details; missing, empty, or non-400 bodies produce no Details line.",
+              "validation": "Cover four cases: a short nonempty 400 body is printed intact, a body longer than 300 characters is truncated to 300, an empty 400 body is omitted, and a non-400 body is omitted. Source inspection establishes these branches, but the repository contains no committed automated test for them.",
+              "parameters": [
+                "caught provider exception",
+                "HTTP status code",
+                "optional provider response body",
+                "300-character display limit",
+                "diagnostic output sink"
+              ],
+              "evidence_ids": [
+                "E5",
+                "E6",
+                "E7",
+                "E10"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "enrich-provider-failure-diagnostics-with-bounded-payload-context",
+            "title": "Enrich provider failure diagnostics with bounded payload context",
+            "description": "A partial-order resolution chain for preserving transport status and selectively exposing bounded bad-request details at the shared provider-call error boundary.",
+            "atomic_names": [
+              "annotate-failure-with-http-status",
+              "surface-bounded-bad-request-body"
+            ],
+            "evidence_ids": [
+              "E1",
+              "E2",
+              "E3",
+              "E4",
+              "E5",
+              "E6",
+              "E7",
+              "E8",
+              "E9",
+              "E10"
+            ],
+            "workflow_graph": {
+              "goal": "Ensure failed provider calls expose enough structured transport and request-error context for diagnosis while keeping payload disclosure conditional and bounded.",
+              "when_to_use": [
+                "A shared provider-call boundary catches exceptions that carry HTTP status metadata not currently shown to the operator.",
+                "HTTP 400 exceptions may carry actionable response-body details that are absent from, or lost by cleaning, the ordinary exception message.",
+                "Streaming and non-streaming request paths converge on the same exception-diagnostic boundary."
+              ],
+              "anti_goals": [
+                "Do not change retry, fallback, authentication refresh, context compression, interruption, or client-error classification policy.",
+                "Do not emit response bodies for every HTTP status.",
+                "Do not print an unbounded provider payload or replace the existing cleaned summary with the raw body.",
+                "Do not treat this diagnostic presentation change as full provider-payload schema normalization."
+              ],
+              "not_applicable_when": [
+                "The failure object exposes neither status metadata nor a response body.",
+                "The relevant failure is represented as a successful response with an embedded error rather than an exception handled by the shared boundary.",
+                "Provider response bodies must not be displayed because the deployment's secrecy or redaction policy prohibits them."
+              ],
+              "inputs": [
+                "Shared provider-call exception boundary",
+                "Caught exception object with optional status_code and body fields",
+                "Existing diagnostic output mechanism",
+                "Body-display eligibility rule of HTTP 400",
+                "Maximum displayed body length of 300 characters"
+              ],
+              "entry_state": "Provider requests can fail through the shared exception path, but the visible failure header omits available HTTP status and the diagnostic output omits provider response-body details.",
+              "exit_state": "The shared boundary displays available HTTP status in the failure header and, only for HTTP 400 with a nonempty body, displays at most 300 characters of body detail without altering downstream recovery decisions.",
+              "steps": [
+                {
+                  "action_name": "annotate-failure-with-http-status",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "Apply at the shared exception boundary when formatting the primary failure header; append the suffix only when status metadata is truthy.",
+                  "validation": "Confirm status-bearing failures include `[HTTP <status>]` and failures without usable status metadata preserve the previous header format."
+                },
+                {
+                  "action_name": "surface-bounded-bad-request-body",
+                  "role": "reconcile",
+                  "required": true,
+                  "depends_on": [
+                    "annotate-failure-with-http-status"
+                  ],
+                  "condition": "After the cleaned error summary, inspect the body only when the extracted status equals 400; emit Details only for a nonempty body representation.",
+                  "validation": "Confirm short, long, empty, and non-400 body cases satisfy the 300-character and status-selection invariants."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "annotate-failure-with-http-status",
+                  "to": "surface-bounded-bad-request-body",
+                  "type": "enables"
+                }
+              ],
+              "validation_ladder": [
+                "Inspect the parent state to verify that status and body were previously absent from visible diagnostics.",
+                "Inspect the pinned diff to verify conditional status annotation and the HTTP-400-only body branch.",
+                "Run `git diff --check` across the exact parent and pinned ref.",
+                "Add or execute focused output-capture tests for status present/absent and body short/long/empty/non-400 cases before treating the behavior as runtime-validated.",
+                "Exercise both streaming and non-streaming request paths because both feed the shared exception boundary."
+              ],
+              "stop_conditions": [
+                "Stop if the exception type does not expose stable status or body metadata and no evidence-backed adapter is available.",
+                "Stop or redesign if response bodies can contain secrets and no acceptable redaction policy exists.",
+                "Do not claim completion from source inspection alone when automated runtime validation is required by the consuming project.",
+                "Stop if implementing the diagnostics would require changing recovery policy, because that is outside this workflow's grounded scope."
+              ],
+              "unresolved_or_deferred": [
+                "Focused automated tests are deferred because the pinned resolution contains no test changes or recorded test results.",
+                "No redaction or sensitive-field filtering is implemented for the displayed body; only status gating and length bounding are evidenced.",
+                "Body conversion uses generic stringification rather than a canonical structured serialization, so ordering and formatting of structured payloads remain provider/runtime dependent.",
+                "GitHub PR body, reviews, comments, timeline, and status checks are unavailable in the supplied evidence bundle."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Was the absence of automated tests intentional, and what output-capture harness should validate the shared exception path?",
+          "Can HTTP-400 response bodies contain credentials, request content, or other sensitive fields requiring redaction before display?",
+          "Should structured body objects eventually use a stable serialization format instead of generic string conversion?"
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "annotate-failure-with-http-status",
+          "title": "Include available HTTP status in failure diagnostics",
+          "description": "Adapt an API exception's optional status metadata into the primary failure header without changing output for exceptions that lack a usable status.",
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E6"
+          ],
+          "semantic_action": {
+            "intent": "Make the transport-level failure category immediately visible when a provider request raises an exception.",
+            "module_role": "Shared provider-call failure diagnostics",
+            "operation": "adapt",
+            "pre_state": "The exception handler has caught a failed provider call and may have extracted a status code, but the primary diagnostic header reports only the exception type.",
+            "post_state": "When status metadata is truthy, the primary failure header contains the HTTP status; otherwise the header retains its prior shape.",
+            "validation": "Exercise the shared exception path once with a status-bearing exception and once without status metadata, then assert that only the former header contains the `[HTTP <status>]` suffix. The checked-in diff establishes the formatting rule, but no committed runtime test supplies this oracle.",
+            "parameters": [
+              "caught provider exception",
+              "optional HTTP status code",
+              "exception type",
+              "attempt count",
+              "maximum retries",
+              "diagnostic output sink"
+            ],
+            "evidence_ids": [
+              "E2",
+              "E3",
+              "E4",
+              "E6",
+              "E10"
+            ]
+          }
+        },
+        {
+          "name": "surface-bounded-bad-request-body",
+          "title": "Show bounded details for bad-request failures",
+          "description": "Expose a provider's nonempty HTTP-400 response body in a separate diagnostic line while bounding its displayed representation to 300 characters and leaving other statuses unchanged.",
+          "evidence_ids": [
+            "E3",
+            "E5",
+            "E6",
+            "E7"
+          ],
+          "semantic_action": {
+            "intent": "Preserve actionable provider explanations for malformed requests or invalid request parameters without emitting an unbounded payload for every failure.",
+            "module_role": "Provider error-payload diagnostic adapter",
+            "operation": "normalize",
+            "pre_state": "A provider call has raised an exception classified with status 400, and useful response-body details may exist outside the cleaned exception message.",
+            "post_state": "A nonempty HTTP-400 body is converted to text, limited to its first 300 characters, and printed as Details; missing, empty, or non-400 bodies produce no Details line.",
+            "validation": "Cover four cases: a short nonempty 400 body is printed intact, a body longer than 300 characters is truncated to 300, an empty 400 body is omitted, and a non-400 body is omitted. Source inspection establishes these branches, but the repository contains no committed automated test for them.",
+            "parameters": [
+              "caught provider exception",
+              "HTTP status code",
+              "optional provider response body",
+              "300-character display limit",
+              "diagnostic output sink"
+            ],
+            "evidence_ids": [
+              "E5",
+              "E6",
+              "E7",
+              "E10"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "enrich-provider-failure-diagnostics-with-bounded-payload-context",
+          "title": "Enrich provider failure diagnostics with bounded payload context",
+          "description": "A partial-order resolution chain for preserving transport status and selectively exposing bounded bad-request details at the shared provider-call error boundary.",
+          "atomic_names": [
+            "annotate-failure-with-http-status",
+            "surface-bounded-bad-request-body"
+          ],
+          "evidence_ids": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8",
+            "E9",
+            "E10"
+          ],
+          "workflow_graph": {
+            "goal": "Ensure failed provider calls expose enough structured transport and request-error context for diagnosis while keeping payload disclosure conditional and bounded.",
+            "when_to_use": [
+              "A shared provider-call boundary catches exceptions that carry HTTP status metadata not currently shown to the operator.",
+              "HTTP 400 exceptions may carry actionable response-body details that are absent from, or lost by cleaning, the ordinary exception message.",
+              "Streaming and non-streaming request paths converge on the same exception-diagnostic boundary."
+            ],
+            "anti_goals": [
+              "Do not change retry, fallback, authentication refresh, context compression, interruption, or client-error classification policy.",
+              "Do not emit response bodies for every HTTP status.",
+              "Do not print an unbounded provider payload or replace the existing cleaned summary with the raw body.",
+              "Do not treat this diagnostic presentation change as full provider-payload schema normalization."
+            ],
+            "not_applicable_when": [
+              "The failure object exposes neither status metadata nor a response body.",
+              "The relevant failure is represented as a successful response with an embedded error rather than an exception handled by the shared boundary.",
+              "Provider response bodies must not be displayed because the deployment's secrecy or redaction policy prohibits them."
+            ],
+            "inputs": [
+              "Shared provider-call exception boundary",
+              "Caught exception object with optional status_code and body fields",
+              "Existing diagnostic output mechanism",
+              "Body-display eligibility rule of HTTP 400",
+              "Maximum displayed body length of 300 characters"
+            ],
+            "entry_state": "Provider requests can fail through the shared exception path, but the visible failure header omits available HTTP status and the diagnostic output omits provider response-body details.",
+            "exit_state": "The shared boundary displays available HTTP status in the failure header and, only for HTTP 400 with a nonempty body, displays at most 300 characters of body detail without altering downstream recovery decisions.",
+            "steps": [
+              {
+                "action_name": "annotate-failure-with-http-status",
+                "role": "implement",
+                "required": true,
+                "depends_on": [],
+                "condition": "Apply at the shared exception boundary when formatting the primary failure header; append the suffix only when status metadata is truthy.",
+                "validation": "Confirm status-bearing failures include `[HTTP <status>]` and failures without usable status metadata preserve the previous header format."
+              },
+              {
+                "action_name": "surface-bounded-bad-request-body",
+                "role": "reconcile",
+                "required": true,
+                "depends_on": [
+                  "annotate-failure-with-http-status"
+                ],
+                "condition": "After the cleaned error summary, inspect the body only when the extracted status equals 400; emit Details only for a nonempty body representation.",
+                "validation": "Confirm short, long, empty, and non-400 body cases satisfy the 300-character and status-selection invariants."
+              }
+            ],
+            "edges": [
+              {
+                "from": "annotate-failure-with-http-status",
+                "to": "surface-bounded-bad-request-body",
+                "type": "enables"
+              }
+            ],
+            "validation_ladder": [
+              "Inspect the parent state to verify that status and body were previously absent from visible diagnostics.",
+              "Inspect the pinned diff to verify conditional status annotation and the HTTP-400-only body branch.",
+              "Run `git diff --check` across the exact parent and pinned ref.",
+              "Add or execute focused output-capture tests for status present/absent and body short/long/empty/non-400 cases before treating the behavior as runtime-validated.",
+              "Exercise both streaming and non-streaming request paths because both feed the shared exception boundary."
+            ],
+            "stop_conditions": [
+              "Stop if the exception type does not expose stable status or body metadata and no evidence-backed adapter is available.",
+              "Stop or redesign if response bodies can contain secrets and no acceptable redaction policy exists.",
+              "Do not claim completion from source inspection alone when automated runtime validation is required by the consuming project.",
+              "Stop if implementing the diagnostics would require changing recovery policy, because that is outside this workflow's grounded scope."
+            ],
+            "unresolved_or_deferred": [
+              "Focused automated tests are deferred because the pinned resolution contains no test changes or recorded test results.",
+              "No redaction or sensitive-field filtering is implemented for the displayed body; only status gating and length bounding are evidenced.",
+              "Body conversion uses generic stringification rather than a canonical structured serialization, so ordering and formatting of structured payloads remain provider/runtime dependent.",
+              "GitHub PR body, reviews, comments, timeline, and status checks are unavailable in the supplied evidence bundle."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Was the absence of automated tests intentional, and what output-capture harness should validate the shared exception path?",
+        "Can HTTP-400 response bodies contain credentials, request content, or other sensitive fields requiring redaction before display?",
+        "Should structured body objects eventually use a stable serialization format instead of generic string conversion?"
+      ]
+    },
+    "call_sites": [
+      "Both streaming and non-streaming provider requests execute inside the try block handled by this shared exception path, through `_interruptible_streaming_api_call` and `_interruptible_api_call` respectively."
+    ],
+    "tests": [
+      "No automated test or test-file modification accompanies the diagnostic behavior change, so runtime formatting, branch selection, and truncation are not demonstrated by a committed test oracle."
+    ]
+  },
+  {
+    "episode_id": "google-gemini__gemini-cli__23341__69bf2d75",
+    "title": "Normalize byte-encoded API error response bodies as UTF-8 without altering unrecognized payloads",
+    "before": "At parent 96cc8a0daddd1e66597ff862be20434a5d6a1b1b, the error adapter only handled response.data when it was a comma-containing string. It converted every numeric-looking element with String.fromCharCode, so it did not handle Uint8Array/Buffer payloads, interpreted UTF-8 bytes as independent UTF-16 code units, and accepted numeric values outside the byte range. Non-comma strings and strings containing non-numeric elements were left unchanged.",
+    "after": "At 69bf2d75efda831957172668d0b7e50c14fc0214, the adapter recognizes raw Uint8Array values (including Buffer subclasses) and valid comma-separated integer byte strings, decodes both through TextDecoder as UTF-8, and mutates response.data before API-error logging and rethrow. Comma-separated strings are normalized only when every value is an integer from 0 through 255; ordinary strings, non-numeric sequences, and out-of-range sequences remain unchanged.",
+    "diff": "The change replaces String.fromCharCode conversion with byte-oriented UTF-8 decoding, adds a direct Uint8Array branch, and adds integer/range validation before constructing a Uint8Array from serialized bytes. Existing normalization call sites remain in the non-streaming request rejection path and the streaming-request setup rejection path. Tests add coverage for raw Uint8Array data, two-byte and three-byte UTF-8 text, and out-of-range preservation while retaining prior ASCII, ordinary-string, and malformed-string cases.",
+    "repository": "google-gemini/gemini-cli",
+    "revision": "github-issue-23341",
+    "evidence_ids": [
+      "E-COMMIT-1",
+      "E-BEFORE-1",
+      "E-DIFF-1",
+      "E-IMPL-1",
+      "E-CALL-1",
+      "E-CALL-2",
+      "E-TEST-1",
+      "E-TEST-2",
+      "E-TEST-3",
+      "E-TEST-4",
+      "E-LIMIT-1"
+    ],
+    "metadata": {
+      "source": "github_issue_pr_commit_codex",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 23341,
+      "checkout": "/home/chenyujia/tritonToLlvm/gemini-cli",
+      "manifest_metadata": {
+        "category": "provider-error-payload-normalization",
+        "role": "train_candidate",
+        "case_id": "google-gemini__gemini-cli__23341__provider-error-payload-normalization",
+        "sample_kind": "verified_implementation_pull_request",
+        "seed_issue": null,
+        "seed_issue_url": null,
+        "seed_relation": null,
+        "resolution_url": "https://github.com/google-gemini/gemini-cli/pull/23341",
+        "provenance": {
+          "classification": "direct_implementation_artifact",
+          "resolution_artifact": {
+            "type": "pull_request",
+            "number": 23341,
+            "url": "https://github.com/google-gemini/gemini-cli/pull/23341"
+          },
+          "commit": {
+            "sha": "69bf2d75efda831957172668d0b7e50c14fc0214",
+            "subject": "fix: decode Uint8Array and multi-byte UTF-8 in API error messages (#23341)",
+            "parents": [
+              "96cc8a0daddd1e66597ff862be20434a5d6a1b1b"
+            ],
+            "body_excerpt": "Co-authored-by: Coco Sheng <cocosheng@google.com>"
+          },
+          "verification": [
+            "local_git_commit_resolved",
+            "first_parent_and_changed_files_recorded",
+            "implementation_change_present",
+            "test_or_spec_change_present"
+          ]
+        }
+      },
+      "github_bundle": {
+        "source": "local_git_pinned_ref",
+        "repository": "google-gemini/gemini-cli",
+        "issue_number": 23341,
+        "issue": {
+          "number": 23341,
+          "title": "fix: decode Uint8Array and multi-byte UTF-8 in API error messages (#23341)",
+          "body": null,
+          "metadata_unavailable": [
+            "issue body",
+            "comments",
+            "timeline",
+            "author/review discussion"
+          ]
+        },
+        "comments": [],
+        "timeline": [],
+        "linked_pull_requests": [
+          {
+            "pull_request": {
+              "number": 23341,
+              "title": "fix: decode Uint8Array and multi-byte UTF-8 in API error messages (#23341)",
+              "metadata_unavailable": [
+                "PR body",
+                "reviews",
+                "status checks"
+              ]
+            },
+            "files": [
+              {
+                "status_line": "M\tpackages/core/src/core/loggingContentGenerator.test.ts"
+              },
+              {
+                "status_line": "M\tpackages/core/src/core/loggingContentGenerator.ts"
+              }
+            ],
+            "commits": [
+              {
+                "sha": "69bf2d75efda831957172668d0b7e50c14fc0214",
+                "subject": "fix: decode Uint8Array and multi-byte UTF-8 in API error messages (#23341)"
+              }
+            ]
+          }
+        ],
+        "checkout": "/home/chenyujia/tritonToLlvm/gemini-cli",
+        "pinned_ref": "69bf2d75efda831957172668d0b7e50c14fc0214",
+        "resolved_commit": "69bf2d75efda831957172668d0b7e50c14fc0214",
+        "parent_commit": "96cc8a0daddd1e66597ff862be20434a5d6a1b1b",
+        "commit_show_stat": "commit 69bf2d75efda831957172668d0b7e50c14fc0214\nAuthor:     June <kimjune01@gmail.com>\nAuthorDate: Thu Apr 9 18:06:54 2026 -0700\nCommit:     GitHub <noreply@github.com>\nCommitDate: Fri Apr 10 01:06:54 2026 +0000\n\n    fix: decode Uint8Array and multi-byte UTF-8 in API error messages (#23341)\n    \n    Co-authored-by: Coco Sheng <cocosheng@google.com>\n\n .../core/src/core/loggingContentGenerator.test.ts  | 94 ++++++++++++++++++++++\n packages/core/src/core/loggingContentGenerator.ts  | 23 ++++--\n 2 files changed, 111 insertions(+), 6 deletions(-)\n",
+        "changed_files_name_status": "M\tpackages/core/src/core/loggingContentGenerator.test.ts\nM\tpackages/core/src/core/loggingContentGenerator.ts\n",
+        "linked_issue_numbers": [
+          23341
+        ],
+        "manifest_metadata": {
+          "category": "provider-error-payload-normalization",
+          "theme": "preserve and normalize provider error payloads",
+          "file_sample": [
+            "packages/core/src/core/loggingContentGenerator.test.ts",
+            "packages/core/src/core/loggingContentGenerator.ts"
+          ],
+          "quality": "implementation_plus_test",
+          "case_id": "google-gemini__gemini-cli__23341__provider-error-payload-normalization",
+          "role": "train_candidate",
+          "split": "train_candidate",
+          "sample_kind": "verified_implementation_pull_request",
+          "resolution_url": "https://github.com/google-gemini/gemini-cli/pull/23341",
+          "source": "agent_core_thirteen_category_extraction_v2",
+          "provenance": {
+            "classification": "direct_implementation_artifact",
+            "resolution_artifact": {
+              "type": "pull_request",
+              "number": 23341,
+              "url": "https://github.com/google-gemini/gemini-cli/pull/23341"
+            },
+            "commit": {
+              "sha": "69bf2d75efda831957172668d0b7e50c14fc0214",
+              "subject": "fix: decode Uint8Array and multi-byte UTF-8 in API error messages (#23341)",
+              "parents": [
+                "96cc8a0daddd1e66597ff862be20434a5d6a1b1b"
+              ],
+              "body_excerpt": "Co-authored-by: Coco Sheng <cocosheng@google.com>"
+            },
+            "verification": [
+              "local_git_commit_resolved",
+              "first_parent_and_changed_files_recorded",
+              "implementation_change_present",
+              "test_or_spec_change_present"
+            ]
+          }
+        },
+        "fetched_at": "2026-10-01T11:00:12.999702+00:00",
+        "limitations": [
+          "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+        ]
+      },
+      "codex_response": {
+        "episode": {
+          "episode_id": "google-gemini__gemini-cli__23341__69bf2d75",
+          "title": "Normalize byte-encoded API error response bodies as UTF-8 without altering unrecognized payloads",
+          "before": "At parent 96cc8a0daddd1e66597ff862be20434a5d6a1b1b, the error adapter only handled response.data when it was a comma-containing string. It converted every numeric-looking element with String.fromCharCode, so it did not handle Uint8Array/Buffer payloads, interpreted UTF-8 bytes as independent UTF-16 code units, and accepted numeric values outside the byte range. Non-comma strings and strings containing non-numeric elements were left unchanged.",
+          "after": "At 69bf2d75efda831957172668d0b7e50c14fc0214, the adapter recognizes raw Uint8Array values (including Buffer subclasses) and valid comma-separated integer byte strings, decodes both through TextDecoder as UTF-8, and mutates response.data before API-error logging and rethrow. Comma-separated strings are normalized only when every value is an integer from 0 through 255; ordinary strings, non-numeric sequences, and out-of-range sequences remain unchanged.",
+          "diff": "The change replaces String.fromCharCode conversion with byte-oriented UTF-8 decoding, adds a direct Uint8Array branch, and adds integer/range validation before constructing a Uint8Array from serialized bytes. Existing normalization call sites remain in the non-streaming request rejection path and the streaming-request setup rejection path. Tests add coverage for raw Uint8Array data, two-byte and three-byte UTF-8 text, and out-of-range preservation while retaining prior ASCII, ordinary-string, and malformed-string cases."
+        },
+        "evidence_units": [
+          {
+            "id": "E-COMMIT-1",
+            "kind": "commit",
+            "claim": "Commit 69bf2d75efda831957172668d0b7e50c14fc0214 is a single-parent implementation commit for PR/issue 23341 and changes the error adapter plus its tests.",
+            "source": "git show --format=fuller --stat 69bf2d75efda831957172668d0b7e50c14fc0214; issue-bundle.json#/linked_pull_requests/0"
+          },
+          {
+            "id": "E-BEFORE-1",
+            "kind": "implementation",
+            "claim": "The parent implementation only examines comma-containing strings, maps their elements with Number, accepts them when none is NaN, and converts them with String.fromCharCode; it has no raw Uint8Array branch or byte-range check.",
+            "source": "git show 96cc8a0daddd1e66597ff862be20434a5d6a1b1b:packages/core/src/core/loggingContentGenerator.ts#L278-L302"
+          },
+          {
+            "id": "E-DIFF-1",
+            "kind": "diff",
+            "claim": "The implementation adds direct Uint8Array decoding, validates serialized values as integers in the inclusive 0-255 range, and decodes the resulting bytes using TextDecoder.",
+            "source": "git diff 96cc8a0daddd1e66597ff862be20434a5d6a1b1b 69bf2d75efda831957172668d0b7e50c14fc0214 -- packages/core/src/core/loggingContentGenerator.ts"
+          },
+          {
+            "id": "E-IMPL-1",
+            "kind": "implementation",
+            "claim": "The resulting adapter navigates only object-shaped errors with a response.data field; Uint8Array data is decoded directly, while comma-separated strings are decoded only after every parsed element satisfies the byte-domain predicate.",
+            "source": "git show 69bf2d75efda831957172668d0b7e50c14fc0214:packages/core/src/core/loggingContentGenerator.ts#L278-L313"
+          },
+          {
+            "id": "E-CALL-1",
+            "kind": "call_site",
+            "claim": "When a non-streaming content request rejects, normalization runs before API-error logging and the same error object is then rethrown.",
+            "source": "git show 69bf2d75efda831957172668d0b7e50c14fc0214:packages/core/src/core/loggingContentGenerator.ts#L389-L440"
+          },
+          {
+            "id": "E-CALL-2",
+            "kind": "call_site",
+            "claim": "When creation of a streaming request rejects before returning an async generator, normalization likewise runs before logging and rethrow.",
+            "source": "git show 69bf2d75efda831957172668d0b7e50c14fc0214:packages/core/src/core/loggingContentGenerator.ts#L489-L512"
+          },
+          {
+            "id": "E-TEST-1",
+            "kind": "test",
+            "claim": "A rejected request carrying response.data as Uint8Array([72,101,108,108,111]) is asserted to rethrow with response.data normalized to \"Hello\".",
+            "source": "git show 69bf2d75efda831957172668d0b7e50c14fc0214:packages/core/src/core/loggingContentGenerator.test.ts#L319-L339"
+          },
+          {
+            "id": "E-TEST-2",
+            "kind": "test",
+            "claim": "Serialized byte strings are asserted to decode multi-byte UTF-8 correctly for both \"Héllo\" and the three-byte-per-character text \"こんにちは\".",
+            "source": "git show 69bf2d75efda831957172668d0b7e50c14fc0214:packages/core/src/core/loggingContentGenerator.test.ts#L341-L388"
+          },
+          {
+            "id": "E-TEST-3",
+            "kind": "test",
+            "claim": "A serialized sequence containing 256 is asserted to remain unchanged rather than being coerced into a byte array.",
+            "source": "git show 69bf2d75efda831957172668d0b7e50c14fc0214:packages/core/src/core/loggingContentGenerator.test.ts#L390-L411"
+          },
+          {
+            "id": "E-TEST-4",
+            "kind": "test",
+            "claim": "Regression cases assert that ASCII serialized bytes still decode to \"Hello\", an ordinary error message remains unchanged, and a sequence containing a non-numeric element remains unchanged.",
+            "source": "git show 69bf2d75efda831957172668d0b7e50c14fc0214:packages/core/src/core/loggingContentGenerator.test.ts#L249-L317"
+          },
+          {
+            "id": "E-LIMIT-1",
+            "kind": "validation",
+            "claim": "The added tests exercise the public generateContent rejection path and inspect the rethrown error object's response.data, providing an oracle for both successful normalization and preservation behavior; the available checkout has all tracked files deleted from the working tree, so this extraction did not execute the test suite.",
+            "source": "git status --short --branch; git show 69bf2d75efda831957172668d0b7e50c14fc0214:packages/core/src/core/loggingContentGenerator.test.ts#L249-L411"
+          }
+        ],
+        "candidate_atomics": [
+          {
+            "name": "recognize-valid-byte-error-payload",
+            "title": "Recognize byte-shaped error payloads without corrupting other data",
+            "description": "Classify a response body as decodable bytes when it is already a byte array or when a comma-separated representation contains only integers in the byte domain; preserve unrecognized or invalid values.",
+            "evidence_ids": [
+              "E-BEFORE-1",
+              "E-DIFF-1",
+              "E-IMPL-1",
+              "E-TEST-3",
+              "E-TEST-4"
+            ],
+            "semantic_action": {
+              "intent": "Prevent malformed, ordinary, or out-of-domain provider error bodies from being accidentally coerced while admitting supported byte representations.",
+              "module_role": "provider error response adapter",
+              "operation": "guard",
+              "pre_state": "A failed provider request exposes an unknown response body that may be raw bytes, a serialized byte sequence, or unrelated data.",
+              "post_state": "Raw byte arrays and serialized integer sequences bounded to 0-255 are admitted for decoding; unsupported and invalid payloads retain their original value.",
+              "validation": "Exercise ordinary strings, non-numeric serialized sequences, valid ASCII byte sequences, and a sequence containing 256; verify that only valid byte-shaped values enter normalization and all rejected shapes remain unchanged.",
+              "parameters": [
+                "error_response_body",
+                "raw_byte_array_type",
+                "serialized_byte_delimiter",
+                "minimum_byte_value=0",
+                "maximum_byte_value=255"
+              ],
+              "evidence_ids": [
+                "E-IMPL-1",
+                "E-TEST-3",
+                "E-TEST-4"
+              ]
+            }
+          },
+          {
+            "name": "decode-error-bytes-as-utf8",
+            "title": "Decode recognized error bytes as UTF-8 text",
+            "description": "Convert either a raw byte array or a validated serialized byte sequence into readable UTF-8 text before downstream error handling observes the response body.",
+            "evidence_ids": [
+              "E-DIFF-1",
+              "E-IMPL-1",
+              "E-CALL-1",
+              "E-CALL-2",
+              "E-TEST-1",
+              "E-TEST-2"
+            ],
+            "semantic_action": {
+              "intent": "Preserve readable error text, including multi-byte characters, across provider transports that expose response bodies as bytes.",
+              "module_role": "provider error response adapter",
+              "operation": "normalize",
+              "pre_state": "The response body has been recognized as raw bytes or as a valid serialized sequence of byte values.",
+              "post_state": "The response body is a UTF-8-decoded string available to error logging and to the caller receiving the rethrown error.",
+              "validation": "Reject requests with raw ASCII bytes and serialized two-byte and three-byte UTF-8 sequences; inspect the rethrown error and verify exact decoded strings.",
+              "parameters": [
+                "recognized_error_bytes",
+                "text_decoder=UTF-8",
+                "mutable_error_response"
+              ],
+              "evidence_ids": [
+                "E-IMPL-1",
+                "E-CALL-1",
+                "E-CALL-2",
+                "E-TEST-1",
+                "E-TEST-2"
+              ]
+            }
+          }
+        ],
+        "candidate_workflows": [
+          {
+            "name": "normalize-provider-error-byte-payload",
+            "title": "Normalize byte-encoded provider errors before logging and propagation",
+            "description": "At the provider failure boundary, conservatively identify supported byte payloads, decode them as UTF-8, and preserve the surrounding error flow and unsupported payloads.",
+            "atomic_names": [
+              "recognize-valid-byte-error-payload",
+              "decode-error-bytes-as-utf8"
+            ],
+            "evidence_ids": [
+              "E-BEFORE-1",
+              "E-DIFF-1",
+              "E-IMPL-1",
+              "E-CALL-1",
+              "E-CALL-2",
+              "E-TEST-1",
+              "E-TEST-2",
+              "E-TEST-3",
+              "E-TEST-4"
+            ],
+            "workflow_graph": {
+              "goal": "Make byte-encoded provider error bodies readable across raw and serialized transport forms without corrupting unrelated data or changing rejection semantics.",
+              "when_to_use": [
+                "A provider client sometimes exposes an error response body as a byte array or as comma-separated numeric bytes.",
+                "Multi-byte UTF-8 text is currently mojibake because byte values are converted directly to characters.",
+                "Normalization can run at a shared failure boundary before logging and propagation."
+              ],
+              "anti_goals": [
+                "Do not rewrite ordinary textual or structured error payloads.",
+                "Do not accept fractional, negative, non-numeric, or greater-than-255 values as bytes.",
+                "Do not swallow, replace, or convert the original request rejection into success.",
+                "Do not redesign telemetry, retry behavior, authentication handling, or provider request routing."
+              ],
+              "not_applicable_when": [
+                "The payload is already reliable text or structured data and no byte transport representation is observed.",
+                "The transport uses an encoding other than UTF-8 and its encoding contract is unknown.",
+                "The failure bypasses the adapter's request-rejection boundary, such as an error raised later while consuming an already-created stream."
+              ],
+              "inputs": [
+                "provider request error object",
+                "response-body field to inspect",
+                "supported raw byte-array runtime type",
+                "serialized-byte syntax",
+                "UTF-8 decoder",
+                "existing error logging and rethrow boundary"
+              ],
+              "entry_state": "A provider request has failed, and downstream logging or callers may observe an unreadable, byte-shaped response body.",
+              "exit_state": "Supported byte representations have become readable UTF-8 text before logging and rethrow; unsupported values are unchanged and the original failure still propagates.",
+              "steps": [
+                {
+                  "action_name": "recognize-valid-byte-error-payload",
+                  "role": "establish-contract",
+                  "required": true,
+                  "depends_on": [],
+                  "condition": "The failed request exposes a response-body field.",
+                  "validation": "Confirm raw byte arrays are admitted, serialized values are admitted only when every element is an integer from 0 through 255, and ordinary or invalid inputs remain unchanged."
+                },
+                {
+                  "action_name": "decode-error-bytes-as-utf8",
+                  "role": "implement",
+                  "required": true,
+                  "depends_on": [
+                    "recognize-valid-byte-error-payload"
+                  ],
+                  "condition": "The response body was recognized as a supported byte representation.",
+                  "validation": "Confirm exact decoding of ASCII, two-byte UTF-8, and three-byte UTF-8 examples through the public rejection path, then confirm the normalized error is still rethrown."
+                }
+              ],
+              "edges": [
+                {
+                  "from": "recognize-valid-byte-error-payload",
+                  "to": "decode-error-bytes-as-utf8",
+                  "type": "enables"
+                },
+                {
+                  "from": "decode-error-bytes-as-utf8",
+                  "to": "recognize-valid-byte-error-payload",
+                  "type": "validates"
+                }
+              ],
+              "validation_ladder": [
+                "Unit-check admission and preservation boundaries with ordinary text, malformed serialized values, and out-of-range values.",
+                "Unit-check raw byte-array decoding with a known ASCII payload.",
+                "Unit-check serialized multi-byte UTF-8 decoding with both two-byte and three-byte characters.",
+                "Integration-check the request rejection boundary: normalization occurs before error logging and the original error object remains rejected/rethrown.",
+                "Separately verify every provider failure path that should share the contract, including stream creation and any errors raised during stream iteration."
+              ],
+              "stop_conditions": [
+                "Stop if the response object or response-body field cannot be established from runtime evidence.",
+                "Stop and preserve the payload if serialized elements are not all integral bytes in the inclusive 0-255 range.",
+                "Defer decoding when the transport encoding is not known to be UTF-8.",
+                "Do not claim completion for failure paths that do not invoke the normalization boundary."
+              ],
+              "unresolved_or_deferred": [
+                "The change calls normalization for non-streaming request rejection and streaming-request creation rejection, but the shown stream-iteration catch logs and rethrows without invoking the adapter.",
+                "Tests directly cover the non-streaming generateContent rejection path; no added test demonstrates the streaming-request setup call site.",
+                "The test suite was not executed because the provided working tree contains only .git with tracked files staged as deleted; validation claims are therefore based on committed test code, not a fresh run.",
+                "TextDecoder's default replacement behavior for malformed UTF-8 byte sequences is not explicitly tested or configured as fatal."
+              ]
+            }
+          }
+        ],
+        "unresolved_questions": [
+          "Should errors raised while consuming an already-created response stream receive the same response-body normalization as initial request and stream-creation failures?",
+          "Is replacement-character decoding acceptable for malformed UTF-8, or should decoding reject and preserve the original payload?",
+          "The committed tests establish source-level validation oracles, but a clean checkout is needed to execute them and confirm runtime validation."
+        ]
+      },
+      "candidate_atomics": [
+        {
+          "name": "recognize-valid-byte-error-payload",
+          "title": "Recognize byte-shaped error payloads without corrupting other data",
+          "description": "Classify a response body as decodable bytes when it is already a byte array or when a comma-separated representation contains only integers in the byte domain; preserve unrecognized or invalid values.",
+          "evidence_ids": [
+            "E-BEFORE-1",
+            "E-DIFF-1",
+            "E-IMPL-1",
+            "E-TEST-3",
+            "E-TEST-4"
+          ],
+          "semantic_action": {
+            "intent": "Prevent malformed, ordinary, or out-of-domain provider error bodies from being accidentally coerced while admitting supported byte representations.",
+            "module_role": "provider error response adapter",
+            "operation": "guard",
+            "pre_state": "A failed provider request exposes an unknown response body that may be raw bytes, a serialized byte sequence, or unrelated data.",
+            "post_state": "Raw byte arrays and serialized integer sequences bounded to 0-255 are admitted for decoding; unsupported and invalid payloads retain their original value.",
+            "validation": "Exercise ordinary strings, non-numeric serialized sequences, valid ASCII byte sequences, and a sequence containing 256; verify that only valid byte-shaped values enter normalization and all rejected shapes remain unchanged.",
+            "parameters": [
+              "error_response_body",
+              "raw_byte_array_type",
+              "serialized_byte_delimiter",
+              "minimum_byte_value=0",
+              "maximum_byte_value=255"
+            ],
+            "evidence_ids": [
+              "E-IMPL-1",
+              "E-TEST-3",
+              "E-TEST-4"
+            ]
+          }
+        },
+        {
+          "name": "decode-error-bytes-as-utf8",
+          "title": "Decode recognized error bytes as UTF-8 text",
+          "description": "Convert either a raw byte array or a validated serialized byte sequence into readable UTF-8 text before downstream error handling observes the response body.",
+          "evidence_ids": [
+            "E-DIFF-1",
+            "E-IMPL-1",
+            "E-CALL-1",
+            "E-CALL-2",
+            "E-TEST-1",
+            "E-TEST-2"
+          ],
+          "semantic_action": {
+            "intent": "Preserve readable error text, including multi-byte characters, across provider transports that expose response bodies as bytes.",
+            "module_role": "provider error response adapter",
+            "operation": "normalize",
+            "pre_state": "The response body has been recognized as raw bytes or as a valid serialized sequence of byte values.",
+            "post_state": "The response body is a UTF-8-decoded string available to error logging and to the caller receiving the rethrown error.",
+            "validation": "Reject requests with raw ASCII bytes and serialized two-byte and three-byte UTF-8 sequences; inspect the rethrown error and verify exact decoded strings.",
+            "parameters": [
+              "recognized_error_bytes",
+              "text_decoder=UTF-8",
+              "mutable_error_response"
+            ],
+            "evidence_ids": [
+              "E-IMPL-1",
+              "E-CALL-1",
+              "E-CALL-2",
+              "E-TEST-1",
+              "E-TEST-2"
+            ]
+          }
+        }
+      ],
+      "candidate_workflows": [
+        {
+          "name": "normalize-provider-error-byte-payload",
+          "title": "Normalize byte-encoded provider errors before logging and propagation",
+          "description": "At the provider failure boundary, conservatively identify supported byte payloads, decode them as UTF-8, and preserve the surrounding error flow and unsupported payloads.",
+          "atomic_names": [
+            "recognize-valid-byte-error-payload",
+            "decode-error-bytes-as-utf8"
+          ],
+          "evidence_ids": [
+            "E-BEFORE-1",
+            "E-DIFF-1",
+            "E-IMPL-1",
+            "E-CALL-1",
+            "E-CALL-2",
+            "E-TEST-1",
+            "E-TEST-2",
+            "E-TEST-3",
+            "E-TEST-4"
+          ],
+          "workflow_graph": {
+            "goal": "Make byte-encoded provider error bodies readable across raw and serialized transport forms without corrupting unrelated data or changing rejection semantics.",
+            "when_to_use": [
+              "A provider client sometimes exposes an error response body as a byte array or as comma-separated numeric bytes.",
+              "Multi-byte UTF-8 text is currently mojibake because byte values are converted directly to characters.",
+              "Normalization can run at a shared failure boundary before logging and propagation."
+            ],
+            "anti_goals": [
+              "Do not rewrite ordinary textual or structured error payloads.",
+              "Do not accept fractional, negative, non-numeric, or greater-than-255 values as bytes.",
+              "Do not swallow, replace, or convert the original request rejection into success.",
+              "Do not redesign telemetry, retry behavior, authentication handling, or provider request routing."
+            ],
+            "not_applicable_when": [
+              "The payload is already reliable text or structured data and no byte transport representation is observed.",
+              "The transport uses an encoding other than UTF-8 and its encoding contract is unknown.",
+              "The failure bypasses the adapter's request-rejection boundary, such as an error raised later while consuming an already-created stream."
+            ],
+            "inputs": [
+              "provider request error object",
+              "response-body field to inspect",
+              "supported raw byte-array runtime type",
+              "serialized-byte syntax",
+              "UTF-8 decoder",
+              "existing error logging and rethrow boundary"
+            ],
+            "entry_state": "A provider request has failed, and downstream logging or callers may observe an unreadable, byte-shaped response body.",
+            "exit_state": "Supported byte representations have become readable UTF-8 text before logging and rethrow; unsupported values are unchanged and the original failure still propagates.",
+            "steps": [
+              {
+                "action_name": "recognize-valid-byte-error-payload",
+                "role": "establish-contract",
+                "required": true,
+                "depends_on": [],
+                "condition": "The failed request exposes a response-body field.",
+                "validation": "Confirm raw byte arrays are admitted, serialized values are admitted only when every element is an integer from 0 through 255, and ordinary or invalid inputs remain unchanged."
+              },
+              {
+                "action_name": "decode-error-bytes-as-utf8",
+                "role": "implement",
+                "required": true,
+                "depends_on": [
+                  "recognize-valid-byte-error-payload"
+                ],
+                "condition": "The response body was recognized as a supported byte representation.",
+                "validation": "Confirm exact decoding of ASCII, two-byte UTF-8, and three-byte UTF-8 examples through the public rejection path, then confirm the normalized error is still rethrown."
+              }
+            ],
+            "edges": [
+              {
+                "from": "recognize-valid-byte-error-payload",
+                "to": "decode-error-bytes-as-utf8",
+                "type": "enables"
+              },
+              {
+                "from": "decode-error-bytes-as-utf8",
+                "to": "recognize-valid-byte-error-payload",
+                "type": "validates"
+              }
+            ],
+            "validation_ladder": [
+              "Unit-check admission and preservation boundaries with ordinary text, malformed serialized values, and out-of-range values.",
+              "Unit-check raw byte-array decoding with a known ASCII payload.",
+              "Unit-check serialized multi-byte UTF-8 decoding with both two-byte and three-byte characters.",
+              "Integration-check the request rejection boundary: normalization occurs before error logging and the original error object remains rejected/rethrown.",
+              "Separately verify every provider failure path that should share the contract, including stream creation and any errors raised during stream iteration."
+            ],
+            "stop_conditions": [
+              "Stop if the response object or response-body field cannot be established from runtime evidence.",
+              "Stop and preserve the payload if serialized elements are not all integral bytes in the inclusive 0-255 range.",
+              "Defer decoding when the transport encoding is not known to be UTF-8.",
+              "Do not claim completion for failure paths that do not invoke the normalization boundary."
+            ],
+            "unresolved_or_deferred": [
+              "The change calls normalization for non-streaming request rejection and streaming-request creation rejection, but the shown stream-iteration catch logs and rethrows without invoking the adapter.",
+              "Tests directly cover the non-streaming generateContent rejection path; no added test demonstrates the streaming-request setup call site.",
+              "The test suite was not executed because the provided working tree contains only .git with tracked files staged as deleted; validation claims are therefore based on committed test code, not a fresh run.",
+              "TextDecoder's default replacement behavior for malformed UTF-8 byte sequences is not explicitly tested or configured as fatal."
+            ]
+          }
+        }
+      ],
+      "unresolved_questions": [
+        "Should errors raised while consuming an already-created response stream receive the same response-body normalization as initial request and stream-creation failures?",
+        "Is replacement-character decoding acceptable for malformed UTF-8, or should decoding reject and preserve the original payload?",
+        "The committed tests establish source-level validation oracles, but a clean checkout is needed to execute them and confirm runtime validation."
+      ]
+    },
+    "call_sites": [
+      "When a non-streaming content request rejects, normalization runs before API-error logging and the same error object is then rethrown.",
+      "When creation of a streaming request rejects before returning an async generator, normalization likewise runs before logging and rethrow."
+    ],
+    "tests": [
+      "A rejected request carrying response.data as Uint8Array([72,101,108,108,111]) is asserted to rethrow with response.data normalized to \"Hello\".",
+      "Serialized byte strings are asserted to decode multi-byte UTF-8 correctly for both \"Héllo\" and the three-byte-per-character text \"こんにちは\".",
+      "A serialized sequence containing 256 is asserted to remain unchanged rather than being coerced into a byte array.",
+      "Regression cases assert that ASCII serialized bytes still decode to \"Hello\", an ordinary error message remains unchanged, and a sequence containing a non-numeric element remains unchanged."
+    ]
+  }
+]

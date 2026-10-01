@@ -1,0 +1,132 @@
+{
+  "source": "local_git_pinned_ref",
+  "repository": "openai/codex",
+  "issue_number": 14171,
+  "issue": {
+    "number": 14171,
+    "title": "fix: align core approvals with split sandbox policies (#14171)",
+    "body": null,
+    "metadata_unavailable": [
+      "issue body",
+      "comments",
+      "timeline",
+      "author/review discussion"
+    ]
+  },
+  "comments": [],
+  "timeline": [],
+  "linked_pull_requests": [
+    {
+      "pull_request": {
+        "number": 14171,
+        "title": "fix: align core approvals with split sandbox policies (#14171)",
+        "metadata_unavailable": [
+          "PR body",
+          "reviews",
+          "status checks"
+        ]
+      },
+      "files": [
+        {
+          "status_line": "M\tcodex-rs/core/src/config/config_tests.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/src/exec_policy.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/src/safety.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/src/tools/handlers/shell.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/src/tools/orchestrator.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/src/tools/runtimes/shell/unix_escalation.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/src/tools/runtimes/shell/unix_escalation_tests.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/src/tools/sandboxing.rs"
+        },
+        {
+          "status_line": "M\tcodex-rs/core/src/unified_exec/process_manager.rs"
+        }
+      ],
+      "commits": [
+        {
+          "sha": "c2d5458d67714b9d92dfe18d8ebbb512001252d9",
+          "subject": "fix: align core approvals with split sandbox policies (#14171)"
+        }
+      ]
+    }
+  ],
+  "checkout": "/home/chenyujia/tritonToLlvm/codex-agent",
+  "pinned_ref": "c2d5458d67714b9d92dfe18d8ebbb512001252d9",
+  "resolved_commit": "c2d5458d67714b9d92dfe18d8ebbb512001252d9",
+  "parent_commit": "c1ea3f95d13a851889d78a3d7ca7946162662c99",
+  "commit_show_stat": "commit c2d5458d67714b9d92dfe18d8ebbb512001252d9\nAuthor:     viyatb-oai <viyatb@openai.com>\nAuthorDate: Wed Mar 11 19:23:22 2026 -0700\nCommit:     GitHub <noreply@github.com>\nCommitDate: Thu Mar 12 02:23:22 2026 +0000\n\n    fix: align core approvals with split sandbox policies (#14171)\n    \n    ## Stack\n    \n       fix: fail closed for unsupported split windows sandboxing #14172\n       fix: preserve split filesystem semantics in linux sandbox #14173\n    -> fix: align core approvals with split sandbox policies #14171\n       refactor: centralize filesystem permissions precedence #14174\n    \n    ## Why This PR Exists\n    \n    This PR is intentionally narrower than the title may suggest.\n    \n    Most of the original split-permissions migration already landed in the\n    earlier `#13434 -> #13453` stack. In particular:\n    \n    - `#13439` already did the broad runtime plumbing for split filesystem\n    and network policies.\n    - `#13445` already moved `apply_patch` safety onto filesystem-policy\n    semantics.\n    - `#13448` already switched macOS Seatbelt generation to split policies.\n    - `#13449` and `#13453` already handled Linux helper and bubblewrap\n    enforcement.\n    - `#13440` already introduced the first protocol-side helpers for\n    deriving effective filesystem access.\n    \n    The reason this PR still exists is that after the follow-on\n    `[permissions]` work and the new shared precedence helper in `#14174`, a\n    few core approval paths were still deciding behavior from the legacy\n    `SandboxPolicy` projection instead of the split filesystem policy that\n    actually carries the carveouts.\n    \n    That means this PR is mostly a cleanup and alignment pass over the\n    remaining core consumers, not a fresh sandbox backend migration.\n    \n    ## What Is Actually New Here\n    \n    - make unmatched-command fallback decisions consult\n    `FileSystemSandboxPolicy` instead of only legacy `DangerFullAccess` /\n    `ReadOnly` / `WorkspaceWrite` categories\n    - thread `file_system_sandbox_policy` into the shell, unified-exec, and\n    intercepted-exec approval paths so they all use the same split-policy\n    semantics\n    - keep `apply_patch` safety on the same effective-access rules as the\n    shared protocol helper, rather than letting it drift through\n    compatibility projections\n    - add loader-level regression coverage proving legacy `sandbox_mode`\n    config still builds split policies and round-trips back without semantic\n    drift\n    \n    ## What This PR Does Not Do\n    \n    This PR does not introduce new platform backend enforcement on its own.\n    \n    - Linux backend parity remains in `#14173`.\n    - Windows fail-closed handling remains in `#14172`.\n    - The shared precedence/model changes live in `#14174`.\n    \n    ## Files To Focus On\n    \n    - `core/src/exec_policy.rs`: unmatched-command fallback and approval\n    rendering now read the split filesystem policy directly\n    - `core/src/tools/sandboxing.rs`: default exec-approval requirement keys\n    off `FileSystemSandboxPolicy.kind`\n    - `core/src/tools/handlers/shell.rs`: shell approval requests now carry\n    the split filesystem policy\n    - `core/src/unified_exec/process_manager.rs`: unified-exec approval\n    requests now carry the split filesystem policy\n    - `core/src/tools/runtimes/shell/unix_escalation.rs`: intercepted exec\n    fallback now uses the same split-policy approval semantics\n    - `core/src/safety.rs`: `apply_patch` safety keeps using effective\n    filesystem access rather than legacy sandbox categories\n    - `core/src/config/config_tests.rs`: new regression coverage for legacy\n    `sandbox_mode` no-drift behavior through the split-policy loader\n    \n    ## Notes\n    \n    - `core/src/codex.rs` and `core/src/codex_tests.rs` are just small\n    fallout updates for `RequestPermissionsResponse.scope`; they are not the\n    point of the PR.\n    - If you reviewed the earlier `#13439` / `#13445` stack, the main review\n    question here is simply: “are there any remaining approval or\n    patch-safety paths that still reconstruct semantics from legacy\n    `SandboxPolicy` instead of consuming the split filesystem policy\n    directly?”\n    \n    ## Testing\n    - cargo test -p codex-core\n    legacy_sandbox_mode_config_builds_split_policies_without_drift\n    - cargo test -p codex-core request_permissions\n    - cargo test -p codex-core intercepted_exec_policy\n    - cargo test -p codex-core\n    restricted_sandbox_requires_exec_approval_on_request\n    - cargo test -p codex-core\n    unmatched_on_request_uses_split_filesystem_policy_for_escalation_prompts\n    - cargo test -p codex-core explicit_\n    - cargo clippy -p codex-core --tests -- -D warnings\n\n codex-rs/core/src/config/config_tests.rs           | 72 +++++++++++++++++\n codex-rs/core/src/exec_policy.rs                   | 89 +++++++++++++++++++---\n codex-rs/core/src/safety.rs                        | 18 +----\n codex-rs/core/src/tools/handlers/shell.rs          |  1 +\n codex-rs/core/src/tools/orchestrator.rs            |  4 +-\n .../src/tools/runtimes/shell/unix_escalation.rs    | 36 ++++++---\n .../tools/runtimes/shell/unix_escalation_tests.rs  | 72 +++++++++++------\n codex-rs/core/src/tools/sandboxing.rs              | 42 ++++++----\n codex-rs/core/src/unified_exec/process_manager.rs  |  1 +\n 9 files changed, 259 insertions(+), 76 deletions(-)\n",
+  "changed_files_name_status": "M\tcodex-rs/core/src/config/config_tests.rs\nM\tcodex-rs/core/src/exec_policy.rs\nM\tcodex-rs/core/src/safety.rs\nM\tcodex-rs/core/src/tools/handlers/shell.rs\nM\tcodex-rs/core/src/tools/orchestrator.rs\nM\tcodex-rs/core/src/tools/runtimes/shell/unix_escalation.rs\nM\tcodex-rs/core/src/tools/runtimes/shell/unix_escalation_tests.rs\nM\tcodex-rs/core/src/tools/sandboxing.rs\nM\tcodex-rs/core/src/unified_exec/process_manager.rs\n",
+  "linked_issue_numbers": [
+    13434,
+    13439,
+    13440,
+    13445,
+    13448,
+    13449,
+    13453,
+    14172,
+    14173,
+    14174
+  ],
+  "manifest_metadata": {
+    "category": "permission-policy-enforcement",
+    "theme": "permission policy consistency and bypass prevention",
+    "file_sample": [
+      "codex-rs/core/src/config/config_tests.rs",
+      "codex-rs/core/src/exec_policy.rs",
+      "codex-rs/core/src/safety.rs",
+      "codex-rs/core/src/tools/handlers/shell.rs",
+      "codex-rs/core/src/tools/orchestrator.rs",
+      "codex-rs/core/src/tools/runtimes/shell/unix_escalation.rs",
+      "codex-rs/core/src/tools/runtimes/shell/unix_escalation_tests.rs",
+      "codex-rs/core/src/tools/sandboxing.rs",
+      "codex-rs/core/src/unified_exec/process_manager.rs"
+    ],
+    "quality": "implementation_only",
+    "case_id": "openai__codex__14171__permission-policy-enforcement",
+    "role": "train_candidate",
+    "split": "train_candidate",
+    "sample_kind": "verified_implementation_pull_request",
+    "resolution_url": "https://github.com/openai/codex/pull/14171",
+    "source": "agent_core_thirteen_category_extraction_v2",
+    "provenance": {
+      "classification": "direct_implementation_artifact",
+      "resolution_artifact": {
+        "type": "pull_request",
+        "number": 14171,
+        "url": "https://github.com/openai/codex/pull/14171"
+      },
+      "commit": {
+        "sha": "c2d5458d67714b9d92dfe18d8ebbb512001252d9",
+        "subject": "fix: align core approvals with split sandbox policies (#14171)",
+        "parents": [
+          "c1ea3f95d13a851889d78a3d7ca7946162662c99"
+        ],
+        "body_excerpt": "## Stack\n\n   fix: fail closed for unsupported split windows sandboxing #14172\n   fix: preserve split filesystem semantics in linux sandbox #14173\n-> fix: align core approvals with split sandbox policies #14171\n   refactor: centralize filesystem permissions precedence #14174\n\n## Why This PR Exists\n\nThis PR is intentionally narrower than the title may suggest.\n\nMost of the original split-permissions migration already landed in the\nearlier `#13434 -> #13453` stack. In particular:\n\n- `#13439` already did the broad runtime plumbing for split filesystem\nand network policies.\n- `#13445` already moved `apply_patch` safety onto filesystem-policy\nsemantics.\n- `#13448` already switched macOS Seatbelt generation to split policies.\n- `#13449` and `#13453` already handled Linux helper and bubblewrap\nenforcement.\n- `#13440` already introduced the first protocol-side helpers for\nderiving effective filesystem access.\n\nThe reason this PR still exists is that after the follow-on\n`[permissions]` work and the new shared precedence helper in `#14174`, a\nfew core approval paths were still deciding behavior from the legacy\n`SandboxPolicy` projection instead of the split filesystem policy that\nactually car"
+      },
+      "verification": [
+        "local_git_commit_resolved",
+        "first_parent_and_changed_files_recorded",
+        "implementation_change_present",
+        "no_test_file_change_observed"
+      ]
+    }
+  },
+  "fetched_at": "2026-10-01T11:00:14.117506+00:00",
+  "limitations": [
+    "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+  ]
+}

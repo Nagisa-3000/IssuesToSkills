@@ -1,0 +1,91 @@
+{
+  "source": "local_git_pinned_ref",
+  "repository": "NousResearch/hermes-agent",
+  "issue_number": 14901,
+  "issue": {
+    "number": 14901,
+    "title": "fix(mcp): route stdio subprocess stderr to log file, not user TTY (#14901)",
+    "body": null,
+    "metadata_unavailable": [
+      "issue body",
+      "comments",
+      "timeline",
+      "author/review discussion"
+    ]
+  },
+  "comments": [],
+  "timeline": [],
+  "linked_pull_requests": [
+    {
+      "pull_request": {
+        "number": 14901,
+        "title": "fix(mcp): route stdio subprocess stderr to log file, not user TTY (#14901)",
+        "metadata_unavailable": [
+          "PR body",
+          "reviews",
+          "status checks"
+        ]
+      },
+      "files": [
+        {
+          "status_line": "M\ttools/mcp_tool.py"
+        }
+      ],
+      "commits": [
+        {
+          "sha": "379b2273d95566e8a69eadabceabc6ee08521b49",
+          "subject": "fix(mcp): route stdio subprocess stderr to log file, not user TTY (#14901)"
+        }
+      ]
+    }
+  ],
+  "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+  "pinned_ref": "379b2273d95566e8a69eadabceabc6ee08521b49",
+  "resolved_commit": "379b2273d95566e8a69eadabceabc6ee08521b49",
+  "parent_commit": "7db2703b332bbe8afe2c89b1fed2dd8c03cbd9af",
+  "commit_show_stat": "commit 379b2273d95566e8a69eadabceabc6ee08521b49\nAuthor:     Teknium <127238744+teknium1@users.noreply.github.com>\nAuthorDate: Thu Apr 23 21:50:25 2026 -0700\nCommit:     GitHub <noreply@github.com>\nCommitDate: Thu Apr 23 21:50:25 2026 -0700\n\n    fix(mcp): route stdio subprocess stderr to log file, not user TTY (#14901)\n    \n    MCP stdio servers' stderr was being dumped directly onto the user's\n    terminal during hermes launch. Servers like FastMCP-based ones print a\n    large ASCII banner at startup; slack-mcp-server emits JSON logs; etc.\n    With prompt_toolkit / Rich rendering the TUI concurrently, these\n    unsolicited writes corrupt the terminal state — hanging the session\n    ~80% of the time for one user with Google Ads Tools + slack-mcp\n    configured, forcing Ctrl+C and restart loops.\n    \n    Root cause: `stdio_client(server_params)` in tools/mcp_tool.py was\n    called without `errlog=`, and the SDK's default is `sys.stderr` —\n    i.e. the real parent-process stderr, which is the TTY.\n    \n    Fix: open a shared, append-mode log at $HERMES_HOME/logs/mcp-stderr.log\n    (created once per process, line-buffered, real fd required by asyncio's\n    subprocess machinery) and pass it as `errlog` to every stdio_client.\n    Each server's spawn writes a timestamped header so the shared log stays\n    readable when multiple servers are running. Falls back to /dev/null if\n    the log file cannot be opened.\n    \n    Verified by E2E spawning a subprocess with the log fd as its stderr:\n    banner lines land in the log file, nothing reaches the calling TTY.\n\n tools/mcp_tool.py | 82 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-\n 1 file changed, 81 insertions(+), 1 deletion(-)\n",
+  "changed_files_name_status": "M\ttools/mcp_tool.py\n",
+  "linked_issue_numbers": [
+    14901
+  ],
+  "manifest_metadata": {
+    "category": "subprocess-and-pty-lifecycle",
+    "theme": "subprocess and pseudo-terminal lifecycle finalization",
+    "file_sample": [
+      "tools/mcp_tool.py"
+    ],
+    "quality": "implementation_only",
+    "case_id": "NousResearch__hermes-agent__14901__subprocess-and-pty-lifecycle",
+    "role": "train_candidate",
+    "split": "train_candidate",
+    "sample_kind": "verified_implementation_pull_request",
+    "resolution_url": "https://github.com/NousResearch/hermes-agent/pull/14901",
+    "source": "agent_core_thirteen_category_extraction_v2",
+    "provenance": {
+      "classification": "direct_implementation_artifact",
+      "resolution_artifact": {
+        "type": "pull_request",
+        "number": 14901,
+        "url": "https://github.com/NousResearch/hermes-agent/pull/14901"
+      },
+      "commit": {
+        "sha": "379b2273d95566e8a69eadabceabc6ee08521b49",
+        "subject": "fix(mcp): route stdio subprocess stderr to log file, not user TTY (#14901)",
+        "parents": [
+          "7db2703b332bbe8afe2c89b1fed2dd8c03cbd9af"
+        ],
+        "body_excerpt": "MCP stdio servers' stderr was being dumped directly onto the user's\nterminal during hermes launch. Servers like FastMCP-based ones print a\nlarge ASCII banner at startup; slack-mcp-server emits JSON logs; etc.\nWith prompt_toolkit / Rich rendering the TUI concurrently, these\nunsolicited writes corrupt the terminal state — hanging the session\n~80% of the time for one user with Google Ads Tools + slack-mcp\nconfigured, forcing Ctrl+C and restart loops.\n\nRoot cause: `stdio_client(server_params)` in tools/mcp_tool.py was\ncalled without `errlog=`, and the SDK's default is `sys.stderr` —\ni.e. the real parent-process stderr, which is the TTY.\n\nFix: open a shared, append-mode log at $HERMES_HOME/logs/mcp-stderr.log\n(created once per process, line-buffered, real fd required by asyncio's\nsubprocess machinery) and pass it as `errlog` to every stdio_client.\nEach server's spawn writes a timestamped header so the shared log stays\nreadable when multiple servers are running. Falls back to /dev/null if\nthe log file cannot be opened.\n\nVerified by E2E spawning a subprocess with the log fd as its stderr:\nbanner lines land in the log file, nothing reaches the calling TTY."
+      },
+      "verification": [
+        "local_git_commit_resolved",
+        "first_parent_and_changed_files_recorded",
+        "implementation_change_present",
+        "no_test_file_change_observed"
+      ]
+    }
+  },
+  "fetched_at": "2026-10-01T10:55:48.536901+00:00",
+  "limitations": [
+    "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
+  ]
+}
