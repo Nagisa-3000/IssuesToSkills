@@ -13,64 +13,10 @@
   },
   "counts": {
     "total": 4,
-    "implementation_plus_test": 3,
-    "implementation_only": 1
+    "implementation_plus_test": 4,
+    "implementation_only": 0
   },
   "cases": [
-    {
-      "case_id": "Aider-AI__aider__1397__persistent-state-and-schema-consistency",
-      "repository": "Aider-AI/aider",
-      "issue": 1397,
-      "issue_url": "https://github.com/Aider-AI/aider/pull/1397",
-      "artifact_type": "pull_request",
-      "checkout": "/home/chenyujia/tritonToLlvm/aider-agent",
-      "category": "persistent-state-and-schema-consistency",
-      "theme": "persistent cache and state schema consistency",
-      "role": "train_candidate",
-      "split": "train_candidate",
-      "sample_kind": "verified_implementation_pull_request",
-      "source": "agent_core_thirteen_category_extraction_v2",
-      "resolution_url": "https://github.com/Aider-AI/aider/pull/1397",
-      "ref": "3a36edb8ec341b940d8d10a33dd6e8f53a09e076",
-      "extraction_ref": "3a36edb8ec341b940d8d10a33dd6e8f53a09e076",
-      "title": "Merge pull request #1397 from fry69/prompt-cache",
-      "ref_exists_in_checkout": true,
-      "commit_subjects": [
-        "Merge pull request #1397 from fry69/prompt-cache"
-      ],
-      "linked_issue_numbers": [
-        1397
-      ],
-      "file_sample": [
-        "aider/models.py"
-      ],
-      "quality": "implementation_only",
-      "evidence_status": "ready_for_codex_extraction",
-      "provenance": {
-        "classification": "direct_implementation_artifact",
-        "resolution_artifact": {
-          "type": "pull_request",
-          "number": 1397,
-          "url": "https://github.com/Aider-AI/aider/pull/1397"
-        },
-        "commit": {
-          "sha": "3a36edb8ec341b940d8d10a33dd6e8f53a09e076",
-          "subject": "Merge pull request #1397 from fry69/prompt-cache",
-          "parents": [
-            "2663233b60c0c9d96c3e439ac0d5d4af22480926",
-            "795810ffb8e94536830aed698ef3639be0aafa38"
-          ],
-          "body_excerpt": "Enable prompt caching for OpenRouter"
-        },
-        "verification": [
-          "local_git_commit_resolved",
-          "first_parent_and_changed_files_recorded",
-          "implementation_change_present",
-          "no_test_file_change_observed"
-        ]
-      },
-      "pull_request": 1397
-    },
     {
       "case_id": "earendil-works__pi__6594__persistent-state-and-schema-consistency",
       "repository": "earendil-works/pi",
@@ -199,6 +145,67 @@
         ]
       },
       "pull_request": 3249
+    },
+    {
+      "case_id": "openai__codex__24819__persistent-state-and-schema-consistency",
+      "repository": "openai/codex",
+      "issue": 24819,
+      "issue_url": "https://github.com/openai/codex/pull/24819",
+      "artifact_type": "pull_request",
+      "checkout": "/home/chenyujia/tritonToLlvm/codex-agent",
+      "category": "persistent-state-and-schema-consistency",
+      "theme": "persistent cache and state schema consistency",
+      "role": "train_candidate",
+      "split": "train_candidate",
+      "sample_kind": "verified_implementation_pull_request",
+      "source": "agent_core_thirteen_category_extraction_v2",
+      "resolution_url": "https://github.com/openai/codex/pull/24819",
+      "ref": "304d15cab0b1c5f23925e5a3b94c39db3483fc3d",
+      "extraction_ref": "304d15cab0b1c5f23925e5a3b94c39db3483fc3d",
+      "title": "[codex] Remove redundant SQLite dynamic tool storage (#24819)",
+      "ref_exists_in_checkout": true,
+      "commit_subjects": [
+        "[codex] Remove redundant SQLite dynamic tool storage (#24819)"
+      ],
+      "linked_issue_numbers": [
+        24819
+      ],
+      "file_sample": [
+        "codex-rs/core/src/session/mod.rs",
+        "codex-rs/core/tests/suite/sqlite_state.rs",
+        "codex-rs/rollout/src/metadata.rs",
+        "codex-rs/rollout/src/state_db.rs",
+        "codex-rs/state/src/runtime.rs",
+        "codex-rs/state/src/runtime/threads.rs",
+        "codex-rs/thread-store/src/local/update_thread_metadata.rs",
+        "codex-rs/thread-store/src/thread_metadata_sync.rs",
+        "codex-rs/thread-store/src/types.rs"
+      ],
+      "quality": "implementation_plus_test",
+      "evidence_status": "ready_for_codex_extraction",
+      "provenance": {
+        "classification": "direct_implementation_artifact",
+        "resolution_artifact": {
+          "type": "pull_request",
+          "number": 24819,
+          "url": "https://github.com/openai/codex/pull/24819"
+        },
+        "commit": {
+          "sha": "304d15cab0b1c5f23925e5a3b94c39db3483fc3d",
+          "subject": "[codex] Remove redundant SQLite dynamic tool storage (#24819)",
+          "parents": [
+            "0db49a7e6ae8fd459dd8d8d404086c748b9118a1"
+          ],
+          "body_excerpt": "## Why\n\nDynamic tools are defined at thread start and already stored in rollout\n`SessionMeta`, which restores resumed and forked sessions. Persisting\nthe same tools through SQLite creates a second runtime persistence path\nthat is unnecessary prework for the explicit namespace refactor.\n\n## What changed\n\n- Restore missing thread-start dynamic tools directly from rollout\nhistory, including when SQLite is enabled.\n- Remove SQLite dynamic-tool reads, writes, backfill, and thread\nmetadata patch plumbing.\n- Add SQLite-enabled resume integration coverage that verifies a\nrollout-defined dynamic tool is still sent after resume.\n\n## Compatibility\n\nThe existing `thread_dynamic_tools` table is intentionally not dropped\neven though it's now unused. Older Codex binaries are allowed to open\ndatabases migrated by newer binaries and still reference this table;\ndropping it would break that mixed-version path. See\n[here](https://github.com/openai/codex/blob/main/codex-rs/state/src/migrations.rs#L10-L11).\n\n## Verification\n\n- `just test -p codex-state -p codex-rollout -p codex-thread-store`\n- `just test -p codex-core --test all\nresume_restores_dynamic_tools_from_rollout_with_sqlite_enabled`"
+        },
+        "verification": [
+          "local_git_commit_resolved",
+          "first_parent_and_changed_files_recorded",
+          "implementation_change_present",
+          "test_or_spec_change_present"
+        ]
+      },
+      "pull_request": 24819
     },
     {
       "case_id": "google-gemini__gemini-cli__18506__persistent-state-and-schema-consistency",

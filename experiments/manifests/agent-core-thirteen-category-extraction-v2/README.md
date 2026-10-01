@@ -4,9 +4,10 @@ This extraction-only set extends the first seven classes to twenty common agent-
 
 - Training cases: 52 (13 categories × 4 repositories).
 - Untouched holdouts: 13 (one different repository per category).
-- Training cases with a changed test/spec file: 34.
+- Training cases with a changed test/spec file: 35.
 - Every training artifact resolves to a pinned local implementation commit.
 - `selection-audit.json` is provenance only and must never be passed to an extraction or holdout agent.
+- `excluded-candidates.json` records keyword-near candidates rejected after implementation review.
 - `holdouts.json` must not enter Episode, Atomic, Workflow, Pattern, graph, or retrieval construction.
 
 ## Categories
