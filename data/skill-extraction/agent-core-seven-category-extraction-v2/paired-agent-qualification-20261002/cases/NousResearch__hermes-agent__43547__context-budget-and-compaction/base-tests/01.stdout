@@ -1,0 +1,69 @@
+...................FFFF................................................. [ 61%]
+..............................................                           [100%]
+=================================== FAILURES ===================================
+__________ TestCompress.test_max_tokens_reservation_lowers_threshold ___________
+
+self = <tests.agent.test_context_compressor.TestCompress object at 0x7f4ee56159d0>
+
+    def test_max_tokens_reservation_lowers_threshold(self):
+        """#43547: the provider reserves max_tokens out of the window, so the
+        threshold must be based on (context_length - max_tokens), not the full
+        window. A 200K model reserving 65536 output tokens has a ~134K input
+        budget; at 50% that's ~67K, NOT 100K."""
+        # No reservation (provider default) → full-window behavior, unchanged.
+        assert ContextCompressor._compute_threshold_tokens(200000, 0.50) == 100000
+>       assert ContextCompressor._compute_threshold_tokens(200000, 0.50, None) == 100000
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: ContextCompressor._compute_threshold_tokens() takes 2 positional arguments but 3 were given
+
+tests/agent/test_context_compressor.py:274: TypeError
+______ TestCompress.test_max_tokens_reservation_with_small_window_floors _______
+
+self = <tests.agent.test_context_compressor.TestCompress object at 0x7f4ee56178d0>
+
+    def test_max_tokens_reservation_with_small_window_floors(self):
+        """With a large reservation on a smaller window the effective budget
+        can drop near/below the minimum floor — the degenerate-window guard
+        then triggers at 85% of the EFFECTIVE budget, never the raw window."""
+        # 128K window, 65536 reserved → effective 62464 (< MINIMUM 64000).
+        # Floor (64000) >= effective window (62464) → 85% of effective.
+>       t = ContextCompressor._compute_threshold_tokens(128000, 0.50, 65536)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: ContextCompressor._compute_threshold_tokens() takes 2 positional arguments but 3 were given
+
+tests/agent/test_context_compressor.py:284: TypeError
+_______ TestCompress.test_max_tokens_exceeding_window_falls_back_to_full _______
+
+self = <tests.agent.test_context_compressor.TestCompress object at 0x7f4ee5617d90>
+
+    def test_max_tokens_exceeding_window_falls_back_to_full(self):
+        """Pathological: max_tokens >= context_length would make the effective
+        budget <= 0; fall back to the full window rather than produce a
+        non-positive threshold."""
+>       t = ContextCompressor._compute_threshold_tokens(64000, 0.50, 70000)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: ContextCompressor._compute_threshold_tokens() takes 2 positional arguments but 3 were given
+
+tests/agent/test_context_compressor.py:292: TypeError
+____ TestCompress.test_max_tokens_coercion_treats_non_int_as_no_reservation ____
+
+self = <tests.agent.test_context_compressor.TestCompress object at 0x7f4ee5588150>
+
+    def test_max_tokens_coercion_treats_non_int_as_no_reservation(self):
+        """A non-int / non-positive max_tokens must coerce safely so the
+        threshold arithmetic never raises. Guards the path where a mocked
+        parent agent forwards a MagicMock max_tokens into a child
+        ContextCompressor (regression for the delegate-test TypeError:
+        '<=' not supported between MagicMock and int)."""
+        from unittest.mock import MagicMock
+>       assert ContextCompressor._coerce_max_tokens(None) is None
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: type object 'ContextCompressor' has no attribute '_coerce_max_tokens'
+
+tests/agent/test_context_compressor.py:304: AttributeError
+=========================== short test summary info ============================
+FAILED tests/agent/test_context_compressor.py::TestCompress::test_max_tokens_reservation_lowers_threshold
+FAILED tests/agent/test_context_compressor.py::TestCompress::test_max_tokens_reservation_with_small_window_floors
+FAILED tests/agent/test_context_compressor.py::TestCompress::test_max_tokens_exceeding_window_falls_back_to_full
+FAILED tests/agent/test_context_compressor.py::TestCompress::test_max_tokens_coercion_treats_non_int_as_no_reservation
+4 failed, 114 passed in 6.91s

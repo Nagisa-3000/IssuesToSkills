@@ -101,6 +101,21 @@ def _safe_name(value: str) -> str:
     return "".join(ch if ch.isalnum() or ch in "-_." else "_" for ch in value)
 
 
+def _public_issue_text(case: dict[str, Any], *keys: str, fallback: str) -> str:
+    """Return the first supplied public issue field without rewriting it.
+
+    Enriched holdout manifests intentionally carry only the public issue title
+    and body. Preserve those fields verbatim when preparing an executable
+    oracle; synthetic fallback text is only appropriate for older manifests
+    that do not contain public issue text at all.
+    """
+    for key in keys:
+        value = case.get(key)
+        if value is not None and str(value).strip():
+            return str(value)
+    return fallback
+
+
 def _test_command(repository: str, paths: list[str], *, node_tool: Path = NODE_TOOL) -> list[str]:
     if not paths:
         return ["git diff --check HEAD"]
@@ -132,8 +147,32 @@ def _test_command(repository: str, paths: list[str], *, node_tool: Path = NODE_T
     if repository == "openai/codex":
         return [f"python3 {node_tool} pnpm exec vitest run {quoted}", "git diff --check HEAD"]
     if repository == "earendil-works/pi":
-        node_path = "/home/chenyujia/.local/nodeenvs/node-22.19.0/bin"
-        return [f"PATH={node_path}:$PATH npm test -- {quoted}", "git diff --check HEAD"]
+        node_path = (
+            "/home/chenyujia/.local/node22/bin:"
+            "/home/chenyujia/.local/node22-global/node_modules/.bin:/usr/bin:/bin"
+        )
+        commands: list[str] = []
+        package_prefixes = ("packages/ai/", "packages/coding-agent/")
+        consumed: set[str] = set()
+        for prefix in package_prefixes:
+            package_paths = [path.removeprefix(prefix) for path in paths if path.startswith(prefix)]
+            if not package_paths:
+                continue
+            consumed.update(path for path in paths if path.startswith(prefix))
+            package = prefix.rstrip("/")
+            package_quoted = " ".join(
+                "'" + path.replace("'", "'\\''") + "'" for path in package_paths
+            )
+            commands.append(
+                f"env PATH={node_path} npm --prefix {package} test -- {package_quoted}"
+            )
+        remaining = [path for path in paths if path not in consumed]
+        if remaining:
+            remaining_quoted = " ".join(
+                "'" + path.replace("'", "'\\''") + "'" for path in remaining
+            )
+            commands.append(f"env PATH={node_path} npm test -- {remaining_quoted}")
+        return commands + ["git diff --check HEAD"]
     return ["git diff --check HEAD"]
 
 
@@ -180,10 +219,11 @@ def prepare_case(case: dict[str, Any], *, output_dir: Path, max_test_paths: int)
         # Hermes keeps its Python dependency lock in the repository.  Install
         # dependencies without installing the project itself so pytest imports
         # the snapshot under test rather than a host checkout.
+        uv_tool = "/home/chenyujia/.local/bin/uv"
         setup_commands.append(
-            f"uv sync --python {python_minor} --extra dev --no-install-project || "
-            f"uv sync --python {python_minor} --no-install-project; "
-            "uv pip install --python .venv/bin/python -e . pytest pytest-asyncio"
+            f"{uv_tool} sync --python {python_minor} --extra dev --no-install-project || "
+            f"{uv_tool} sync --python {python_minor} --no-install-project; "
+            f"{uv_tool} pip install --python .venv/bin/python -e . pytest pytest-asyncio"
         )
     if repository in {"NousResearch/hermes-agent", "google-gemini/gemini-cli"} and has_node_tests:
         setup_commands.append(f"python3 {NODE_TOOL} npm ci --ignore-scripts --no-audit --no-fund")
@@ -192,8 +232,51 @@ def prepare_case(case: dict[str, Any], *, output_dir: Path, max_test_paths: int)
             setup_commands.append(f"python3 {NODE_TOOL} pnpm install --frozen-lockfile --ignore-scripts")
         else:
             setup_commands.append(f"python3 {NODE_TOOL} npm ci --ignore-scripts --no-audit --no-fund")
+    if repository == "earendil-works/pi" and has_node_tests:
+        node_path = (
+            "/home/chenyujia/.local/node22/bin:"
+            "/home/chenyujia/.local/node22-global/node_modules/.bin:/usr/bin:/bin"
+        )
+        model_data_source = (
+            "/home/chenyujia/tritonToLlvm/arexskills_pilot/cli-source/node_modules/"
+            "@earendil-works/pi-ai/dist/providers/data"
+        )
+        setup_commands.append(
+            "mkdir -p packages/ai/src/providers/data && "
+            f"cp {model_data_source}/*.json packages/ai/src/providers/data/ && "
+            f"cp {model_data_source}/.manifest.json packages/ai/src/providers/data/.manifest.json && "
+            "for name in baseten meta qwen-token-plan-individual radius typesafe; do "
+            "test -f packages/ai/src/providers/data/$name.json || "
+            "printf '[]\\n' > packages/ai/src/providers/data/$name.json; done"
+        )
+        setup_commands.append(
+            f"env PATH={node_path} npm ci --ignore-scripts --no-audit --no-fund"
+        )
+        setup_commands.append(
+            "mkdir -p packages/ai/dist/utils && "
+            f"env PATH={node_path} ./node_modules/.bin/esbuild "
+            "packages/ai/src/utils/uuid.ts --format=esm --platform=node "
+            "--outfile=packages/ai/dist/utils/uuid.js"
+        )
     if repository == "deepseek-ai/deepseek-harness":
         setup_commands.append("PATH=/home/chenyujia/.local/nodeenvs/node-22.19.0/bin:$PATH pnpm install --frozen-lockfile --ignore-scripts")
+    issue_title = _public_issue_text(
+        case,
+        "issue_title",
+        "title",
+        fallback=f"Implement the {category.replace('-', ' ')} behavior",
+    )
+    issue_body = _public_issue_text(
+        case,
+        "issue_body",
+        "body",
+        fallback=(
+            f"Held-out cross-project task in the {category.replace('-', ' ')} family. "
+            "Implement the behavior required by the visible regression tests while preserving "
+            "existing compatibility and error semantics. The original implementation commit is "
+            "intentionally absent from this snapshot."
+        ),
+    )
     row = {
         "id": case_id,
         "repository": repository,
@@ -203,8 +286,8 @@ def prepare_case(case: dict[str, Any], *, output_dir: Path, max_test_paths: int)
         "issue_number": issue,
         "category": category,
         "theme": case.get("theme", category.replace("-", " ")),
-        "issue_title": str(case.get("title") or f"Implement the {category.replace('-', ' ')} behavior"),
-        "issue_body": f"Held-out cross-project task in the {category.replace('-', ' ')} family. Implement the behavior required by the visible regression tests while preserving existing compatibility and error semantics. The original implementation commit is intentionally absent from this snapshot.",
+        "issue_title": issue_title,
+        "issue_body": issue_body,
         "visible_test_paths": test_paths,
         "visible_support_paths": support_paths,
         "test_commands": _test_command(repository, test_paths),
@@ -217,6 +300,8 @@ def prepare_case(case: dict[str, Any], *, output_dir: Path, max_test_paths: int)
         "test_patch_sha256": hashlib.sha256(patch.encode()).hexdigest(),
         "test_patch_characters": len(patch),
         "split": "held_out_test",
+        "extraction_forbidden": bool(case.get("extraction_forbidden", False)),
+        "solution_hidden_from_agent": bool(case.get("solution_hidden_from_agent", True)),
         "held_out_repository": case.get("held_out_repository"),
         "manifest_source": case,
     }

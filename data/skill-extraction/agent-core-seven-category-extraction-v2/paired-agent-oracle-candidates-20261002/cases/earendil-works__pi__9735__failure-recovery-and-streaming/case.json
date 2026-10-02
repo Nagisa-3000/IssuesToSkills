@@ -1,0 +1,105 @@
+{
+  "id": "earendil-works__pi__9735__failure-recovery-and-streaming",
+  "repository": "earendil-works/pi",
+  "repository_path": "/home/chenyujia/tritonToLlvm/pi-agent",
+  "base_ref": "d981de1229ef899957bbe968bc8dcda02a21f477",
+  "solution_ref": "df3d408b087185d47a9b4d15f10241422b752eb6",
+  "issue_number": 9735,
+  "category": "failure-recovery-and-streaming",
+  "theme": "failure recovery and streaming",
+  "issue_title": "Retry classifier misses premature stream endings worded by a proxy, e.g. CLIProxyAPI",
+  "issue_body": "## Summary\n\n`isRetryableAssistantError` does not recognise a stream that ended before its terminal event when the wording comes from a proxy rather than from pi's own code, so the turn is abandoned instead of retried.\n\nConcretely, this message is not matched by `RETRYABLE_PROVIDER_ERROR_PATTERN`:\n\n```\nlitellm.APIError: stream error: stream disconnected before completion: stream closed before response.completed\n```\n\n## Why this is surprising\n\npi already handles exactly this condition on its own code path. `packages/ai` throws:\n\n```ts\nif (!sawTerminalResponseEvent)\n    throw new Error(\"OpenAI Responses stream ended before a terminal response event\");\n```\n\nand that sentence **is** in the retryable list. So a user on pi's direct ChatGPT subscription login never sees this failure: pi detects the truncation, recognises its own wording, and retries silently.\n\nPut an OpenAI-compatible proxy in the path and the same physical fault becomes fatal, because the proxy words it differently.\n\n## The structural point\n\n`packages/ai/src/utils/retry.ts` currently enumerates vendor spellings of one condition:\n\n- `\"ended without\"` — Anthropic\n- `\"stream ended before message_stop\"` — Anthropic (#4433)\n- `\"stream ended before a terminal response event\"` — pi's own Responses check\n\nand is missing at least a fourth, CLIProxyAPI's `\"stream disconnected before completion: stream closed before response.completed\"`.\n\nA premature stream ending is **one condition**, not one condition per vendor. Enumerating sentences means every new SDK, gateway or proxy that phrases it differently needs another patch here, and users hit a hard failure until it lands.\n\n## Reproduction\n\nAn assistant call whose provider returns `stopReason: \"error\"` with the message above. Expected: `isRetryableAssistantError` returns `true` and the turn is retried under the configured policy. Actual: it returns `false` and the turn is abandoned.\n\n### Captured from a live run\n\nFrom a live run on a pi -> LiteLLM 1.100.1 -> CLIProxyAPI v7.2.159 -> ChatGPT Codex path, captured 2026-09-18T09:48 +08:00. The upstream cut the stream after 1068 events, the last 2130 of them `response.function_call_arguments.delta`, with no `response.completed`. The gateway reported the cut in band:\n\n```\nevent: response.function_call_arguments.delta\ndata: {\"type\":\"response.function_call_arguments.delta\",\"delta\":\"[REDACTED tool-call argument fragment]\",\"item_id\":\"[REDACTED]\",\"output_index\":0,\"sequence_number\":1067}\n\nevent: error\ndata: {\"type\":\"error\",\"error\":{\"code\":\"request_timeout\",\"message\":\"stream error: stream disconnected before completion: stream closed before response.completed\",\"param\":null,\"type\":\"invalid_request_error\"},\"sequence_number\":1068}\n```\n\nLiteLLM turned that into the message pi actually sees:\n\n```\n01:49:22 - LiteLLM Proxy:ERROR: proxy_server.py:8778 - litellm.proxy.proxy_server.async_data_generator(): Exception occured - litellm.APIError: stream error: stream disconnected before completion: stream closed before response.completed\n```\n\nRedacted from the capture: the request body (541 KB of prompt, conversation and source code), all bearer tokens, cookies, account and session identifiers, quota headers and the text of each tool-call argument delta. Event names, sequence numbers and error payloads are untouched.\n\nThat is the same condition pi already retries under two other spellings. Only the wording differs, and the wording is what the classifier matched on.\n\nThe fault occurs on roughly 0.13% of requests on this path, always cutting in during `response.function_call_arguments.delta`, and the connection gap is typically one to two seconds. It is exactly the kind of failure retry exists for.\n\n## Suggested fix\n\nMatch the condition rather than each vendor's sentence, so a new phrasing is covered without another patch.\n\n## Deeper follow-up, not proposed here\n\nRetryability is decided by regular expression over a human-readable message. That couples pi's control flow to other systems' prose. Providers frequently do carry a machine-readable code — CLIProxyAPI sets `code: \"request_timeout\"` on this very error — but `AssistantMessage` has no field to carry it, so it is lost before the classifier runs. Threading a structured error code through `AssistantMessage` and classifying on it first, with text matching as the fallback, would remove this class of bug. That is a much larger change and is not what the attached PR does.\n\nPR with an end-to-end regression test attached.\n",
+  "visible_test_paths": [
+    "packages/ai/test/retry.test.ts",
+    "packages/coding-agent/test/suite/regressions/9735-proxy-truncated-stream-retry.test.ts"
+  ],
+  "visible_support_paths": [],
+  "test_commands": [
+    "env PATH=/home/chenyujia/.local/node22/bin:/home/chenyujia/.local/node22-global/node_modules/.bin:/usr/bin:/bin npm --prefix packages/ai test -- 'test/retry.test.ts'",
+    "env PATH=/home/chenyujia/.local/node22/bin:/home/chenyujia/.local/node22-global/node_modules/.bin:/usr/bin:/bin npm --prefix packages/coding-agent test -- 'test/suite/regressions/9735-proxy-truncated-stream-retry.test.ts'",
+    "git diff --check HEAD"
+  ],
+  "setup_commands": [
+    "mkdir -p packages/ai/src/providers/data && cp /home/chenyujia/tritonToLlvm/arexskills_pilot/cli-source/node_modules/@earendil-works/pi-ai/dist/providers/data/*.json packages/ai/src/providers/data/ && cp /home/chenyujia/tritonToLlvm/arexskills_pilot/cli-source/node_modules/@earendil-works/pi-ai/dist/providers/data/.manifest.json packages/ai/src/providers/data/.manifest.json && for name in baseten meta qwen-token-plan-individual radius typesafe; do test -f packages/ai/src/providers/data/$name.json || printf '[]\\n' > packages/ai/src/providers/data/$name.json; done",
+    "env PATH=/home/chenyujia/.local/node22/bin:/home/chenyujia/.local/node22-global/node_modules/.bin:/usr/bin:/bin npm ci --ignore-scripts --no-audit --no-fund",
+    "mkdir -p packages/ai/dist/utils && env PATH=/home/chenyujia/.local/node22/bin:/home/chenyujia/.local/node22-global/node_modules/.bin:/usr/bin:/bin ./node_modules/.bin/esbuild packages/ai/src/utils/uuid.ts --format=esm --platform=node --outfile=packages/ai/dist/utils/uuid.js"
+  ],
+  "apply_visible_tests_to_solution": false,
+  "changed_file_count": 3,
+  "changed_files_sample": [
+    {
+      "status": "M",
+      "path": "packages/ai/src/utils/retry.ts"
+    },
+    {
+      "status": "M",
+      "path": "packages/ai/test/retry.test.ts"
+    },
+    {
+      "status": "A",
+      "path": "packages/coding-agent/test/suite/regressions/9735-proxy-truncated-stream-retry.test.ts"
+    }
+  ],
+  "test_patch_sha256": "32660cb2eca24ee806f27b9ee16f9f249c6b420fcdeaec7b98a02286f7cafa78",
+  "test_patch_characters": 4482,
+  "split": "held_out_test",
+  "extraction_forbidden": true,
+  "solution_hidden_from_agent": true,
+  "held_out_repository": null,
+  "manifest_source": {
+    "case_id": "earendil-works__pi__9735__failure-recovery-and-streaming",
+    "repository": "earendil-works/pi",
+    "issue": 9735,
+    "issue_url": "https://github.com/earendil-works/pi/issues/9735",
+    "checkout": "/home/chenyujia/tritonToLlvm/pi-agent",
+    "category": "failure-recovery-and-streaming",
+    "table_ordinal": 37,
+    "table_note": "proxy premature stream ending is not recognized, so no retry occurs",
+    "source": "user_supplied_agent_core_issue_table",
+    "role": "holdout_candidate",
+    "split": "held_out_test_candidate",
+    "holdout_reason": "leave-one-repository-out category transfer test",
+    "evidence_status": "intentionally_not_extracted",
+    "sample_kind": "exact_table_row_holdout",
+    "seed_issue": 9735,
+    "seed_issue_url": "https://github.com/earendil-works/pi/issues/9735",
+    "seed_relation": "exact_table_row_untouched_holdout",
+    "extraction_forbidden": true,
+    "issue_title": "Retry classifier misses premature stream endings worded by a proxy, e.g. CLIProxyAPI",
+    "issue_body": "## Summary\n\n`isRetryableAssistantError` does not recognise a stream that ended before its terminal event when the wording comes from a proxy rather than from pi's own code, so the turn is abandoned instead of retried.\n\nConcretely, this message is not matched by `RETRYABLE_PROVIDER_ERROR_PATTERN`:\n\n```\nlitellm.APIError: stream error: stream disconnected before completion: stream closed before response.completed\n```\n\n## Why this is surprising\n\npi already handles exactly this condition on its own code path. `packages/ai` throws:\n\n```ts\nif (!sawTerminalResponseEvent)\n    throw new Error(\"OpenAI Responses stream ended before a terminal response event\");\n```\n\nand that sentence **is** in the retryable list. So a user on pi's direct ChatGPT subscription login never sees this failure: pi detects the truncation, recognises its own wording, and retries silently.\n\nPut an OpenAI-compatible proxy in the path and the same physical fault becomes fatal, because the proxy words it differently.\n\n## The structural point\n\n`packages/ai/src/utils/retry.ts` currently enumerates vendor spellings of one condition:\n\n- `\"ended without\"` — Anthropic\n- `\"stream ended before message_stop\"` — Anthropic (#4433)\n- `\"stream ended before a terminal response event\"` — pi's own Responses check\n\nand is missing at least a fourth, CLIProxyAPI's `\"stream disconnected before completion: stream closed before response.completed\"`.\n\nA premature stream ending is **one condition**, not one condition per vendor. Enumerating sentences means every new SDK, gateway or proxy that phrases it differently needs another patch here, and users hit a hard failure until it lands.\n\n## Reproduction\n\nAn assistant call whose provider returns `stopReason: \"error\"` with the message above. Expected: `isRetryableAssistantError` returns `true` and the turn is retried under the configured policy. Actual: it returns `false` and the turn is abandoned.\n\n### Captured from a live run\n\nFrom a live run on a pi -> LiteLLM 1.100.1 -> CLIProxyAPI v7.2.159 -> ChatGPT Codex path, captured 2026-09-18T09:48 +08:00. The upstream cut the stream after 1068 events, the last 2130 of them `response.function_call_arguments.delta`, with no `response.completed`. The gateway reported the cut in band:\n\n```\nevent: response.function_call_arguments.delta\ndata: {\"type\":\"response.function_call_arguments.delta\",\"delta\":\"[REDACTED tool-call argument fragment]\",\"item_id\":\"[REDACTED]\",\"output_index\":0,\"sequence_number\":1067}\n\nevent: error\ndata: {\"type\":\"error\",\"error\":{\"code\":\"request_timeout\",\"message\":\"stream error: stream disconnected before completion: stream closed before response.completed\",\"param\":null,\"type\":\"invalid_request_error\"},\"sequence_number\":1068}\n```\n\nLiteLLM turned that into the message pi actually sees:\n\n```\n01:49:22 - LiteLLM Proxy:ERROR: proxy_server.py:8778 - litellm.proxy.proxy_server.async_data_generator(): Exception occured - litellm.APIError: stream error: stream disconnected before completion: stream closed before response.completed\n```\n\nRedacted from the capture: the request body (541 KB of prompt, conversation and source code), all bearer tokens, cookies, account and session identifiers, quota headers and the text of each tool-call argument delta. Event names, sequence numbers and error payloads are untouched.\n\nThat is the same condition pi already retries under two other spellings. Only the wording differs, and the wording is what the classifier matched on.\n\nThe fault occurs on roughly 0.13% of requests on this path, always cutting in during `response.function_call_arguments.delta`, and the connection gap is typically one to two seconds. It is exactly the kind of failure retry exists for.\n\n## Suggested fix\n\nMatch the condition rather than each vendor's sentence, so a new phrasing is covered without another patch.\n\n## Deeper follow-up, not proposed here\n\nRetryability is decided by regular expression over a human-readable message. That couples pi's control flow to other systems' prose. Providers frequently do carry a machine-readable code — CLIProxyAPI sets `code: \"request_timeout\"` on this very error — but `AssistantMessage` has no field to carry it, so it is lost before the classifier runs. Threading a structured error code through `AssistantMessage` and classifying on it first, with text matching as the fallback, would remove this class of bug. That is a much larger change and is not what the attached PR does.\n\nPR with an end-to-end regression test attached.\n",
+    "issue_body_length": 4470,
+    "issue_body_sha256": "f685d13259da8b58903569b9012c785b922a709c235d64ab03fd2f2aabca727d",
+    "issue_state": "closed",
+    "issue_created_at": "2026-09-18T06:36:40Z",
+    "issue_updated_at": "2026-10-01T10:55:38Z",
+    "issue_labels": [
+      "no-action"
+    ],
+    "public_issue_secret_redactions": 0,
+    "evaluation_input_source": {
+      "kind": "github_issue_title_and_body_only",
+      "api_url": "https://api.github.com/repos/earendil-works/pi/issues/9735",
+      "html_url": "https://github.com/earendil-works/pi/issues/9735"
+    },
+    "solution_hidden_from_agent": true,
+    "ref": "df3d408b087185d47a9b4d15f10241422b752eb6",
+    "solution_ref": "df3d408b087185d47a9b4d15f10241422b752eb6",
+    "expected_parent": "d981de1229ef899957bbe968bc8dcda02a21f477",
+    "file_sample": [
+      "packages/ai/src/utils/retry.ts",
+      "packages/ai/test/retry.test.ts",
+      "packages/coding-agent/test/suite/regressions/9735-proxy-truncated-stream-retry.test.ts"
+    ],
+    "pull_request": 9736,
+    "merge_commit": null,
+    "oracle_candidate_status": "unmerged_reference_candidate",
+    "oracle_authority": "non_authoritative_unmerged_pull_request_head",
+    "oracle_caveat": "Issue closed as not_planned/no-action and PR #9736 is closed without merge. Use only if executable qualification proves the visible regression fails on the parent and passes on this candidate head; never describe it as the authoritative resolution.",
+    "qualification_contract": {
+      "base_must_fail": true,
+      "solution_must_pass": true,
+      "setup_must_succeed": true,
+      "visible_test_patch_must_apply": true
+    }
+  }
+}

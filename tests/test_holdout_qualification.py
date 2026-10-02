@@ -15,6 +15,7 @@ from run_cross_project_holdout_agent_eval import (
     _payload_relation_ids,
     _prompt,
     _render_hit,
+    _split_guidance_hits,
 )
 
 from arex_skill_graph.retrieval import SearchHit
@@ -217,3 +218,41 @@ def test_pattern_guidance_keeps_human_contract_and_role_bound_actions() -> None:
     assert "when_to_use" in rendered
     assert "action_template" in rendered
     assert _payload_relation_ids(payload) == {"workflow:1", "action:1"}
+
+def test_deferred_pattern_is_excluded_before_judge_and_guided_use() -> None:
+    deferred = SearchHit(
+        Node(
+            "pattern:deferred",
+            NodeType.PATTERN,
+            "Deferred pattern",
+            "Not eligible for execution guidance.",
+            payload={"promotion_status": "deferred_by_semantic_judge"},
+        ),
+        1.0,
+    )
+    workflow = SearchHit(
+        Node(
+            "workflow:eligible",
+            NodeType.WORKFLOW,
+            "Eligible workflow",
+            "A workflow may still be judged independently.",
+        ),
+        0.8,
+    )
+
+    eligible, excluded = _split_guidance_hits([deferred, workflow])
+
+    assert [hit.node.id for hit in eligible] == ["workflow:eligible"]
+    assert excluded == [
+        {
+            "rank": 1,
+            "id": "pattern:deferred",
+            "title": "Deferred pattern",
+            "decision": "deferred_by_semantic_judge",
+            "reason": "semantic Pattern decision is not eligible for guided use",
+        }
+    ]
+    assert _approved_guidance_hits(
+        [deferred, workflow],
+        {"applicable": True, "selected_skill_id": "pattern:deferred"},
+    ) == []

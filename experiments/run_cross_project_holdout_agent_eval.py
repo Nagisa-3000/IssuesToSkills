@@ -388,14 +388,54 @@ def _payload_relation_ids(payload: Mapping[str, Any]) -> set[str]:
     return related
 
 
+BLOCKED_PATTERN_DECISIONS = {
+    "defer",
+    "deferred_by_semantic_judge",
+    "reject",
+    "rejected_by_semantic_judge",
+}
+
+
+def _guidance_eligibility(hit: SearchHit) -> tuple[bool, str]:
+    payload = hit.node.payload if isinstance(hit.node.payload, Mapping) else {}
+    decision = str(payload.get("promotion_status") or payload.get("decision") or "")
+    if hit.node.node_type.value == "pattern" and decision in BLOCKED_PATTERN_DECISIONS:
+        return False, decision
+    return True, decision
+
+
+def _split_guidance_hits(
+    hits: Sequence[SearchHit],
+) -> tuple[list[SearchHit], list[dict[str, Any]]]:
+    """Exclude semantically deferred/rejected Patterns before LLM judging or use."""
+    eligible: list[SearchHit] = []
+    excluded: list[dict[str, Any]] = []
+    for rank, hit in enumerate(hits, start=1):
+        is_eligible, decision = _guidance_eligibility(hit)
+        if is_eligible:
+            eligible.append(hit)
+            continue
+        excluded.append(
+            {
+                "rank": rank,
+                "id": hit.node.id,
+                "title": hit.node.title,
+                "decision": decision,
+                "reason": "semantic Pattern decision is not eligible for guided use",
+            }
+        )
+    return eligible, excluded
+
+
 def _approved_guidance_hits(hits: Sequence[SearchHit], judge: Mapping[str, Any]) -> list[SearchHit]:
-    """Keep only the LLM-approved Skill and its retrieved graph neighborhood."""
+    """Keep only an eligible LLM-approved Skill and its retrieved graph neighborhood."""
     if judge.get("applicable") is not True:
         return []
     selected_id = judge.get("selected_skill_id")
     if not isinstance(selected_id, str):
         return []
-    by_id = {hit.node.id: hit for hit in hits}
+    eligible_hits, _ = _split_guidance_hits(hits)
+    by_id = {hit.node.id: hit for hit in eligible_hits}
     selected = by_id.get(selected_id)
     if selected is None:
         return []
@@ -404,7 +444,9 @@ def _approved_guidance_hits(hits: Sequence[SearchHit], judge: Mapping[str, Any])
     payload = selected.node.payload if isinstance(selected.node.payload, Mapping) else {}
     approved_ids.update(_payload_relation_ids(payload))
 
-    related = [hit for hit in hits if hit.node.id in approved_ids and hit is not selected]
+    related = [
+        hit for hit in eligible_hits if hit.node.id in approved_ids and hit is not selected
+    ]
     return [selected, *related]
 
 
@@ -468,6 +510,8 @@ def _build_guidance(
         include_inactive=False,
     )
     latency_ms = (time.perf_counter() - started) * 1000.0
+    hits = response.hits
+    judge_hits, excluded_guidance_hits = _split_guidance_hits(hits)
     judge: dict[str, Any] = {}
     judge_error: str | None = None
     transport: OpenAICompatibleTransport | None = None
@@ -511,11 +555,10 @@ def _build_guidance(
                     },
                 ),
             )
-            judge = dict(governance.judge_retrieval_use(case.query, response.hits))
+            judge = dict(governance.judge_retrieval_use(case.query, judge_hits))
         except Exception as exc:  # noqa: BLE001 - judge failure must degrade to no guidance
             judge_error = f"{type(exc).__name__}: {exc}"
-    hits = response.hits
-    approved_hits = _approved_guidance_hits(hits, judge)
+    approved_hits = _approved_guidance_hits(judge_hits, judge)
     if approved_hits:
         selected = approved_hits[0]
         selected_payload = (
@@ -528,14 +571,15 @@ def _build_guidance(
             related_node = store.get_node(related_id)
             if related_node is None:
                 continue
-            approved_hits.append(
-                SearchHit(
-                    node=related_node,
-                    score=selected.score * 0.75,
-                    sources={"selected_payload_relation": selected.score * 0.75},
-                    trace=[f"{selected.node.id} --payload-reference--> {related_id}"],
-                )
+            related_hit = SearchHit(
+                node=related_node,
+                score=selected.score * 0.75,
+                sources={"selected_payload_relation": selected.score * 0.75},
+                trace=[f"{selected.node.id} --payload-reference--> {related_id}"],
             )
+            if not _guidance_eligibility(related_hit)[0]:
+                continue
+            approved_hits.append(related_hit)
             materialized.add(related_id)
     rendered = "\n\n".join(
         _render_hit(hit, index) for index, hit in enumerate(approved_hits, start=1)
@@ -563,6 +607,8 @@ def _build_guidance(
         ],
         "judge": judge,
         "judge_error": judge_error,
+        "judge_eligible_hit_ids": [hit.node.id for hit in judge_hits],
+        "excluded_guidance_hits": excluded_guidance_hits,
         "guidance_applicable": bool(approved_hits),
         "approved_hit_ids": [hit.node.id for hit in approved_hits],
         "transport_calls": list(transport.calls) if transport else [],
