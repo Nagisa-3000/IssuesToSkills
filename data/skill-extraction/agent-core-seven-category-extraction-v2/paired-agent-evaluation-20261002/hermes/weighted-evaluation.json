@@ -1,0 +1,215 @@
+{
+  "schema_version": "weighted-guided-agent-evaluation-v1",
+  "source_report": "/home/chenyujia/tritonToLlvm/arex-skill-graph/data/skill-extraction/agent-core-seven-category-extraction-v2/paired-agent-evaluation-20261002/hermes/report.json",
+  "cases": 1,
+  "model": "openai/gpt-5.6-sol",
+  "independent_llm_evaluator_used": true,
+  "evaluations": [
+    {
+      "schema_version": "paired-agent-evaluation-v1",
+      "oracle_qualified": true,
+      "setup_gate": {
+        "passed": true
+      },
+      "retrieval_gate": {
+        "checked": true,
+        "passed": true,
+        "applicable": true,
+        "selected_skill_id": "pattern:8105d8c0f3d9ec16",
+        "confidence": 0.96,
+        "rationale": "The defect is causally located at an existing budget-policy boundary: ContextCompressor computes its trigger from the raw context window even though the transport reserves max_tokens from that same window. The intended threshold is therefore derived from the observable effective input capacity, context_length minus the resolved output cap, rather than by changing downstream compaction behavior. The visible focused tests lock the corrected value, unchanged no-reservation behavior, degenerate-window fallback, and invalid-value coercion, matching the pattern's repair-at-policy-boundary and neighboring-regression requirements. The repository-specific workflow candidates concern different mechanisms, such as shell-output truncation or model-alias classification, so the cross-workflow budget-policy pattern is the applicable candidate."
+      },
+      "eligible_for_causal_comparison": true,
+      "weights": {
+        "correctness": 0.6,
+        "code_quality": 0.25,
+        "efficiency": 0.15
+      },
+      "weight_basis": {
+        "policy": "Correctness receives the majority weight because repository-level coding benchmarks treat issue resolution through regression tests as the primary outcome. Quality and efficiency are reported separately and only break ties between oracle-passing arms. The 60/25/15 split is an AREX operational choice, not a weight copied from any cited benchmark.",
+        "references": [
+          {
+            "name": "SWE-bench",
+            "url": "https://arxiv.org/abs/2310.06770",
+            "relevance": "Uses repository tests to determine whether a real issue is resolved."
+          },
+          {
+            "name": "SWE-agent",
+            "url": "https://arxiv.org/abs/2405.15793",
+            "relevance": "Reports issue-resolution performance together with agent trajectory cost."
+          },
+          {
+            "name": "SWE-bench Verified",
+            "url": "https://openai.com/index/introducing-swe-bench-verified/",
+            "relevance": "Emphasizes validated problem statements and reliable test oracles."
+          }
+        ]
+      },
+      "arms": {
+        "no_skill": {
+          "eligible": true,
+          "leakage_gate": {
+            "passed": true,
+            "violations": []
+          },
+          "setup_success": true,
+          "test_success": true,
+          "issue_postcondition_satisfied": true,
+          "task_solved": true,
+          "correctness": 99.2,
+          "code_quality": 90.0,
+          "quality_components": {
+            "patch_scope_precision": 91.0,
+            "maintainability_style": 92.0,
+            "validation_quality": 87.0
+          },
+          "efficiency": {
+            "token": 90.0306,
+            "wall": 69.2632,
+            "combined": 81.7236
+          },
+          "overall_score": 94.2785,
+          "usage_tokens": 1167739,
+          "wall_seconds": 426.3851483430001,
+          "judge": {
+            "semantic_completion": 96,
+            "patch_scope_precision": 91,
+            "maintainability_style": 92,
+            "validation_quality": 87,
+            "issue_postcondition_satisfied": true,
+            "rationale": "The patch makes the compaction threshold reservation-aware by computing it from the effective input window, `context_length - max_tokens`, and applies the same effective window to the minimum-floor/85% degeneracy guard. It propagates the resolved output cap during initialization, model switching, and fallback activation, while preserving an existing reservation when `update_model` is called without a max-token argument. Defensive coercion prevents malformed values from breaking threshold arithmetic, and pathological reservations at or above the context window safely fall back to prior full-window behavior. This addresses the reported custom-provider scenario because normal agent initialization forwards the transport-resolved `agent.max_tokens`, including the custom provider's default. All authoritative regression tests passed, including compressor tests and relevant switch/fallback/compaction-loop suites. The implementation is somewhat broader than the reference through provider-profile fallback resolution and extra lifecycle call-site changes, but these are aligned with the contract and did not introduce observed regressions.",
+            "concerns": [
+              "No dedicated regression tests were added to the patch for the exact 131072/65536 reservation scenario, provider-default resolution, or malformed/pathological max-token values; validation relies on existing tests and related lifecycle suites.",
+              "`_resolve_max_tokens` dynamically imports provider profiles and catches all exceptions. This is resilient but adds coupling and can silently revert to no reservation if provider-profile resolution changes or fails.",
+              "The model-switch and fallback call-site edits are slightly broader than necessary because `update_model` can preserve the existing reservation when omitted; however, forwarding `agent.max_tokens` better mirrors the current transport state and the related regression tests pass.",
+              "Validation was focused rather than repository-wide; 133 relevant tests and diff checks passed, but no full test-suite result was provided."
+            ]
+          }
+        },
+        "guided": {
+          "eligible": true,
+          "leakage_gate": {
+            "passed": true,
+            "violations": []
+          },
+          "setup_success": true,
+          "test_success": true,
+          "issue_postcondition_satisfied": true,
+          "task_solved": true,
+          "correctness": 99.0,
+          "code_quality": 86.6667,
+          "quality_components": {
+            "patch_scope_precision": 86.0,
+            "maintainability_style": 85.0,
+            "validation_quality": 89.0
+          },
+          "efficiency": {
+            "token": 100.0,
+            "wall": 100.0,
+            "combined": 100.0
+          },
+          "overall_score": 96.0667,
+          "usage_tokens": 1051322,
+          "wall_seconds": 295.327975188,
+          "judge": {
+            "semantic_completion": 95,
+            "patch_scope_precision": 86,
+            "maintainability_style": 85,
+            "validation_quality": 89,
+            "issue_postcondition_satisfied": true,
+            "rationale": "The patch satisfies the core postcondition: the compaction threshold is calculated from the effective input window after subtracting the resolved positive output-token reservation, and the production initialization path forwards the agent's max_tokens value. It also applies the effective window consistently to the minimum-floor/85% guard and recalculates the threshold on model updates. The custom-provider default scenario and model-switch behavior received direct integration checks, while the visible compressor suite and related context-switch/compression suites all passed. The main weaknesses are that provider-profile resolution is duplicated inside ContextCompressor rather than relying solely on the transport's already-resolved value, broad exception swallowing can hide provider-profile defects, and no permanent regression tests were added to the repository despite the behavior change.",
+            "concerns": [
+              "ContextCompressor now independently imports and queries provider profiles, duplicating output-cap resolution logic that may drift from the transport's actual precedence or provider-specific behavior.",
+              "The broad `except Exception: pass` in `_resolve_max_tokens` silently converts profile lookup/programming failures into an unreserved full-window budget, potentially recreating the unsafe behavior without diagnostics.",
+              "The `_max_tokens_explicit` distinction is inferred from the value passed to the compressor. Because `init_agent` passes `agent.max_tokens`, a provider-derived default may be treated as user-explicit and retained across switches unless the switch supplies a new cap; this is not necessarily identical to transport resolution in every switching path.",
+              "No regression tests were committed. Manual checks covered the reported custom-provider reservation and switching behavior, and all relevant existing tests passed, but future protection is weaker than it would be with focused repository tests."
+            ]
+          }
+        }
+      },
+      "outcome": "full_tie",
+      "guided_minus_no_skill": {
+        "overall_score": 1.7882,
+        "usage_tokens": -116417,
+        "wall_seconds": -131.0572
+      },
+      "case_id": "NousResearch__hermes-agent__43547__context-budget-and-compaction"
+    }
+  ],
+  "llm_calls": [
+    {
+      "model": "openai/gpt-5.6-sol",
+      "endpoint": "https://llm.rvnpu.cn/v1/chat/completions",
+      "attempt": 1,
+      "elapsed_ms": 37860.22,
+      "usage": {
+        "completion_tokens": 1568,
+        "prompt_tokens": 9998,
+        "total_tokens": 11566,
+        "completion_tokens_details": {
+          "reasoning_tokens": 1181
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "cache_creation_tokens": 0,
+          "cached_creation_tokens": 0
+        }
+      },
+      "response_id": "resp_0cb493eb792fcc76016abfb45bd1fc87d0904e436f9a7627ba"
+    },
+    {
+      "model": "openai/gpt-5.6-sol",
+      "endpoint": "https://llm.rvnpu.cn/v1/chat/completions",
+      "attempt": 1,
+      "elapsed_ms": 26455.79,
+      "usage": {
+        "completion_tokens": 1071,
+        "prompt_tokens": 9660,
+        "total_tokens": 10731,
+        "completion_tokens_details": {
+          "reasoning_tokens": 705
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "cache_creation_tokens": 0,
+          "cached_creation_tokens": 0
+        }
+      },
+      "response_id": "resp_065fa3375c72cfad016abfb483b0f887d09cf9061c276378e7"
+    }
+  ],
+  "judgments": {
+    "NousResearch__hermes-agent__43547__context-budget-and-compaction": {
+      "no_skill": {
+        "semantic_completion": 96,
+        "patch_scope_precision": 91,
+        "maintainability_style": 92,
+        "validation_quality": 87,
+        "issue_postcondition_satisfied": true,
+        "rationale": "The patch makes the compaction threshold reservation-aware by computing it from the effective input window, `context_length - max_tokens`, and applies the same effective window to the minimum-floor/85% degeneracy guard. It propagates the resolved output cap during initialization, model switching, and fallback activation, while preserving an existing reservation when `update_model` is called without a max-token argument. Defensive coercion prevents malformed values from breaking threshold arithmetic, and pathological reservations at or above the context window safely fall back to prior full-window behavior. This addresses the reported custom-provider scenario because normal agent initialization forwards the transport-resolved `agent.max_tokens`, including the custom provider's default. All authoritative regression tests passed, including compressor tests and relevant switch/fallback/compaction-loop suites. The implementation is somewhat broader than the reference through provider-profile fallback resolution and extra lifecycle call-site changes, but these are aligned with the contract and did not introduce observed regressions.",
+        "concerns": [
+          "No dedicated regression tests were added to the patch for the exact 131072/65536 reservation scenario, provider-default resolution, or malformed/pathological max-token values; validation relies on existing tests and related lifecycle suites.",
+          "`_resolve_max_tokens` dynamically imports provider profiles and catches all exceptions. This is resilient but adds coupling and can silently revert to no reservation if provider-profile resolution changes or fails.",
+          "The model-switch and fallback call-site edits are slightly broader than necessary because `update_model` can preserve the existing reservation when omitted; however, forwarding `agent.max_tokens` better mirrors the current transport state and the related regression tests pass.",
+          "Validation was focused rather than repository-wide; 133 relevant tests and diff checks passed, but no full test-suite result was provided."
+        ]
+      },
+      "guided": {
+        "semantic_completion": 95,
+        "patch_scope_precision": 86,
+        "maintainability_style": 85,
+        "validation_quality": 89,
+        "issue_postcondition_satisfied": true,
+        "rationale": "The patch satisfies the core postcondition: the compaction threshold is calculated from the effective input window after subtracting the resolved positive output-token reservation, and the production initialization path forwards the agent's max_tokens value. It also applies the effective window consistently to the minimum-floor/85% guard and recalculates the threshold on model updates. The custom-provider default scenario and model-switch behavior received direct integration checks, while the visible compressor suite and related context-switch/compression suites all passed. The main weaknesses are that provider-profile resolution is duplicated inside ContextCompressor rather than relying solely on the transport's already-resolved value, broad exception swallowing can hide provider-profile defects, and no permanent regression tests were added to the repository despite the behavior change.",
+        "concerns": [
+          "ContextCompressor now independently imports and queries provider profiles, duplicating output-cap resolution logic that may drift from the transport's actual precedence or provider-specific behavior.",
+          "The broad `except Exception: pass` in `_resolve_max_tokens` silently converts profile lookup/programming failures into an unreserved full-window budget, potentially recreating the unsafe behavior without diagnostics.",
+          "The `_max_tokens_explicit` distinction is inferred from the value passed to the compressor. Because `init_agent` passes `agent.max_tokens`, a provider-derived default may be treated as user-explicit and retained across switches unless the switch supplies a new cap; this is not necessarily identical to transport resolution in every switching path.",
+          "No regression tests were committed. Manual checks covered the reported custom-provider reservation and switching behavior, and all relevant existing tests passed, but future protection is weaker than it would be with focused repository tests."
+        ]
+      }
+    }
+  }
+}

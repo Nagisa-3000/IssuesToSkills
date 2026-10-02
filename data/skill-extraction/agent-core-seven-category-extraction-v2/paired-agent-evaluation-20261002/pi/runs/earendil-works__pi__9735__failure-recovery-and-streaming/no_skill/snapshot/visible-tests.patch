@@ -1,0 +1,87 @@
+diff --git a/packages/ai/test/retry.test.ts b/packages/ai/test/retry.test.ts
+index 0d8875e08c0caebfc16860957f7b238e8e48646e..0181859c1beb3c1fd0e8b4d4a0001c0613b7ff24 100644
+--- a/packages/ai/test/retry.test.ts
++++ b/packages/ai/test/retry.test.ts
+@@ -10,6 +10,9 @@ const nvidiaNIMResourceExhaustedMessage = "ResourceExhausted: Worker local total
+ const bunFetchSocketClosedMessage =
+ 	"The socket connection was closed unexpectedly. For more information, pass `verbose: true` in the second argument to fetch()";
+ const openAIResponsesEarlyEofMessage = "OpenAI Responses stream ended before a terminal response event";
++const cliProxyApiTruncatedStreamMessage =
++	"litellm.APIError: stream error: stream disconnected before completion: stream closed before response.completed";
++const anthropicEarlyEofMessage = "Anthropic stream ended before message_stop";
+ const wrappedDnsLookupError =
+ 	"The pending stream has been canceled (caused by: getaddrinfo ENOTFOUND bedrock-runtime.us-east-1.amazonaws.com)";
+ 
+@@ -60,12 +63,13 @@ describe("provider retry classification", () => {
+ 		expect(isRetryableAssistantError(fauxAssistantMessage("", { stopReason: "error", errorMessage }))).toBe(true);
+ 	});
+ 
+-	it("matches OpenAI Responses streams that end before terminal events", () => {
+-		expect(
+-			isRetryableAssistantError(
+-				fauxAssistantMessage("", { stopReason: "error", errorMessage: openAIResponsesEarlyEofMessage }),
+-			),
+-		).toBe(true);
++	it.each([
++		openAIResponsesEarlyEofMessage,
++		anthropicEarlyEofMessage,
++		cliProxyApiTruncatedStreamMessage,
++		"stream ended without a terminal event",
++	])("matches a stream that ended before its terminal event: %s", (errorMessage) => {
++		expect(isRetryableAssistantError(fauxAssistantMessage("", { stopReason: "error", errorMessage }))).toBe(true);
+ 	});
+ 
+ 	it("keeps provider limit errors non-retryable", () => {
+diff --git a/packages/coding-agent/test/suite/regressions/9735-proxy-truncated-stream-retry.test.ts b/packages/coding-agent/test/suite/regressions/9735-proxy-truncated-stream-retry.test.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..ef4d5671eaf2bafb288e81cc0a1b99dc61286d19
+--- /dev/null
++++ b/packages/coding-agent/test/suite/regressions/9735-proxy-truncated-stream-retry.test.ts
+@@ -0,0 +1,47 @@
++import { fauxAssistantMessage } from "@earendil-works/pi-ai";
++import { afterEach, describe, expect, it } from "vitest";
++import { createHarness, getAssistantTexts, type Harness } from "../harness.ts";
++
++// A stream that ends before its terminal event is one condition, and pi already
++// retries it when its own code reports it ("OpenAI Responses stream ended before
++// a terminal response event"). Put an OpenAI-compatible proxy in front of the
++// same upstream and the identical physical fault arrives worded differently, so
++// the classifier must recognise the condition rather than each vendor's sentence.
++describe("issue #9735 proxy-reported truncated stream retry", () => {
++	const harnesses: Harness[] = [];
++
++	afterEach(() => {
++		while (harnesses.length > 0) {
++			harnesses.pop()?.cleanup();
++		}
++	});
++
++	const truncatedStreamMessages = [
++		// CLIProxyAPI, surfaced through LiteLLM.
++		"litellm.APIError: stream error: stream disconnected before completion: stream closed before response.completed",
++		// pi's own OpenAI Responses check, which already retried before this fix.
++		"OpenAI Responses stream ended before a terminal response event",
++		// Anthropic SDK (#4433), which already retried before this fix.
++		"Anthropic stream ended before message_stop",
++	];
++
++	for (const errorMessage of truncatedStreamMessages) {
++		it(`retries a stream cut before its terminal event: ${errorMessage.slice(0, 48)}...`, async () => {
++			const harness = await createHarness({
++				settings: { retry: { enabled: true, maxRetries: 3, baseDelayMs: 1 } },
++			});
++			harnesses.push(harness);
++			harness.setResponses([
++				fauxAssistantMessage("", { stopReason: "error", errorMessage }),
++				fauxAssistantMessage("recovered after the stream was cut"),
++			]);
++
++			await harness.session.prompt("test");
++
++			expect(harness.faux.state.callCount).toBe(2);
++			expect(harness.eventsOfType("auto_retry_start").map((event) => event.errorMessage)).toEqual([errorMessage]);
++			expect(harness.eventsOfType("auto_retry_end").map((event) => event.success)).toEqual([true]);
++			expect(getAssistantTexts(harness)).toContain("recovered after the stream was cut");
++		});
++	}
++});

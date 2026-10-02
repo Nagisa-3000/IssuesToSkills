@@ -1,0 +1,209 @@
+{
+  "schema_version": "weighted-guided-agent-evaluation-v1",
+  "source_report": "/home/chenyujia/tritonToLlvm/arex-skill-graph/data/skill-extraction/agent-core-seven-category-extraction-v2/paired-agent-evaluation-20261002/pi/report.json",
+  "cases": 1,
+  "model": "openai/gpt-5.6-sol",
+  "independent_llm_evaluator_used": true,
+  "evaluations": [
+    {
+      "schema_version": "paired-agent-evaluation-v1",
+      "oracle_qualified": true,
+      "setup_gate": {
+        "passed": true
+      },
+      "retrieval_gate": {
+        "checked": true,
+        "passed": true,
+        "applicable": true,
+        "selected_skill_id": "workflow:bca58288062025eb",
+        "confidence": 0.93,
+        "rationale": "The candidate matches the causal repair: a premature stream termination is currently excluded from an established bounded retry path because its concrete representation is unrecognized; the change should narrowly admit that condition and validate both classifier behavior and end-to-end recovery. The visible tests establish equivalent evidence through several terminal-event-missing messages, including the proxy wording, and verify a retry signal, exactly one subsequent successful attempt, preserved error text in retry telemetry, and completed assistant output. The representation differs from the candidate’s exact transport-code example—pi receives only a human-readable errorMessage—but the issue evidence establishes semantic equivalence to pi’s and Anthropic’s already-retryable premature-terminal-event failures."
+      },
+      "eligible_for_causal_comparison": true,
+      "weights": {
+        "correctness": 0.6,
+        "code_quality": 0.25,
+        "efficiency": 0.15
+      },
+      "weight_basis": {
+        "policy": "Correctness receives the majority weight because repository-level coding benchmarks treat issue resolution through regression tests as the primary outcome. Quality and efficiency are reported separately and only break ties between oracle-passing arms. The 60/25/15 split is an AREX operational choice, not a weight copied from any cited benchmark.",
+        "references": [
+          {
+            "name": "SWE-bench",
+            "url": "https://arxiv.org/abs/2310.06770",
+            "relevance": "Uses repository tests to determine whether a real issue is resolved."
+          },
+          {
+            "name": "SWE-agent",
+            "url": "https://arxiv.org/abs/2405.15793",
+            "relevance": "Reports issue-resolution performance together with agent trajectory cost."
+          },
+          {
+            "name": "SWE-bench Verified",
+            "url": "https://openai.com/index/introducing-swe-bench-verified/",
+            "relevance": "Emphasizes validated problem statements and reliable test oracles."
+          }
+        ]
+      },
+      "arms": {
+        "no_skill": {
+          "eligible": true,
+          "leakage_gate": {
+            "passed": true,
+            "violations": []
+          },
+          "setup_success": true,
+          "test_success": true,
+          "issue_postcondition_satisfied": true,
+          "task_solved": true,
+          "correctness": 96.8,
+          "code_quality": 93.3333,
+          "quality_components": {
+            "patch_scope_precision": 98.0,
+            "maintainability_style": 87.0,
+            "validation_quality": 95.0
+          },
+          "efficiency": {
+            "token": 100.0,
+            "wall": 90.3548,
+            "combined": 96.1419
+          },
+          "overall_score": 95.8346,
+          "usage_tokens": 176188,
+          "wall_seconds": 121.72111907399994,
+          "judge": {
+            "concerns": [
+              "The replacement removes the previous broad `\"ended without\"` alternative. Messages such as `stream ended without any content` or other existing Anthropic wording that lacks `completion`, `terminal`, or `message_stop` would no longer be classified as retryable, creating a backward-compatibility regression.",
+              "The structural pattern is narrower than the condition described in the issue: it omits plausible premature-ending verbs such as `dropped` or `cut` and requires a particular completion-related suffix. Thus, some proxy or SDK phrasings of the same condition may still need vendor-specific follow-up changes.",
+              "Using greedy `.*` and the loose stem `complet` is somewhat imprecise and could match unrelated prose, although the surrounding stream-ending terms limit the practical risk."
+            ],
+            "issue_postcondition_satisfied": true,
+            "maintainability_style": 87,
+            "patch_scope_precision": 98,
+            "rationale": "The concrete reported CLIProxyAPI/LiteLLM message is matched, as are pi's existing terminal-event wording and Anthropic's `message_stop` wording. Both the focused classifier suite and the end-to-end retry regression suite pass, demonstrating that the turn is actually retried. The one-file production change is appropriately scoped and clearly commented. However, consolidating the old alternatives into one stricter expression drops the established generic `ended without` behavior and does not cover the full range of premature-stream terminology represented by the reference change, so semantic completion is strong but not complete. Validation was high quality: targeted unit and integration tests passed, whitespace checks passed, and the full repository check was attempted; its failures appear unrelated to this patch.",
+            "semantic_completion": 84,
+            "validation_quality": 95
+          }
+        },
+        "guided": {
+          "eligible": true,
+          "leakage_gate": {
+            "passed": true,
+            "violations": []
+          },
+          "setup_success": true,
+          "test_success": true,
+          "issue_postcondition_satisfied": true,
+          "task_solved": true,
+          "correctness": 98.4,
+          "code_quality": 95.3333,
+          "quality_components": {
+            "patch_scope_precision": 100.0,
+            "maintainability_style": 91.0,
+            "validation_quality": 95.0
+          },
+          "efficiency": {
+            "token": 96.0629,
+            "wall": 100.0,
+            "combined": 97.6377
+          },
+          "overall_score": 97.519,
+          "usage_tokens": 183409,
+          "wall_seconds": 109.9809042259999,
+          "judge": {
+            "concerns": [
+              "The generalized expression still enumerates both termination verbs and terminal markers. It omits plausible wording such as \"stream dropped before ...\" or \"stream cut before ...\", so it is narrower than the condition-oriented reference implementation and may require future wording-specific updates.",
+              "The pattern is somewhat more complex than necessary, which modestly increases review and maintenance cost, although its intent is documented."
+            ],
+            "issue_postcondition_satisfied": true,
+            "maintainability_style": 91,
+            "patch_scope_precision": 100,
+            "rationale": "The patch directly fixes the reported failure: the LiteLLM/CLIProxyAPI message matches the new expression, while the previously supported OpenAI Responses and Anthropic messages remain retryable. Both the classifier tests (22 passing) and the end-to-end coding-agent regression tests (3 passing) are authoritative evidence that classification and actual retry behavior work. Scope is excellent because only the retry classifier changed, with no unrelated edits or test manipulation. The comment accurately explains the semantic intent, and diff hygiene passed. Validation was strong and included both relevant suites plus an attempted repository-wide check; that broader check was blocked by unrelated pre-existing model-catalog type errors. The main limitation is that the purportedly semantic pattern remains somewhat wording-dependent and is narrower than the reference's supported termination vocabulary, but this does not prevent satisfaction of the concrete issue postcondition.",
+            "semantic_completion": 92,
+            "validation_quality": 95
+          }
+        }
+      },
+      "outcome": "full_tie",
+      "guided_minus_no_skill": {
+        "overall_score": 1.6844,
+        "usage_tokens": 7221,
+        "wall_seconds": -11.7402
+      },
+      "case_id": "earendil-works__pi__9735__failure-recovery-and-streaming"
+    }
+  ],
+  "llm_calls": [
+    {
+      "model": "openai/gpt-5.6-sol",
+      "endpoint": "https://llm.rvnpu.cn/v1/chat/completions",
+      "attempt": 1,
+      "elapsed_ms": 27719.99,
+      "usage": {
+        "completion_tokens": 1086,
+        "prompt_tokens": 10139,
+        "total_tokens": 11225,
+        "completion_tokens_details": {
+          "reasoning_tokens": 739
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "cache_creation_tokens": 0,
+          "cached_creation_tokens": 0
+        }
+      },
+      "response_id": "resp_00ad1661ad99198c016abfb5511efc87d0abf20389640c6c74"
+    },
+    {
+      "model": "openai/gpt-5.6-sol",
+      "endpoint": "https://llm.rvnpu.cn/v1/chat/completions",
+      "attempt": 1,
+      "elapsed_ms": 20502.28,
+      "usage": {
+        "completion_tokens": 784,
+        "prompt_tokens": 9745,
+        "total_tokens": 10529,
+        "completion_tokens_details": {
+          "reasoning_tokens": 496
+        },
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "cache_creation_tokens": 0,
+          "cached_creation_tokens": 0
+        }
+      },
+      "response_id": "resp_0a84b134e978bb29016abfb56e2f2887d092f2444da06f24e4"
+    }
+  ],
+  "judgments": {
+    "earendil-works__pi__9735__failure-recovery-and-streaming": {
+      "no_skill": {
+        "concerns": [
+          "The replacement removes the previous broad `\"ended without\"` alternative. Messages such as `stream ended without any content` or other existing Anthropic wording that lacks `completion`, `terminal`, or `message_stop` would no longer be classified as retryable, creating a backward-compatibility regression.",
+          "The structural pattern is narrower than the condition described in the issue: it omits plausible premature-ending verbs such as `dropped` or `cut` and requires a particular completion-related suffix. Thus, some proxy or SDK phrasings of the same condition may still need vendor-specific follow-up changes.",
+          "Using greedy `.*` and the loose stem `complet` is somewhat imprecise and could match unrelated prose, although the surrounding stream-ending terms limit the practical risk."
+        ],
+        "issue_postcondition_satisfied": true,
+        "maintainability_style": 87,
+        "patch_scope_precision": 98,
+        "rationale": "The concrete reported CLIProxyAPI/LiteLLM message is matched, as are pi's existing terminal-event wording and Anthropic's `message_stop` wording. Both the focused classifier suite and the end-to-end retry regression suite pass, demonstrating that the turn is actually retried. The one-file production change is appropriately scoped and clearly commented. However, consolidating the old alternatives into one stricter expression drops the established generic `ended without` behavior and does not cover the full range of premature-stream terminology represented by the reference change, so semantic completion is strong but not complete. Validation was high quality: targeted unit and integration tests passed, whitespace checks passed, and the full repository check was attempted; its failures appear unrelated to this patch.",
+        "semantic_completion": 84,
+        "validation_quality": 95
+      },
+      "guided": {
+        "concerns": [
+          "The generalized expression still enumerates both termination verbs and terminal markers. It omits plausible wording such as \"stream dropped before ...\" or \"stream cut before ...\", so it is narrower than the condition-oriented reference implementation and may require future wording-specific updates.",
+          "The pattern is somewhat more complex than necessary, which modestly increases review and maintenance cost, although its intent is documented."
+        ],
+        "issue_postcondition_satisfied": true,
+        "maintainability_style": 91,
+        "patch_scope_precision": 100,
+        "rationale": "The patch directly fixes the reported failure: the LiteLLM/CLIProxyAPI message matches the new expression, while the previously supported OpenAI Responses and Anthropic messages remain retryable. Both the classifier tests (22 passing) and the end-to-end coding-agent regression tests (3 passing) are authoritative evidence that classification and actual retry behavior work. Scope is excellent because only the retry classifier changed, with no unrelated edits or test manipulation. The comment accurately explains the semantic intent, and diff hygiene passed. Validation was strong and included both relevant suites plus an attempted repository-wide check; that broader check was blocked by unrelated pre-existing model-catalog type errors. The main limitation is that the purportedly semantic pattern remains somewhat wording-dependent and is narrower than the reference's supported termination vocabulary, but this does not prevent satisfaction of the concrete issue postcondition.",
+        "semantic_completion": 92,
+        "validation_quality": 95
+      }
+    }
+  }
+}

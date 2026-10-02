@@ -1,0 +1,165 @@
+diff --git a/agent/agent_init.py b/agent/agent_init.py
+index ffefcee..e7f2ed9 100644
+--- a/agent/agent_init.py
++++ b/agent/agent_init.py
+@@ -1575,6 +1575,7 @@ def init_agent(
+             provider=agent.provider,
+             api_mode=agent.api_mode,
+             abort_on_summary_failure=compression_abort_on_summary_failure,
++            max_tokens=agent.max_tokens,
+         )
+     agent.compression_enabled = compression_enabled
+     agent.compression_in_place = compression_in_place
+diff --git a/agent/context_compressor.py b/agent/context_compressor.py
+index f1c6fca..1c20862 100644
+--- a/agent/context_compressor.py
++++ b/agent/context_compressor.py
+@@ -667,6 +667,7 @@ class ContextCompressor(ContextEngine):
+         api_key: Any = "",
+         provider: str = "",
+         api_mode: str = "",
++        max_tokens: Any = None,
+     ) -> None:
+         """Update model info after a model switch or fallback activation."""
+         self.model = model
+@@ -675,8 +676,17 @@ class ContextCompressor(ContextEngine):
+         self.provider = provider
+         self.api_mode = api_mode
+         self.context_length = context_length
++        explicit_max_tokens = self._coerce_max_tokens(max_tokens)
++        if explicit_max_tokens is not None:
++            self.max_tokens = explicit_max_tokens
++            self._max_tokens_explicit = True
++        elif not getattr(self, "_max_tokens_explicit", False):
++            # Profile defaults follow the active provider/model across
++            # fallback activation and manual model switches. A user-supplied
++            # cap, however, remains authoritative for the whole agent.
++            self.max_tokens = self._resolve_max_tokens(None, provider, model)
+         self.threshold_tokens = self._compute_threshold_tokens(
+-            context_length, self.threshold_percent
++            context_length, self.threshold_percent, self.max_tokens
+         )
+         # Recalculate token budgets for the new context length so the
+         # compressor stays calibrated after a model switch (e.g. 200K → 32K).
+@@ -716,30 +726,86 @@ class ContextCompressor(ContextEngine):
+     _MIN_CTX_TRIGGER_RATIO = 0.85
+ 
+     @staticmethod
+-    def _compute_threshold_tokens(context_length: int, threshold_percent: float) -> int:
++    def _coerce_max_tokens(max_tokens: Any) -> Optional[int]:
++        """Return a positive output-token reservation, or ``None``.
++
++        Keep the compressor tolerant of partially mocked agents and malformed
++        configuration. Configuration validation normally happens before this
++        boundary, but the budget calculation itself must never fail closed.
++        """
++        try:
++            value = int(max_tokens)
++        except (TypeError, ValueError, OverflowError):
++            return None
++        return value if value > 0 else None
++
++    @classmethod
++    def _resolve_max_tokens(
++        cls,
++        max_tokens: Any,
++        provider: str,
++        model: str,
++    ) -> Optional[int]:
++        """Mirror transport precedence: explicit cap, then profile default."""
++        explicit = cls._coerce_max_tokens(max_tokens)
++        if explicit is not None:
++            return explicit
++        try:
++            from providers import get_provider_profile
++
++            profile = get_provider_profile(provider)
++            if profile is not None:
++                return cls._coerce_max_tokens(profile.get_max_tokens(model))
++        except Exception:
++            pass
++        return None
++
++    @staticmethod
++    def _compute_threshold_tokens(
++        context_length: int,
++        threshold_percent: float,
++        max_tokens: Any = None,
++    ) -> int:
+         """Compute the compaction trigger threshold in tokens.
+ 
+-        The base value is ``context_length * threshold_percent``, floored at
++        The base value is the usable input window times ``threshold_percent``.
++        Providers reserve the request's output cap from the same context
++        window, so the usable input window is ``context_length - max_tokens``
++        when a positive output cap is known (#43547). It is then floored at
+         ``MINIMUM_CONTEXT_LENGTH`` so large-context models don't compress
+         prematurely at 50%. BUT that floor degenerates at small windows: for a
+-        model whose ``context_length`` is at/below the minimum (e.g. a 64K
+-        local model), ``max(0.5*64000, 64000) == 64000`` makes the threshold
+-        equal the ENTIRE window — auto-compression can never fire because the
+-        provider rejects the request before usage reaches 100% (#14690).
++        model whose usable window is at/below the minimum, the threshold can
++        equal the ENTIRE input window and auto-compression can never fire
++        before the provider rejects the request (#14690).
+ 
+         When the floor would meet or exceed the context window, trigger at
+         ``_MIN_CTX_TRIGGER_RATIO`` (85%) of the window — high enough that a
+         small model uses most of its context before compacting, but below
+         100% so compaction fires before the provider rejects the request.
+         """
+-        pct_value = int(context_length * threshold_percent)
++        reservation = ContextCompressor._coerce_max_tokens(max_tokens)
++        effective_context_length = (
++            context_length - reservation if reservation is not None else context_length
++        )
++        # A nonsensical reservation must not turn the trigger non-positive.
++        # Fall back to the historical full-window behavior; the provider error
++        # recovery path can then repair the invalid output cap separately.
++        if effective_context_length <= 0:
++            effective_context_length = context_length
++
++        pct_value = int(effective_context_length * threshold_percent)
+         floored = max(pct_value, MINIMUM_CONTEXT_LENGTH)
+         # If flooring pushed the threshold to/over the window it can never be
+         # reached. Trigger at 85% of the window so a minimum-context model
+         # rides most of its budget before compacting instead of wasting half.
+-        if context_length > 0 and floored >= context_length:
+-            return max(1, min(int(context_length * ContextCompressor._MIN_CTX_TRIGGER_RATIO),
+-                              context_length - 1))
++        if effective_context_length > 0 and floored >= effective_context_length:
++            return max(
++                1,
++                min(
++                    int(effective_context_length * ContextCompressor._MIN_CTX_TRIGGER_RATIO),
++                    effective_context_length - 1,
++                ),
++            )
+         return floored
+ 
+     def __init__(
+@@ -757,12 +823,15 @@ class ContextCompressor(ContextEngine):
+         provider: str = "",
+         api_mode: str = "",
+         abort_on_summary_failure: bool = False,
++        max_tokens: Any = None,
+     ):
+         self.model = model
+         self.base_url = base_url
+         self.api_key = api_key
+         self.provider = provider
+         self.api_mode = api_mode
++        self._max_tokens_explicit = self._coerce_max_tokens(max_tokens) is not None
++        self.max_tokens = self._resolve_max_tokens(max_tokens, provider, model)
+         self.threshold_percent = threshold_percent
+         self.protect_first_n = protect_first_n
+         self.protect_last_n = protect_last_n
+@@ -786,7 +855,7 @@ class ContextCompressor(ContextEngine):
+         # guards the degenerate case where the floor would equal/exceed the
+         # window (small models), so auto-compression can still fire (#14690).
+         self.threshold_tokens = self._compute_threshold_tokens(
+-            self.context_length, threshold_percent
++            self.context_length, threshold_percent, self.max_tokens
+         )
+         self.compression_count = 0
+ 

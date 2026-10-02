@@ -1,0 +1,106 @@
+[
+  {
+    "id": "NousResearch__hermes-agent__43547__context-budget-and-compaction",
+    "repository": "NousResearch/hermes-agent",
+    "repository_path": "/home/chenyujia/tritonToLlvm/hermes-agent",
+    "base_ref": "065946d84f9ce31b7eb51380c9641c5038f291c4",
+    "solution_ref": "623b21bf24ea3f2f2c2d90de3ae872b8a0a000c4",
+    "issue_number": 43547,
+    "category": "context-budget-and-compaction",
+    "theme": "context budget and compaction",
+    "issue_title": "Context compaction trigger ignores the output-token reservation (custom-provider default max_tokens=65536 halves the usable input budget)",
+    "issue_body": "## Summary\n\nThe context-compaction trigger compares estimated input tokens against `context_length × compression.threshold`, but the request that actually goes to the provider reserves `max_tokens` **out of that same window**. When `max_tokens` is large, the *effective input budget* (`context_length − max_tokens`) can sit at or below the compaction trigger — so sessions hit a hard provider 400 before proactive compaction ever fires, and the recovery path can't save them.\n\nThis is not hypothetical with default settings: for `provider: custom` (vLLM / llama.cpp / LM Studio / Ollama-compatible endpoints), the provider profile defaults `max_tokens` to **65536** when the user hasn't set `model.max_tokens` (`plugins/model-providers/custom/__init__.py` — the deliberate floor added for Ollama's `num_predict=128`, #39281). Against a 131072-token model, that default silently halves the usable input budget.\n\n## Real incident (2026-06-10, Hermes Agent v0.16.0 / upstream a72bb037)\n\nSetup: vLLM 0.22 serving gemma4 with `--max-model-len 131072`; no `model.max_tokens` in config.yaml; `compression.threshold: 0.5`.\n\n- Effective input budget: 131072 − 65536 (profile default) = **65,536 tokens**\n- Compaction trigger: 0.5 × 131072 = est. **65,536 tokens** — i.e. *exactly at* the wall\n- Aggravator: the rough estimator (`estimate_messages_tokens_rough`, ~chars/4) reported **~43K** when the provider tokenized the same prompt as **≥65,537** (system prompt + tool schemas + chat template + thinking history; ~1.5× undercount) — so by the estimator's reckoning the session was at 33% of the window when it was at 100% of the real input budget.\n\n```\n⚠️  API call failed (attempt 1/3): BadRequestError [HTTP 400]\n   📝 Error: HTTP 400: This model's maximum context length is 131072 tokens. However, you\n   requested 65536 output tokens and your prompt contains at least 65537 input tokens, for a\n   total of at least 131073 tokens. Please reduce the length of the input prompt or the number\n   of requested output tokens.\n   ⏱️  Elapsed: 0.09s  Context: 28 msgs, ~43,089 tokens\n⚠️  Context length exceeded, but provider did not report a max context length; keeping context_length at 131,072 tokens and compressing.\n🗜️ Context too large (~43,089 tokens) — compressing (1/3)...\n🗜️ Compressed 27 → 20 messages, retrying...\n   [same 400 again — the retry still requests 65536 output tokens]\n❌ Context length exceeded and cannot compress further.\n```\n\nThe compression retries can't converge: each pass frees a small amount of input while the request keeps reserving the same 65,536 output tokens. (A second, narrower bug made this worse — `parse_available_output_tokens_from_error` doesn't recognize vLLM's token-based phrasing, so the output-cap repair path never engaged. That part is fixed separately in the linked PR.)\n\n## Proposal\n\nMake the input-budget math reservation-aware:\n\n1. **Compaction trigger:** compare estimated input against `(context_length − resolved_output_cap) × threshold` instead of `context_length × threshold`, where `resolved_output_cap` is the same value the transport will put in the request (user `model.max_tokens`, else the provider profile's `default_max_tokens`, else 0).\n2. **Pre-flight check:** same substitution anywhere the estimate is compared to `context_length`.\n3. Possibly cap the custom-profile default at something like `min(65536, context_length // 4)` once a context length is known — the 65536 floor makes sense for Ollama's tiny `num_predict` default, but it shouldn't consume half of a 131K window.\n\n(1) and (2) are mechanical; (3) is a design question for maintainers since it touches the #39281 fix. Happy to implement whichever shape you prefer — flagging the design first rather than dropping an opinionated PR.\n\n---\n\nI had Claude Fable 5 do this work - this issue was written by the model after it diagnosed the incident live on my own Hermes deployment (custom vLLM endpoint on local hardware). The numbers and logs above are from the real session. As with my previous PRs, my goal is to push Fable to be a useful open-source contributor - if the maintainers find the diagnosis sound, that's the signal I'm looking for.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n",
+    "visible_test_paths": [
+      "tests/agent/test_context_compressor.py"
+    ],
+    "visible_support_paths": [],
+    "test_commands": [
+      "./.venv/bin/pytest -q 'tests/agent/test_context_compressor.py'",
+      "git diff --check HEAD"
+    ],
+    "setup_commands": [
+      "/home/chenyujia/.local/bin/uv sync --python 3.11 --extra dev --no-install-project || /home/chenyujia/.local/bin/uv sync --python 3.11 --no-install-project; /home/chenyujia/.local/bin/uv pip install --python .venv/bin/python -e . pytest pytest-asyncio"
+    ],
+    "apply_visible_tests_to_solution": false,
+    "changed_file_count": 3,
+    "changed_files_sample": [
+      {
+        "status": "M",
+        "path": "agent/agent_init.py"
+      },
+      {
+        "status": "M",
+        "path": "agent/context_compressor.py"
+      },
+      {
+        "status": "M",
+        "path": "tests/agent/test_context_compressor.py"
+      }
+    ],
+    "test_patch_sha256": "ff9a3754c50a180adf2f40ed7a9d865c0a29564f74d879ca56ce92cb0ff94b9e",
+    "test_patch_characters": 4002,
+    "split": "held_out_test",
+    "extraction_forbidden": true,
+    "solution_hidden_from_agent": true,
+    "held_out_repository": null,
+    "manifest_source": {
+      "case_id": "NousResearch__hermes-agent__43547__context-budget-and-compaction",
+      "repository": "NousResearch/hermes-agent",
+      "issue": 43547,
+      "issue_url": "https://github.com/NousResearch/hermes-agent/issues/43547",
+      "checkout": "/home/chenyujia/tritonToLlvm/hermes-agent",
+      "category": "context-budget-and-compaction",
+      "table_ordinal": 15,
+      "table_note": "compaction does not reserve output-token space",
+      "source": "user_supplied_agent_core_issue_table",
+      "role": "holdout_candidate",
+      "split": "held_out_test_candidate",
+      "holdout_reason": "leave-one-repository-out category transfer test",
+      "evidence_status": "intentionally_not_extracted",
+      "sample_kind": "exact_table_row_holdout",
+      "seed_issue": 43547,
+      "seed_issue_url": "https://github.com/NousResearch/hermes-agent/issues/43547",
+      "seed_relation": "exact_table_row_untouched_holdout",
+      "extraction_forbidden": true,
+      "issue_title": "Context compaction trigger ignores the output-token reservation (custom-provider default max_tokens=65536 halves the usable input budget)",
+      "issue_body": "## Summary\n\nThe context-compaction trigger compares estimated input tokens against `context_length × compression.threshold`, but the request that actually goes to the provider reserves `max_tokens` **out of that same window**. When `max_tokens` is large, the *effective input budget* (`context_length − max_tokens`) can sit at or below the compaction trigger — so sessions hit a hard provider 400 before proactive compaction ever fires, and the recovery path can't save them.\n\nThis is not hypothetical with default settings: for `provider: custom` (vLLM / llama.cpp / LM Studio / Ollama-compatible endpoints), the provider profile defaults `max_tokens` to **65536** when the user hasn't set `model.max_tokens` (`plugins/model-providers/custom/__init__.py` — the deliberate floor added for Ollama's `num_predict=128`, #39281). Against a 131072-token model, that default silently halves the usable input budget.\n\n## Real incident (2026-06-10, Hermes Agent v0.16.0 / upstream a72bb037)\n\nSetup: vLLM 0.22 serving gemma4 with `--max-model-len 131072`; no `model.max_tokens` in config.yaml; `compression.threshold: 0.5`.\n\n- Effective input budget: 131072 − 65536 (profile default) = **65,536 tokens**\n- Compaction trigger: 0.5 × 131072 = est. **65,536 tokens** — i.e. *exactly at* the wall\n- Aggravator: the rough estimator (`estimate_messages_tokens_rough`, ~chars/4) reported **~43K** when the provider tokenized the same prompt as **≥65,537** (system prompt + tool schemas + chat template + thinking history; ~1.5× undercount) — so by the estimator's reckoning the session was at 33% of the window when it was at 100% of the real input budget.\n\n```\n⚠️  API call failed (attempt 1/3): BadRequestError [HTTP 400]\n   📝 Error: HTTP 400: This model's maximum context length is 131072 tokens. However, you\n   requested 65536 output tokens and your prompt contains at least 65537 input tokens, for a\n   total of at least 131073 tokens. Please reduce the length of the input prompt or the number\n   of requested output tokens.\n   ⏱️  Elapsed: 0.09s  Context: 28 msgs, ~43,089 tokens\n⚠️  Context length exceeded, but provider did not report a max context length; keeping context_length at 131,072 tokens and compressing.\n🗜️ Context too large (~43,089 tokens) — compressing (1/3)...\n🗜️ Compressed 27 → 20 messages, retrying...\n   [same 400 again — the retry still requests 65536 output tokens]\n❌ Context length exceeded and cannot compress further.\n```\n\nThe compression retries can't converge: each pass frees a small amount of input while the request keeps reserving the same 65,536 output tokens. (A second, narrower bug made this worse — `parse_available_output_tokens_from_error` doesn't recognize vLLM's token-based phrasing, so the output-cap repair path never engaged. That part is fixed separately in the linked PR.)\n\n## Proposal\n\nMake the input-budget math reservation-aware:\n\n1. **Compaction trigger:** compare estimated input against `(context_length − resolved_output_cap) × threshold` instead of `context_length × threshold`, where `resolved_output_cap` is the same value the transport will put in the request (user `model.max_tokens`, else the provider profile's `default_max_tokens`, else 0).\n2. **Pre-flight check:** same substitution anywhere the estimate is compared to `context_length`.\n3. Possibly cap the custom-profile default at something like `min(65536, context_length // 4)` once a context length is known — the 65536 floor makes sense for Ollama's tiny `num_predict` default, but it shouldn't consume half of a 131K window.\n\n(1) and (2) are mechanical; (3) is a design question for maintainers since it touches the #39281 fix. Happy to implement whichever shape you prefer — flagging the design first rather than dropping an opinionated PR.\n\n---\n\nI had Claude Fable 5 do this work - this issue was written by the model after it diagnosed the incident live on my own Hermes deployment (custom vLLM endpoint on local hardware). The numbers and logs above are from the real session. As with my previous PRs, my goal is to push Fable to be a useful open-source contributor - if the maintainers find the diagnosis sound, that's the signal I'm looking for.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n",
+      "issue_body_length": 4229,
+      "issue_body_sha256": "a2862854c6547f6a5fb8b4cca6b615b7a5fe919d308c033687801da049f03f35",
+      "issue_state": "closed",
+      "issue_created_at": "2026-06-10T13:34:48Z",
+      "issue_updated_at": "2026-06-22T12:03:11Z",
+      "issue_labels": [
+        "type/bug",
+        "comp/agent",
+        "area/config",
+        "P2"
+      ],
+      "public_issue_secret_redactions": 0,
+      "evaluation_input_source": {
+        "kind": "github_issue_title_and_body_only",
+        "api_url": "https://api.github.com/repos/NousResearch/hermes-agent/issues/43547",
+        "html_url": "https://github.com/NousResearch/hermes-agent/issues/43547"
+      },
+      "solution_hidden_from_agent": true,
+      "ref": "623b21bf24ea3f2f2c2d90de3ae872b8a0a000c4",
+      "solution_ref": "623b21bf24ea3f2f2c2d90de3ae872b8a0a000c4",
+      "expected_parent": "065946d84f9ce31b7eb51380c9641c5038f291c4",
+      "file_sample": [
+        "agent/agent_init.py",
+        "agent/context_compressor.py",
+        "tests/agent/test_context_compressor.py"
+      ],
+      "pull_request": 50781,
+      "merge_commit": "a904ff17245a57f32cf5ffc4ea108b2fe0010539",
+      "oracle_candidate_status": "merged_reference_candidate",
+      "oracle_authority": "merged_pull_request_head_with_focused_regression_tests",
+      "oracle_caveat": null,
+      "qualification_contract": {
+        "base_must_fail": true,
+        "solution_must_pass": true,
+        "setup_must_succeed": true,
+        "visible_test_patch_must_apply": true
+      }
+    }
+  }
+]
