@@ -39,7 +39,8 @@ project.
                          AtomicSkill <--uses-- WorkflowSkill --implements--> Pattern
 
 CaseAction and CaseWorkflow are repository-specific instances, not Skills.
-AtomicSkill, WorkflowSkill, and Pattern are reusable knowledge. ProjectBinding
+AtomicSkill, WorkflowSkill, and Pattern are reusable knowledge records. Those
+legacy graph type names do not imply an executable Agent Skill Package. ProjectBinding
 is a runtime mapping from semantic roles and parameter slots to one checkout.
 
 ## Useful relations in the MVP
@@ -93,7 +94,7 @@ labels, filenames, and embedding similarity are candidate signals only.
 
 Validate the contract and all tests with:
 
-    PYTHONPATH=src python3 -m unittest discover -s tests -v
+    PYTHONPATH=src python3 -m pytest -q
 
 ## Quick start
 
@@ -202,12 +203,67 @@ are never physically deleted.
 ## Included extraction artifacts
 
 This checkout includes the reproducible project code, schemas, tests, retrieval
-artifacts, and the extracted Agent Skills produced from cross-project issue/PR
-episodes. The main published skill packages are:
+artifacts, and candidate knowledge records produced from cross-project issue/PR
+episodes. Complete packages have an actual `SKILL.md`; the 80 historical
+training Episodes and 83 Workflow records are frozen IR and are not 83 Agent
+Skills. The small package materialization experiment currently supplies two
+validated candidate Workflow packages with six explicit Action references.
+
+The package roots and examples are:
 
 - data/skill-extraction/packages/repair-shared-capacity-pressure/
 - data/skill-extraction/packages/skill-lifecycle-governance/
-- data/skill-extraction/synthesis/residual-budget-family/
+- data/skill-extraction/packages/candidates/workflows/
+
+`data/skill-extraction/synthesis/residual-budget-family/` contains synthesis
+records and evidence, counted separately from packages.
+
+## Complete Skill extraction and small experiment
+
+The extraction runner now uses the v3 response schema and enforces:
+
+```text
+Issue / PR evidence -> validated Episode -> Atomic / Workflow IR
+  -> mandatory package compilation -> package validation -> admitted candidate
+  -> graph / SQLite / retrieval -> verified SKILL.md and Actions -> applicability judge
+```
+
+The canonical root remains `data/skill-extraction/packages/`; no second copy of
+the meta-skills is created. Workflow candidates live under `candidates/workflows/`
+and contain `SKILL.md`, `references/actions/`, `references/evidence/`,
+`workflow.md`, `provenance.json`, the three activation/applicability/functional
+eval suites, a content manifest and a standalone verifier. Compilation is
+deterministic and idempotent, and refuses manual-edit conflicts. Eval definitions
+are explicitly unexecuted until evaluated; structural validity does not promote
+a Skill or prove transfer.
+
+`experiments/materialize_candidate_skills.py` compiles selected validated
+training responses; `--check` performs no package writes. The extraction runner
+and default catalog build require packages. `--allow-structured-ir` on the
+catalog builder and `--structured-ir-only` on the inventory validator are
+explicit historical research/audit modes. Guided agent retrieval requests
+`require_skill_package=True`, rechecks hashes and source identity, and loads
+the actual entrypoint and Action files. JSON-only, stale, tampered, or
+deferred/rejected records cannot supply this guidance.
+
+Replay the included two-Workflow smoke experiment with no credentials or model
+calls:
+
+```bash
+PYTHONPATH=src python3 experiments/run_skill_package_smoke.py
+```
+
+It reconstructs an isolated SQLite catalog, retrieves and hydrates the package,
+checks standalone verification, and runs the same synthetic constructor oracle
+against the broken and current-session Skill-guided repair: **5/14 -> 14/14**.
+It audits all 20 holdout URL/ID records without using their solutions. This is a
+package execution smoke test, not an independent agent benchmark. Both packages
+remain candidates; no Pattern or Skill was promoted. The original 83-Workflow
+corpus and legacy Pattern packages have not been batch-migrated.
+
+See `analysis/workflow-records-to-skill-packages-20261003.md` and
+`data/skill-extraction/package-materialization-pilot-v1/pilot-report.json` for
+the measured result, source-to-package mappings and limitations.
 
 Evidence-grounded episode material, manifests, reviewed samples, profiles, and
 validation outputs live under data/skill-extraction/, data/review-samples/,
@@ -221,8 +277,8 @@ available for retrieval experiments.
 From the repository root:
 
     python3 -m venv .venv
-    .venv/bin/pip install -e .
-    PYTHONPATH=src python3 -m unittest discover -s tests -v
+    .venv/bin/pip install -e '.[dev]'
+    PYTHONPATH=src .venv/bin/python -m pytest -q
 
 No API keys or provider credentials are required for the deterministic tests and
 local retrieval pilots. External LLM extraction is configured at run time and

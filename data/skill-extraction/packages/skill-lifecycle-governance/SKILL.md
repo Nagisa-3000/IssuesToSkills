@@ -5,6 +5,15 @@ description: Govern the admission, deduplication, merging, revision, failure dia
 
 # Skill lifecycle governance
 
+Atomic, Workflow and Pattern graph nodes are candidate knowledge records until
+a grounded Workflow/accepted Pattern has a validated Agent Skill Package.
+Require package materialization before candidate Skill admission. Preserve
+package path, version, content hash, source ids and validation with the graph
+record. After a semantic revision, compile and validate a new package version
+before serving it; a stale package reference cannot represent revised guidance.
+Keep deferred, rejected, quarantined and retired records out of serving
+hydration. Package generation does not promote a candidate.
+
 This is an LLM-facing semantic governance skill. It does not replace structural
 storage checks. It decides semantic questions that must not be hard-coded:
 

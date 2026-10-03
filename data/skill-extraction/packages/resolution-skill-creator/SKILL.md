@@ -1,19 +1,19 @@
 ---
 name: resolution-skill-creator
-description: Compile an evidence-grounded Workflow or promoted cross-project Pattern into a human-readable Agent Skill package with when-to-use rules, anti-goals, explicit action references, validation, provenance, and activation tests.
+description: Compile evidence-validated Workflow records and semantically accepted Pattern candidates into portable Agent Skill Packages; validate Action/evidence references and eval definitions before candidate admission, with holdout gates reserved for promotion.
 metadata:
   short-description: Compile governed Resolution Graph records into an Agent Skill package
 ---
 
 # Resolution Skill Creator
 
-Compile an admitted AREX Resolution Graph record into a portable Agent Skill
+Compile an evidence-validated AREX Resolution Graph record into a portable Agent Skill
 package. This skill is a **compiler and evaluator**, not an issue miner, patch
 author, semantic deduplicator, or automatic Pattern promoter.
 
 ## Use this skill when
 
-- a validated Atomic, Workflow, or promoted Pattern must become a reusable
+- a grounded Workflow or semantically accepted Pattern must become a candidate
   `SKILL.md` package;
 - a Workflow or Pattern needs a human-readable `when_to_use`, `anti_goals`,
   `not_applicable_when`, explicit Action sequence, and validation ladder;
@@ -25,7 +25,8 @@ author, semantic deduplicator, or automatic Pattern promoter.
 - the source is only an Issue title, commit subject, filename, or embedding
   match without implementation evidence;
 - the source Workflow or Pattern has unresolved required semantics;
-- a Pattern has not passed its multi-Workflow/repository and holdout gates;
+- a Pattern was deferred/rejected by the semantic judge, or lacks independent
+  multi-Workflow/repository support;
 - the request is to directly modify the target repository rather than compile a
   Skill package;
 - the package would hard-code a repository path, symbol, provider name, or
@@ -39,9 +40,10 @@ author, semantic deduplicator, or automatic Pattern promoter.
 - **Workflow:** compile to a task-oriented Skill when it has explicit action
   ids, ordering/branch conditions, `when_to_use`, `anti_goals`, and a
   validation ladder.
-- **Pattern:** compile to a cross-project Skill only after semantic
-  adjudication and a leakage-audited holdout result. A structural candidate is
-  never published as a promoted Skill.
+- **Pattern:** compile an accepted cross-project candidate after semantic
+  adjudication and training leakage checks. Keep `status: candidate` while the
+  holdout is pending. Holdout success is required for promotion; structural
+  candidates and deferred/rejected records never supply serving guidance.
 
 ## Required human-readable contract
 
@@ -85,8 +87,9 @@ identity.
 
 1. Load the source record, supporting Workflows/Actions, evidence ids,
    validation results, and lifecycle status.
-2. Run the promotion gates in `references/promotion-gates.md`. If a gate fails,
-   emit a `candidate` or `deferred` artifact instead of a discoverable Skill.
+2. Run evidence and package gates in `references/promotion-gates.md`. Missing
+   required semantics means an explicit defer record. A structurally valid
+   package is a candidate; empirical promotion is a separate decision.
 3. Humanize the title and summary. Preserve the universal invariant; remove
    repository paths, issue numbers, commit ids, and product-specific names from
    the reusable identity.
@@ -100,7 +103,8 @@ identity.
    incomplete, negative, and edge requests. Generate a functional rubric that
    checks action coverage, anti-goal violations, tests, unrelated edits, and
    leakage.
-7. Run structural validation and the activation/functional evals. Record model,
+7. Run structural validation. Mark generated activation/applicability/functional
+   eval definitions `not_executed` until they actually run. Record model,
    prompt version, hydrated source ids, tokens, latency, and grader results.
 8. Publish only a versioned artifact whose gates pass. Keep rejected/deferred
    source records and historical versions; never silently overwrite them.
@@ -113,16 +117,25 @@ identity.
 ├── agents/openai.yaml             # optional UI/dependency metadata
 ├── references/
 │   ├── workflow.md
-│   ├── action-contracts.md
-│   ├── validation.md
-│   └── provenance.yaml
-├── scripts/                       # optional deterministic helpers
+│   ├── actions/*.md
+│   ├── evidence/*.md
+│   └── provenance.json
+├── scripts/verify_package.py       # optional, standalone deterministic verifier
 ├── assets/                        # optional templates/fixtures
 └── evals/
-    ├── prompts.jsonl
-    ├── rubric.schema.json
-    └── expected.jsonl
+    ├── activation-cases.json
+    ├── applicability-cases.json
+    └── functional-cases.json
 ```
+
+`src/arex_skill_graph/skill_packages.py` implements the deterministic Workflow
+compiler. `experiments/materialize_candidate_skills.py` provides selected-case
+batch compilation and `--check`. Output is idempotent, content hashed, and
+refuses manual-edit conflicts. The canonical package root is
+`data/skill-extraction/packages/`; Workflow candidates use
+`candidates/workflows/`. Legacy Pattern compiler packages retain their v1
+layout for audit and compatibility; do not count them as v2 packages or use
+them through v2 serving hydration without migration.
 
 Read only the references needed for the current source level. Use
 `references/agent-skill-contract.md` for package compatibility and

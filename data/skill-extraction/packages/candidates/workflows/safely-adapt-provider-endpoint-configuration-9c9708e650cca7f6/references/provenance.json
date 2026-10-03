@@ -1,0 +1,270 @@
+{
+  "actions": [
+    {
+      "action_id": "semantic-action:0615b3d0c1425572",
+      "action_name": "resolve-provider-endpoint-precedence",
+      "condition": "Run when constructing a provider SDK client for a supported direct-provider authentication branch.",
+      "depends_on": [],
+      "evidence_ids": [
+        "ev-impl-01",
+        "ev-test-01",
+        "ev-test-02",
+        "ev-test-03"
+      ],
+      "optional": false,
+      "path": "references/actions/770d8d94a05cc926.md",
+      "required": true,
+      "role": "establish-contract",
+      "step_id": "step-1",
+      "validation": "Constructor-focused tests demonstrate provider-directed environment lookup, explicit precedence, and selection based on declared authentication type even without inferred credentials."
+    },
+    {
+      "action_id": "semantic-action:6b88c49d9fea9d8b",
+      "action_name": "guard-custom-endpoint-transport",
+      "condition": "Run only when endpoint resolution yields a non-empty custom endpoint.",
+      "depends_on": [
+        "resolve-provider-endpoint-precedence"
+      ],
+      "evidence_ids": [
+        "ev-diff-01",
+        "ev-test-04"
+      ],
+      "optional": false,
+      "path": "references/actions/7284adaa9f1dfe4f.md",
+      "required": true,
+      "role": "implement",
+      "step_id": "step-2",
+      "validation": "Unit tests prove loopback HTTP acceptance and rejection of malformed or remote HTTP values."
+    },
+    {
+      "action_id": "semantic-action:4ebd6851e9c5c71f",
+      "action_name": "adapt-provider-sdk-options",
+      "condition": "Run after an endpoint is admitted, or directly with no endpoint when resolution yields none; preserve an explicit provider-mode value when supplied.",
+      "depends_on": [
+        "resolve-provider-endpoint-precedence",
+        "guard-custom-endpoint-transport"
+      ],
+      "evidence_ids": [
+        "ev-call-01",
+        "ev-impl-02",
+        "ev-test-01",
+        "ev-test-02",
+        "ev-test-05"
+      ],
+      "optional": false,
+      "path": "references/actions/dc41ebb06392566f.md",
+      "required": true,
+      "role": "reconcile",
+      "step_id": "step-3",
+      "validation": "Mocked constructor assertions prove accepted endpoint forwarding and concrete provider-mode reconciliation for both provider branches and existing non-cloud cases."
+    }
+  ],
+  "compiler_version": "workflow-skill-compiler-v1",
+  "evidence": [
+    {
+      "id": "ev-before-01",
+      "kind": "implementation",
+      "path": "references/evidence/ff429e77feb93034.md"
+    },
+    {
+      "id": "ev-call-01",
+      "kind": "call_site",
+      "path": "references/evidence/5dc1c94e1213567e.md"
+    },
+    {
+      "id": "ev-diff-01",
+      "kind": "diff",
+      "path": "references/evidence/861b3a7316fedbdd.md"
+    },
+    {
+      "id": "ev-impl-01",
+      "kind": "implementation",
+      "path": "references/evidence/8e9506384f764c02.md"
+    },
+    {
+      "id": "ev-impl-02",
+      "kind": "implementation",
+      "path": "references/evidence/39115b0ff9bb76b1.md"
+    },
+    {
+      "id": "ev-test-01",
+      "kind": "test",
+      "path": "references/evidence/9784402c007babc3.md"
+    },
+    {
+      "id": "ev-test-02",
+      "kind": "test",
+      "path": "references/evidence/77394e9fed0a944b.md"
+    },
+    {
+      "id": "ev-test-03",
+      "kind": "test",
+      "path": "references/evidence/c93cd0d98c4d79ec.md"
+    },
+    {
+      "id": "ev-test-04",
+      "kind": "test",
+      "path": "references/evidence/b90084f57c95bcbe.md"
+    },
+    {
+      "id": "ev-test-05",
+      "kind": "test",
+      "path": "references/evidence/007ea4659c8ed22f.md"
+    }
+  ],
+  "functional_validation": "not_executed",
+  "holdout_used": false,
+  "issue": 25357,
+  "package": {
+    "level": "workflow",
+    "name": "safely-adapt-provider-endpoint-configuration-9c9708e650cca7f6",
+    "skill_id": "workflow:a1416952c048b7d5",
+    "status": "candidate",
+    "version": 1
+  },
+  "repository": "google-gemini/gemini-cli",
+  "revision": "cb289e0724b46ce867b6d3fe4bd0ac6ed890dc45",
+  "schema_version": "arex-skill-package-v2",
+  "source_episode_ids": [
+    "google-gemini__gemini-cli__25357__cb289e0"
+  ],
+  "source_sha256": "91ebfc690d03c89e0b66094a026c74128d3b017216e3ccea99eb5ad4158ff6b0",
+  "source_workflow_id": "workflow:a1416952c048b7d5",
+  "split": "train_candidate",
+  "workflow_contract": {
+    "anti_goals": [
+      "Do not change authentication credential precedence or introduce new credential requirements.",
+      "Do not apply these endpoint environment variables to unrelated authentication paths or alternate client implementations.",
+      "Do not permit remote plaintext HTTP merely to maximize compatibility.",
+      "Do not let an environment endpoint override a caller-supplied explicit endpoint."
+    ],
+    "category": "provider-interface-adaptation",
+    "description": "A partial-order workflow for honoring explicit and environment-supplied endpoint overrides while preserving provider identity, transport safety, and existing client behavior.",
+    "edges": [
+      {
+        "from": "step-1",
+        "to": "step-2",
+        "type": "enables"
+      },
+      {
+        "from": "step-1",
+        "to": "step-3",
+        "type": "enables"
+      },
+      {
+        "from": "step-2",
+        "to": "step-3",
+        "type": "requires"
+      },
+      {
+        "from": "step-3",
+        "to": "step-1",
+        "type": "validates"
+      }
+    ],
+    "entry_state": "The client-construction boundary knows the declared authentication type, but provider-specific endpoint environment variables are ignored, custom endpoints are not transport-validated, and SDK provider mode may be absent.",
+    "episode_id": "google-gemini__gemini-cli__25357__cb289e0",
+    "evidence_ids": [
+      "ev-before-01",
+      "ev-diff-01",
+      "ev-impl-01",
+      "ev-call-01",
+      "ev-impl-02",
+      "ev-test-01",
+      "ev-test-02",
+      "ev-test-03",
+      "ev-test-04",
+      "ev-test-05"
+    ],
+    "exit_state": "The SDK receives the highest-precedence endpoint associated with the declared provider and a consistent concrete provider mode; malformed and insecure remote endpoints fail before client construction.",
+    "goal": "Construct the external provider client with the intended custom endpoint and matching provider mode, while rejecting malformed or insecure remote overrides before any request can use them.",
+    "id": "workflow:a1416952c048b7d5",
+    "inputs": [
+      "declared authentication/provider type",
+      "optional explicit endpoint",
+      "provider-specific environment endpoint values",
+      "optional explicit SDK provider-mode value",
+      "external SDK constructor contract"
+    ],
+    "issue": 25357,
+    "name": "safely-adapt-provider-endpoint-configuration",
+    "node_type": "issue_workflow",
+    "not_applicable_when": [
+      "The integration has only one provider interface and no competing endpoint sources.",
+      "Endpoint selection and validation are already owned and guaranteed by a lower-level SDK contract.",
+      "The target path does not construct the SDK client that consumes the custom endpoint."
+    ],
+    "repository": "google-gemini/gemini-cli",
+    "skill_contract": {},
+    "source_case": "google-gemini/gemini-cli#25357",
+    "steps": [
+      {
+        "action_id": "semantic-action:0615b3d0c1425572",
+        "action_name": "resolve-provider-endpoint-precedence",
+        "condition": "Run when constructing a provider SDK client for a supported direct-provider authentication branch.",
+        "depends_on": [],
+        "optional": false,
+        "required": true,
+        "role": "establish-contract",
+        "step_id": "step-1",
+        "validation": "Constructor-focused tests demonstrate provider-directed environment lookup, explicit precedence, and selection based on declared authentication type even without inferred credentials."
+      },
+      {
+        "action_id": "semantic-action:6b88c49d9fea9d8b",
+        "action_name": "guard-custom-endpoint-transport",
+        "condition": "Run only when endpoint resolution yields a non-empty custom endpoint.",
+        "depends_on": [
+          "resolve-provider-endpoint-precedence"
+        ],
+        "optional": false,
+        "required": true,
+        "role": "implement",
+        "step_id": "step-2",
+        "validation": "Unit tests prove loopback HTTP acceptance and rejection of malformed or remote HTTP values."
+      },
+      {
+        "action_id": "semantic-action:4ebd6851e9c5c71f",
+        "action_name": "adapt-provider-sdk-options",
+        "condition": "Run after an endpoint is admitted, or directly with no endpoint when resolution yields none; preserve an explicit provider-mode value when supplied.",
+        "depends_on": [
+          "resolve-provider-endpoint-precedence",
+          "guard-custom-endpoint-transport"
+        ],
+        "optional": false,
+        "required": true,
+        "role": "reconcile",
+        "step_id": "step-3",
+        "validation": "Mocked constructor assertions prove accepted endpoint forwarding and concrete provider-mode reconciliation for both provider branches and existing non-cloud cases."
+      }
+    ],
+    "stop_conditions": [
+      "Stop and defer if the declared provider cannot be determined at the client-construction boundary.",
+      "Stop if no direct test seam can observe the external SDK constructor options or rejection behavior.",
+      "Stop rather than broadening scope if endpoint support would require changing credential acquisition or unrelated authentication paths.",
+      "Do not claim runtime validation success until the focused tests execute in an intact checkout."
+    ],
+    "supporting_repositories": [
+      "google-gemini/gemini-cli"
+    ],
+    "title": "Safely route custom endpoints through a multi-provider SDK boundary",
+    "unresolved_or_deferred": [
+      "No PR body, review discussion, or status-check results were available in the GitHub evidence bundle.",
+      "Focused tests were inspected but not executed because the supplied worktree contains staged deletions of all tracked files.",
+      "The implementation includes [::1] in the hostname allowlist; WHATWG URL.hostname behavior for bracketed IPv6 was not separately exercised by the added tests.",
+      "No cross-repository pattern is proposed from this single workflow."
+    ],
+    "validation_ladder": [
+      "Static diff check: confirm endpoint lookup is inside the intended SDK-construction branch and keyed by the declared authentication type.",
+      "Focused unit checks: verify each provider environment endpoint is forwarded with the matching provider mode.",
+      "Precedence check: set explicit and environment endpoints and verify the explicit value wins.",
+      "Safety checks: verify loopback HTTP succeeds while malformed and remote HTTP endpoints fail before SDK construction.",
+      "Regression checks: retain established constructor-option assertions, now with concrete non-cloud provider mode.",
+      "Repository test execution: run the focused content-generator test file in an intact checkout; this remained deferred in the supplied staged-deletion worktree."
+    ],
+    "when_to_use": [
+      "A client supports multiple provider interfaces selected by an authentication or backend mode.",
+      "Callers need endpoint overrides through both an explicit configuration field and provider-specific environment variables.",
+      "The external SDK accepts endpoint and provider-mode options that must remain mutually consistent."
+    ]
+  }
+}

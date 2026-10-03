@@ -132,6 +132,8 @@ def summarize(
             validation = load_json(validation_path)
             manual_valid = validation == {"valid": True, "errors": []}
             episode = episodes_by_key.get((repository, issue))
+            package_completion = ((episode or {}).get("metadata") or {}).get("extraction_completion", {})
+            packages = list((((episode or {}).get("metadata") or {}).get("skill_packages") or {}).values())
             if episode is None:
                 errors.append(f"{category}: no canonical episode for {repository}#{issue}")
             if schema_errors:
@@ -177,6 +179,10 @@ def summarize(
                     "atomic_names": [item.get("name") for item in atomics],
                     "atomic_titles": [item.get("title") for item in atomics],
                     "workflow_count": len(workflows),
+                    "extraction_status": package_completion.get("status", "structured_only"),
+                    "extraction_success": package_completion.get("extraction_success", False),
+                    "skill_packages": packages,
+                    "materialized_skill_packages": len(packages),
                     "workflow_names": [item.get("name") for item in workflows],
                     "workflow_titles": [item.get("title") for item in workflows],
                     "when_to_use": _list(graph.get("when_to_use")),
@@ -223,12 +229,14 @@ def summarize(
         "verified_substitutes": sum(item["verified_substitutes"] for item in category_summaries),
         "candidate_atomics": sum(record["atomic_count"] for record in records),
         "candidate_workflows": sum(record["workflow_count"] for record in records),
+        "materialized_skill_packages": sum(record["materialized_skill_packages"] for record in records),
+        "admitted_candidate_episodes": sum(record["extraction_success"] for record in records),
         "holdouts": len(holdout_cases),
         "holdout_leaks": sum("holdout URL leaked" in error for error in errors),
     }
     inventory = {
         "schema_version": "agent-core-common-category-extraction-inventory-v2-contract",
-        "scope": "ChangeEpisode plus candidate Atomic and actionable Workflow extraction only",
+        "scope": "Episode/Atomic/Workflow IR plus separately counted validated candidate Skill Packages",
         "run": {
             "path": str(run_root),
             "response_schema": str(schema_path),
@@ -254,7 +262,9 @@ def render_markdown(inventory: dict[str, Any]) -> str:
         "## Summary",
         "",
         f"- Training cases: {counts['training_cases']}",
-        f"- Admitted ChangeEpisodes: {counts['admitted_episodes']}",
+        f"- Evidence-validated ChangeEpisodes (legacy admitted count): {counts['admitted_episodes']}",
+        f"- Materialized candidate Skill Packages: {counts.get('materialized_skill_packages', 0)}",
+        f"- Package-backed admitted candidate Episodes: {counts.get('admitted_candidate_episodes', 0)}",
         f"- Candidate Atomics: {counts['candidate_atomics']}",
         f"- Candidate Workflows: {counts['candidate_workflows']}",
         f"- Schema-valid responses: {counts['jsonschema_validation_pass']}",

@@ -1,0 +1,49 @@
+{
+  "cases": [
+    {
+      "action_id": "semantic-action:0615b3d0c1425572",
+      "anti_goals": [
+        "Do not change authentication credential precedence or introduce new credential requirements.",
+        "Do not apply these endpoint environment variables to unrelated authentication paths or alternate client implementations.",
+        "Do not permit remote plaintext HTTP merely to maximize compatibility.",
+        "Do not let an environment endpoint override a caller-supplied explicit endpoint."
+      ],
+      "expected_postcondition": "At most one endpoint candidate is selected; explicit configuration wins, and an environment fallback is chosen according to the declared authentication type rather than inferred credentials.",
+      "id": "action-1",
+      "oracle": "Constructor-focused tests demonstrate provider-directed environment lookup, explicit precedence, and selection based on declared authentication type even without inferred credentials.",
+      "precondition": "Client configuration may contain an explicit endpoint, either provider-specific environment endpoint may be present, and the declared authentication type identifies the active interface.",
+      "required": true
+    },
+    {
+      "action_id": "semantic-action:6b88c49d9fea9d8b",
+      "anti_goals": [
+        "Do not change authentication credential precedence or introduce new credential requirements.",
+        "Do not apply these endpoint environment variables to unrelated authentication paths or alternate client implementations.",
+        "Do not permit remote plaintext HTTP merely to maximize compatibility.",
+        "Do not let an environment endpoint override a caller-supplied explicit endpoint."
+      ],
+      "expected_postcondition": "The endpoint is admitted only if it is parseable and uses HTTPS, except that named and numeric loopback hosts may use HTTP; rejected values fail before SDK construction.",
+      "id": "action-2",
+      "oracle": "Unit tests prove loopback HTTP acceptance and rejection of malformed or remote HTTP values.",
+      "precondition": "A non-empty explicit or environment-derived custom endpoint has been selected but has not yet been admitted to outbound client options.",
+      "required": true
+    },
+    {
+      "action_id": "semantic-action:4ebd6851e9c5c71f",
+      "anti_goals": [
+        "Do not change authentication credential precedence or introduce new credential requirements.",
+        "Do not apply these endpoint environment variables to unrelated authentication paths or alternate client implementations.",
+        "Do not permit remote plaintext HTTP merely to maximize compatibility.",
+        "Do not let an environment endpoint override a caller-supplied explicit endpoint."
+      ],
+      "expected_postcondition": "The SDK receives the accepted endpoint in its HTTP options and a concrete provider-mode value that preserves an explicit setting or otherwise reflects the declared authentication interface.",
+      "id": "action-3",
+      "oracle": "Mocked constructor assertions prove accepted endpoint forwarding and concrete provider-mode reconciliation for both provider branches and existing non-cloud cases.",
+      "precondition": "Endpoint resolution and admission have completed, while the SDK provider-mode field may be explicitly set or absent despite a declared authentication type.",
+      "required": true
+    }
+  ],
+  "schema_version": "skill-eval-cases-v1",
+  "source": "training_contract",
+  "status": "not_executed"
+}

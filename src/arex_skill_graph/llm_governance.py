@@ -129,6 +129,12 @@ class LLMGovernanceAdapter:
         candidates = []
         for hit in hits:
             payload = hit.node.payload if isinstance(hit.node.payload, Mapping) else {}
+            skill_context = {}
+            if payload.get("skill_package"):
+                from .skill_packages import hydrate_package
+
+                skill_context = hydrate_package({**payload, "id": hit.node.id,
+                                                 "lifecycle": hit.node.lifecycle})
             candidates.append(
                 {
                     "skill_id": hit.node.id,
@@ -144,6 +150,7 @@ class LLMGovernanceAdapter:
                     "score": hit.score,
                     "sources": dict(hit.sources),
                     "trace": list(hit.trace),
+                    **({"skill_package_context": skill_context} if skill_context else {}),
                 }
             )
         result = self.transport.complete(
@@ -425,6 +432,5 @@ class LLMGovernanceAdapter:
             failure_modes=tuple(str(x) for x in value.get("failure_modes", ())),
             payload=payload,
         )
-
 
 

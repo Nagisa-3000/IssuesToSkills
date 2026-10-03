@@ -177,7 +177,9 @@ def _workflow_steps(
                 continue
             name = _text(raw.get("action_name") or raw.get("action") or raw.get("name"))
             action_id = atomic_by_name.get(name)
-            if action_id is None and index < len(action_ids):
+            if action_id is None and name:
+                raise ValueError(f"explicit Workflow step references unknown Action: {name}")
+            if action_id is None and not name and index < len(action_ids):
                 action_id = action_ids[index]
             if action_id:
                 required = raw.get("required")
@@ -394,7 +396,12 @@ def build(
                 ],
                 "supporting_repositories": [repository],
                 "source_case": f"{repository}#{issue}",
+                "skill_contract": dict(item.get("skill_contract") or {}),
             }
+            package = (episode.get("metadata", {}).get("skill_packages") or {}).get(workflow_id)
+            workflow["extraction_status"] = "admitted_candidate" if package else "structured_only"
+            if package:
+                workflow["skill_package"] = dict(package)
             workflows.append(workflow)
             for edge in workflow_edges:
                 step_by_id = {step["step_id"]: step for step in steps}

@@ -93,6 +93,7 @@ class SkillRetriever:
         hnsw_oversample: int = 4,
         same_level_only: bool = False,
         include_inactive: bool = True,
+        require_skill_package: bool = False,
     ) -> SearchResponse:
         lexical = self.store.search_lexical(
             query,
@@ -186,6 +187,18 @@ class SkillRetriever:
         if same_level_only and node_types is not None:
             allowed_types = set(node_types)
             ranked = [hit for hit in ranked if hit.node.node_type in allowed_types]
+        if require_skill_package:
+            from .skill_packages import hydrate_package
+
+            serving = []
+            for hit in ranked:
+                try:
+                    hydrate_package({**hit.node.payload, "id": hit.node.id,
+                                     "lifecycle": hit.node.lifecycle})
+                except ValueError:
+                    continue
+                serving.append(hit)
+            ranked = serving
         return SearchResponse(
             query=query,
             hits=ranked[:top_k],
@@ -327,6 +340,5 @@ class SkillRetriever:
             NodeType.COMMIT: 0,
             NodeType.HUNK: 0,
         }.get(node_type, 1)
-
 
 

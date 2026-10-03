@@ -23,6 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from arex_skill_graph.schema import Edge, Node, NodeType, RelationType, stable_id
+from arex_skill_graph.skill_packages import hydrate_package
 from arex_skill_graph.store import CatalogStore
 
 RELATIONS = {
@@ -75,6 +76,7 @@ def node_from_workflow(workflow: dict[str, Any]) -> Node:
             "problem_class": category,
             "entry_state": text(workflow.get("entry_state")),
             "exit_state": text(workflow.get("exit_state")),
+            "package_status": "package_validated" if workflow.get("skill_package") else "structured_only",
         },
         payload=dict(workflow),
         provenance={"source": "universal-resolution-graph", "stage": "materialize"},
@@ -132,6 +134,12 @@ def materialize(graph: dict[str, Any], store: CatalogStore) -> dict[str, int]:
     workflow_rows = [dict(item) for item in graph.get("workflows", []) if isinstance(item, dict)]
     fragment_rows = [dict(item) for item in graph.get("workflow_fragments", []) if isinstance(item, dict)]
     pattern_rows = [dict(item) for item in graph.get("patterns", []) if isinstance(item, dict)]
+
+    # Perform this gate before any SQLite mutation. Legacy graphs may still be
+    # indexed as IR, but new admitted Workflows must resolve a validated package.
+    for workflow in workflow_rows:
+        if policy.get("skill_package_required") or workflow.get("skill_package"):
+            hydrate_package(workflow)
 
     nodes: list[Node] = []
     nodes.extend(node_from_action(row) for row in action_rows if text(row.get("id")))

@@ -10,6 +10,12 @@ large evidence and mode-specific procedures belong in references.
 ---
 name: lowercase-hyphenated-name
 description: One discriminating sentence describing capability and activation boundary.
+metadata:
+  skill-id: Stable graph Workflow or Pattern id
+  level: workflow
+  status: candidate
+  version: 1
+  category: Project-independent routing class
 ---
 ```
 
@@ -28,6 +34,17 @@ A compiled `SKILL.md` should normally contain:
 - Validation / definition of done
 - Stop, ask, or defer conditions
 - Supporting references
+
+Workflow candidates also expose applicability probes, preconditions, concrete
+Action owners/objects/invariants/oracles, failure modes, and known limitations.
+Each Action links to `references/actions/`; evidence cards are bundled under
+`references/evidence/`, with `workflow.md` and `provenance.json`. The three eval
+suites are `activation-cases.json`, `applicability-cases.json`, and
+`functional-cases.json`. Definitions alone do not imply passing evals.
+
+The v2 manifest hashes all package content. Its package hash excludes the
+manifest itself, avoiding recursive hashes. Serving hydration revalidates the
+content and graph reference, then loads the actual `SKILL.md` and Actions.
 
 ## Progressive disclosure
 

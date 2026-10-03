@@ -913,6 +913,11 @@ def compile_package(
     if pattern_id not in patterns:
         raise ValueError(f"Pattern not found: {pattern_id}")
     pattern = patterns[pattern_id]
+    if pattern.get("promotion_status") in {
+        "deferred", "defer", "reject", "rejected", "deferred_by_semantic_judge",
+        "rejected_by_semantic_judge",
+    }:
+        raise ValueError("semantically deferred/rejected Pattern cannot become a serving Skill")
     training_repositories = set(_strings(pattern.get("supporting_repositories")))
     holdout = _holdout_summary(
         holdout_cases_path,

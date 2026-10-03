@@ -184,3 +184,13 @@ def test_distiller_validator_rejects_a_training_holdout_repository_overlap(
 
     assert report["valid"] is False
     assert any("holdout repository appears in training records" in error for error in report["errors"])
+
+
+def test_frozen_json_corpus_is_valid_ir_but_not_complete_skill_extraction() -> None:
+    report = VALIDATOR.validate_inventory(INVENTORY, repository_root=ROOT, require_packages=True)
+
+    assert report["ir_validation_valid"] is True
+    assert report["valid"] is False
+    assert report["extraction_success"] is False
+    assert report["status"] == "materialization_pending"
+    assert report["materialized_skill_packages"] == 0

@@ -296,6 +296,12 @@ def _prepare_workspace(
 
 
 def _render_hit(hit: SearchHit, index: int) -> str:
+    if hit.node.payload.get("skill_package"):
+        from arex_skill_graph.skill_packages import hydrate_package
+
+        hydrated = hydrate_package({**hit.node.payload, "id": hit.node.id,
+                                    "lifecycle": hit.node.lifecycle})
+        return f"## Retrieved Skill Package {index}\n\n" + hydrated["rendered"]
     node = hit.node
     lines = [
         f"## Retrieved node {index}: {node.node_type.value} — {node.title}",
@@ -406,12 +412,21 @@ def _guidance_eligibility(hit: SearchHit) -> tuple[bool, str]:
 
 def _split_guidance_hits(
     hits: Sequence[SearchHit],
+    *, require_packages: bool = False,
 ) -> tuple[list[SearchHit], list[dict[str, Any]]]:
     """Exclude semantically deferred/rejected Patterns before LLM judging or use."""
     eligible: list[SearchHit] = []
     excluded: list[dict[str, Any]] = []
     for rank, hit in enumerate(hits, start=1):
         is_eligible, decision = _guidance_eligibility(hit)
+        if is_eligible and require_packages:
+            from arex_skill_graph.skill_packages import hydrate_package
+
+            try:
+                hydrate_package({**hit.node.payload, "id": hit.node.id,
+                                 "lifecycle": hit.node.lifecycle})
+            except ValueError as exc:
+                is_eligible, decision = False, str(exc)
         if is_eligible:
             eligible.append(hit)
             continue
@@ -421,7 +436,8 @@ def _split_guidance_hits(
                 "id": hit.node.id,
                 "title": hit.node.title,
                 "decision": decision,
-                "reason": "semantic Pattern decision is not eligible for guided use",
+                "reason": "record lacks an eligible, validated Skill Package" if require_packages
+                          else "semantic Pattern decision is not eligible for guided use",
             }
         )
     return eligible, excluded
@@ -508,10 +524,11 @@ def _build_guidance(
         vector_backend="hnsw" if hnsw_path and hnsw_path.exists() else "exact",
         hnsw_path=str(hnsw_path) if hnsw_path and hnsw_path.exists() else None,
         include_inactive=False,
+        require_skill_package=True,
     )
     latency_ms = (time.perf_counter() - started) * 1000.0
     hits = response.hits
-    judge_hits, excluded_guidance_hits = _split_guidance_hits(hits)
+    judge_hits, excluded_guidance_hits = _split_guidance_hits(hits, require_packages=True)
     judge: dict[str, Any] = {}
     judge_error: str | None = None
     transport: OpenAICompatibleTransport | None = None
@@ -559,28 +576,13 @@ def _build_guidance(
         except Exception as exc:  # noqa: BLE001 - judge failure must degrade to no guidance
             judge_error = f"{type(exc).__name__}: {exc}"
     approved_hits = _approved_guidance_hits(judge_hits, judge)
-    if approved_hits:
-        selected = approved_hits[0]
-        selected_payload = (
-            selected.node.payload if isinstance(selected.node.payload, Mapping) else {}
-        )
-        materialized = {hit.node.id for hit in approved_hits}
-        for related_id in sorted(_payload_relation_ids(selected_payload)):
-            if related_id in materialized:
-                continue
-            related_node = store.get_node(related_id)
-            if related_node is None:
-                continue
-            related_hit = SearchHit(
-                node=related_node,
-                score=selected.score * 0.75,
-                sources={"selected_payload_relation": selected.score * 0.75},
-                trace=[f"{selected.node.id} --payload-reference--> {related_id}"],
-            )
-            if not _guidance_eligibility(related_hit)[0]:
-                continue
-            approved_hits.append(related_hit)
-            materialized.add(related_id)
+    # The selected package already contains its explicit Action contracts.
+    # Graph neighborhoods remain retrieval traces, not substitute guidance.
+    approved_hits = approved_hits[:1]
+    from arex_skill_graph.skill_packages import hydrate_package
+
+    hydrated_packages = [hydrate_package({**hit.node.payload, "id": hit.node.id,
+                                         "lifecycle": hit.node.lifecycle}) for hit in approved_hits]
     rendered = "\n\n".join(
         _render_hit(hit, index) for index, hit in enumerate(approved_hits, start=1)
     )
@@ -611,6 +613,8 @@ def _build_guidance(
         "excluded_guidance_hits": excluded_guidance_hits,
         "guidance_applicable": bool(approved_hits),
         "approved_hit_ids": [hit.node.id for hit in approved_hits],
+        "hydrated_packages": [{key: value for key, value in package.items() if key != "rendered"}
+                              for package in hydrated_packages],
         "transport_calls": list(transport.calls) if transport else [],
         "transport_transcripts": list(transport.transcripts) if transport else [],
         "rendered": rendered,

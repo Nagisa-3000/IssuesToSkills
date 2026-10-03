@@ -1,6 +1,6 @@
 ---
 name: universal-resolution-distiller
-description: Extract evidence-grounded Actions and Workflows from implementation issues, then propose human-readable cross-project Resolution Patterns with explicit when-to-use rules, anti-goals, validation, and holdout gates.
+description: Extract implementation-bearing Issue/PR evidence into validated candidate Agent Skill Packages with explicit Actions, provenance and eval cases; preserve JSON as intermediate records and holdouts for evaluation.
 ---
 
 # Universal Resolution Distiller
@@ -61,12 +61,15 @@ anchor issue and linked resolution
   -> create canonical ChangeEpisode
   -> extract semantic Actions / Atomics
   -> build an Issue Workflow DAG
+  -> compile every grounded Workflow into a candidate Skill Package
+  -> validate package, Action/evidence closure, hashes, and eval cases
+  -> admit package-backed candidate records
   -> retrieve same-level peers
   -> LLM semantic dedup/adjudication
   -> induce Pattern candidates from multiple Workflows
   -> semantic Pattern adjudication
-  -> validate on untouched holdout
-  -> hand promoted records to resolution-skill-creator
+  -> compile only semantically accepted Pattern candidates
+  -> validate on untouched holdout before promotion
 ```
 
 Never induce a Pattern from one Issue or one Workflow. Never load a holdout
@@ -78,7 +81,8 @@ For a multi-case category run, read
 before selecting cases or launching extraction processes. Freeze the split
 before any holdout solution inspection, isolate parallel case outputs, and run
 `scripts/validate_extraction_inventory.py` before declaring the extraction
-stage complete. Do not proceed into Pattern induction or agent evaluation when
+IR stage valid. Package materialization and validation are mandatory even when
+the caller requests extraction only. Do not proceed into Pattern induction or agent evaluation when
 the caller requested extraction only.
 
 ## Action / Atomic contract
@@ -227,5 +231,44 @@ two repositories, explicit `when_to_use` and anti-goals, a validation ladder,
 no leakage, and a successful holdout/end-task result. Retrieval Recall alone is
 not Pattern success.
 
-The next package-compilation stage is
-`data/skill-extraction/packages/resolution-skill-creator/SKILL.md`.
+## Mandatory completion contract
+
+`resolution-skill-creator` is the reusable compiler component inside this
+extraction, never an optional post-promotion step. The extractor returns JSON
+under `schemas/codex-change-episode-v3.schema.json`; the runner compiles it into
+the deliverable. Legacy v2 JSON may be migrated through the same compiler.
+
+Each grounded Workflow must produce one self-contained package containing:
+
+```text
+<skill-name>/SKILL.md
+<skill-name>/references/actions/*.md
+<skill-name>/references/evidence/*.md
+<skill-name>/references/workflow.md
+<skill-name>/references/provenance.json
+<skill-name>/evals/activation-cases.json
+<skill-name>/evals/applicability-cases.json
+<skill-name>/evals/functional-cases.json
+```
+
+Episode JSON is historical evidence. Atomic records become readable Action
+references. Graph, SQLite and HNSW are storage/index projections. None of them
+alone is an Agent Skill Package.
+
+Use `experiments/materialize_candidate_skills.py` for selected validated
+training responses, or the mandatory compiler in
+`experiments/run_codex_issue_episode_extraction.py`. `--check` detects absent or
+changed packages without writing. Never overwrite manual edits; create an
+explicit new source/version when a revision is needed.
+
+State progression is `structured -> evidence_validated -> skill_materialized
+-> package_validated -> admitted_candidate`. JSON-only output is
+`structured_only` or `materialization_pending`, with `extraction_success=false`.
+Count real validated packages separately from candidate record counts.
+Package structure and eval definitions do not mean functional evals ran.
+
+The canonical root remains `data/skill-extraction/packages/`; generated
+Workflow candidates live in `candidates/workflows/` below it. Do not duplicate
+packages in a second independent root. Deferred/rejected Patterns stay as audit
+IR and cannot provide serving guidance. A candidate package never becomes
+promoted merely because its Markdown validates.

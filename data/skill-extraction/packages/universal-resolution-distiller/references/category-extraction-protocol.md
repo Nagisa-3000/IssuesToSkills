@@ -2,7 +2,8 @@
 
 Use this protocol when building a category corpus for later Pattern induction
 and holdout evaluation. It governs only Issue/PR evidence collection,
-ChangeEpisode extraction, candidate Actions, and Issue Workflows. Pattern
+ChangeEpisode extraction, candidate Actions, Issue Workflows, and mandatory
+Workflow Skill Package compilation. Pattern
 promotion, retrieval evaluation, and skill-guided patching are later stages.
 
 ## 1. Define the category before selecting cases
@@ -89,6 +90,13 @@ must not invent missing Actions.
 
 ## 6. Aggregate without semantic over-merging
 
+Compile and validate each grounded Workflow through the Resolution Skill
+Creator before reporting it as an admitted candidate Skill. Record
+`package_path`, version, SHA-256, package validation, source Episode/Workflow
+ids, and compiler version. JSON-only cases are `materialization_pending` and
+must not count as completed Skill extraction. Report Action/Workflow IR counts
+separately from materialized package counts.
+
 The extraction inventory should report category, case, repository, sample kind,
 model, usage, evidence count, Action count, Workflow count, validation status,
 and relative artifact path. At category level, verify:
@@ -123,7 +131,9 @@ version rather than modifying the frozen extraction artifacts in place.
 
 ## Completion gate
 
-The extraction stage is complete only when all requested training cases are
-admitted, the repository-disjoint split is proven, holdout leakage is zero, and
-the deterministic validator exits successfully. This gate does not claim that
+The Skill extraction stage is complete only when all requested training cases
+have validated Workflow packages, the repository-disjoint split is proven,
+holdout leakage is zero, and the package-aware inventory validator succeeds.
+Use `--structured-ir-only` only to audit frozen historical IR. Such a result
+does not mark Skill extraction complete. This gate does not claim that
 a Pattern generalizes or that a guided agent outperforms a no-skill agent.

@@ -12,10 +12,9 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Any
-
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPERIMENTS = ROOT / "experiments"
@@ -81,6 +80,8 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--min-pattern-support", type=int, default=2)
     parser.add_argument("--build-hnsw", action="store_true")
+    parser.add_argument("--allow-structured-ir", action="store_true",
+                        help="audit historical graph IR; does not produce serving Skills")
     args = parser.parse_args()
 
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
@@ -94,6 +95,13 @@ def main() -> int:
     graph["rejected"].extend(refused)
     graph["summary"]["preflight_refused"] = len(refused)
     graph["summary"]["episodes_used"] = len(episodes)
+    package_report = {"status": "structured_only", "materialized_skill_packages": 0}
+    if not args.allow_structured_ir:
+        from arex_skill_graph.skill_packages import PACKAGE_ROOT, compile_workflow_graph
+
+        package_report = compile_workflow_graph(graph, episodes, PACKAGE_ROOT / "candidates/workflows")
+        if not package_report["extraction_success"]:
+            raise ValueError(f"catalog Skill admission failed: {package_report['failures']}")
     audit = FACTOR.audit(graph)
     fragments = []
     for index, row in enumerate(audit.get("workflow_role_segments", [])):
@@ -133,6 +141,7 @@ def main() -> int:
         "manifest": str(args.manifest),
         "episode_sources": [str(path) for path in args.episodes],
         "training_only": True,
+        "skill_packages": package_report,
         "holdout_loaded": False,
         "input_episodes": len(input_episodes),
         "training_episodes": len(episodes),

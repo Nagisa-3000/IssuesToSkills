@@ -17,6 +17,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import urllib.error
 import urllib.request
 from datetime import UTC, datetime
@@ -24,7 +25,18 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-SCHEMA = ROOT / "schemas" / "codex-change-episode-v2.schema.json"
+sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "experiments"))
+
+from build_universal_resolution_graph import build as build_resolution_graph
+
+from arex_skill_graph.skill_packages import (
+    PACKAGE_ROOT,
+    compile_workflow_graph,
+    extraction_completion,
+)
+
+SCHEMA = ROOT / "schemas" / "codex-change-episode-v3.schema.json"
 META_SKILL = (
     ROOT / "data" / "skill-extraction" / "packages" / "universal-resolution-distiller" / "SKILL.md"
 )
@@ -330,6 +342,13 @@ on code and tests rather than commit timestamp alone. Keep
 unresolved_or_deferred explicit. Do not emit a Workflow whose actionable
 contract cannot be grounded. The universal problem class is a routing
 hypothesis, not permission to invent a match.
+
+JSON is extraction IR. After this response, the runner must compile and validate
+every Workflow's self-contained candidate Skill Package before it can declare
+extraction_success or admitted_candidate. Holdout materialization is forbidden.
+Each Workflow's skill_contract must provide a project-independent name, a
+discriminating activation description, applicability_probes, failure_modes,
+and known_limitations. Preserve missing or unexecuted validation as limitations.
 """
 
 
@@ -545,6 +564,20 @@ def validate_response(value: Any) -> tuple[bool, list[str]]:
             if not str(workflow.get(key, "")).strip():
                 errors.append(f"candidate_workflows[{index}].{key} is empty")
         workflow_evidence = workflow.get("evidence_ids")
+        # v2 is retained for immutable historical corpus migration; new v3
+        # responses carry the full explicit package guidance contract.
+        contract = workflow.get("skill_contract")
+        if contract is not None:
+            if not isinstance(contract, dict):
+                errors.append(f"candidate_workflows[{index}].skill_contract is not an object")
+            else:
+                if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", str(contract.get("name", ""))):
+                    errors.append(f"candidate_workflows[{index}].skill_contract.name is invalid")
+                if len(str(contract.get("description", ""))) < 20:
+                    errors.append(f"candidate_workflows[{index}].skill_contract.description is too short")
+                for field in ("applicability_probes", "failure_modes", "known_limitations"):
+                    if not isinstance(contract.get(field), list) or not contract[field]:
+                        errors.append(f"candidate_workflows[{index}].skill_contract.{field} is empty")
         if not isinstance(workflow_evidence, list) or not workflow_evidence:
             errors.append(f"candidate_workflows[{index}].evidence_ids is empty")
         else:
@@ -707,6 +740,27 @@ def load_cases(path: Path | None, role: str = "all") -> list[dict[str, Any]]:
     return cases
 
 
+def finalize_extraction(
+    response: dict[str, Any], bundle: dict[str, Any], case: dict[str, Any],
+    packages_root: Path,
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    """Mandatory compiler stage, also usable for a small offline IR migration."""
+    ok, errors = validate_response(response)
+    result = {"valid": ok, "validation_errors": errors,
+              **extraction_completion(ok, [], len(response.get("candidate_workflows", [])))}
+    if not ok:
+        return result, None
+    if case.get("extraction_forbidden") or "holdout" in str(case.get("role") or case.get("split")):
+        raise ValueError("holdout extraction and package materialization are forbidden")
+    training_case = {**case, "role": "train_candidate"}
+    episode = canonical_episode(response, bundle, training_case)
+    graph = build_resolution_graph([episode], {"cases": [training_case]})
+    report = compile_workflow_graph(graph, [episode], packages_root)
+    result.update(report)
+    result["episode_id"] = episode["episode_id"]
+    return result, episode if report["admitted"] else None
+
+
 def main() -> int:
     global SCHEMA
     parser = argparse.ArgumentParser()
@@ -718,6 +772,8 @@ def main() -> int:
         "--output", type=Path, default=ROOT / "data" / "skill-extraction" / "codex-runs" / now_id()
     )
     parser.add_argument("--codex", default="codex", help="configured Codex CLI executable")
+    parser.add_argument("--packages-root", type=Path, default=PACKAGE_ROOT / "candidates/workflows",
+                        help="mandatory validated candidate Skill Package output")
     parser.add_argument(
         "--codex-profile",
         default=os.environ.get("CODEX_PROFILE"),
@@ -769,8 +825,11 @@ def main() -> int:
             "repository": case["repository"],
             "issue": case["issue"],
             "checkout": str(checkout),
+            **extraction_completion(False, [], 0),
         }
         try:
+            if case.get("extraction_forbidden") or "holdout" in str(case.get("role") or case.get("split")):
+                raise ValueError("holdout extraction is forbidden")
             if not (checkout / ".git").exists():
                 raise RuntimeError(f"checkout is not a git repository: {checkout}")
             bundle = issue_bundle(case, args.github_token, max(0, args.max_linked_prs))
@@ -826,13 +885,14 @@ def main() -> int:
             )
             record["valid"] = ok
             record["validation_errors"] = errors
-            if ok:
-                episode = canonical_episode(response, bundle, case)
-                record["episode_id"] = episode["episode_id"]
-                record["admitted"] = True
-                admitted.append(episode)
-            else:
-                record["admitted"] = False
+            if ok and returncode == 0:
+                completion, episode = finalize_extraction(response, bundle, case, args.packages_root)
+                record.update(completion)
+                (case_dir / "package-materialization.json").write_text(
+                    json.dumps(completion, ensure_ascii=False, indent=2), encoding="utf-8"
+                )
+                if episode is not None:
+                    admitted.append(episode)
         except Exception as exc:  # noqa: BLE001 - one failed case must not abort the batch
             record["valid"] = False
             record["admitted"] = False
@@ -856,6 +916,7 @@ def main() -> int:
         "codex_model": args.codex_model,
         "codex_sandbox": args.codex_sandbox,
         "admitted_episodes": len(admitted),
+        "materialized_skill_packages": sum(item["materialized_skill_packages"] for item in records),
         "insufficient_or_failed": sum(not bool(item.get("admitted")) for item in records),
         "records": records,
     }

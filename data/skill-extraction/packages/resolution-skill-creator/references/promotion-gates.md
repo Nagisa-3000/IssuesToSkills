@@ -7,6 +7,12 @@ A package may be emitted at three statuses:
 - `deferred`: missing evidence, action references, oracle, or judge result;
 - `promoted`: all gates below pass and the version is published.
 
+Workflow compilation is mandatory before candidate admission. Candidate
+package validation is separate from semantic acceptance, executed functional
+evals, and empirical promotion. A deferred/rejected source is an audit record,
+not serving Skill guidance. Holdout-pending, semantically accepted Patterns
+may become candidate packages; only promotion requires successful holdouts.
+
 ## Required gates
 
 ### Evidence

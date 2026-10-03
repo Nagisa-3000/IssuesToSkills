@@ -16,8 +16,13 @@ model/provider, model settings, time budget, setup commands, visible oracle,
 and task prompt under at least:
 
 1. `no_skill`: task and repository state only;
-2. `guided`: the same task plus the selected Pattern/Workflow/Action cards,
-   applicability probes, and retrieval trace.
+2. `guided`: the same task plus the selected validated package's `SKILL.md`
+   and explicit Action references, applicability probes, and retrieval trace.
+
+Require a canonical package path, version and matching content hash before
+guidance. Graph-only JSON cards are IR for retrieval research and cannot stand
+in for an Agent Skill. Record hydrated Action ids and the applicability
+decision. Package validation is not a passing functional eval or promotion.
 
 Optional descriptive arms are `raw_episode`, `flat_skill`, and `hybrid_graph`.
 They must not replace the paired no-skill baseline.

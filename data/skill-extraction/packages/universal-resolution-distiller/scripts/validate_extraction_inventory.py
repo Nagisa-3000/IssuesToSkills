@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
@@ -45,7 +46,9 @@ def validate_inventory(
     expected_categories: int | None = None,
     expected_training_per_category: int | None = None,
     expected_model: str | None = None,
+    require_packages: bool = False,
 ) -> dict[str, Any]:
+    """Audit historical IR by default; the CLI requires packages for completion."""
     inventory_path = inventory_path.resolve()
     root = (repository_root or find_repository_root(inventory_path)).resolve()
     inventory = load_object(inventory_path)
@@ -313,7 +316,7 @@ def validate_inventory(
         inventory_reference = str(inventory_path)
         repository_reference = str(root)
 
-    return {
+    report = {
         "schema_version": "extraction-inventory-validation-v1",
         "inventory": inventory_reference,
         "repository_root": repository_reference,
@@ -330,6 +333,31 @@ def validate_inventory(
         "sample_kinds": dict(sample_kinds),
         "errors": errors,
     }
+    if require_packages:
+        sys.path.insert(0, str(root / "src"))
+        from arex_skill_graph.skill_packages import hydrate_package
+
+        package_errors = []
+        package_count = 0
+        for record in records:
+            refs = record.get("skill_packages") or []
+            if len(refs) != record.get("workflow_count", 0) or not refs:
+                package_errors.append(f"{record.get('case_id')}: Workflow IR has no complete package mapping")
+                continue
+            for reference in refs:
+                try:
+                    hydrate_package({"id": reference["skill_id"], "skill_package": reference},
+                                    repository_root=root)
+                    package_count += 1
+                except (ValueError, KeyError):
+                    package_errors.append(f"{record.get('case_id')}: invalid Skill package reference")
+        report["ir_validation_valid"] = report["valid"]
+        report["materialized_skill_packages"] = package_count
+        report["extraction_success"] = report["valid"] and not package_errors and package_count > 0
+        report["status"] = "admitted_candidate" if report["extraction_success"] else "materialization_pending"
+        report["valid"] = report["extraction_success"]
+        report["errors"] = errors + package_errors
+    return report
 
 
 def main() -> int:
@@ -340,6 +368,8 @@ def main() -> int:
     parser.add_argument("--expected-training-per-category", type=int)
     parser.add_argument("--expected-model")
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--structured-ir-only", action="store_true",
+                        help="audit frozen JSON IR without claiming complete Skill extraction")
     args = parser.parse_args()
 
     report = validate_inventory(
@@ -348,6 +378,7 @@ def main() -> int:
         expected_categories=args.expected_categories,
         expected_training_per_category=args.expected_training_per_category,
         expected_model=args.expected_model,
+        require_packages=not args.structured_ir_only,
     )
     rendered = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
     if args.output:

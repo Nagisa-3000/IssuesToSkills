@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -208,6 +209,12 @@ def _validate_evals(root: Path, errors: list[str]) -> None:
 
 def validate(root: Path) -> list[str]:
     root = root.resolve()
+    if (root / "manifest.json").is_file():
+        repo = Path(__file__).resolve().parents[5]
+        sys.path.insert(0, str(repo / "src"))
+        from arex_skill_graph.skill_packages import validate_package
+
+        return validate_package(root)
     errors: list[str] = []
     for relative in REQUIRED_FILES:
         if not (root / relative).is_file():
