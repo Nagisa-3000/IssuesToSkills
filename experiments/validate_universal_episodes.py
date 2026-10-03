@@ -11,9 +11,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from collections import Counter
 from pathlib import Path
 from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 
 QUALIFYING_KINDS = {
@@ -26,7 +29,7 @@ def manifest_cases(path: Path) -> dict[tuple[str, int], dict[str, Any]]:
     value = json.loads(path.read_text(encoding="utf-8"))
     cases = value.get("cases", []) if isinstance(value, dict) else value
     if not isinstance(cases, list):
-        raise ValueError("manifest must contain cases")
+        raise TypeError("manifest must contain cases")
     return {(str(item["repository"]), int(item["issue"])): dict(item) for item in cases}
 
 
@@ -76,7 +79,8 @@ def validate(episodes: list[dict[str, Any]], cases: dict[tuple[str, int], dict[s
         case = cases.get(key)
         if case is None:
             errors.append("episode is absent from universal manifest")
-        elif str(case.get("role") or case.get("split")) != "train_candidate":
+        elif (str(case.get("role") or case.get("split")) != "train_candidate"
+              or case.get("extraction_forbidden") or "holdout" in str(case.get("split"))):
             errors.append("holdout/non-training episode cannot enter graph admission")
         if key in seen:
             errors.append("duplicate repository/issue episode")
@@ -92,6 +96,25 @@ def validate(episodes: list[dict[str, Any]], cases: dict[tuple[str, int], dict[s
         if not evidence_kinds & {kind.replace("-", "_") for kind in QUALIFYING_KINDS}:
             errors.append("no qualifying implementation/call-site/test evidence")
         metadata = episode.get("metadata") or {}
+        if metadata.get("source") == "direct_skill_package_extraction":
+            from arex_skill_graph.direct_skill_extraction import project_episode_packages
+
+            try:
+                projection = project_episode_packages(episode)
+                units = projection["evidence"]
+                evidence_kinds = {item["kind"] for item in units}
+                atomics, workflows = projection["actions"], projection["workflows"]
+                errors = [error for error in errors if error != "no qualifying implementation/call-site/test evidence"]
+            except (ValueError, OSError, KeyError):
+                atomics, workflows = [], []
+                errors.append("direct Skill package validation failed")
+            rows.append({"episode_id": episode.get("episode_id"), "repository": repository,
+                         "issue": issue, "category": str((case or {}).get("category") or ""),
+                         "resolution_verified": resolved, "resolution_reason": resolution_reason,
+                         "evidence_kinds": sorted(evidence_kinds), "atomics": len(atomics),
+                         "workflows": len(workflows), "semantic_missing": 0,
+                         "workflow_graph_missing": 0, "accepted_for_graph": not errors, "errors": errors})
+            continue
         atomics = metadata.get("candidate_atomics", []) if isinstance(metadata, dict) else []
         workflows = metadata.get("candidate_workflows", []) if isinstance(metadata, dict) else []
         if not isinstance(atomics, list):
@@ -161,7 +184,7 @@ def main() -> int:
     args = parser.parse_args()
     raw = json.loads(args.episodes.read_text(encoding="utf-8"))
     if not isinstance(raw, list):
-        raise ValueError("episodes must be an array")
+        raise TypeError("episodes must be an array")
     report = validate(raw, manifest_cases(args.manifest))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

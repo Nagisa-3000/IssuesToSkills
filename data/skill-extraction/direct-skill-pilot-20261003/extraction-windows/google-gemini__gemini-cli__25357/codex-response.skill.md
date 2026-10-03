@@ -1,0 +1,7 @@
+AREX-SKILL-DEFERRED 1
+Implementation evidence is inaccessible under the current filesystem permissions. Read-only access to both the supplied checkout and issue-bundle.json returned “Access to the path … is denied.” An explicit git -C invocation against the supplied checkout also returned “Permission denied.” The shell did not enter the requested working directory, so the initial Git commands ran outside the checkout and do not establish anything about the pinned revision.
+
+Consequently, the selected parent diff, pinned implementation, call sites, and tests could not be inspected. Without those artifacts, no before/after contract, independently testable Action, or evidence-grounded Workflow can be established. No tests were executed, no source files were modified, and no holdouts, credentials, user configuration, environment variables, prepared candidates, or previous extraction transcripts were inspected.
+
+Next probe: make the specified checkout and issue-bundle.json readable within the permitted environment, or supply an accessible read-only copy preserving Git objects for cb289e0724b46ce867b6d3fe4bd0ac6ed890dc45 and its first parent. Then inspect the selected parent diff, changed implementation, relevant call sites, and test definitions before authoring complete packages.
+AREX-SKILL-DEFERRED-END

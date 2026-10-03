@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Extract evidence-backed ChangeEpisodes with the configured Codex CLI.
+"""Extract model-authored Skill packages with the configured Codex CLI.
 
 This runner deliberately starts from live GitHub issue/PR/commit metadata and an
 actual agent checkout. Prepared evidence.md/case.json files are never read. The
 Codex process is invoked inside each checkout with read-only sandboxing and a
-strict JSON output schema; insufficiently grounded issues remain audit records
-and are excluded from downstream admission.
+multi-file Skill output contract; insufficient evidence produces an explicit
+defer record. Historical semantic JSON is available only with --legacy-json.
 """
 
 from __future__ import annotations
@@ -30,6 +30,12 @@ sys.path.insert(0, str(ROOT / "experiments"))
 
 from build_universal_resolution_graph import build as build_resolution_graph
 
+from arex_skill_graph.direct_skill_extraction import (
+    PROTOCOL_VERSION,
+    direct_prompt,
+    publish_bundle,
+    safe_text,
+)
 from arex_skill_graph.skill_packages import (
     PACKAGE_ROOT,
     compile_workflow_graph,
@@ -166,6 +172,7 @@ def local_issue_bundle(case: dict[str, Any]) -> dict[str, Any]:
     limitations = [
         "No fabricated GitHub discussion metadata; implementation evidence must come from local git and checkout."
     ]
+    limitations.extend(str(value) for value in case.get("source_limitations", []))
     if show_error:
         limitations.append(
             "git show --stat was unavailable because this checkout is a promisor/partial clone; commit metadata and manifest file samples are retained."
@@ -283,7 +290,7 @@ def issue_bundle(case: dict[str, Any], token: str | None, max_linked_prs: int) -
     }
 
 
-def prompt_for(bundle_path: Path, case: dict[str, Any]) -> str:
+def _legacy_prompt_for(bundle_path: Path, case: dict[str, Any]) -> str:
     ref = str(case.get("ref") or case.get("extraction_ref") or "(not supplied)")
     diff_parent = int(case.get("diff_parent", 1))
     category = str(case.get("category") or case.get("theme") or "universal-functional-problem")
@@ -352,6 +359,14 @@ and known_limitations. Preserve missing or unexecuted validation as limitations.
 """
 
 
+def prompt_for(bundle_path: Path, case: dict[str, Any], *, legacy_json: bool = False) -> str:
+    if legacy_json:
+        return _legacy_prompt_for(bundle_path, case)
+    bundle = json.loads(bundle_path.read_text(encoding="utf-8"))
+    meta_skill = META_SKILL.read_text(encoding="utf-8") if META_SKILL.exists() else ""
+    return direct_prompt(case, bundle, str(bundle_path), meta_skill=meta_skill)
+
+
 def _external_path(executable: str, path: Path) -> str:
     """Translate WSL paths for a Windows Codex executable when needed."""
     if not executable.lower().endswith((".exe", ".cmd", ".ps1")):
@@ -402,7 +417,10 @@ def run_codex(
     sandbox: str = "read-only",
     timeout_seconds: int = 900,
     bypass_sandbox: bool = False,
+    legacy_json: bool = False,
 ) -> int:
+    if response_path.exists():
+        raise ValueError("response already exists; refusing to overwrite extraction history")
     codex_arguments: list[str] = []
     if profile:
         codex_arguments += ["--profile", profile]
@@ -415,14 +433,12 @@ def run_codex(
         "--json",
         "--sandbox",
         sandbox,
-        "--output-schema",
-        _external_path(executable, SCHEMA),
-        "-o",
-        _external_path(executable, response_path),
         "-C",
         _external_path(executable, checkout),
         "-",
     ]
+    if legacy_json:
+        codex_arguments += ["--output-schema", _external_path(executable, SCHEMA)]
     if bypass_sandbox:
         codex_arguments.insert(0, "--dangerously-bypass-approvals-and-sandbox")
     windows_executable = executable.lower().endswith((".exe", ".cmd", ".ps1"))
@@ -439,9 +455,8 @@ def run_codex(
             else checkout
         )
         # Feed the prompt through stdin.  Besides avoiding Windows command-line
-        # length/quoting limits, this is the stable non-interactive path used by
-        # the direct JSONL pilot.  The final structured response is still
-        # written by Codex to response_path via -o.
+        # length/quoting limits, this keeps model output in memory until the
+        # credential gate passes. --json controls CLI events, not Skill semantics.
         proc = subprocess.run(
             command,
             cwd=process_cwd,
@@ -457,8 +472,24 @@ def run_codex(
         stderr = exc.stderr if isinstance(exc.stderr, str) else ""
         stderr += f"\nCodex extraction timed out after {timeout_seconds} seconds.\n"
         returncode = 124
-    stdout_path.write_text(stdout, encoding="utf-8")
-    stderr_path.write_text(stderr, encoding="utf-8")
+    credentials = [os.environ.get(key, "") for key in (
+        "OPENAI_API_KEY", "GITHUB_TOKEN", "GH_TOKEN", "CODEX_API_KEY")]
+    messages = []
+    for line in stdout.splitlines():
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        item = event.get("item") or {}
+        if event.get("type") == "item.completed" and item.get("type") == "agent_message":
+            messages.append(item.get("text", ""))
+    stdout_path.write_text(safe_text(stdout, credentials), encoding="utf-8")
+    stderr_path.write_text(safe_text(stderr, credentials), encoding="utf-8")
+    if messages and returncode == 0:
+        response = messages[-1]
+        if safe_text(response, credentials) != response:
+            raise ValueError("credential-like value detected; model response was not persisted")
+        response_path.write_bytes(response.encode("utf-8"))
     return returncode
 
 
@@ -741,16 +772,18 @@ def load_cases(path: Path | None, role: str = "all") -> list[dict[str, Any]]:
 
 
 def finalize_extraction(
-    response: dict[str, Any], bundle: dict[str, Any], case: dict[str, Any],
+    response: dict[str, Any] | str, bundle: dict[str, Any], case: dict[str, Any],
     packages_root: Path,
 ) -> tuple[dict[str, Any], dict[str, Any] | None]:
-    """Mandatory compiler stage, also usable for a small offline IR migration."""
+    """Publish authored files; mappings are supported only for explicit legacy migration."""
+    if isinstance(response, str):
+        return publish_bundle(response, case, bundle, packages_root)
     ok, errors = validate_response(response)
     result = {"valid": ok, "validation_errors": errors,
               **extraction_completion(ok, [], len(response.get("candidate_workflows", [])))}
     if not ok:
         return result, None
-    if case.get("extraction_forbidden") or "holdout" in str(case.get("role") or case.get("split")):
+    if case.get("extraction_forbidden") or any("holdout" in str(case.get(key)) for key in ("role", "split")):
         raise ValueError("holdout extraction and package materialization are forbidden")
     training_case = {**case, "role": "train_candidate"}
     episode = canonical_episode(response, bundle, training_case)
@@ -764,6 +797,8 @@ def finalize_extraction(
 def main() -> int:
     global SCHEMA
     parser = argparse.ArgumentParser()
+    parser.add_argument("--legacy-json", action="store_true",
+                        help="explicit historical semantic JSON extraction/migration mode")
     parser.add_argument("--manifest", type=Path, help="JSON array of {repository, issue, checkout}")
     parser.add_argument(
         "--schema", type=Path, default=SCHEMA, help="schema path visible to the Codex process"
@@ -794,6 +829,8 @@ def main() -> int:
         help="explicitly bypass Codex approvals/sandbox; use only with an isolated staging checkout",
     )
     parser.add_argument("--github-token", default=os.environ.get("GITHUB_TOKEN"))
+    parser.add_argument("--local-git-only", action="store_true",
+                        help="use pinned checkout evidence without fetching GitHub discussion metadata")
     parser.add_argument(
         "--role",
         default="all",
@@ -811,6 +848,8 @@ def main() -> int:
     )
     args = parser.parse_args()
     args.output = args.output.expanduser().resolve()
+    if args.output.exists() and any(args.output.iterdir()):
+        raise ValueError("extraction output must be empty; use a new directory to preserve history")
     SCHEMA = args.schema.expanduser().resolve()
     cases = load_cases(args.manifest, args.role)[: max(0, args.max_cases)]
     args.output.mkdir(parents=True, exist_ok=True)
@@ -828,29 +867,36 @@ def main() -> int:
             **extraction_completion(False, [], 0),
         }
         try:
-            if case.get("extraction_forbidden") or "holdout" in str(case.get("role") or case.get("split")):
+            if case.get("extraction_forbidden") or any("holdout" in str(case.get(key)) for key in ("role", "split")):
                 raise ValueError("holdout extraction is forbidden")
             if not (checkout / ".git").exists():
                 raise RuntimeError(f"checkout is not a git repository: {checkout}")
-            bundle = issue_bundle(case, args.github_token, max(0, args.max_linked_prs))
+            bundle = local_issue_bundle(case) if args.local_git_only else issue_bundle(case, args.github_token, max(0, args.max_linked_prs))
+            credentials = [args.github_token or "", os.environ.get("OPENAI_API_KEY", "")]
+            bundle = json.loads(safe_text(json.dumps(bundle, ensure_ascii=False), credentials))
             bundle_path = case_dir / "issue-bundle.json"
             bundle_path.write_text(
                 json.dumps(bundle, ensure_ascii=False, indent=2), encoding="utf-8"
             )
-            prompt = prompt_for(bundle_path, case)
+            prompt = prompt_for(bundle_path, case, legacy_json=args.legacy_json)
             if args.codex.lower().endswith((".exe", ".cmd", ".ps1")):
                 prompt = prompt.replace(str(bundle_path), _external_path(args.codex, bundle_path))
                 prompt = prompt.replace(str(checkout), _external_path(args.codex, checkout))
                 prompt = prompt.replace(str(SCHEMA), _external_path(args.codex, SCHEMA))
+            if safe_text(prompt, credentials) != prompt:
+                raise ValueError("credential-like value detected in extraction prompt")
             (case_dir / "prompt.txt").write_text(prompt, encoding="utf-8")
-            response_path = case_dir / "codex-response.json"
+            response_path = case_dir / ("codex-response.json" if args.legacy_json else "codex-response.skill.md")
+            if response_path.exists():
+                raise ValueError("response already exists; use a new run directory to preserve extraction history")
             command_meta = {
                 "executable": args.codex,
                 "profile": args.codex_profile,
                 "model": args.codex_model,
                 "sandbox": args.codex_sandbox,
                 "bypass_sandbox": args.codex_bypass_sandbox,
-                "schema": str(SCHEMA),
+                "schema": str(SCHEMA) if args.legacy_json else None,
+                "output_contract": "legacy-json" if args.legacy_json else PROTOCOL_VERSION,
                 "checkout": str(checkout),
                 "source": "github issue/comments/timeline/linked PR files/commits + checkout",
                 "max_linked_prs": args.max_linked_prs,
@@ -871,24 +917,25 @@ def main() -> int:
                 args.codex_sandbox,
                 max(1, args.codex_timeout_seconds),
                 args.codex_bypass_sandbox,
+                args.legacy_json,
             )
             record["codex_returncode"] = returncode
             record["execution_status"] = "completed" if returncode == 0 else "failed_or_timed_out"
-            response = (
-                json.loads(response_path.read_text(encoding="utf-8"))
-                if response_path.exists()
-                else None
-            )
-            ok, errors = validate_response(response)
+            if returncode != 0 or not response_path.is_file():
+                raise ValueError("Codex did not complete with a final response")
+            raw_response = response_path.read_bytes().decode("utf-8")
+            response = json.loads(raw_response) if args.legacy_json else raw_response
+            completion, episode = finalize_extraction(response, bundle, case, args.packages_root)
+            ok = bool(completion["valid"])
+            errors = completion.get("validation_errors", [])
             (case_dir / "validation.json").write_text(
                 json.dumps({"valid": ok, "errors": errors}, indent=2), encoding="utf-8"
             )
             record["valid"] = ok
             record["validation_errors"] = errors
-            if ok and returncode == 0:
-                completion, episode = finalize_extraction(response, bundle, case, args.packages_root)
+            if ok:
                 record.update(completion)
-                (case_dir / "package-materialization.json").write_text(
+                (case_dir / "package-publication.json").write_text(
                     json.dumps(completion, ensure_ascii=False, indent=2), encoding="utf-8"
                 )
                 if episode is not None:
@@ -896,7 +943,9 @@ def main() -> int:
         except Exception as exc:  # noqa: BLE001 - one failed case must not abort the batch
             record["valid"] = False
             record["admitted"] = False
-            record["error"] = f"{type(exc).__name__}: {exc}"
+            record["error"] = safe_text(f"{type(exc).__name__}: {exc}")
+            (case_dir / "validation.json").write_text(
+                json.dumps({"valid": False, "errors": [record["error"]]}, indent=2), encoding="utf-8")
         records.append(record)
     (args.output / "episodes.json").write_text(
         json.dumps(admitted, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -906,6 +955,7 @@ def main() -> int:
     )
     summary = {
         "source": "server_codex_cli",
+        "output_contract": "legacy-json" if args.legacy_json else PROTOCOL_VERSION,
         "prepared_fixtures_used": False,
         "run_id": args.output.name,
         "total_cases": len(records),
@@ -933,7 +983,7 @@ def main() -> int:
             ensure_ascii=False,
         )
     )
-    return 0 if all(item.get("admitted") or item.get("valid") is False for item in records) else 1
+    return 0 if all(item.get("admitted") or item.get("status") == "deferred" for item in records) else 1
 
 
 if __name__ == "__main__":

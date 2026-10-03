@@ -6,11 +6,15 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
 from jsonschema import Draft202012Validator
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
 
 
 def load_json(path: Path) -> Any:
@@ -123,12 +127,16 @@ def summarize(
             issue = int(case["issue"])
             case_dir = case_directory(category_dir, case)
             response_path = case_dir / "codex-response.json"
+            direct_path = case_dir / "codex-response.skill.md"
+            direct = direct_path.is_file()
+            if direct:
+                response_path = direct_path
             validation_path = case_dir / "validation.json"
             if not response_path.is_file() or not validation_path.is_file():
                 errors.append(f"{category}: missing response/validation for {repository}#{issue}")
                 continue
-            response = load_json(response_path)
-            schema_errors = sorted(error.message for error in validator.iter_errors(response))
+            response = {} if direct else load_json(response_path)
+            schema_errors = [] if direct else sorted(error.message for error in validator.iter_errors(response))
             validation = load_json(validation_path)
             manual_valid = validation == {"valid": True, "errors": []}
             episode = episodes_by_key.get((repository, issue))
@@ -136,6 +144,28 @@ def summarize(
             packages = list((((episode or {}).get("metadata") or {}).get("skill_packages") or {}).values())
             if episode is None:
                 errors.append(f"{category}: no canonical episode for {repository}#{issue}")
+            projection = None
+            if direct:
+                from arex_skill_graph.direct_skill_extraction import (
+                    parse_bundle,
+                    project_episode_packages,
+                )
+
+                try:
+                    authored, deferred = parse_bundle(response_path.read_bytes().decode("utf-8"))
+                    if deferred or episode is None:
+                        raise ValueError("direct extraction has no admitted package-backed Episode")
+                    projection = project_episode_packages(episode)
+                    if set(authored) != {row["name"] for row in projection["workflows"]}:
+                        raise ValueError("response and admitted packages disagree")
+                    for reference in packages:
+                        package_path = Path(reference["package_path"])
+                        root = package_path if package_path.is_absolute() else ROOT / package_path
+                        for relative, content in authored[root.name].items():
+                            if (root / relative).read_bytes() != content.encode("utf-8"):
+                                raise ValueError("authored response and published files disagree")
+                except (ValueError, OSError, KeyError) as error:
+                    schema_errors.append(str(error))
             if schema_errors:
                 errors.append(
                     f"{category}: schema failure for {repository}#{issue}: {schema_errors[0]}"
@@ -143,8 +173,8 @@ def summarize(
             if not manual_valid:
                 errors.append(f"{category}: manual validation failure for {repository}#{issue}")
 
-            atomics = _list(response.get("candidate_atomics"))
-            workflows = _list(response.get("candidate_workflows"))
+            atomics = projection["actions"] if projection else _list(response.get("candidate_atomics"))
+            workflows = projection["workflows"] if projection else _list(response.get("candidate_workflows"))
             category_atomic_count += len(atomics)
             category_workflow_count += len(workflows)
             sample_kind = str(case.get("sample_kind") or "")
@@ -153,7 +183,7 @@ def summarize(
             usage = parse_usage(case_dir / "codex-stdout.log")
             command = load_json(case_dir / "codex-command.json")
             first_workflow = workflows[0] if workflows else {}
-            graph = (
+            graph = first_workflow if direct else (
                 first_workflow.get("workflow_graph")
                 if isinstance(first_workflow.get("workflow_graph"), dict)
                 else {}
@@ -173,10 +203,10 @@ def summarize(
                     "seed_relation": case.get("seed_relation"),
                     "ref": case.get("ref") or case.get("extraction_ref"),
                     "episode_id": (episode or {}).get("episode_id"),
-                    "episode_title": response.get("episode", {}).get("title"),
-                    "evidence_count": len(_list(response.get("evidence_units"))),
+                    "episode_title": (episode or {}).get("title") if direct else response.get("episode", {}).get("title"),
+                    "evidence_count": len(projection["evidence"]) if projection else len(_list(response.get("evidence_units"))),
                     "atomic_count": len(atomics),
-                    "atomic_names": [item.get("name") for item in atomics],
+                    "atomic_names": [item.get("name") or item.get("source_name") for item in atomics],
                     "atomic_titles": [item.get("title") for item in atomics],
                     "workflow_count": len(workflows),
                     "extraction_status": package_completion.get("status", "structured_only"),
@@ -191,7 +221,9 @@ def summarize(
                     "stop_conditions": _list(graph.get("stop_conditions")),
                     "unresolved_count": len(_list(response.get("unresolved_questions"))),
                     "manual_validation_valid": manual_valid,
-                    "jsonschema_valid": not schema_errors,
+                    "jsonschema_valid": None if direct else not schema_errors,
+                    "output_contract": "direct-skill-files-v1" if direct else "legacy-json",
+                    "package_validation_valid": not schema_errors and bool(packages),
                     "model": command.get("model"),
                     "profile": command.get("profile"),
                     "sandbox": command.get("sandbox"),
@@ -224,7 +256,9 @@ def summarize(
         "training_cases": len(records),
         "admitted_episodes": len(all_episodes),
         "manual_validation_pass": sum(record["manual_validation_valid"] for record in records),
-        "jsonschema_validation_pass": sum(record["jsonschema_valid"] for record in records),
+        "jsonschema_validation_pass": sum(record["jsonschema_valid"] is True for record in records),
+        "package_validation_pass": sum(record["package_validation_valid"] for record in records),
+        "direct_package_extractions": sum(record["output_contract"] == "direct-skill-files-v1" for record in records),
         "exact_table_rows": sum(item["exact_table_rows"] for item in category_summaries),
         "verified_substitutes": sum(item["verified_substitutes"] for item in category_summaries),
         "candidate_atomics": sum(record["atomic_count"] for record in records),
@@ -235,11 +269,11 @@ def summarize(
         "holdout_leaks": sum("holdout URL leaked" in error for error in errors),
     }
     inventory = {
-        "schema_version": "agent-core-common-category-extraction-inventory-v2-contract",
-        "scope": "Episode/Atomic/Workflow IR plus separately counted validated candidate Skill Packages",
+        "schema_version": "agent-core-extraction-inventory-v3-direct" if counts["direct_package_extractions"] else "agent-core-common-category-extraction-inventory-v2-contract",
+        "scope": "Directly authored Skill packages with derived indexes; legacy JSON responses audited separately",
         "run": {
             "path": str(run_root),
-            "response_schema": str(schema_path),
+            "response_schema": str(schema_path) if any(record["output_contract"] == "legacy-json" for record in records) else None,
             "model": sorted({str(record["model"]) for record in records}),
             "profile": sorted({str(record["profile"]) for record in records}),
             "sandbox": sorted({str(record["sandbox"]) for record in records}),
@@ -267,7 +301,8 @@ def render_markdown(inventory: dict[str, Any]) -> str:
         f"- Package-backed admitted candidate Episodes: {counts.get('admitted_candidate_episodes', 0)}",
         f"- Candidate Atomics: {counts['candidate_atomics']}",
         f"- Candidate Workflows: {counts['candidate_workflows']}",
-        f"- Schema-valid responses: {counts['jsonschema_validation_pass']}",
+        f"- Legacy schema-valid responses: {counts['jsonschema_validation_pass']}",
+        f"- Direct package extractions: {counts.get('direct_package_extractions', 0)}",
         f"- Holdout leaks: {counts['holdout_leaks']}",
         "",
         "| Category | Episodes | Atomic | Workflow | Exact | Substitute | Holdout |",
@@ -308,7 +343,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-root", type=Path, required=True)
     parser.add_argument("--manifest-root", type=Path, required=True)
-    parser.add_argument("--schema", type=Path, required=True)
+    parser.add_argument("--schema", type=Path, default=ROOT / "schemas/codex-change-episode-v3.schema.json",
+                        help="legacy JSON schema; direct responses are validated as Skill packages")
     args = parser.parse_args()
     inventory, episodes, errors = summarize(args.run_root, args.manifest_root, args.schema)
     (args.run_root / "episodes-all.json").write_text(

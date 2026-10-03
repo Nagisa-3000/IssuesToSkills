@@ -25,7 +25,7 @@ commit refs, and target paths out of the reusable name/description.
 
 ## Entrypoint sections
 
-A compiled `SKILL.md` should normally contain:
+A directly authored `SKILL.md` should normally contain:
 
 - When to use
 - Do not use / anti-goals
@@ -42,9 +42,12 @@ Each Action links to `references/actions/`; evidence cards are bundled under
 suites are `activation-cases.json`, `applicability-cases.json`, and
 `functional-cases.json`. Definitions alone do not imply passing evals.
 
-The v2 manifest hashes all package content. Its package hash excludes the
+The v2/v3 manifests hash all package content. Their package hashes exclude the
 manifest itself, avoiding recursive hashes. Serving hydration revalidates the
-content and graph reference, then loads the actual `SKILL.md` and Actions.
+content and graph reference, then loads the actual `SKILL.md`, Actions and
+supporting procedure. For new v3 packages, follow the exact frontmatter/section
+contract in the linked direct protocol; the example above also covers legacy
+packages and optional UI metadata.
 
 ## Progressive disclosure
 
@@ -66,3 +69,18 @@ content and graph reference, then loads the actual `SKILL.md` and Actions.
 - Any script that mutates files or invokes external services must state its
   inputs, side effects, authorization boundary, and stopping condition.
 - Provenance and evidence belong in references/sidecars and graph records.
+
+## Direct authoring and index provenance
+
+For new evidence extraction, the model authors the package files directly using
+[the direct output protocol](../../universal-resolution-distiller/references/direct-skill-output-protocol.md).
+A v3 manifest records `authorship: model_direct`; provenance holds only source
+and package identity. Readable Workflow/Action Markdown is authoritative.
+The publisher adds hashes and the standalone verifier without rendering any
+semantic JSON into instructions. Episode/graph/SQLite/HNSW records are derived
+after validation; rebuilding them must preserve the authored files.
+
+Historical v2 packages and candidate JSON remain migration inputs. Do not use
+the legacy renderer in the new extraction path. Keep eval definitions
+`not_executed`, and separate integrity/structure checks from actual functional
+or transfer results.

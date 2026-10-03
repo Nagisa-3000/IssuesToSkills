@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Admit Atomic/Workflow candidates already produced by the Codex evidence extractor.
+"""Admit package-derived records, or explicitly supplied historical extraction IR.
 
 This is a lower-cost companion to ``admit_codex_episodes.py``.  It does not
 re-extract semantics from the episode: the evidence-backed candidate arrays in
-each canonical episode are normalized into SkillRecords, then the normal LLM
+each historical canonical episode are normalized into SkillRecords; new direct
+episodes are projected from validated Skill files. Then the normal LLM
 same-level deduplication and cross-workflow Pattern extraction are applied.
 """
 from __future__ import annotations
@@ -11,10 +12,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from pathlib import Path
 import re
 import sys
-from typing import Any, Sequence
+from collections.abc import Sequence
+from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -36,7 +38,7 @@ def slug(value: str) -> str:
 def load_episodes(path: Path) -> list[ChangeEpisode]:
     raw = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(raw, list):
-        raise ValueError("episodes must be an array")
+        raise TypeError("episodes must be an array")
     return [ChangeEpisode.from_mapping(item) for item in raw]
 
 
@@ -53,6 +55,16 @@ def category(episode: ChangeEpisode) -> str:
 
 
 def atomic_records(episode: ChangeEpisode) -> tuple[SkillRecord, ...]:
+    if episode.metadata.get("source") == "direct_skill_package_extraction":
+        from arex_skill_graph.direct_skill_extraction import project_episode_packages
+
+        projection = project_episode_packages(episode.to_json())
+        return tuple(SkillRecord(
+            skill_id=item["id"], level=SkillLevel.ATOMIC, title=item["title"],
+            summary=item["description"], evidence_ids=set(item["evidence_ids"]),
+            preconditions=(item["pre_state"],), failure_modes=(item["failure_modes"],),
+            payload={**item, "source_episode_id": episode.episode_id,
+                     "candidate_source": "validated_direct_skill_files"}) for item in projection["actions"])
     records: list[SkillRecord] = []
     seen: set[str] = set()
     for index, item in enumerate(candidate_values(episode, "candidate_atomics"), start=1):
@@ -73,6 +85,18 @@ def atomic_records(episode: ChangeEpisode) -> tuple[SkillRecord, ...]:
 
 
 def workflow_records(episode: ChangeEpisode, atomics: Sequence[SkillRecord]) -> tuple[SkillRecord, ...]:
+    if episode.metadata.get("source") == "direct_skill_package_extraction":
+        from arex_skill_graph.direct_skill_extraction import project_episode_packages
+
+        projection = project_episode_packages(episode.to_json())
+        return tuple(SkillRecord(
+            skill_id=item["id"], level=SkillLevel.WORKFLOW, title=item["title"],
+            summary=item["description"], evidence_ids=set(item["evidence_ids"]),
+            preconditions=tuple(item["inputs"]), exclusions=tuple(item["not_applicable_when"]),
+            failure_modes=tuple(item["skill_contract"]["failure_modes"]),
+            payload={**item, "atomic_ids": [step["action_id"] for step in item["steps"]],
+                     "source_episode_id": episode.episode_id,
+                     "candidate_source": "validated_direct_skill_files"}) for item in projection["workflows"])
     by_name = {record.title: record.skill_id for record in atomics}
     records: list[SkillRecord] = []
     for index, item in enumerate(candidate_values(episode, "candidate_workflows"), start=1):

@@ -2,8 +2,8 @@
 
 Use this protocol when building a category corpus for later Pattern induction
 and holdout evaluation. It governs only Issue/PR evidence collection,
-ChangeEpisode extraction, candidate Actions, Issue Workflows, and mandatory
-Workflow Skill Package compilation. Pattern
+direct Skill authoring, Action/evidence cards, Workflow references and package
+validation. Pattern
 promotion, retrieval evaluation, and skill-guided patching are later stages.
 
 ## 1. Define the category before selecting cases
@@ -72,44 +72,34 @@ attempt logs; do not replace an evidence failure with an unsupported answer.
 
 ## 5. Admit only grounded outputs
 
-Each admitted response must contain:
+Each admitted response is a complete text file bundle using
+[the direct output protocol](direct-skill-output-protocol.md). It contains
+model-authored SKILL.md, historical Episode Markdown, linked Action/evidence
+cards, Workflow dependencies/oracles, authoritative provenance and all three
+eval suites. No semantic candidate JSON is needed before authoring.
 
-- one canonical ChangeEpisode with evidence-backed before, after, and diff;
-- evidence units with stable ids and source locators;
-- independently testable semantic Actions with pre-state, post-state, and
-  validation oracle;
-- at least one Issue Workflow with `when_to_use`, `anti_goals`,
-  `not_applicable_when`, real Action step references, conditions/dependencies,
-  validation ladder, and stop conditions;
-- unresolved questions that preserve uncertainty rather than filling gaps.
-
-Every Action and Workflow evidence reference must resolve inside the response.
-Every Workflow step, dependency, and edge must resolve to an Action extracted
-from the same episode. A later graph materializer may assign global ids, but it
-must not invent missing Actions.
+Every Action/evidence/dependency link resolves inside its package. The publisher
+persists file contents unchanged and validates the whole response before
+publishing packages. Only then are Episode/Action/Workflow JSON index records
+derived. Missing evidence produces the explicit deferred envelope.
 
 ## 6. Aggregate without semantic over-merging
 
-Compile and validate each grounded Workflow through the Resolution Skill
-Creator before reporting it as an admitted candidate Skill. Record
-`package_path`, version, SHA-256, package validation, source Episode/Workflow
-ids, and compiler version. JSON-only cases are `materialization_pending` and
-must not count as completed Skill extraction. Report Action/Workflow IR counts
-separately from materialized package counts.
+Validate each directly authored package through the Resolution Skill Creator
+before admitting it. Record package path, version, hash, validation, source
+Episode/Workflow ids and publisher/contract version. Historical JSON-only
+cases remain structured IR and do not count as completed Skill extraction.
 
-The extraction inventory should report category, case, repository, sample kind,
-model, usage, evidence count, Action count, Workflow count, validation status,
-and relative artifact path. At category level, verify:
+The inventory reports category, repository, sample kind, model, usage,
+evidence/Action/Workflow counts, actual validated package counts and output
+contract. Verify distinct training repositories, an untouched disjoint
+holdout, exact agreement between authored response and published files,
+package validation, and zero holdout URL/id occurrences in prompts, bundles,
+responses, package references and inventories. The inventory validator
+supports both direct file bundles and explicit historical JSON audits.
 
-- the requested number of admitted training episodes;
-- one distinct repository per training case;
-- a holdout repository absent from the training set;
-- schema and manual validation for every response;
-- zero holdout URL/id occurrences in case prompts, evidence bundles, responses,
-  and validation artifacts.
-
-Do not merge same-named Actions across projects at this stage. Similar verbs are
-not proof of a shared state contract or validation oracle.
+Do not merge same-named Actions across projects here. Similar verbs are not
+proof of a shared state contract or validation oracle.
 
 ## 7. Validate and freeze the extraction corpus
 

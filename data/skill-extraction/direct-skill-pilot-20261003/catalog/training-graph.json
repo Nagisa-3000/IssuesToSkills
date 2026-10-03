@@ -1,0 +1,444 @@
+{
+  "schema_version": "universal-resolution-graph-v1",
+  "extraction_policy": {
+    "training_only": true,
+    "holdout_refused": true,
+    "unknown_semantics_are_not_deduplicated": true,
+    "pattern_promotion_requires_llm_judge_and_holdout": true,
+    "skill_package_required": true
+  },
+  "actions": [
+    {
+      "id": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:default-provider-mode",
+      "node_type": "change_action",
+      "category": "provider-interface-adaptation",
+      "source_name": "default-provider-mode",
+      "title": "Default only an omitted provider mode",
+      "intent": "Keep SDK provider selection deterministic for sparse direct callers without overriding an explicitly supplied boolean.",
+      "description": "- Identify the optional mode passed to the SDK constructor.\n- Replace unconditional forwarding with a nullish fallback to the route predicate.\n- Keep explicit booleans unchanged rather than using a logical-OR default.\n- Test sparse configurations for each supported route without credential inference.\n- Add explicit true and explicit false fixtures, including false on the route whose default is true.\n- Update neighboring constructor assertions that now receive a deterministic false instead of an absent value.\n- Run the focused and neighboring test commands supplied for the target and record actual outcomes.",
+      "module_role": "The shared client factory owns conversion of application authentication-route selection into the SDK's provider-mode option.",
+      "operation": "Supply a route-derived default only when the optional provider-mode input is nullish.",
+      "pre_state": "- The route-to-mode mapping is established.\n- The SDK accepts a boolean provider-mode option.\n- Direct callers can omit that option.\n- Endpoint resolution and validation are retained.",
+      "post_state": "Constructor arguments contain the mapped mode for omitted inputs and retain the caller's explicit boolean for supplied inputs.",
+      "validation": "Intercept constructor options for omitted, explicit true and explicit false fixtures. The decisive regression fixture is explicit false with a route-derived true default: the observed constructor value must remain false.",
+      "parameters": [],
+      "invariants": "- Explicit true remains true.\n- Explicit false remains false.\n- An omitted value derives from the selected authentication route.\n- Credential absence does not change the selected route.\n- Endpoint fallback selection continues to follow the route, even if an explicit mode differs.",
+      "regression_checks": "- A sparse route-B caller still uses route B's endpoint fallback.\n- Route A receives false when the mode is omitted.\n- Endpoint validation errors still prevent construction.\n- Headers, API version, key normalization, logging and alternate-client behavior remain unchanged.\n- Execution blockers are reported; definitions or static assertions are not called passing tests.",
+      "failure_modes": "- A logical-OR fallback overwrites false.\n- Inferring mode from available credentials changes behavior for sparse direct callers.\n- Changing endpoint selection to use the mode flag introduces a separate routing contract.\n- Updating expected values without executing available tests disguises regressions.",
+      "evidence_ids": [
+        "evidence:fcedf90eb77c:provider-mode",
+        "evidence:fcedf90eb77c:callers",
+        "evidence:fcedf90eb77c:constructor-tests",
+        "evidence:fcedf90eb77c:inspection-validation"
+      ],
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "github:google-gemini/gemini-cli#25357@cb289e0724b46ce867b6d3fe4bd0ac6ed890dc45"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "aliases": [],
+      "status": "candidate",
+      "source_format": "direct-skill-files-v1"
+    },
+    {
+      "id": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:locate-contract",
+      "node_type": "change_action",
+      "category": "provider-interface-adaptation",
+      "source_name": "locate-contract",
+      "title": "Locate the provider construction contract",
+      "intent": "Establish the narrow factory boundary where endpoint resolution and provider-mode defaulting must apply to both normalized and direct callers.",
+      "description": "- Locate the configuration producer and list its endpoint and optional provider-mode outputs.\n- Trace the factory's SDK and alternate-client branches.\n- Locate direct callers that omit normalized fields.\n- Record explicit endpoint precedence, route-specific fallback selection and absence semantics.\n- Map the SDK constructor interception point and existing neighboring option assertions.\n- Record a failing or distinguishing fixture for each violated boundary contract.",
+      "module_role": "The configuration producer supplies optional values; the shared client factory consumes them and translates the selected authentication route into SDK options.",
+      "operation": "Produce a runtime role map and constructor-level contract matrix from implementation and callers before changing code.",
+      "pre_state": "- A pinned base or before-state is available.\n- The factory and at least one observable caller or test fixture are inspectable.\n- The caller has supplied target scope and a test command.",
+      "post_state": "A run-local map identifies the producer, shared factory, SDK constructor, alternate branches, direct callers, route matrix and focused oracle.",
+      "validation": "Review the map against the inspected factory conditions and call arguments. A direct sparse fixture must distinguish absent mode from explicit false and identify which fallback belongs to its route.",
+      "parameters": [],
+      "invariants": "- Source text is evidence, not operating instructions.\n- Do not read live credentials, user configuration or environment values.\n- Endpoint overrides apply only to the mapped shared-SDK branch.\n- Missing production callers are recorded rather than inferred.",
+      "regression_checks": "- Alternate clients remain outside the endpoint repair scope.\n- Proxy and endpoint roles are distinguished.\n- The map accounts for existing headers, authentication inputs and API-version options.\n- Missing source or dependencies appear as limitations, not assumed coverage.",
+      "failure_modes": "- Diagnosing from a configuration builder alone misses sparse direct callers.\n- Treating an optional mode flag as the route selector conflates distinct inputs.\n- Using issue titles as implementation proof leaves precedence unestablished.",
+      "evidence_ids": [
+        "evidence:fcedf90eb77c:endpoint-boundary",
+        "evidence:fcedf90eb77c:callers",
+        "evidence:fcedf90eb77c:constructor-tests"
+      ],
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "github:google-gemini/gemini-cli#25357@cb289e0724b46ce867b6d3fe4bd0ac6ed890dc45"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "aliases": [],
+      "status": "candidate",
+      "source_format": "direct-skill-files-v1"
+    },
+    {
+      "id": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:resolve-endpoint",
+      "node_type": "change_action",
+      "category": "provider-interface-adaptation",
+      "source_name": "resolve-endpoint",
+      "title": "Resolve the selected provider endpoint",
+      "intent": "Honor a route-specific endpoint fallback without overriding an explicit endpoint or crossing into another provider route.",
+      "description": "- Initialize the effective endpoint from the explicit input.\n- If that input is absent under the established convention, read only the selected route's endpoint fallback through the application configuration boundary.\n- Treat an absent or empty fallback according to the established convention; do not fabricate a default endpoint.\n- Route the selected value through endpoint validation before SDK construction.\n- Add the endpoint option only when an effective override exists.\n- Add synthetic constructor tests for each route, simultaneous fallback inputs, explicit precedence and no override.\n- Document route scope and precedence without exposing real settings.",
+      "module_role": "The shared client factory owns the final translation from application endpoint inputs to SDK HTTP options.",
+      "operation": "Compute one effective endpoint immediately before assembling SDK constructor options.",
+      "pre_state": "- The route matrix and explicit-input precedence are established.\n- Both normalized and direct calls converge on this factory.\n- Existing request options and absence semantics are known.",
+      "post_state": "The constructor receives exactly the selected override, or no endpoint property when no override is present.",
+      "validation": "Intercept constructor arguments. Compare explicit-plus-fallback, route-A-only, route-B-only, both-fallback and no-override fixtures against the recorded matrix. A valid explicit endpoint with an invalid unused fallback must still select the explicit value.",
+      "parameters": [],
+      "invariants": "- A supplied explicit endpoint takes precedence.\n- Fallback selection follows the authentication route, not credential presence or provider-mode truthiness.\n- No override leaves the SDK endpoint option absent.\n- Existing headers and API-version options survive.\n- Alternate-client branches retain their existing behavior.",
+      "regression_checks": "- Direct callers receive the same resolution behavior as normalized callers.\n- Empty input retains the mapped absence convention.\n- Custom headers, API-version options and authentication inputs remain unchanged.\n- Unsupported or alternate routes do not acquire new endpoint behavior accidentally.",
+      "failure_modes": "- Resolving only upstream misses direct callers.\n- Using the first configured fallback lets another provider's endpoint leak across routes.\n- Passing an empty endpoint property changes SDK defaults.\n- Reconstructing the options object discards unrelated settings.",
+      "evidence_ids": [
+        "evidence:fcedf90eb77c:endpoint-boundary",
+        "evidence:fcedf90eb77c:constructor-tests",
+        "evidence:fcedf90eb77c:documented-contract"
+      ],
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "github:google-gemini/gemini-cli#25357@cb289e0724b46ce867b6d3fe4bd0ac6ed890dc45"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "aliases": [],
+      "status": "candidate",
+      "source_format": "direct-skill-files-v1"
+    },
+    {
+      "id": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:validate-endpoint",
+      "node_type": "change_action",
+      "category": "provider-interface-adaptation",
+      "source_name": "validate-endpoint",
+      "title": "Validate the effective endpoint before client construction",
+      "intent": "Reject malformed or disallowed custom endpoints consistently for explicit and fallback inputs.",
+      "description": "- Parse the selected override with the runtime's URL parser.\n- Translate parse failure into a recognizable endpoint-validation error.\n- Reject remote endpoints whose protocol violates the stated transport policy.\n- Compare parsed hostnames with the exact approved loopback set.\n- Preserve the original endpoint string for constructor forwarding unless normalization is separately required.\n- Add fixtures for malformed input, remote plaintext, remote secure transport and approved loopback values, for both explicit and fallback sources.\n- Document whether loopback exemptions permit all parseable schemes or only named transports; do not silently strengthen or weaken policy.",
+      "module_role": "A factory-local URL guard enforces the application's endpoint policy before handing the selected value to the SDK.",
+      "operation": "Parse and policy-check the effective override, rejecting it before SDK construction when invalid.",
+      "pre_state": "- Endpoint precedence is implemented or already compliant.\n- The allowed remote transport and loopback hostname exceptions are specified.\n- Constructor interception can detect whether rejection occurs before client creation.",
+      "post_state": "Rejected values never reach SDK construction. Accepted overrides are forwarded unchanged under the mapped contract.",
+      "validation": "Run synthetic factory fixtures and assert rejection category plus zero constructor calls for invalid values. Accepted secure remote and allowed local fixtures must construct the SDK with the expected endpoint. Include a hostname that merely resembles a loopback name.",
+      "parameters": [],
+      "invariants": "- Validate the selected value, not an unused fallback.\n- Both explicit and fallback overrides traverse the same policy.\n- Rejection is visible and never silently falls back to another destination.\n- Parsed hostnames, not string prefixes, determine loopback exceptions.\n- This guard is not represented as comprehensive network or SSRF protection.",
+      "regression_checks": "- A valid explicit override is not rejected because an unused fallback is invalid.\n- An invalid explicit override is not rescued by a valid fallback.\n- URL parsing failure is distinguished from transport-policy failure.\n- No override does not invoke URL parsing.\n- Mode defaulting and unrelated HTTP options remain intact.",
+      "failure_modes": "- Prefix checks accept remote hosts resembling loopback names.\n- Validating only fallbacks bypasses the guard for explicit inputs.\n- Catch-and-continue behavior redirects requests silently.\n- Assuming syntax checks guarantee redirect or DNS safety overstates the protection.\n- Assuming a hostname exception means HTTP-only contradicts a broader implemented predicate.",
+      "evidence_ids": [
+        "evidence:fcedf90eb77c:url-guard",
+        "evidence:fcedf90eb77c:endpoint-boundary",
+        "evidence:fcedf90eb77c:constructor-tests",
+        "evidence:fcedf90eb77c:documented-contract"
+      ],
+      "grounded_semantics": true,
+      "supporting_episodes": [
+        "github:google-gemini/gemini-cli#25357@cb289e0724b46ce867b6d3fe4bd0ac6ed890dc45"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "aliases": [],
+      "status": "candidate",
+      "source_format": "direct-skill-files-v1"
+    }
+  ],
+  "workflows": [
+    {
+      "id": "workflow:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c",
+      "node_type": "issue_workflow",
+      "category": "provider-interface-adaptation",
+      "repository": "google-gemini/gemini-cli",
+      "issue": 25357,
+      "episode_id": "github:google-gemini/gemini-cli#25357@cb289e0724b46ce867b6d3fe4bd0ac6ed890dc45",
+      "name": "provider-endpoint-boundary-fcedf90eb77c",
+      "title": "Repair provider endpoint construction",
+      "description": "Repair a provider SDK construction boundary when provider-specific endpoint overrides are ignored, explicit endpoints lose precedence, or an omitted SDK mode disagrees with the selected authentication route.",
+      "goal": "Resolve and validate custom endpoints at the shared SDK boundary while preserving explicit configuration and defaulting an omitted provider mode from the selected authentication route.",
+      "inputs": [
+        "Target repository and authorized checkout.",
+        "Base revision and target implementation scope.",
+        "Language and caller-supplied focused test command.",
+        "Explicit endpoint input and provider-specific fallback inputs.",
+        "Route-to-provider mapping and SDK option contract.",
+        "Transport policy, loopback exceptions and constructor-interception fixtures."
+      ],
+      "entry_state": "A shared client factory has an observable endpoint or provider-mode contract violation. Configuration normalization may be bypassed by direct callers. Existing alternate branches and request options must remain intact.",
+      "exit_state": "The mapped factory selects only the route-appropriate fallback when the explicit endpoint is absent, validates the selected override before constructing the SDK, and defaults only an omitted provider-mode field. Focused and neighboring checks have recorded outcomes, or blockers are explicitly reported without declaring completion. Documentation matches the implemented scope.",
+      "steps": [
+        {
+          "step_id": "step-1",
+          "action_id": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:locate-contract",
+          "action_name": "locate-contract",
+          "role": "diagnose",
+          "required": true,
+          "optional": false,
+          "depends_on": [],
+          "condition": "Always",
+          "validation": "Recorded producer, factory, direct caller, route matrix and constructor oracle"
+        },
+        {
+          "step_id": "step-2",
+          "action_id": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:resolve-endpoint",
+          "action_name": "resolve-endpoint",
+          "role": "implement",
+          "required": true,
+          "optional": false,
+          "depends_on": [
+            "locate-contract"
+          ],
+          "condition": "Always; retain compliant behavior if already present",
+          "validation": "Explicit wins, correct route fallback reaches constructor, absent override remains absent"
+        },
+        {
+          "step_id": "step-3",
+          "action_id": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:validate-endpoint",
+          "action_name": "validate-endpoint",
+          "role": "implement",
+          "required": true,
+          "optional": false,
+          "depends_on": [
+            "resolve-endpoint"
+          ],
+          "condition": "Always; retain compliant validation if already present",
+          "validation": "Selected explicit and fallback URLs obey policy, rejected values never construct SDK"
+        },
+        {
+          "step_id": "step-4",
+          "action_id": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:default-provider-mode",
+          "action_name": "default-provider-mode",
+          "role": "implement",
+          "required": true,
+          "optional": false,
+          "depends_on": [
+            "locate-contract",
+            "validate-endpoint"
+          ],
+          "condition": "Always; retain compliant defaulting if already present",
+          "validation": "Omitted mode derives from route, explicit booleans survive, neighboring options remain unchanged"
+        }
+      ],
+      "edges": [
+        {
+          "from": "step-1",
+          "to": "step-2",
+          "type": "requires"
+        },
+        {
+          "from": "step-2",
+          "to": "step-3",
+          "type": "requires"
+        },
+        {
+          "from": "step-1",
+          "to": "step-4",
+          "type": "requires"
+        },
+        {
+          "from": "step-3",
+          "to": "step-4",
+          "type": "requires"
+        }
+      ],
+      "when_to_use": [
+        "A provider-specific endpoint setting exists but does not reach the SDK constructor.",
+        "Explicit configuration and provider-specific fallback settings compete at a shared client factory.",
+        "Direct factory callers omit a provider-mode flag and the selected authentication route must supply its default.",
+        "Constructor-level tests can observe the endpoint, mode and preserved request options."
+      ],
+      "anti_goals": [
+        "Do not redesign authentication, acquire credentials, or inspect live user settings.",
+        "Do not replace proxy configuration with endpoint configuration.",
+        "Do not change SDK internals, retry behavior, model selection or response processing.",
+        "Do not infer a cross-repository Pattern from this single implementation."
+      ],
+      "not_applicable_when": [
+        "The failing request uses a separate client implementation outside the shared SDK branch.",
+        "The endpoint already reaches the constructor and the failure is remote connectivity or service behavior.",
+        "The application has no ownership over SDK construction or no observable constructor oracle.",
+        "The requested security policy requires DNS resolution, redirect controls or comprehensive SSRF protection."
+      ],
+      "validation_ladder": [
+        "First record the role mapping, route matrix, precedence rule and focused constructor oracle.",
+        "Test explicit-versus-fallback resolution, provider isolation, absent endpoints and direct callers.",
+        "Test malformed URLs, remote plaintext URLs and allowed loopback fixtures; rejection must occur before SDK construction.",
+        "Test absent, explicit true and explicit false provider-mode values.",
+        "Run neighboring constructor tests for headers, API version, authentication inputs and alternate branches.",
+        "Run the caller-supplied focused command, then broader checks if available; record actual outcomes and execution blockers.",
+        "Inspect documentation against the implemented scope and security limitations."
+      ],
+      "stop_conditions": [
+        "Stop and request evidence if route ownership or constructor behavior cannot be established.",
+        "Stop if the intended endpoint precedence or transport policy is ambiguous.",
+        "Stop before editing excluded authentication branches or inspecting credentials.",
+        "Report blocked or unexecuted tests explicitly; do not label static inspection as runtime success.",
+        "Do not claim package validation, index admission or transfer success before the corresponding host or evaluation step."
+      ],
+      "evidence_ids": [
+        "evidence:fcedf90eb77c:selected-diff",
+        "evidence:fcedf90eb77c:endpoint-boundary",
+        "evidence:fcedf90eb77c:url-guard",
+        "evidence:fcedf90eb77c:provider-mode",
+        "evidence:fcedf90eb77c:callers",
+        "evidence:fcedf90eb77c:constructor-tests",
+        "evidence:fcedf90eb77c:documented-contract",
+        "evidence:fcedf90eb77c:inspection-validation"
+      ],
+      "unresolved_or_deferred": [
+        "Historical tests were inspected, not executed; authored eval definitions also remain unexecuted.",
+        "Historical tests and authored definitions do not establish transfer success.",
+        "The inspected checkout is sparse; an available test-harness caller does not establish complete production call-site coverage.",
+        "The historical URL guard accepts any parseable scheme for its exact loopback hostname allowlist; it is not an HTTP-only scheme guard.",
+        "URL syntax and hostname checks do not establish redirect, DNS, certificate or remote-service safety.",
+        "Preserve project-specific branch behavior only after mapping it; do not assume all authentication routes share endpoint semantics."
+      ],
+      "skill_contract": {
+        "name": "provider-endpoint-boundary-fcedf90eb77c",
+        "description": "Repair a provider SDK construction boundary when provider-specific endpoint overrides are ignored, explicit endpoints lose precedence, or an omitted SDK mode disagrees with the selected authentication route.",
+        "applicability_probes": [
+          "Map the configuration producer, shared factory, SDK constructor and alternate authentication branches in the caller-supplied checkout.",
+          "Locate both normalized and direct factory callers; establish whether the provider-mode field can be absent.",
+          "Identify explicit endpoint input, provider-specific fallback inputs and the existing absence convention.",
+          "Locate tests that intercept SDK construction without network calls or real credentials.",
+          "Confirm the intended transport policy and loopback exceptions rather than assuming every custom URL is acceptable."
+        ],
+        "failure_modes": [
+          "Resolving endpoints only in a configuration builder misses direct factory callers.",
+          "Falling back by credential presence selects the wrong route for sparse configurations.",
+          "A truthiness default overwrites an explicit false provider-mode value.",
+          "Validating fallback values but not explicit values leaves an inconsistent trust boundary.",
+          "Catching validation errors and continuing silently changes the intended destination.",
+          "Rebuilding request options drops existing headers or API-version settings."
+        ],
+        "known_limitations": [
+          "Historical tests were inspected, not executed; authored eval definitions also remain unexecuted.",
+          "Historical tests and authored definitions do not establish transfer success.",
+          "The inspected checkout is sparse; an available test-harness caller does not establish complete production call-site coverage.",
+          "The historical URL guard accepts any parseable scheme for its exact loopback hostname allowlist; it is not an HTTP-only scheme guard.",
+          "URL syntax and hostname checks do not establish redirect, DNS, certificate or remote-service safety.",
+          "Preserve project-specific branch behavior only after mapping it; do not assume all authentication routes share endpoint semantics."
+        ]
+      },
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "source_case": "google-gemini/gemini-cli#25357",
+      "source_format": "direct-skill-files-v1",
+      "skill_package": {
+        "skill_id": "workflow:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c",
+        "package_path": "data/skill-extraction/packages/candidates/workflows/provider-endpoint-boundary-fcedf90eb77c",
+        "package_sha256": "ea5c3095119d9fb9802e4e768c8b0d5bc017b54258461090db721e2fc8b2a09f",
+        "package_status": "candidate",
+        "package_version": 1,
+        "package_validation": "passed",
+        "source_workflow_id": "workflow:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c",
+        "source_episode_ids": [
+          "github:google-gemini/gemini-cli#25357@cb289e0724b46ce867b6d3fe4bd0ac6ed890dc45"
+        ],
+        "publisher_version": "direct-skill-files-v1",
+        "authorship": "model_direct",
+        "status": "package_validated"
+      },
+      "extraction_status": "admitted_candidate"
+    }
+  ],
+  "patterns": [
+    {
+      "id": "pattern:5895d079305884e4",
+      "node_type": "resolution_pattern",
+      "category": "provider-interface-adaptation",
+      "intent": "Resolve provider interface adaptation through a contract-first, evidence-validated change chain.",
+      "mandatory_actions": [],
+      "optional_actions": [],
+      "workflow_template": [],
+      "ordering_constraints": [],
+      "decision_points": [],
+      "invariants": [],
+      "validation_ladder": [],
+      "known_failure_modes": [],
+      "supporting_workflows": [
+        "workflow:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c"
+      ],
+      "supporting_repositories": [
+        "google-gemini/gemini-cli"
+      ],
+      "counterexamples": [],
+      "confidence": 0.0,
+      "promotion_status": "insufficient-structural-support",
+      "held_out_results": [],
+      "extraction_method": "structural-action-fingerprint-v1; semantic judge required before promotion"
+    }
+  ],
+  "edges": [
+    {
+      "from": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:default-provider-mode",
+      "to": "evidence:github:google-gemini/gemini-cli#25357@cb289e0724b46ce867b6d3fe4bd0ac6ed890dc45",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:locate-contract",
+      "to": "evidence:github:google-gemini/gemini-cli#25357@cb289e0724b46ce867b6d3fe4bd0ac6ed890dc45",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:resolve-endpoint",
+      "to": "evidence:github:google-gemini/gemini-cli#25357@cb289e0724b46ce867b6d3fe4bd0ac6ed890dc45",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:validate-endpoint",
+      "to": "evidence:github:google-gemini/gemini-cli#25357@cb289e0724b46ce867b6d3fe4bd0ac6ed890dc45",
+      "type": "evidenced_by"
+    },
+    {
+      "from": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:locate-contract",
+      "to": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:resolve-endpoint",
+      "type": "requires",
+      "workflow_id": "workflow:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-2"
+    },
+    {
+      "from": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:resolve-endpoint",
+      "to": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:validate-endpoint",
+      "type": "requires",
+      "workflow_id": "workflow:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c",
+      "workflow_step_from": "step-2",
+      "workflow_step_to": "step-3"
+    },
+    {
+      "from": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:locate-contract",
+      "to": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:default-provider-mode",
+      "type": "requires",
+      "workflow_id": "workflow:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c",
+      "workflow_step_from": "step-1",
+      "workflow_step_to": "step-4"
+    },
+    {
+      "from": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:validate-endpoint",
+      "to": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:default-provider-mode",
+      "type": "requires",
+      "workflow_id": "workflow:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c",
+      "workflow_step_from": "step-3",
+      "workflow_step_to": "step-4"
+    },
+    {
+      "from": "pattern:5895d079305884e4",
+      "to": "workflow:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c",
+      "type": "supported_by"
+    }
+  ],
+  "rejected": [],
+  "summary": {
+    "episodes_input": 1,
+    "episodes_used": 1,
+    "actions": 4,
+    "grounded_actions": 4,
+    "workflows": 1,
+    "patterns": 1,
+    "patterns_with_cross_repository_support": 0,
+    "rejected": 0,
+    "preflight_refused": 0
+  },
+  "workflow_fragments": []
+}

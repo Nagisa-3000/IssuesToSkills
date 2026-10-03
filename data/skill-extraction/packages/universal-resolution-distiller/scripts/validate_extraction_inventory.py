@@ -155,7 +155,8 @@ def validate_inventory(
             case_id = str(record.get("case_id", "<unknown>"))
             if record.get("manual_validation_valid") is not True:
                 errors.append(f"{case_id}: manual validation did not pass")
-            if record.get("jsonschema_valid") is not True:
+            direct = record.get("output_contract") == "direct-skill-files-v1"
+            if not direct and record.get("jsonschema_valid") is not True:
                 errors.append(f"{case_id}: JSON Schema validation did not pass")
             relative_output = record.get("relative_output")
             if not isinstance(relative_output, str):
@@ -167,13 +168,14 @@ def validate_inventory(
                 continue
 
             artifact_texts: dict[str, str] = {}
-            for artifact_name in REQUIRED_ARTIFACTS:
+            required_artifacts = tuple("codex-response.skill.md" if direct and name == "codex-response.json" else name for name in REQUIRED_ARTIFACTS)
+            for artifact_name in required_artifacts:
                 artifact = output / artifact_name
                 if not artifact.is_file():
                     errors.append(f"{case_id}: missing {artifact_name}")
                     continue
                 artifact_texts[artifact_name] = artifact.read_text(encoding="utf-8")
-            if len(artifact_texts) != len(REQUIRED_ARTIFACTS):
+            if len(artifact_texts) != len(required_artifacts):
                 continue
 
             for artifact_name, artifact_text in artifact_texts.items():
@@ -181,6 +183,42 @@ def validate_inventory(
                     if needle in artifact_text:
                         holdout_leaks += 1
                         errors.append(f"{case_id}: holdout leaked into {artifact_name}")
+
+            if direct:
+                sys.path.insert(0, str(root / "src"))
+                from arex_skill_graph.direct_skill_extraction import (
+                    inspect_direct_package,
+                    parse_bundle,
+                )
+                from arex_skill_graph.skill_packages import hydrate_package
+
+                try:
+                    authored, deferred = parse_bundle(artifact_texts["codex-response.skill.md"])
+                    if deferred or not authored:
+                        raise ValueError("no directly authored Skill packages")
+                    if json.loads(artifact_texts["validation.json"]) != {"valid": True, "errors": []}:
+                        raise ValueError("validation.json does not record a clean pass")
+                    refs = record.get("skill_packages") or []
+                    if len(refs) != len(authored) or len(refs) != record.get("workflow_count"):
+                        raise ValueError("direct package count disagrees with inventory")
+                    direct_actions = set()
+                    for reference in refs:
+                        hydrated = hydrate_package({"id": reference["skill_id"], "skill_package": reference}, repository_root=root)
+                        package = Path(hydrated["package_path"])
+                        for relative, content in authored[package.name].items():
+                            if (package / relative).read_bytes() != content.encode("utf-8"):
+                                raise ValueError("published files differ from model-authored response")
+                        projection = inspect_direct_package(package)
+                        if projection["episode"]["episode_id"] != record.get("episode_id"):
+                            raise ValueError("direct Episode identity disagrees with inventory")
+                        direct_actions.update(row["id"] for row in projection["actions"])
+                    if len(direct_actions) != record.get("atomic_count"):
+                        raise ValueError("direct Action count disagrees with inventory")
+                    admitted_atomics += len(direct_actions)
+                    admitted_workflows += len(refs)
+                except (ValueError, OSError, KeyError, TypeError):
+                    errors.append(f"{case_id}: direct Skill artifact validation failed")
+                continue
 
             try:
                 response = json.loads(artifact_texts["codex-response.json"])
@@ -352,6 +390,7 @@ def validate_inventory(
                 except (ValueError, KeyError):
                     package_errors.append(f"{record.get('case_id')}: invalid Skill package reference")
         report["ir_validation_valid"] = report["valid"]
+        report["artifact_validation_valid"] = report["valid"]
         report["materialized_skill_packages"] = package_count
         report["extraction_success"] = report["valid"] and not package_errors and package_count > 0
         report["status"] = "admitted_candidate" if report["extraction_success"] else "materialization_pending"

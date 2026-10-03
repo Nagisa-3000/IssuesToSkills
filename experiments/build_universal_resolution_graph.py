@@ -273,7 +273,7 @@ def build(
             )
             continue
         case_role = str(case.get("role") or case.get("split") or "")
-        if case_role != "train_candidate":
+        if case_role != "train_candidate" or case.get("extraction_forbidden") or "holdout" in str(case.get("split")):
             rejected.append(
                 {
                     "episode_id": episode.get("episode_id"),
@@ -290,6 +290,28 @@ def build(
         seen_episode_keys.add(key)
         category = _text(case.get("category"))
         episode_id = _text(episode.get("episode_id")) or f"episode:{repository}#{issue}"
+        if episode.get("metadata", {}).get("source") == "direct_skill_package_extraction":
+            from arex_skill_graph.direct_skill_extraction import project_episode_packages
+
+            # Markdown remains authoritative: re-read packages, never cached candidates.
+            projection = project_episode_packages(episode)
+            direct_category = category or _text(case.get("theme")) or "universal-functional-problem"
+            if any(w["category"] != direct_category for w in projection["workflows"]):
+                raise ValueError("manifest and direct Skill category disagree")
+            for action in projection["actions"]:
+                if action["id"] in actions and actions[action["id"]] != action:
+                    raise ValueError("conflicting package-authored Action identity")
+                actions[action["id"]] = action
+                edges.append({"from": action["id"], "to": f"evidence:{episode_id}", "type": "evidenced_by"})
+            for workflow in projection["workflows"]:
+                workflows.append(workflow)
+                by_step = {step["step_id"]: step for step in workflow["steps"]}
+                for edge in workflow["edges"]:
+                    edges.append({"from": by_step[edge["from"]]["action_id"],
+                                  "to": by_step[edge["to"]]["action_id"], "type": edge["type"],
+                                  "workflow_id": workflow["id"], "workflow_step_from": edge["from"],
+                                  "workflow_step_to": edge["to"]})
+            continue
         atomics = _candidate_items(episode, "candidate_atomics")
         by_name: dict[str, str] = {}
         local_action_ids: list[str] = []
@@ -512,6 +534,8 @@ def build(
 
 
 def main() -> int:
+    import sys
+    sys.path.insert(0, str(ROOT / "src"))
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--episodes", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)

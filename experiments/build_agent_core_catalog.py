@@ -38,7 +38,7 @@ FACTOR = load_module("agent_core_factorization_audit", EXPERIMENTS / "audit_acti
 def load_json_array(path: Path) -> list[dict[str, Any]]:
     raw = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(raw, list):
-        raise ValueError(f"{path} must contain a JSON array of canonical episodes")
+        raise TypeError(f"{path} must contain a JSON array of canonical episodes")
     return [dict(item) for item in raw if isinstance(item, dict)]
 
 
@@ -55,7 +55,10 @@ def issue_key(episode: dict[str, Any]) -> tuple[str, int]:
 
 def training_only(episodes: list[dict[str, Any]], manifest: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     cases = manifest.get("cases", []) if isinstance(manifest, dict) else []
-    roles = {(str(item.get("repository")), int(item.get("issue"))): str(item.get("role") or item.get("split") or "") for item in cases if isinstance(item, dict) and item.get("issue") is not None}
+    roles = {(str(item.get("repository")), int(item.get("issue"))):
+             ("forbidden" if item.get("extraction_forbidden") or "holdout" in str(item.get("split"))
+              else str(item.get("role") or item.get("split") or ""))
+             for item in cases if isinstance(item, dict) and item.get("issue") is not None}
     accepted: list[dict[str, Any]] = []
     refused: list[dict[str, Any]] = []
     seen: set[tuple[str, int]] = set()
@@ -82,11 +85,13 @@ def main() -> int:
     parser.add_argument("--build-hnsw", action="store_true")
     parser.add_argument("--allow-structured-ir", action="store_true",
                         help="audit historical graph IR; does not produce serving Skills")
+    parser.add_argument("--migrate-legacy-json", action="store_true",
+                        help="explicitly compile historical JSON responses missing Skill packages")
     args = parser.parse_args()
 
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
     if not isinstance(manifest, dict):
-        raise ValueError("manifest must be an object")
+        raise TypeError("manifest must be an object")
     input_episodes: list[dict[str, Any]] = []
     for path in args.episodes:
         input_episodes.extend(load_json_array(path))
@@ -97,9 +102,21 @@ def main() -> int:
     graph["summary"]["episodes_used"] = len(episodes)
     package_report = {"status": "structured_only", "materialized_skill_packages": 0}
     if not args.allow_structured_ir:
-        from arex_skill_graph.skill_packages import PACKAGE_ROOT, compile_workflow_graph
+        from arex_skill_graph.direct_skill_extraction import validate_graph_packages
 
-        package_report = compile_workflow_graph(graph, episodes, PACKAGE_ROOT / "candidates/workflows")
+        if args.migrate_legacy_json:
+            from arex_skill_graph.skill_packages import PACKAGE_ROOT, compile_workflow_graph
+
+            legacy = [e for e in episodes if e.get("metadata", {}).get("source") != "direct_skill_package_extraction"]
+            legacy_graph = GRAPH.build(legacy, manifest)
+            migration = compile_workflow_graph(legacy_graph, legacy, PACKAGE_ROOT / "candidates/workflows")
+            if legacy and not migration["extraction_success"]:
+                raise ValueError(f"legacy migration failed: {migration['failures']}")
+            graph = GRAPH.build(episodes, manifest, min_pattern_support=max(2, args.min_pattern_support))
+            graph["rejected"].extend(refused)
+            graph["summary"]["preflight_refused"] = len(refused)
+            graph["summary"]["episodes_used"] = len(episodes)
+        package_report = validate_graph_packages(graph, episodes)
         if not package_report["extraction_success"]:
             raise ValueError(f"catalog Skill admission failed: {package_report['failures']}")
     audit = FACTOR.audit(graph)
@@ -132,7 +149,7 @@ def main() -> int:
             try:
                 store.build_hnsw_index(hnsw_path)
                 hnsw_status = "built"
-            except Exception as exc:  # optional dependency is environment-specific
+            except (ImportError, OSError, RuntimeError, ValueError) as exc:
                 hnsw_status = f"unavailable: {type(exc).__name__}: {exc}"
         stats = store.stats()
 

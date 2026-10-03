@@ -220,33 +220,68 @@ records and evidence, counted separately from packages.
 
 ## Complete Skill extraction and small experiment
 
-The extraction runner now uses the v3 response schema and enforces:
+New extraction directly authors native Skill files:
 
 ```text
-Issue / PR evidence -> validated Episode -> Atomic / Workflow IR
-  -> mandatory package compilation -> package validation -> admitted candidate
-  -> graph / SQLite / retrieval -> verified SKILL.md and Actions -> applicability judge
+Issue / PR / commit evidence -> model-authored Skill Package
+  -> verbatim persistence + package validation
+  -> derived Episode / Action / Workflow graph -> SQLite / retrieval
+  -> verified SKILL.md + referenced procedure -> applicability judge
 ```
 
-The canonical root remains `data/skill-extraction/packages/`; no second copy of
-the meta-skills is created. Workflow candidates live under `candidates/workflows/`
-and contain `SKILL.md`, `references/actions/`, `references/evidence/`,
-`workflow.md`, `provenance.json`, the three activation/applicability/functional
-eval suites, a content manifest and a standalone verifier. Compilation is
-deterministic and idempotent, and refuses manual-edit conflicts. Eval definitions
-are explicitly unexecuted until evaluated; structural validity does not promote
-a Skill or prove transfer.
+The default Codex and HTTP runners request a text file bundle. They do not
+request `candidate_atomics` / `candidate_workflows` JSON or render instructions
+from an intermediate representation. `direct_skill_extraction.py` splits file
+boundaries, rejects incomplete/unsafe bundles and conflicting packages, and
+adds deterministic hashes plus a standalone integrity verifier. Authored
+Markdown remains unchanged. An explicit defer response preserves uncertainty.
 
-`experiments/materialize_candidate_skills.py` compiles selected validated
-training responses; `--check` performs no package writes. The extraction runner
-and default catalog build require packages. `--allow-structured-ir` on the
-catalog builder and `--structured-ir-only` on the inventory validator are
-explicit historical research/audit modes. Guided agent retrieval requests
-`require_skill_package=True`, rechecks hashes and source identity, and loads
-the actual entrypoint and Action files. JSON-only, stale, tampered, or
-deferred/rejected records cannot supply this guidance.
+The canonical root is `data/skill-extraction/packages/`; Workflow candidates
+use `candidates/workflows/`. Each package contains `SKILL.md`, historical
+`references/episode.md`, Workflow and Action/evidence cards, provenance, and
+activation/applicability/functional eval definitions. Eval definitions remain
+`not_executed`; package validity does not prove repair or transfer success.
 
-Replay the included two-Workflow smoke experiment with no credentials or model
+The [direct output protocol](data/skill-extraction/packages/universal-resolution-distiller/references/direct-skill-output-protocol.md)
+defines required contents and safe file boundaries. A new training run can use:
+
+```bash
+python experiments/run_codex_issue_episode_extraction.py \
+  --manifest experiments/manifests/agent-core-seven-category-extraction-v2/01-provider-interface-adaptation.json \
+  --role train_candidate --max-cases 1 --local-git-only \
+  --output data/skill-extraction/my-direct-run
+```
+
+Use `--codex` to select the configured executable when it is outside PATH.
+Credentials are supplied at runtime, never written to artifacts. Source checkouts
+are inspected with the default read-only sandbox. Keep a new output directory
+for every model run to preserve history.
+
+Catalog rebuilding re-reads and validates existing package files instead of
+compiling them. Summaries and inventories audit exact agreement between authored
+bundles and published contents. Guided retrieval requires verified packages,
+rechecks hashes/source identity and hydrates the actual Markdown and references.
+JSON-only, stale, tampered, deferred or rejected records cannot supply guidance.
+
+Historical IR migration remains explicit: `materialize_candidate_skills.py`,
+extractor `--legacy-json`, and catalog `--migrate-legacy-json`. The catalog's
+`--allow-structured-ir` and inventory's `--structured-ir-only` are audit modes.
+These paths do not define new direct extraction. See
+[the direct extraction pilot](analysis/direct-skill-extraction-pilot-20261003.md)
+and [the research survey](analysis/agent-software-repair-benchmark-survey-20261003.md).
+
+Replay the frozen real direct extraction without model calls or credentials:
+
+```bash
+PYTHONPATH=src python3 experiments/run_direct_skill_smoke.py --output /tmp/arex-direct-replay
+```
+
+This checks 19 authored files unchanged, a standalone copied package, graph and
+SQLite admission, exact/HNSW retrieval, and actual context hydration. Its one
+package has four Actions and eight evidence cards. Functional evals and holdout
+repair remain unexecuted; this is delivery/retrieval verification.
+
+Replay the historical JSON-migration two-Workflow smoke experiment with no credentials or model
 calls:
 
 ```bash

@@ -1,15 +1,16 @@
 ---
 name: resolution-skill-creator
-description: Compile evidence-validated Workflow records and semantically accepted Pattern candidates into portable Agent Skill Packages; validate Action/evidence references and eval definitions before candidate admission, with holdout gates reserved for promotion.
+description: Directly author evidence-grounded Workflow and accepted Pattern procedures as portable Agent Skill Packages; validate Action/evidence references and eval definitions before candidate admission, with holdout gates reserved for promotion.
 metadata:
-  short-description: Compile governed Resolution Graph records into an Agent Skill package
+  short-description: Author and validate portable resolution Skill packages
 ---
 
 # Resolution Skill Creator
 
-Compile an evidence-validated AREX Resolution Graph record into a portable Agent Skill
-package. This skill is a **compiler and evaluator**, not an issue miner, patch
-author, semantic deduplicator, or automatic Pattern promoter.
+Author a portable Agent Skill package directly from implementation evidence or
+semantically accepted cross-Workflow support. The package files are the
+knowledge source. Validate them before deriving graph/index records. Historical
+JSON compilation is an explicit migration tool.
 
 ## Use this skill when
 
@@ -27,27 +28,27 @@ author, semantic deduplicator, or automatic Pattern promoter.
 - the source Workflow or Pattern has unresolved required semantics;
 - a Pattern was deferred/rejected by the semantic judge, or lacks independent
   multi-Workflow/repository support;
-- the request is to directly modify the target repository rather than compile a
+- the request is to directly modify the target repository rather than author a
   Skill package;
 - the package would hard-code a repository path, symbol, provider name, or
   solution ref as the reusable identity.
 
 ## Source-level policy
 
-- **Atomic/Action:** compile to an Action reference by default. Create a
+- **Atomic/Action:** author as an Action reference by default. Create a
   standalone Skill only when the Action is a complete, user-facing operation
   with its own oracle.
-- **Workflow:** compile to a task-oriented Skill when it has explicit action
+- **Workflow:** author as a task-oriented Skill when it has explicit action
   ids, ordering/branch conditions, `when_to_use`, `anti_goals`, and a
   validation ladder.
-- **Pattern:** compile an accepted cross-project candidate after semantic
+- **Pattern:** author an accepted cross-project candidate after semantic
   adjudication and training leakage checks. Keep `status: candidate` while the
   holdout is pending. Holdout success is required for promotion; structural
   candidates and deferred/rejected records never supply serving guidance.
 
 ## Required human-readable contract
 
-Every compiled Workflow or Pattern must expose, in plain language:
+Every authored Workflow or Pattern must expose, in plain language:
 
 1. `when_to_use`: observable task/problem signals and required preconditions;
 2. `anti_goals`: things the Agent must not optimize for or change;
@@ -79,21 +80,22 @@ task_context:
   target_scope: <optional scope>
 ```
 
-A compiled Skill may ask a deterministic locator/probe to map semantic roles to
+An authored Skill may ask a deterministic locator/probe to map semantic roles to
 this checkout. Store that mapping in the run record, not in the reusable Skill
 identity.
 
-## Compilation procedure
+## Direct authoring procedure
 
-1. Load the source record, supporting Workflows/Actions, evidence ids,
-   validation results, and lifecycle status.
+1. Inspect pinned implementation evidence, parent diff, call sites, tests and
+   lifecycle status; or inspect accepted multi-Workflow support for a Pattern.
+   Do not require candidate JSON before writing Skill instructions.
 2. Run evidence and package gates in `references/promotion-gates.md`. Missing
    required semantics means an explicit defer record. A structurally valid
    package is a candidate; empirical promotion is a separate decision.
 3. Humanize the title and summary. Preserve the universal invariant; remove
    repository paths, issue numbers, commit ids, and product-specific names from
    the reusable identity.
-4. Normalize each Workflow step to a real `action_id`. Reject dangling ids,
+4. Link each Workflow step to a readable packaged Action card. Reject dangling links,
    missing required steps, cycles that contradict the declared workflow, or
    validation steps without an oracle.
 5. Write a concise `SKILL.md`. Put detailed evidence, examples, schemas, and
@@ -106,7 +108,8 @@ identity.
 7. Run structural validation. Mark generated activation/applicability/functional
    eval definitions `not_executed` until they actually run. Record model,
    prompt version, hydrated source ids, tokens, latency, and grader results.
-8. Publish only a versioned artifact whose gates pass. Keep rejected/deferred
+8. Persist the model-authored content unchanged, add deterministic integrity
+   metadata, and derive indexes only after validation. Publish a versioned artifact whose gates pass. Keep rejected/deferred
    source records and historical versions; never silently overwrite them.
 
 ## Package layout
@@ -116,6 +119,7 @@ identity.
 ├── SKILL.md
 ├── agents/openai.yaml             # optional UI/dependency metadata
 ├── references/
+│   ├── episode.md                 # historical Before/After/Diff and limits
 │   ├── workflow.md
 │   ├── actions/*.md
 │   ├── evidence/*.md
@@ -128,14 +132,17 @@ identity.
     └── functional-cases.json
 ```
 
-`src/arex_skill_graph/skill_packages.py` implements the deterministic Workflow
-compiler. `experiments/materialize_candidate_skills.py` provides selected-case
-batch compilation and `--check`. Output is idempotent, content hashed, and
-refuses manual-edit conflicts. The canonical package root is
-`data/skill-extraction/packages/`; Workflow candidates use
-`candidates/workflows/`. Legacy Pattern compiler packages retain their v1
-layout for audit and compatibility; do not count them as v2 packages or use
-them through v2 serving hydration without migration.
+New extraction follows the
+[direct file protocol](../universal-resolution-distiller/references/direct-skill-output-protocol.md).
+`src/arex_skill_graph/direct_skill_extraction.py` parses authored file boundaries,
+publishes immutable v3 packages and derives projections from Markdown.
+`skill_packages.py` validates/hydrates both v3 packages and historical v2
+packages. The canonical root is `data/skill-extraction/packages/`; candidates
+use `candidates/workflows/`. Catalog rebuilds validate existing packages.
+
+`experiments/materialize_candidate_skills.py` and explicit legacy options are
+migration tools for frozen JSON IR. They are not part of new direct extraction.
+Legacy v1 Pattern packages require migration before package-backed serving.
 
 Read only the references needed for the current source level. Use
 `references/agent-skill-contract.md` for package compatibility and

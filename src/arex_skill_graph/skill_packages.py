@@ -1,4 +1,4 @@
-"""Compile extraction IR into immutable, portable candidate Agent Skill packages.
+"""Validate/hydrate portable Skills and migrate historical extraction IR.
 
 Package validity is a structural gate, never a claim of holdout success or semantic
 generalization. Historical graph-only records remain useful IR, but cannot hydrate
@@ -509,7 +509,8 @@ def validate_package(root: Path) -> list[str]:
     try:
         root = root.resolve()
         manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
-        if manifest.get("schema_version") != PACKAGE_SCHEMA:
+        direct = manifest.get("schema_version") == "arex-skill-package-v3"
+        if manifest.get("schema_version") not in {PACKAGE_SCHEMA, "arex-skill-package-v3"}:
             raise ValueError("unsupported package schema")
         hashes = manifest["files"]
         if not REQUIRED_FILES.issubset(hashes):
@@ -575,7 +576,17 @@ def validate_package(root: Path) -> list[str]:
         ):
             errors.append("provenance package identity disagrees with manifest")
         if provenance["package"]["status"] != "candidate" or manifest["status"] != "candidate":
-            errors.append("compiler packages must remain candidates")
+            errors.append("published packages must remain candidates")
+        if direct:
+            from .direct_skill_extraction import SECRET_PATTERN, inspect_direct_package
+
+            if manifest.get("authorship") != "model_direct":
+                errors.append("direct package must identify model authorship")
+            for relative in hashes:
+                if SECRET_PATTERN.search(_resolve(root, relative).read_text(encoding="utf-8")):
+                    errors.append("credential-like value detected")
+            inspect_direct_package(root)
+            return errors
         action_ids = {row["action_id"] for row in provenance["actions"]}
         evidence_ids = {row["id"] for row in provenance["evidence"]}
         workflow = provenance["workflow_contract"]
@@ -666,12 +677,23 @@ def hydrate_package(
         reference.get("source_workflow_id") != provenance["source_workflow_id"]
     ):
         raise ValueError("graph reference and package source identity disagree")
+    direct = manifest.get("schema_version") == "arex-skill-package-v3"
+    if direct:
+        from .direct_skill_extraction import inspect_direct_package
+
+        projection = inspect_direct_package(root)
+        expected_contract = projection["workflow"]
+        action_cards = projection["cards"]
+    else:
+        expected_contract = provenance["workflow_contract"]
+        action_cards = provenance["actions"]
     # A revised graph record cannot silently retain an older executable package.
     # Minimal audit references may omit the contract, but full Workflow nodes
-    # must match the semantics that were actually compiled.
+    # must match the semantics in the authoritative package files.
     if payload.get("node_type") == "issue_workflow":
-        expected = provenance["workflow_contract"]
+        expected = expected_contract
         current = {**payload, "steps": _ordered_steps(payload)}
+        expected = {**expected, "steps": _ordered_steps(expected)}
         for field in (
             "name",
             "title",
@@ -692,13 +714,19 @@ def hydrate_package(
         ):
             if current.get(field) != expected.get(field):
                 raise ValueError("stale package: graph Workflow contract has changed")
-    action_ids = [row["action_id"] for row in provenance["actions"]]
+    action_ids = [row["action_id"] for row in action_cards]
+    support_paths = ["references/workflow.md"]
+    if direct:
+        support_paths += ["references/episode.md", "references/provenance.json"]
+        support_paths += [row["path"] for row in projection["evidence"]]
     rendered = (
         (root / "SKILL.md").read_text(encoding="utf-8")
         + "\n\n"
         + "\n\n".join(
-            (root / row["path"]).read_text(encoding="utf-8") for row in provenance["actions"]
+            (root / row["path"]).read_text(encoding="utf-8") for row in action_cards
         )
+        + "\n\n"
+        + "\n\n".join((root / relative).read_text(encoding="utf-8") for relative in support_paths)
     )
     return {
         "skill_id": manifest["skill_id"],
@@ -752,7 +780,7 @@ def compile_workflow_graph(
     *,
     check: bool = False,
 ) -> dict[str, Any]:
-    """Materialize every Workflow before admission; preserve Episode-local evidence."""
+    """Explicit legacy JSON migration; new extraction must publish authored files."""
     by_episode = {episode["episode_id"]: episode for episode in episodes}
     graph_actions = {row["id"]: row for row in graph.get("actions", [])}
     packages: list[dict[str, Any]] = []

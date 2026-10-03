@@ -2,21 +2,26 @@
 """Admit canonical episodes produced by the server Codex extraction runner.
 
 This is the second, cost-visible stage: only episodes already admitted by the
-strict extraction validator are sent through the three semantic extraction
-calls (Atomic, Workflow, Pattern) and the normal bottom-up graph admission.
+strict extraction validator use package-derived Actions and Workflows, followed
+by semantic adjudication. --legacy-json-reextract explicitly retains the old
+semantic extraction experiment.
 It never reads prepared evidence.md/case.json fixtures.
 """
 from __future__ import annotations
 
 import argparse
-from dataclasses import replace
 import json
-from pathlib import Path
+import os
 import sys
-from typing import Iterable, Sequence
+from collections.abc import Iterable, Sequence
+from dataclasses import replace
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "experiments"))
+
+from admit_preextracted_candidates import atomic_records, workflow_records
 
 from arex_skill_graph.admission import BottomUpSkillAdmission, SkillCandidateRetriever
 from arex_skill_graph.episodes import ChangeEpisode
@@ -43,7 +48,7 @@ def namespace_records(records: Iterable[SkillRecord], namespace: str) -> tuple[S
 def load_episodes(path: Path) -> tuple[ChangeEpisode, ...]:
     values = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(values, list):
-        raise ValueError("episodes file must contain an array")
+        raise TypeError("episodes file must contain an array")
     return tuple(ChangeEpisode.from_mapping(item) for item in values)
 
 
@@ -51,7 +56,9 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--episodes", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--api-key", required=True)
+    parser.add_argument("--api-key", default=os.environ.get("OPENAI_API_KEY"))
+    parser.add_argument("--legacy-json-reextract", action="store_true",
+                        help="explicitly repeat historical semantic JSON extraction calls")
     parser.add_argument("--base-url", default="https://llm.rvnpu.cn/v1")
     parser.add_argument("--model", default="openai/gpt-5.6-sol")
     parser.add_argument("--judge-k", type=int, default=5)
@@ -89,11 +96,15 @@ def main() -> int:
         )
 
         def extract_atomics(episode: ChangeEpisode) -> tuple[SkillRecord, ...]:
+            if not args.legacy_json_reextract:
+                return atomic_records(episode)
             return namespace_records(governance.extract_atomics_from_episode(episode), episode.episode_id)
 
         def extract_workflows(
             episode: ChangeEpisode, atomics: Sequence[SkillRecord]
         ) -> tuple[SkillRecord, ...]:
+            if not args.legacy_json_reextract:
+                return workflow_records(episode, atomics)
             return namespace_records(
                 governance.extract_workflows_from_episode(episode, atomics), episode.episode_id
             )

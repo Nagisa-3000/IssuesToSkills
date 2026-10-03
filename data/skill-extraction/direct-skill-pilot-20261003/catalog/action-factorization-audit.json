@@ -1,0 +1,150 @@
+{
+  "schema_version": "action-factorization-audit-v1",
+  "policy": {
+    "merge_requires": [
+      "same semantic owner",
+      "same finite operation",
+      "same pre-state",
+      "same post-state",
+      "same validation oracle"
+    ],
+    "role_skeleton_is_not_action_reuse": true,
+    "split_is_review_signal_only": true
+  },
+  "summary": {
+    "actions": 4,
+    "workflows": 1,
+    "cross_repository_action_pairs": 0,
+    "safe_reuse_candidates": 0,
+    "same_owner_operation_contract_divergences": 0,
+    "same_operation_different_owner_pairs": 0,
+    "already_reused_actions": 0,
+    "split_review_signals": 1,
+    "workflow_role_segments": 0,
+    "same_category_workflow_role_segments": 0,
+    "cross_category_workflow_role_segments": 0,
+    "hypothesis": "insufficient-cross-repository-action-coverage",
+    "hypothesis_reason": "no cross-repository semantic peers were found; collect more episodes before deciding whether granularity is the cause"
+  },
+  "pair_decision_counts": {},
+  "action_grain": [
+    {
+      "id": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:default-provider-mode",
+      "verdict": "atomic-review",
+      "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+      "declared_operation": "supply a route-derived default only when the optional provider-mode input is nullish.",
+      "operation_signals": [
+        "route"
+      ],
+      "description_operation_signals": [
+        "route"
+      ],
+      "secondary_operation_signals": [
+        "route"
+      ],
+      "clause_signal_count": 4
+    },
+    {
+      "id": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:locate-contract",
+      "verdict": "split-review",
+      "reason": "description contains multiple finite-operation signals; inspect independent postconditions/oracles",
+      "declared_operation": "produce a runtime role map and constructor-level contract matrix from implementation and callers before changing code.",
+      "operation_signals": [
+        "map",
+        "route"
+      ],
+      "description_operation_signals": [
+        "map",
+        "route"
+      ],
+      "secondary_operation_signals": [
+        "map",
+        "route"
+      ],
+      "clause_signal_count": 5
+    },
+    {
+      "id": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:resolve-endpoint",
+      "verdict": "atomic-review",
+      "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+      "declared_operation": "compute one effective endpoint immediately before assembling sdk constructor options.",
+      "operation_signals": [
+        "route"
+      ],
+      "description_operation_signals": [
+        "route"
+      ],
+      "secondary_operation_signals": [
+        "route"
+      ],
+      "clause_signal_count": 5
+    },
+    {
+      "id": "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:validate-endpoint",
+      "verdict": "atomic-review",
+      "reason": "one declared operation with one explicit semantic contract; no independent split is proven",
+      "declared_operation": "parse and policy-check the effective override, rejecting it before sdk construction when invalid.",
+      "operation_signals": [
+        "preserve"
+      ],
+      "description_operation_signals": [
+        "preserve"
+      ],
+      "secondary_operation_signals": [
+        "preserve"
+      ],
+      "clause_signal_count": 3
+    }
+  ],
+  "coarse_action_groups": [
+    {
+      "module_role": "a factory-local url guard enforces the application's endpoint policy before handing the selected value to the sdk.",
+      "operation": "parse and policy-check the effective override, rejecting it before sdk construction when invalid.",
+      "action_ids": [
+        "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:validate-endpoint"
+      ],
+      "repositories": [
+        "google-gemini/gemini-cli"
+      ]
+    },
+    {
+      "module_role": "the configuration producer supplies optional values; the shared client factory consumes them and translates the selected authentication route into sdk options.",
+      "operation": "produce a runtime role map and constructor-level contract matrix from implementation and callers before changing code.",
+      "action_ids": [
+        "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:locate-contract"
+      ],
+      "repositories": [
+        "google-gemini/gemini-cli"
+      ]
+    },
+    {
+      "module_role": "the shared client factory owns conversion of application authentication-route selection into the sdk's provider-mode option.",
+      "operation": "supply a route-derived default only when the optional provider-mode input is nullish.",
+      "action_ids": [
+        "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:default-provider-mode"
+      ],
+      "repositories": [
+        "google-gemini/gemini-cli"
+      ]
+    },
+    {
+      "module_role": "the shared client factory owns the final translation from application endpoint inputs to sdk http options.",
+      "operation": "compute one effective endpoint immediately before assembling sdk constructor options.",
+      "action_ids": [
+        "action:fcedf90eb77c:provider-endpoint-boundary-fcedf90eb77c:resolve-endpoint"
+      ],
+      "repositories": [
+        "google-gemini/gemini-cli"
+      ]
+    }
+  ],
+  "cross_repository_pair_analysis": [],
+  "already_reused_actions": [],
+  "workflow_role_segments": [],
+  "interpretation": {
+    "action_reuse": "An Action is reusable only when its semantic owner, finite operation, state transition, and validation oracle all survive substitution into the other repository.",
+    "workflow_reuse": "A repeated role sequence such as establish-contract -> reconcile -> validate is a reusable Workflow fragment, but it is a template over new Actions rather than evidence that the Actions themselves are interchangeable.",
+    "granularity": "A split is justified only when a candidate contains independently testable finite operations with separate postconditions or validation oracles. Different paths, providers, or filenames alone are not a reason to split."
+  },
+  "workflow_fragment_ids": []
+}
