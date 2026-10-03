@@ -54,7 +54,7 @@ def main():
     root = Path(__file__).resolve().parents[1]
     manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
     hashes = manifest["files"]
-    inventory = {str(path.relative_to(root)) for path in root.rglob("*") if path.is_file()}
+    inventory = {path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file()}
     if inventory != set(hashes) | {"manifest.json"}:
         raise SystemExit("FAIL: package inventory changed")
     for relative, expected in hashes.items():
@@ -509,6 +509,10 @@ def validate_package(root: Path) -> list[str]:
     try:
         root = root.resolve()
         manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+        if manifest.get("schema_version") == "arex-skill-package-v4":
+            from .pattern_contracts import inspect_v4_package
+            inspect_v4_package(root)
+            return []
         direct = manifest.get("schema_version") == "arex-skill-package-v3"
         if manifest.get("schema_version") not in {PACKAGE_SCHEMA, "arex-skill-package-v3"}:
             raise ValueError("unsupported package schema")
@@ -634,7 +638,7 @@ def validate_package(root: Path) -> list[str]:
 
 
 def hydrate_package(
-    payload: Mapping[str, Any], *, repository_root: Path = REPO_ROOT
+    payload: Mapping[str, Any], *, repository_root: Path = REPO_ROOT, render: bool = True
 ) -> dict[str, Any]:
     """Load verified SKILL.md and its Actions; reject JSON-only or tampered records."""
     for field in ("promotion_status", "decision", "package_status", "lifecycle"):
@@ -674,9 +678,18 @@ def hydrate_package(
         raise ValueError("graph node and Skill Package identity disagree")
     provenance = json.loads((root / "references/provenance.json").read_text(encoding="utf-8"))
     if reference.get("source_episode_ids") != provenance["source_episode_ids"] or (
-        reference.get("source_workflow_id") != provenance["source_workflow_id"]
+        manifest.get("schema_version") != "arex-skill-package-v4"
+        and reference.get("source_workflow_id") != provenance["source_workflow_id"]
     ):
         raise ValueError("graph reference and package source identity disagree")
+    if manifest.get("schema_version") == "arex-skill-package-v4":
+        from .pattern_contracts import load_native_package
+        package = load_native_package(reference)
+        rendered = (root / "SKILL.md").read_text(encoding="utf-8") if render else ""
+        return {"skill_id": manifest["skill_id"], "package_path": str(root),
+                "package_version": manifest["version"], "package_sha256": manifest["package_sha256"],
+                "hydrated_action_ids": [a.id for a in package.actions], "rendered": rendered,
+                "package_kind": package.kind, "native_contracts": package}
     direct = manifest.get("schema_version") == "arex-skill-package-v3"
     if direct:
         from .direct_skill_extraction import inspect_direct_package
@@ -727,7 +740,7 @@ def hydrate_package(
         )
         + "\n\n"
         + "\n\n".join((root / relative).read_text(encoding="utf-8") for relative in support_paths)
-    )
+    ) if render else ""
     return {
         "skill_id": manifest["skill_id"],
         "package_path": str(root),

@@ -75,6 +75,15 @@ validation, regression checks, failure modes and linked evidence. Split Actions
 with different owners, preconditions, independent oracles or optional branches.
 Do not use paths, symbols, products or commit chronology as the abstraction.
 
+For Pattern rewriting/CrossBind experiments explicitly select the
+[v4 Action/Pattern protocol](references/action-contract-v4.md). Each Action
+then declares typed semantic input/output ports, effects, preserved behavior,
+read/write sets, current binding requirements and public oracles. Empty input
+ports are permitted for probes; expected effects are never observed results.
+Compose only compatible, currently grounded operations. Include sourced Bridges
+and verification closure; UNKNOWN authorizes probes, FAIL rejects modification.
+Legacy v3 extraction remains the default until v4 is explicitly selected.
+
 ## Reusable Workflow contract
 
 Author a concise `SKILL.md` that states when to use, anti-goals, exclusions,

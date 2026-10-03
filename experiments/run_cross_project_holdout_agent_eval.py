@@ -534,17 +534,6 @@ def _build_guidance(
     transport: OpenAICompatibleTransport | None = None
     if api_key:
         try:
-            visible_test_patch = (
-                case.test_patch_path.read_text(encoding="utf-8", errors="replace")
-                if case.test_patch_path.is_file()
-                else ""
-            )
-            if len(visible_test_patch) > 50_000:
-                visible_test_patch = (
-                    visible_test_patch[:25_000]
-                    + "\n...<visible test patch truncated>...\n"
-                    + visible_test_patch[-25_000:]
-                )
             transport = OpenAICompatibleTransport(
                 OpenAICompatibleConfig(
                     api_key=api_key,
@@ -566,7 +555,6 @@ def _build_guidance(
                         "issue_title": case.issue_title,
                         "issue_body": case.issue_body,
                         "visible_test_paths": list(case.visible_test_paths),
-                        "visible_test_patch": visible_test_patch,
                         "validation_commands": list(case.test_commands),
                         "solution_implementation_hidden": True,
                     },
@@ -865,6 +853,17 @@ def _aggregate(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
 
 
 def main() -> int:
+    # Explicit new SWE path dispatches before legacy visible-test/Codex setup.
+    if "--adaptive-spec" in sys.argv[1:]:
+        adaptive_parser = argparse.ArgumentParser(description="Run the isolated adaptive SWE protocol")
+        adaptive_parser.add_argument("--adaptive-spec", type=Path, required=True)
+        adaptive_args = adaptive_parser.parse_args()
+        from arex_skill_graph.adaptive_cli import read_json
+        from eval_pattern_crossbind_ranker import main as adaptive_main
+        specification = read_json(adaptive_args.adaptive_spec)
+        if not isinstance(specification, list) or any(not isinstance(arg, str) for arg in specification):
+            raise ValueError("adaptive spec must contain the reviewed experiment argv array")
+        return adaptive_main(specification)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cases", type=Path, required=True)
     parser.add_argument("--cases-root", type=Path, required=True)

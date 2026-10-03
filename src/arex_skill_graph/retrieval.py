@@ -94,18 +94,22 @@ class SkillRetriever:
         same_level_only: bool = False,
         include_inactive: bool = True,
         require_skill_package: bool = False,
+        allowed_node_ids: set[str] | None = None,
+        use_type_priority: bool = True,
     ) -> SearchResponse:
         lexical = self.store.search_lexical(
             query,
             node_types=node_types,
             repository=repository,
             limit=seed_k,
+            allowed_node_ids=allowed_node_ids,
         )
         vector = self.store.search_vector(
             query,
             node_types=node_types,
             repository=repository,
             limit=seed_k,
+            allowed_node_ids=allowed_node_ids,
             vector_backend=vector_backend,
             hnsw_path=hnsw_path,
             hnsw_ef_search=hnsw_ef_search,
@@ -132,6 +136,8 @@ class SkillRetriever:
             if hop >= expand_hops:
                 continue
             for edge, neighbor, direction in self.store.neighbors(node_id):
+                if allowed_node_ids is not None and neighbor.id not in allowed_node_ids:
+                    continue
                 if not include_inactive and neighbor.lifecycle in terminal_lifecycles:
                     continue
                 relation_weight = (
@@ -171,10 +177,12 @@ class SkillRetriever:
                     frontier.append((neighbor.id, expansion_score, hop + 1))
 
         unresolved = self._apply_closures(hits, query_mode=query_mode)
+        if allowed_node_ids is not None:
+            hits = {key: hit for key, hit in hits.items() if key in allowed_node_ids}
         ranked = sorted(
             hits.values(),
             key=lambda hit: (
-                self._type_priority(hit.node.node_type, query_mode),
+                self._type_priority(hit.node.node_type, query_mode) if use_type_priority else 0,
                 hit.score,
                 hit.node.confidence,
             ),

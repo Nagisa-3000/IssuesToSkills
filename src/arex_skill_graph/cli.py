@@ -139,11 +139,17 @@ def build_parser() -> argparse.ArgumentParser:
     patterns = subparsers.add_parser("build-pattern-candidates", help="Build provenance-preserving cross-repository Pattern candidates.")
     patterns.add_argument("--db", type=Path, required=True)
 
+    from .adaptive_cli import register
+    register(subparsers)
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    from .adaptive_cli import run
+    adaptive_result = run(args)
+    if adaptive_result is not None:
+        return adaptive_result
     if args.command == "init":
         with CatalogStore(args.db) as store:
             store.initialize()

@@ -158,7 +158,7 @@ def _wire_path(value: str) -> tuple[str, str]:
     relative = str(PurePosixPath(*path.parts[1:]))
     allowed = (
         relative in REQUIRED_FILES | {"references/episode.md"}
-        or re.fullmatch(r"references/(?:actions|evidence)/[a-z0-9]+(?:-[a-z0-9]+)*\.md", relative)
+        or re.fullmatch(r"references/(?:actions|evidence|realizations)/[a-z0-9]+(?:-[a-z0-9]+)*\.md", relative)
         or re.fullmatch(r"scripts/[a-z0-9_]+\.(?:py|sh)", relative)
     )
     if not allowed or relative == "scripts/verify_package.py":
@@ -611,9 +611,8 @@ def publish_bundle(
                 }
             )
         histories = [item["episode"] for item in inspected]
-        historical_text = lambda item: {
-            key: value for key, value in item.items() if key != "evidence_ids"
-        }
+        def historical_text(item):
+            return {key: value for key, value in item.items() if key != "evidence_ids"}
         if any(historical_text(item) != historical_text(histories[0]) for item in histories[1:]):
             raise ValueError("packages from one extraction must share the same historical Episode")
         evidence_by_id = {}

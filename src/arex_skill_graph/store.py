@@ -15,11 +15,14 @@ from .schema import (
     canonical_json,
     validate_endpoint,
 )
-from .text import cosine, hash_embedding, tokenize
+from .text import cosine, tokenize
+from .embeddings import validate_vectors
 
 
 class CatalogStore:
-    def __init__(self, path: str | Path):
+    def __init__(self, path: str | Path, *, encoder=None):
+        from .embeddings import HashEncoder
+        self.encoder = encoder or HashEncoder()
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.connection = sqlite3.connect(self.path)
@@ -334,8 +337,11 @@ class CatalogStore:
         *,
         embed: bool = True,
         embedding_kind: str = "routing",
-        model_version: str = "hash-v1",
+        model_version: str | None = None,
     ) -> None:
+        model_version = model_version or self.encoder.model_version
+        if embed and model_version != self.encoder.model_version:
+            raise ValueError("index encoder/version mismatch")
         searchable_text = node.searchable_text()
         self.connection.execute(
             """
@@ -385,7 +391,7 @@ class CatalogStore:
         if embed:
             self.upsert_embedding(
                 node.id,
-                hash_embedding(searchable_text),
+                self.encoder.encode([searchable_text])[0],
                 embedding_kind=embedding_kind,
                 model_version=model_version,
             )
@@ -530,6 +536,7 @@ class CatalogStore:
         node_types: Sequence[NodeType] | None = None,
         repository: str | None = None,
         limit: int = 50,
+        allowed_node_ids: set[str] | None = None,
     ) -> list[tuple[Node, float]]:
         tokens = tokenize(query)
         if not tokens:
@@ -544,6 +551,12 @@ class CatalogStore:
         if repository:
             clauses.append("n.repository = ?")
             values.append(repository)
+        if allowed_node_ids is not None:
+            if not allowed_node_ids:
+                return []
+            placeholders = ",".join("?" for _ in allowed_node_ids)
+            clauses.append(f"n.id IN ({placeholders})")
+            values.extend(sorted(allowed_node_ids))
         values.append(limit)
         rows = self.connection.execute(
             f"""
@@ -566,6 +579,7 @@ class CatalogStore:
         embedding_kind: str,
         model_version: str,
     ) -> None:
+        validate_vectors([vector], 1, self.encoder.dimensions if model_version == self.encoder.model_version else len(vector))
         self.connection.execute(
             """
             INSERT INTO embeddings(
@@ -623,13 +637,14 @@ class CatalogStore:
         path: str | Path,
         *,
         embedding_kind: str = "routing",
-        model_version: str = "hash-v1",
+        model_version: str | None = None,
         m: int = 16,
         ef_construction: int = 200,
         ef_search: int = 64,
     ):
         """Build the optional HNSW cache from authoritative SQLite vectors."""
         from .hnsw import HNSWIndex
+        model_version = model_version or self.encoder.model_version
 
         return HNSWIndex.build(
             path,
@@ -648,26 +663,32 @@ class CatalogStore:
         node_types: Sequence[NodeType] | None = None,
         repository: str | None = None,
         embedding_kind: str = "routing",
-        model_version: str = "hash-v1",
+        model_version: str | None = None,
         limit: int = 50,
         vector_backend: str = "exact",
         hnsw_path: str | Path | None = None,
         hnsw_ef_search: int = 64,
         hnsw_oversample: int = 4,
+        allowed_node_ids: set[str] | None = None,
     ) -> list[tuple[Node, float]]:
-        if limit <= 0:
+        if limit <= 0 or allowed_node_ids == set():
             return []
         if vector_backend not in {"exact", "hnsw"}:
             raise ValueError("vector_backend must be exact or hnsw")
-        query_vector = hash_embedding(query)
+        model_version = model_version or self.encoder.model_version
+        if model_version != self.encoder.model_version:
+            raise ValueError("query encoder/version mismatch")
+        query_vector = self.encoder.encode([query])[0]
+        validate_vectors([query_vector], 1, self.encoder.dimensions)
         all_items = self.embedding_items(
             embedding_kind=embedding_kind, model_version=model_version
         )
-        allowed_ids: set[str] | None = None
+        allowed_ids: set[str] | None = allowed_node_ids
         if node_types or repository:
-            allowed_ids = {
+            type_ids = {
                 node.id for node in self.list_nodes(node_types=node_types, repository=repository)
             }
+            allowed_ids = type_ids if allowed_ids is None else allowed_ids & type_ids
 
         def exact_scores() -> list[tuple[str, float]]:
             scored = [

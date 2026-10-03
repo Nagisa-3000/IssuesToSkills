@@ -319,3 +319,31 @@ No API keys or provider credentials are required for the deterministic tests and
 local retrieval pilots. External LLM extraction is configured at run time and
 credentials must be supplied through environment variables rather than
 committed to this repository.
+
+
+## Native v4 adaptive guidance
+
+The v4 path adds semantic Action ports, evidence-qualified Pattern contracts,
+current TaskContext bindings/oracles, constrained Workflow rewriting and CrossBind,
+and abstaining Workflow/Plan rankers. Native SKILL.md and supporting authored files
+are the authority; current plans remain temporary, and historical packages are
+immutable. Legacy routing remains available alongside this optional path.
+
+Read [the implementation and requirement audit](analysis/pattern-crossbind-ranker-implementation-20261003.md)
+for CLI examples, schema boundaries and outstanding formal experiment work.
+A [portable synthetic package](tests/fixtures/adaptive-v4/type-context-pattern/SKILL.md)
+and [measured smoke report](analysis/results/adaptive-contract-synthetic-smoke-20261003.json)
+make the implementation reviewable.
+
+```bash
+python -m pip install -e '.[dev,ranker]'
+python -m pytest -q
+python experiments/run_adaptive_contract_smoke.py --output-dir /tmp/arex-adaptive-smoke-new
+```
+
+This runs actual local Transformer-head training and an isolated tool/evaluator
+loop with synthetic authored/ranking/solver replay. It uses the default 6,000-token
+history cap; it makes zero live LLM calls and runs zero formal SWE instances.
+The current full-suite result is 198 passing tests. Cross-project repair gains
+require the complete temporal corpus, real supervised development and frozen SWE
+cohort described in the audit; these have not been executed.
