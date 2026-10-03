@@ -7,12 +7,16 @@ credentials out of persisted artifacts.
 
 from __future__ import annotations
 
+import base64
 import json
+import subprocess
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 from .direct_skill_extraction import safe_text
@@ -26,6 +30,7 @@ class OpenAICompatibleConfig:
     timeout_seconds: float = 180.0
     max_output_tokens: int = 5000
     retries: int = 2
+    http_backend: str = "native"
 
 
 class OpenAICompatibleTransport:
@@ -34,6 +39,18 @@ class OpenAICompatibleTransport:
     def __init__(self, config: OpenAICompatibleConfig):
         if not config.api_key:
             raise ValueError("api_key is required")
+        if config.http_backend not in {"native", "windows_pipe"}:
+            raise ValueError("unknown HTTP backend")
+        endpoint = urlsplit(config.base_url)
+        if (
+            endpoint.scheme not in {"https", "http"}
+            or not endpoint.hostname
+            or endpoint.username
+            or endpoint.password
+            or endpoint.query
+            or endpoint.fragment
+        ):
+            raise ValueError("configure a credential-free HTTP service base URL")
         self.config = config
         self.calls: list[dict[str, Any]] = []
         self.transcripts: list[dict[str, Any]] = []
@@ -114,12 +131,17 @@ class OpenAICompatibleTransport:
         started = time.perf_counter()
         last_error: Exception | None = None
         for attempt in range(self.config.retries + 1):
+            attempt_started = time.perf_counter()
+            envelope = None
             try:
-                with urlopen(request, timeout=self.config.timeout_seconds) as response:
-                    raw = response.read().decode("utf-8")
-                    if safe_text(raw, [self.config.api_key]) != raw:
-                        raise ValueError("credential-like value in service response")
-                    envelope = json.loads(raw)
+                if self.config.http_backend == "windows_pipe":
+                    raw = self._windows_request(endpoint, body)
+                else:
+                    with urlopen(request, timeout=self.config.timeout_seconds) as response:
+                        raw = response.read().decode("utf-8")
+                if safe_text(raw, [self.config.api_key]) != raw:
+                    raise ValueError("credential-like value in service response")
+                envelope = json.loads(raw)
                 if not isinstance(envelope, Mapping):
                     raise TypeError("LLM service response must be an object")
                 if envelope.get("error"):
@@ -131,7 +153,9 @@ class OpenAICompatibleTransport:
                         "model": self.config.model,
                         "endpoint": safe_text(endpoint, [self.config.api_key]),
                         "attempt": attempt + 1,
-                        "elapsed_ms": round((time.perf_counter() - started) * 1000, 2),
+                        "successful": True,
+                        "elapsed_ms": round((time.perf_counter() - attempt_started) * 1000, 2),
+                        "request_elapsed_ms": round((time.perf_counter() - started) * 1000, 2),
                         "usage": envelope.get("usage"),
                         "response_id": envelope.get("id"),
                     }
@@ -144,14 +168,78 @@ class OpenAICompatibleTransport:
                 json.JSONDecodeError,
                 ValueError,
                 TypeError,
+                OSError,
             ) as error:
                 last_error = error
+                self.calls.append(
+                    {
+                        "model": self.config.model,
+                        "endpoint": safe_text(endpoint, [self.config.api_key]),
+                        "attempt": attempt + 1,
+                        "successful": False,
+                        "elapsed_ms": round((time.perf_counter() - attempt_started) * 1000, 2),
+                        "request_elapsed_ms": round((time.perf_counter() - started) * 1000, 2),
+                        "http_status": error.code if isinstance(error, HTTPError) else None,
+                        "error_type": type(error).__name__,
+                        "usage": envelope.get("usage") if isinstance(envelope, Mapping) else None,
+                    }
+                )
                 if attempt >= self.config.retries:
                     break
                 time.sleep(1.5 * (attempt + 1))
         raise RuntimeError(
             f"LLM request failed after {self.config.retries + 1} attempts ({type(last_error).__name__})"
         ) from None
+
+    def _windows_request(self, endpoint, body):
+        parsed = urlsplit(endpoint)
+        if parsed.scheme != "https" or parsed.username or parsed.password:
+            raise ValueError("HTTP bridge requires a credential-free HTTPS endpoint")
+        helper = Path(__file__).with_name("windows_http_bridge.ps1")
+        encoded = base64.b64encode(helper.read_text().encode("utf-16le")).decode()
+        try:
+            result = subprocess.run(
+                [
+                    "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-EncodedCommand",
+                    encoded,
+                ],
+                input=json.dumps(
+                    {
+                        "endpoint": endpoint,
+                        "credential": self.config.api_key,
+                        "body": body,
+                        "timeout_seconds": self.config.timeout_seconds,
+                    },
+                    ensure_ascii=False,
+                ),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=self.config.timeout_seconds + 15,
+                check=False,
+            )
+        except subprocess.TimeoutExpired:
+            raise TimeoutError("Windows HTTP pipe timed out; values suppressed") from None
+        try:
+            wrapper = json.loads(result.stdout.lstrip("\ufeff"))
+        except (ValueError, TypeError):
+            raise URLError("Windows HTTP pipe failed; native output suppressed") from None
+        if (
+            result.returncode
+            or not isinstance(wrapper, Mapping)
+            or type(wrapper.get("status")) is not int
+            or not 100 <= wrapper["status"] <= 599
+            or not isinstance(wrapper.get("body"), str)
+        ):
+            raise URLError("Windows HTTP pipe failed; native output suppressed")
+        if wrapper["status"] >= 400:
+            raise HTTPError(endpoint, wrapper["status"], "provider request failed", {}, None)
+        return wrapper["body"]
 
     @staticmethod
     def _extract_content(envelope: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -160,6 +248,8 @@ class OpenAICompatibleTransport:
         choices = envelope.get("choices")
         if not isinstance(choices, list) or not choices:
             raise ValueError("LLM response has no choices")
+        if choices[0].get("finish_reason") == "length":
+            raise ValueError("LLM returned an incomplete JSON response")
         message = choices[0].get("message", {})
         content = message.get("content") if isinstance(message, Mapping) else None
         if not isinstance(content, str):

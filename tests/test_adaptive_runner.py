@@ -2,15 +2,17 @@ import json
 from pathlib import Path
 
 import pytest
-
 from adaptive_fixture import make_fixture
+
+from arex_skill_graph.adaptive_budget import BudgetCaps, BudgetLedger
 from arex_skill_graph.adaptive_cli import ReplayTransport
-from arex_skill_graph.adaptive_budget import BudgetLedger, BudgetCaps
 from arex_skill_graph.adaptive_runner import (
-    NamespaceTools,
-    IsolationUnavailable,
     AdaptiveSolver,
+    IsolationUnavailable,
+    NamespaceTools,
+    bounded_public_view,
     hidden_evaluator_from_file,
+    request_history_view,
 )
 from arex_skill_graph.store import CatalogStore
 from arex_skill_graph.workflow_ranker import WorkflowRanker
@@ -55,7 +57,7 @@ print('ISOLATION_PASS')
 
 
 def test_hidden_evaluator_only_after_solver_finishes(tmp_path):
-    p, task, policy = make_fixture(tmp_path)
+    _p, task, policy = make_fixture(tmp_path)
     isolated_tools_or_skip(Path(task.root))
     marker = tmp_path / "private-evaluation.json"
     old = Path(task.root, "checker.py").read_text()
@@ -134,7 +136,7 @@ def test_hidden_evaluator_only_after_solver_finishes(tmp_path):
 
 
 def test_paired_metrics_include_failures():
-    from arex_skill_graph.experiment_metrics import summarize_runs, ndcg
+    from arex_skill_graph.experiment_metrics import ndcg, summarize_runs
 
     rows = [
         {
@@ -153,6 +155,52 @@ def test_paired_metrics_include_failures():
     assert ndcg(["bad", "good"], {"bad": 0, "good": 2}) < 1
 
 
+def test_prompt_excerpts_keep_boundaries_and_do_not_replay_full_writes():
+    content = "BEGIN\n" + "x" * 20000 + "\nEND"
+    original = {"output": content}
+    excerpt = bounded_public_view(original, text_limit=1000)["output"]
+    assert excerpt.startswith("BEGIN") and excerpt.endswith("END")
+    assert len(excerpt) < 1300 and "sha256=" in excerpt
+    assert original["output"] == content
+    requests = [
+        {
+            "operation": "write_file",
+            "arguments": {"path": "source.py", "content": content},
+            "rationale": "Repair current source",
+        }
+    ]
+    viewed = request_history_view(requests)
+    assert "content" not in viewed[0]["arguments"]
+    assert viewed[0]["arguments"]["content_characters"] == len(content)
+    assert requests[0]["arguments"]["content"] == content
+
+
+def test_budget_stop_is_evaluated_but_never_counted_as_solver_success(tmp_path):
+    _, task, policy = make_fixture(tmp_path)
+    isolated_tools_or_skip(Path(task.root))
+    evaluated = []
+
+    def evaluate(task, patch):
+        evaluated.append(True)
+        return {"benchmark_resolved": True, "validated_resolved": True}
+
+    with CatalogStore(tmp_path / "empty.sqlite") as store:
+        store.initialize()
+        result = AdaptiveSolver(
+            ReplayTransport([]),
+            WorkflowRanker(),
+            store,
+            policy,
+            BudgetLedger(BudgetCaps(model_tokens=1)),
+            arm="B0",
+        ).run(task, evaluator=evaluate)
+    assert evaluated and result["solver_terminated"]
+    assert not result["solver_ended"]
+    assert result["benchmark_resolved"] is False
+    assert result["validated_resolved"] is False
+    assert result["failure"] == "model request cannot fit remaining token budget"
+
+
 def test_probe_workspace_is_actually_readonly(tmp_path):
     root = tmp_path / "public"
     root.mkdir()
@@ -168,9 +216,11 @@ def test_probe_workspace_is_actually_readonly(tmp_path):
 
 def test_frozen_pool_cli_compares_prompted_and_trained_with_isolated_branches(tmp_path):
     import importlib.util
-    from adaptive_fixture import make_fixture, CUTOFF
+
+    from adaptive_fixture import CUTOFF, make_fixture
     from test_adaptive_contracts import RankingReplay, good_plan
     from test_temporal_ranker_training import make_dataset, tiny_model
+
     from arex_skill_graph.adaptive_cli import write_json
     from arex_skill_graph.adaptive_guidance import index_native_package
     from arex_skill_graph.ranker_training import train_ranker

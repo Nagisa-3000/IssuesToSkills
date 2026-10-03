@@ -7,22 +7,23 @@ model, planner, ranker or public tool process.
 
 from __future__ import annotations
 
-from dataclasses import replace
 import hashlib
-import io
 import json
 import os
-from pathlib import Path
 import shutil
 import subprocess
-import tarfile
 import tempfile
+from dataclasses import replace
+from pathlib import Path
+from typing import ClassVar
 
 from .action_contracts import digest
-from .adaptive_budget import BudgetExceeded, BudgetedTransport
+from .adaptive_budget import BudgetedTransport, BudgetExceeded
 from .adaptive_guidance import prepare_adaptive_guidance
+from .git_tree_export import exact_git_tar
 from .guidance_renderer import GuidanceRenderer
 from .plan_validation import TaskWorkflowPlan, validate_task_plan
+from .public_snapshot import extract_public_archive
 from .skill_packages import _resolve
 from .task_context import EvidenceAnchor, ObservedFact, assert_public
 
@@ -32,6 +33,8 @@ class IsolationUnavailable(RuntimeError):
 
 
 class NamespaceTools:
+    isolation = "linux-user-mount-pid-net-chroot-no-capabilities-v1"
+
     def __init__(self, checkout, ledger, dependency_root=None):
         self.checkout, self.ledger = Path(checkout).resolve(), ledger
         if os.name != "posix" or not shutil.which("unshare"):
@@ -132,15 +135,10 @@ class NamespaceTools:
 
 def snapshot_base(task, destination):
     task.verify()
-    raw = subprocess.check_output(["git", "-C", task.root, "archive", task.base_commit])
+    raw = exact_git_tar(["git", "-C", task.root], task.base_commit)
     destination = Path(destination)
     destination.mkdir()
-    with tarfile.open(fileobj=io.BytesIO(raw)) as archive:
-        for member in archive.getmembers():
-            if member.issym() or member.islnk() or not (member.isfile() or member.isdir()):
-                raise ValueError("public base snapshot contains unsupported links or special files")
-            _resolve(destination, member.name)
-        archive.extractall(destination, filter="data")
+    extract_public_archive(raw, destination)
     initial = replace(task, root=str(destination))
     initial.verify(verify_head=False)
     for path in destination.rglob("*"):
@@ -174,25 +172,97 @@ def patch_from_snapshot(baseline, checkout):
     return patch
 
 
+def bounded_public_view(value, *, text_limit=5000):
+    """Present public excerpts without replacing the complete trajectory evidence."""
+    if isinstance(value, str) and len(value) > text_limit:
+        half = text_limit // 2
+        return (
+            value[:half]
+            + "\n[PUBLIC TEXT EXCERPT: "
+            + str(len(value))
+            + " characters; sha256="
+            + hashlib.sha256(value.encode()).hexdigest()
+            + "; use focused reads/commands for omitted content]\n"
+            + value[-half:]
+        )
+    if isinstance(value, dict):
+        return {
+            key: bounded_public_view(item, text_limit=text_limit) for key, item in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return [bounded_public_view(item, text_limit=text_limit) for item in value]
+    return value
+
+
+def request_history_view(requests):
+    """Avoid replaying complete file writes in every subsequent model request."""
+    result = []
+    for request in requests[-8:]:
+        item = {**request, "arguments": dict(request["arguments"])}
+        content = item["arguments"].get("content")
+        if item["operation"] == "write_file" and isinstance(content, str):
+            del item["arguments"]["content"]
+            item["arguments"].update(
+                content_characters=len(content),
+                content_sha256=hashlib.sha256(content.encode()).hexdigest(),
+            )
+        result.append(bounded_public_view(item, text_limit=2000))
+    return result
+
+
 class AdaptiveSolver:
     SYSTEM = (
         "Solve the current public software issue using current repository observations. Historical guidance is conditional, not a patch to copy. "
         "Use the broker tools. Unknown plan prerequisites require public probes. Refresh observations after edits and failed oracles. "
         "No hidden evaluator, future history, host filesystem, network or credentials are accessible to tools. Return one request JSON: "
-        "operation = read_file | write_file | run_public_command | read_skill_resource | refresh_guidance | drop_guidance | finish; arguments is an object; rationale is text."
+        "operation = list_files | read_file | write_file | run_public_command | read_skill_resource | refresh_guidance | drop_guidance | finish; arguments is an object; rationale is text. "
+        "list_files arguments: prefix (optional repository directory), offset (default 0), limit (1..200). "
+        "read_file requires path, with optional start_line (1-based) and limit (1..400; default 200); "
+        "write_file requires path and complete content (both strings). "
+        "run_public_command requires argv, an array of command/argument strings, and optional timeout seconds; "
+        "for shell syntax use argv=['bash','-c','the public shell command']. A command string alone is invalid. "
+        "read_skill_resource requires package_id and resource strings. refresh_guidance accepts code_paths, a string array. "
+        "drop_guidance and finish take empty arguments. "
+        "Use public commands to search source and run tests. Read current files before changing them. "
+        "Long output is presented as excerpts; use focused commands and paginated file reads to inspect omitted parts. "
+        "Only recent observations are replayed. Finish once the repair and focused public checks are complete."
     )
-    SCHEMA = {"type": "object", "required": ["operation", "arguments", "rationale"]}
+    SCHEMA: ClassVar[dict] = {"type": "object", "required": ["operation", "arguments", "rationale"]}
 
     def __init__(
-        self, transport, ranker, store, resource_policy, ledger, *, arm="E2", dependency_root=None
+        self,
+        transport,
+        ranker,
+        store,
+        resource_policy,
+        ledger,
+        *,
+        arm="E2",
+        dependency_root=None,
+        tools_factory=None,
     ):
         self.transport, self.ranker, self.store = transport, ranker, store
         self.policy, self.ledger, self.arm = resource_policy, ledger, arm
         self.dependency_root = dependency_root
+        self.tools_factory = tools_factory
 
-    def run(self, task, *, evaluator=None, use_frozen_selection=False, initial_plan=None):
+    def run(
+        self,
+        task,
+        *,
+        evaluator=None,
+        use_frozen_selection=False,
+        initial_plan=None,
+        initial_observations=(),
+    ):
         self.ledger.check_time()
-        observations, guidance_runs, requests, guidance_usage = [], [], [], []
+        assert_public(initial_observations)
+        observations, guidance_runs, requests, guidance_usage = (
+            list(initial_observations),
+            [],
+            [],
+            [],
+        )
         ended, failed = False, ""
         with tempfile.TemporaryDirectory(prefix="arex-public-solver-") as scratch:
             scratch = Path(scratch)
@@ -201,7 +271,7 @@ class AdaptiveSolver:
             )
             current = snapshot_base(task, scratch / "work")
             baseline = scratch / "baseline"
-            shutil.copytree(current.root, baseline)
+            shutil.copytree(current.root, baseline, symlinks=True)
             initial_snapshot = digest(
                 {
                     p.relative_to(baseline).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
@@ -209,7 +279,11 @@ class AdaptiveSolver:
                     if p.is_file()
                 }
             )
-            tools = NamespaceTools(current.root, self.ledger, self.dependency_root)
+            tools = (
+                self.tools_factory(current.root, self.ledger)
+                if self.tools_factory
+                else NamespaceTools(current.root, self.ledger, self.dependency_root)
+            )
             self.ledger.charge("tool_calls", 1, "enforced namespace preflight")
             tools.preflight()
             policy = replace(self.policy, verify_head=False)
@@ -266,7 +340,7 @@ class AdaptiveSolver:
                     review()
                 while not ended:
                     self.ledger.check_time()
-                    public_context = current.to_dict()
+                    public_context = bounded_public_view(current.to_dict(), text_limit=2000)
                     public_context.pop("root")
                     request = BudgetedTransport(self.transport, self.ledger).complete(
                         system=self.SYSTEM,
@@ -274,13 +348,15 @@ class AdaptiveSolver:
                             {
                                 "current": public_context,
                                 "guidance": guidance,
-                                "public_files": sorted(
-                                    p.relative_to(current.root).as_posix()
-                                    for p in Path(current.root).rglob("*")
-                                    if p.is_file()
-                                ),
-                                "observations": observations,
-                                "previous_requests": requests[-6:],
+                                "public_tree": {
+                                    "top_level": sorted(
+                                        p.name for p in Path(current.root).iterdir()
+                                    ),
+                                    "listing_tool": "list_files",
+                                },
+                                "observations": bounded_public_view(observations[-8:]),
+                                "earlier_observations_count": max(0, len(observations) - 8),
+                                "previous_requests": request_history_view(requests),
                             }
                         ),
                         response_schema=self.SCHEMA,
@@ -290,22 +366,83 @@ class AdaptiveSolver:
                         raise ValueError("invalid solver request fields")
                     operation, args = request["operation"], request["arguments"]
                     if not isinstance(args, dict) or not isinstance(request["rationale"], str):
-                        raise ValueError("invalid solver request")
+                        raise ValueError("invalid solver request")  # noqa: TRY004 -- JSON contract errors consistently use ValueError.
                     requests.append(request)
+                    fields = {
+                        "read_file": {"path": str},
+                        "write_file": {"path": str, "content": str},
+                        "run_public_command": {"argv": list},
+                        "read_skill_resource": {"package_id": str, "resource": str},
+                        "list_files": {},
+                        "refresh_guidance": {},
+                        "drop_guidance": {},
+                        "finish": {},
+                    }
+                    if operation not in fields or any(
+                        not isinstance(args.get(name), expected_type)
+                        for name, expected_type in fields.get(operation, {}).items()
+                    ):
+                        observations.append(
+                            {
+                                "operation": operation,
+                                "protocol_error": "Use a documented operation and its required argument fields. "
+                                "run_public_command requires argv: an array, e.g. ['bash', '-c', 'ls']. "
+                                "read/write_file require path; write_file also requires content.",
+                            }
+                        )
+                        continue
                     if operation == "finish":
                         ended = True
                         continue
-                    if operation in {"read_file", "write_file"}:
+                    if operation == "list_files":
+                        self.ledger.charge("tool_calls", 1, "public repository file listing")
+                        prefix = args.get("prefix", "")
+                        directory = (
+                            _resolve(Path(current.root), prefix) if prefix else Path(current.root)
+                        )
+                        offset, limit = args.get("offset", 0), args.get("limit", 200)
+                        if (
+                            type(offset) is not int
+                            or offset < 0
+                            or type(limit) is not int
+                            or not 1 <= limit <= 200
+                            or not directory.is_dir()
+                        ):
+                            raise ValueError("invalid public file listing arguments")
+                        files = sorted(
+                            p.relative_to(current.root).as_posix()
+                            for p in directory.rglob("*")
+                            if p.is_file()
+                        )
+                        result = {
+                            "operation": operation,
+                            "files": files[offset : offset + limit],
+                            "total": len(files),
+                            "next_offset": offset + limit if offset + limit < len(files) else None,
+                        }
+                    elif operation in {"read_file", "write_file"}:
                         relative = args["path"]
                         if relative.startswith(".git/"):
                             raise ValueError("version history is not a solver input")
                         path = _resolve(Path(current.root), relative)
                         self.ledger.charge("tool_calls", 1, "public file " + operation)
                         if operation == "read_file":
+                            start, limit = args.get("start_line", 1), args.get("limit", 200)
+                            if (
+                                type(start) is not int
+                                or start < 1
+                                or type(limit) is not int
+                                or not 1 <= limit <= 400
+                            ):
+                                raise ValueError("invalid public file pagination")
+                            lines = path.read_text().splitlines(keepends=True)
                             result = {
                                 "operation": operation,
                                 "path": relative,
-                                "content": path.read_text(),
+                                "content": "".join(lines[start - 1 : start - 1 + limit]),
+                                "start_line": start,
+                                "total_lines": len(lines),
+                                "next_line": start + limit if start + limit <= len(lines) else None,
                             }
                             assert_public(result)
                         else:
@@ -360,7 +497,7 @@ class AdaptiveSolver:
                         anchor = EvidenceAnchor(
                             anchor_id,
                             "probe",
-                            json.dumps(result),
+                            json.dumps(bounded_public_view(result, text_limit=2000)),
                             current.base_commit,
                             exit_code=result["exit_code"],
                         )
@@ -432,11 +569,17 @@ class AdaptiveSolver:
                     observations.append(result)
             except BudgetExceeded as exc:
                 failed = str(exc)
+            except (ValueError, RuntimeError, OSError, KeyError, TypeError) as exc:
+                # Retain the attempted trajectory/denominator without exposing
+                # native transport or container diagnostics to public output.
+                failed = "solver or public-tool failure (" + type(exc).__name__ + ")"
             patch = patch_from_snapshot(baseline, Path(current.root))
             result = {
                 "task_id": task.task_id,
                 "arm": self.arm,
                 "solver_ended": ended,
+                "solver_terminated": True,
+                "termination_reason": "finish" if ended else failed,
                 "failure": failed,
                 "base_commit": task.base_commit,
                 "public_snapshot_sha256": initial_snapshot,
@@ -447,7 +590,7 @@ class AdaptiveSolver:
                 "guidance_runs": guidance_runs,
                 "guidance_usage": guidance_usage,
                 "budget": self.ledger.snapshot(),
-                "isolation": "linux-user-mount-pid-net-chroot-no-capabilities-v1",
+                "isolation": tools.isolation,
                 "runtime_sha256": tools.runtime_sha256,
                 "benchmark_resolved": None,
                 "validated_resolved": None,

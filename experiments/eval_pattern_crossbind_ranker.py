@@ -3,8 +3,8 @@
 
 import argparse
 import hashlib
-from pathlib import Path
 import sys
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from arex_skill_graph.action_contracts import TemporalPolicy, digest
@@ -12,8 +12,8 @@ from arex_skill_graph.adaptive_cli import (
     new_ledger,
     read_json,
     read_references,
-    write_json,
     transport_from_args,
+    write_json,
 )
 from arex_skill_graph.adaptive_guidance import prepare_adaptive_guidance
 from arex_skill_graph.adaptive_runner import AdaptiveSolver, hidden_evaluator_from_file
@@ -56,6 +56,7 @@ def main(argv=None):
     p.add_argument("--model")
     p.add_argument("--base-url")
     p.add_argument("--api-key-env", default="AREX_LLM_API_KEY")
+    p.add_argument("--http-backend", choices=["native", "windows_pipe"], default="native")
     p.add_argument("--seed", type=int, default=20261003)
     a = p.parse_args(argv)
     refs = read_references(a.references)
@@ -89,6 +90,7 @@ def main(argv=None):
             "checkpoint": scorer.model_version if scorer else None,
             "prompt_version": WorkflowRanker.PROMPT_VERSION,
             "offline_replay": a.replay is not None,
+            "http_backend": a.http_backend,
             "population_completion_audited": False,
         }
         for record in tasks:
@@ -161,7 +163,7 @@ def main(argv=None):
                             initial_plan=selected,
                         )
                     result.update({"arm": arm, "bug_cluster_id": record["bug_cluster_id"]})
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001 -- Population boundary retains failed requests for audit.
                     # A failed run stays in the denominator; suppress potentially sensitive exception values.
                     result = {
                         "task_id": task.task_id,

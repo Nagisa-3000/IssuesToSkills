@@ -6,9 +6,9 @@ import hashlib
 import json
 import re
 import tempfile
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Mapping, Sequence
 
 from .action_contracts import (
     ActionContract,
@@ -22,6 +22,7 @@ from .action_contracts import (
     strings,
     text,
     utc,
+    validate_workflow_coherence,
 )
 
 V4_SCHEMA = "arex-skill-package-v4"
@@ -156,8 +157,8 @@ class NativePackage:
 
 
 def inspect_v4_package(root: Path, *, check_manifest: bool = True) -> NativePackage:
-    from .skill_packages import _resolve, REQUIRED_FILES, NAME_RE, LINK_RE, BLOCKED_STATUSES
     from .direct_skill_extraction import safe_text
+    from .skill_packages import BLOCKED_STATUSES, LINK_RE, NAME_RE, REQUIRED_FILES, _resolve
 
     root = Path(root).resolve()
     manifest = json.loads((root / "manifest.json").read_text())
@@ -218,7 +219,11 @@ def inspect_v4_package(root: Path, *, check_manifest: bool = True) -> NativePack
     sources = tuple(SourceRecord.from_dict(x) for x in provenance["sources"])
     by_source = {s.id: s for s in sources}
     if len(by_source) != len(sources) or set(by_source) != set(provenance["source_episode_ids"]):
-        raise ValueError("native source identity mismatch")
+        raise ValueError(
+            "native source identity mismatch: source_episode_ids must equal the "
+            "authoritative SourceRecord IDs, including any repair suffix, rather "
+            "than issue aliases or bug_cluster_id"
+        )
     policy = TemporalPolicy(provenance["cutoff"])
     for source in sources:
         policy.check(source)
@@ -246,7 +251,10 @@ def inspect_v4_package(root: Path, *, check_manifest: bool = True) -> NativePack
         # The hash is host-derived; authoring a self-referential package hash is forbidden.
         if d.get("package_hash"):
             raise ValueError("native Action package hash must be derived")
-        action = ActionContract.from_dict({**d, "package_hash": manifest["package_sha256"]})
+        try:
+            action = ActionContract.from_dict({**d, "package_hash": manifest["package_sha256"]})
+        except (ValueError, TypeError) as error:
+            raise ValueError(f"Action resource {path.name}: {error}") from None
         if not set(action.source_ids).issubset(by_source) or not set(action.evidence_refs).issubset(
             evidence
         ):
@@ -375,7 +383,14 @@ def compile_pattern_contract(
 
 
 def publish_v4_bundle(
-    response: str, sources: Sequence[SourceRecord], policy: TemporalPolicy, output_root: Path
+    response: str,
+    sources: Sequence[SourceRecord],
+    policy: TemporalPolicy,
+    output_root: Path,
+    *,
+    authoritative_evidence: Mapping | None = None,
+    authoritative_package_id: str | None = None,
+    require_coherent_workflows: bool = False,
 ) -> tuple[NativePackage, ...]:
     from .direct_skill_extraction import parse_bundle
     from .skill_packages import PACKAGE_VERIFIER, _json, _resolve
@@ -395,6 +410,11 @@ def publish_v4_bundle(
         for name, authored in packages.items():
             files = {**authored, "scripts/verify_package.py": PACKAGE_VERIFIER}
             provenance = json.loads(files["references/provenance.json"])
+            if (
+                authoritative_package_id is not None
+                and provenance["package"]["skill_id"] != authoritative_package_id
+            ):
+                raise ValueError("native author changed its authoritative package identity")
             if provenance["cutoff"] != policy.cutoff:
                 raise ValueError("authored cutoff disagrees with authoritative policy")
             authored_sources = tuple(SourceRecord.from_dict(x) for x in provenance["sources"])
@@ -402,6 +422,34 @@ def publish_v4_bundle(
                 expected_sources.get(s.id) != s for s in authored_sources
             ):
                 raise ValueError("authored source contradicts authoritative evidence")
+            for relative, content in authored.items():
+                if (
+                    authoritative_package_id is not None
+                    and relative.startswith("references/actions/")
+                    and relative.endswith(".md")
+                ):
+                    action = read_contract(content)
+                    if not action["id"].startswith(authoritative_package_id + ":"):
+                        raise ValueError(
+                            "native Action identity is outside its authoritative package namespace"
+                        )
+                if relative.startswith("references/evidence/") and relative.endswith(".md"):
+                    row = read_contract(content, "arex-evidence-v4")
+                    source = expected_sources.get(row["source_id"])
+                    if source is None or row["id"] not in source.evidence_refs:
+                        raise ValueError(
+                            "authored evidence ID is outside authoritative source references"
+                        )
+                    if authoritative_evidence is not None:
+                        expected = authoritative_evidence.get(row["id"])
+                        if (
+                            expected is None
+                            or utc(row["available_at"]) != utc(expected["available_at"])
+                            or row["kind"] != expected["kind"]
+                        ):
+                            raise ValueError(
+                                "authored evidence date/kind differs from its authoritative entry"
+                            )
             manifest = {
                 "schema_version": V4_SCHEMA,
                 "authorship": "model_direct",
@@ -424,6 +472,9 @@ def publish_v4_bundle(
                 path.write_text(content)
             loaded = inspect_v4_package(staged)
             loaded.admit(policy)
+            if require_coherent_workflows:
+                for workflow in loaded.workflows:
+                    validate_workflow_coherence(workflow)
             output = _resolve(output_root, name)
             if output.exists():
                 current = {
@@ -489,7 +540,7 @@ def extract_native_pattern(transport, source_packages, policy, output_root):
     # Verify parent package lineage before publishing any authored Pattern.
     from .direct_skill_extraction import parse_bundle
 
-    authored, deferred = parse_bundle(response)
+    authored, _deferred = parse_bundle(response)
     for files in authored.values():
         provenance = json.loads(files["references/provenance.json"])
         if provenance.get("source_package_hashes") != payload["authoritative_upstream_packages"]:

@@ -1,0 +1,141 @@
+{
+  "status": "not_executed",
+  "cases": [
+    {
+      "id": "inspect-matching-boundary",
+      "action_id": "direct-export-binding-guard.inspect",
+      "setup": {
+        "fixture": "Public Python analyzer checkout with module/name export dispatch, immediate-parent consumer expecting assignment.value, ordinary fallback, and export tests.",
+        "inputs": [
+          "__all__ = ('foo',)",
+          "(__all__,) = ('foo',)"
+        ],
+        "before": "Capture tracked source/test content hashes and pinned revision."
+      },
+      "checks": [
+        {
+          "id": "inspection-artifact",
+          "observable": "Produced binding-boundary inspection record.",
+          "method": "Read the output artifact and compare its revision and hashed anchors to the fixture.",
+          "expected": "Contains matching pinned revision, hashed dispatcher/consumer/test anchors, and resolved bindings for all three semantic owners."
+        },
+        {
+          "id": "parent-shape-observation",
+          "observable": "Recorded immediate AST parents for the two input targets.",
+          "method": "Compare recorded parent types with a public AST probe and current parent annotations.",
+          "expected": "Direct target parent is Assign; tuple-contained name parent is Tuple. The record identifies the assignment.value consumer and dispatch path that permits the incompatible parent."
+        },
+        {
+          "id": "fallback-observation",
+          "observable": "Recorded ordinary binding fallback anchor and mechanism decision.",
+          "method": "Inspect cited current branch and the mechanism check.",
+          "expected": "Fallback exists and the historical mismatch is marked present with supporting current evidence."
+        },
+        {
+          "id": "read-only-inspection",
+          "observable": "Tracked source/test content hashes after inspection.",
+          "method": "Compare with before hashes.",
+          "expected": "All captured tracked content hashes are unchanged."
+        }
+      ]
+    },
+    {
+      "id": "edit-matching-boundary",
+      "action_id": "direct-export-binding-guard.guard-and-regress",
+      "setup": {
+        "fixture": "Compatible public Python AST checkout where the original special condition checks only __all__ and module scope.",
+        "inputs": "Fresh binding-boundary PortValue with exact declared dimensions, resolved source/test owners, and all edit prerequisites PASS.",
+        "before": "Capture dispatch branches, ordinary fallback, and current validation facts."
+      },
+      "checks": [
+        {
+          "id": "guarded-dispatch-diff",
+          "observable": "Dispatcher source diff.",
+          "method": "Review the changed condition against the fixture's Python AST interfaces.",
+          "expected": "Special dispatch additionally requires an immediate Assign, AugAssign, or AnnAssign parent; existing name and module-scope checks remain."
+        },
+        {
+          "id": "retained-branches",
+          "observable": "Earlier branches and ordinary fallback in the source diff.",
+          "method": "Compare their source with the before capture.",
+          "expected": "Earlier branches and ordinary fallback remain unchanged; indirect targets are not routed to ExportBinding."
+        },
+        {
+          "id": "regression-assertion",
+          "observable": "Added public regression source and expected diagnostics.",
+          "method": "Read the added test.",
+          "expected": "The analyzed source contains import bar and (__all__,) = ('foo',); the assertion expects the unused-import diagnostic for bar rather than a new invalid-assignment warning."
+        },
+        {
+          "id": "unvalidated-output",
+          "observable": "Produced guarded-change PortValue and invalidated facts.",
+          "method": "Inspect the output and current state ledger.",
+          "expected": "Output has source-and-test-change kind, Python language, current-public-checkout scope, post-edit phase, and modified-unvalidated state. Prior validation and all declared preservation facts are stale, not newly marked PASS."
+        }
+      ]
+    },
+    {
+      "id": "validate-matching-repair",
+      "action_id": "direct-export-binding-guard.validate",
+      "setup": {
+        "fixture": "Modified compatible checkout with tuple-target regression and adjacent public export tests.",
+        "inputs": "Matching guarded-change PortValue, reviewed edit effects, and both current public Oracle bindings containing adapted argv commands.",
+        "before": "Capture tracked source/test hashes and edited revision anchors."
+      },
+      "checks": [
+        {
+          "id": "reported-shape-completes",
+          "observable": "Analyzer process result for __all__, = ('fizz', 'buzz').",
+          "method": "Execute the bound public static-analysis command and retain exit status, stdout, stderr and exception status.",
+          "expected": "Analyzer completes without an internal exception or Tuple.value traceback. Any ordinary diagnostics are recorded separately; runtime execution of the snippet is not used."
+        },
+        {
+          "id": "tuple-regression-result",
+          "observable": "Tuple-target regression result and diagnostic assertion.",
+          "method": "Execute the bound current repository-test command and retain the test report.",
+          "expected": "The new regression passes and confirms the unused-import diagnostic for bar."
+        },
+        {
+          "id": "adjacent-preservation-evidence",
+          "observable": "Adjacent test results and current boundary review/probe record.",
+          "method": "Inspect public export test outcomes and cited code/probes for supported direct forms, module-scope restriction, earlier branches and fallback.",
+          "expected": "Adjacent tests pass; evidence confirms retained direct export behavior, compatible direct assignment handling, module-scope gating, earlier branches and ordinary fallback. Missing evidence is UNKNOWN, not PASS."
+        },
+        {
+          "id": "validation-record",
+          "observable": "Produced validation-record artifact and Oracle state entries.",
+          "method": "Read the output artifact and state ledger.",
+          "expected": "Record includes exact executed argv commands, revision/hash anchors, outcomes, coverage limits, and entries for oracle:direct-export-binding-guard.validate:analyze-indirect-target and oracle:direct-export-binding-guard.validate:run-export-regressions. Passed is recorded only if all required checks pass."
+        },
+        {
+          "id": "validation-read-only",
+          "observable": "Tracked source/test hashes after validation.",
+          "method": "Compare with before hashes.",
+          "expected": "Tracked content remains unchanged; changed-test-only results do not claim whole-project or cross-project acceptance."
+        }
+      ]
+    },
+    {
+      "id": "validation-failure-blocks-success",
+      "action_id": "direct-export-binding-guard.validate",
+      "setup": {
+        "fixture": "Same compatible modified checkout, but the public tuple regression returns a failing assertion or the required adjacent preservation probe is unavailable.",
+        "inputs": "Matching guarded-change PortValue and public current Oracle bindings."
+      },
+      "checks": [
+        {
+          "id": "failed-or-unknown-retained",
+          "observable": "Validation record and current-public-validation state.",
+          "method": "Inspect recorded process/probe outcomes and final state.",
+          "expected": "Failing regression is FAIL; unavailable required preservation evidence is UNKNOWN. current-public-validation is not passed, and no repair-success claim is produced."
+        },
+        {
+          "id": "scope-honesty",
+          "observable": "Final validation summary.",
+          "method": "Compare summary claims with recorded outcomes and executed scope.",
+          "expected": "Summary identifies the blocking result and coverage limits; it does not substitute the historical assertion or contemporary qualification for a current successful check."
+        }
+      ]
+    }
+  ]
+}

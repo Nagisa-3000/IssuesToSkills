@@ -1,0 +1,29 @@
+{
+  "status": "not_executed",
+  "cases": [
+    {
+      "id": "nested-metadata-false-positive",
+      "input": "A Python analyzer reports undefined names Nested, foo, and bar for a TypedDict call with name Nested and key foo/bar inside a class annotation.",
+      "expected": "activate",
+      "reason": "Directly matches the reported metadata-as-forward-reference symptom; current probes are still required."
+    },
+    {
+      "id": "unresolved-factory-identity",
+      "input": "An analyzer reports a string-name diagnostic inside a call named TypedDict, but import resolution and implementation language are unknown.",
+      "expected": "clarify",
+      "reason": "The typing identity and compatible annotation-state mechanism are not established."
+    },
+    {
+      "id": "actual-missing-type",
+      "input": "TypedDict(\"T\", {\"field\": \"MissingType\"}) reports only MissingType, which is not defined.",
+      "expected": "do_not_activate",
+      "reason": "This is an intended genuine forward-reference diagnostic."
+    },
+    {
+      "id": "runtime-construction-error",
+      "input": "Python execution raises a runtime error while constructing a TypedDict and there are no static-analysis metadata diagnostics.",
+      "expected": "do_not_activate",
+      "reason": "Runtime construction failures are outside this traversal repair."
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 from dataclasses import asdict, replace
 
 import pytest
+from adaptive_fixture import CUTOFF, make_fixture
 
-from adaptive_fixture import make_fixture, CUTOFF
 from arex_skill_graph.action_contracts import digest
 from arex_skill_graph.adaptive_budget import BudgetCaps, BudgetLedger
 from arex_skill_graph.plan_validation import ResourcePolicy
@@ -13,7 +13,7 @@ from arex_skill_graph.temporal_ranker_data import (
     pair_preferences,
     validate_training_snapshot,
 )
-from arex_skill_graph.workflow_ranker import workflow_capsule, WorkflowRanker
+from arex_skill_graph.workflow_ranker import WorkflowRanker, workflow_capsule
 
 
 def make_dataset(tmp_path):
@@ -66,7 +66,7 @@ def make_dataset(tmp_path):
 
 
 def test_temporal_self_future_alias_and_exposure_gates(tmp_path):
-    data, p, task, queries, labels, provider = make_dataset(tmp_path)
+    data, p, _task, queries, labels, provider = make_dataset(tmp_path)
     validate_training_snapshot(data)
     assert data["audits"][0]["catalog_cutoff"] == queries[0].task.input_available_at
     assert data["audits"][-1]["catalog_cutoff"] == data["training_cutoff"]
@@ -113,6 +113,26 @@ def test_pairwise_ties_and_unexecuted_are_not_failure(tmp_path):
     assert all(e.label["outcome"] is None for e in tied)
 
 
+def test_utility_calibration_separates_probe_permission_and_execution_outcome():
+    from arex_skill_graph.ranker_training import calibration_utility
+
+    passed = {
+        "label_source": "execution",
+        "applicability": "probe_only",
+        "outcome": True,
+        "regression_pass": True,
+    }
+    failed = {**passed, "outcome": False}
+    regression = {**passed, "regression_pass": False}
+    assert calibration_utility([passed]) == 1.0
+    assert calibration_utility([passed, failed]) == 0.5
+    assert calibration_utility([regression]) == 0.0
+    assert (
+        calibration_utility([{"label_source": "evidence_review", "applicability": "probe_only"}])
+        == 0.0
+    )
+
+
 def tiny_model(path):
     torch = pytest.importorskip("torch")
     transformers = pytest.importorskip("transformers")
@@ -157,11 +177,11 @@ def tiny_model(path):
 
 
 def test_real_local_training_checkpoint_and_embeddings(tmp_path):
-    from arex_skill_graph.ranker_training import train_ranker, TrainedRankerScorer
-    from arex_skill_graph.embeddings import TransformerEncoder
-    from arex_skill_graph.store import CatalogStore
-    from arex_skill_graph.adaptive_guidance import index_native_package
     from arex_skill_graph.action_contracts import TemporalPolicy
+    from arex_skill_graph.adaptive_guidance import index_native_package
+    from arex_skill_graph.embeddings import TransformerEncoder
+    from arex_skill_graph.ranker_training import TrainedRankerScorer, train_ranker
+    from arex_skill_graph.store import CatalogStore
 
     data, p, task, *_ = make_dataset(tmp_path)
     model_path = tmp_path / "tiny-model"
@@ -178,6 +198,7 @@ def test_real_local_training_checkpoint_and_embeddings(tmp_path):
     metadata = train_ranker(data, model_path, tmp_path / "checkpoint", epochs=3, learning_rate=0.01)
     assert metadata["training_pairs"] == 2 and metadata["development_queries"] == 1
     assert metadata["tokens_processed"] > 0
+    assert metadata["input_encoding"] == "paired-query-candidate-longest-first-v1"
     assert metadata["repair_effectiveness_proven"] is False
     scorer = TrainedRankerScorer(tmp_path / "checkpoint")
     capsules = [
@@ -194,10 +215,32 @@ def test_real_local_training_checkpoint_and_embeddings(tmp_path):
         TrainedRankerScorer(tmp_path / "checkpoint")
 
 
+def test_paired_ranker_keeps_both_long_query_and_candidate(tmp_path):
+    from arex_skill_graph.embeddings import TransformerEncoder
+
+    model_path = tmp_path / "model"
+    tiny_model(model_path)
+    encoder = TransformerEncoder(str(model_path))
+    batch = encoder.tokenizer(
+        ["type " * 2000],
+        text_pair=["repair " * 2000],
+        truncation="longest_first",
+        max_length=encoder.max_length,
+        return_tensors="pt",
+    )
+    ids = batch["input_ids"][0].tolist()
+    assert encoder.tokenizer.convert_tokens_to_ids("type") in ids
+    assert encoder.tokenizer.convert_tokens_to_ids("repair") in ids
+    _, tokens = encoder.tensors(["type " * 2000], text_pairs=["repair " * 2000])
+    assert tokens == encoder.max_length
+    with pytest.raises(ValueError, match="cardinality"):
+        encoder.tensors(["type"], text_pairs=[])
+
+
 def test_execution_supervision_needs_actual_controlled_guidance(tmp_path):
     from arex_skill_graph.temporal_ranker_data import execution_label_from_run
 
-    data, p, task, queries, *_ = make_dataset(tmp_path)
+    _data, _p, _task, queries, *_ = make_dataset(tmp_path)
     query = queries[0]
     run = {
         "task_id": query.task.task_id,
@@ -206,7 +249,9 @@ def test_execution_supervision_needs_actual_controlled_guidance(tmp_path):
         "benchmark_resolved": True,
         "validated_resolved": True,
         "budget": {"model_tokens": 100},
+        "requests": [{"operation": "finish", "arguments": {}, "rationale": "Controlled run ended"}],
         "evaluation": {
+            "evaluation_completed": True,
             "evaluator_version": "synthetic-independent",
             "evaluation_spec_sha256": "a" * 64,
             "regression_exit_codes": [0],
@@ -225,11 +270,38 @@ def test_execution_supervision_needs_actual_controlled_guidance(tmp_path):
             {**run, "solver_ended": False},
             sampling_probability=0.5,
         )
+    stopped = {
+        **run,
+        "solver_ended": False,
+        "solver_terminated": True,
+        "failure": "shared model-token budget exhausted",
+    }
+    failed = execution_label_from_run(
+        query, "workflow:a", "workflow", stopped, sampling_probability=0.5
+    )
+    assert failed.outcome is False
+    assert failed.regression_pass is True
+    with pytest.raises(ValueError, match="real solver request"):
+        execution_label_from_run(
+            query,
+            "workflow:a",
+            "workflow",
+            {**stopped, "requests": []},
+            sampling_probability=0.5,
+        )
+    with pytest.raises(ValueError, match="independent"):
+        execution_label_from_run(
+            query,
+            "workflow:a",
+            "workflow",
+            {**stopped, "evaluation": {**run["evaluation"], "evaluation_completed": False}},
+            sampling_probability=0.5,
+        )
 
 
 def test_online_neural_query_encoding_uses_shared_budget(tmp_path):
-    from arex_skill_graph.embeddings import TransformerEncoder
     from arex_skill_graph.adaptive_budget import BudgetedEncoder
+    from arex_skill_graph.embeddings import TransformerEncoder
 
     model_path = tmp_path / "model"
     tiny_model(model_path)

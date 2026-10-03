@@ -5,6 +5,13 @@ protocol and existing packages unchanged. The output is authored Markdown files
 in `AREX-SKILL-BUNDLE 1`, not candidate JSON. Use the existing FILE/end delimiters;
 return `AREX-SKILL-DEFERRED 1` when evidence is insufficient.
 
+The exact transport markers are `AREX-SKILL-BUNDLE 1`,
+`<<<FILE skill-name/SKILL.md>>>`, `<<<END FILE>>>`, and
+the terminal line `AREX-SKILL-BUNDLE-END`. The FILE marker has three closing
+angle brackets after the complete path. Do not add text between FILE blocks.
+For a defer response, write the reason after `AREX-SKILL-DEFERRED 1` and finish
+with `AREX-SKILL-DEFERRED-END`.
+
 ## Package and authority
 
 Every `<name>/` contains SKILL.md, references/episode.md, references/workflow.md,
@@ -35,6 +42,10 @@ fix_id, revision (40-character SHA), available_at (timezone required),
 evidence_refs, aliases, copied_from, verified_resolution. Every source must be
 available strictly before cutoff and have independent verified resolution evidence.
 Copies, aliases, mirrors and the same fix do not increase independent support.
+`source_episode_ids` is exactly the set of packaged SourceRecord `id` values.
+These IDs may identify a particular repair of an issue. Do not substitute issue
+IDs, bug_cluster_id, or aliases. Action and Workflow `source_ids`, and evidence
+`source_id`, use the same authoritative SourceRecord IDs.
 
 ## Action ports and state
 
@@ -48,6 +59,31 @@ A `cleanup_for` operation remains in the cut/verification closure after its
 associated operation; current semantic dependencies determine whether validation
 occurs before or after cleanup. Cleanup that changes state also retains a public
 validation Action.
+
+`inputs`, `outputs`, `preconditions`, `effects`, `preserves`, `oracle`,
+`source_ids`, and `evidence_refs` are **required JSON arrays**, including when
+there is one item. Use `[]` for an allowed empty array. `preconditions`, `effects`,
+`preserves`, and `exclusions` contain Predicate **objects**, not predicate strings.
+`oracle` contains Oracle **objects**, not oracle ID strings or a single object.
+Oracle IDs are local labels; the Oracle's complete object is embedded in its
+Action contract. `validation_for` is an array of modifying Action ID strings.
+For example, the following shapes demonstrate syntax only; replace their
+identities and content with actual supplied evidence:
+
+```json
+{
+  "preconditions": [{"key": "owner-located", "value": true}],
+  "effects": [{"key": "target-behavior", "value": "corrected"}],
+  "preserves": [{"key": "adjacent-behavior", "value": "preserved"}],
+  "oracle": [{
+    "id": "verify-target-behavior",
+    "instruction": "Verify the public reproduction and adjacent behavior.",
+    "evidence_refs": ["actual-evidence-id"],
+    "kind": "public_probe",
+    "command": []
+  }]
+}
+```
 
 A Port has name, semantic_role, artifact_kind, language, scope, phase, state,
 and optional (boolean, default false). Producer and consumer must agree on all
@@ -68,6 +104,14 @@ paths and are never silently reused as historical bindings. Natural-language
 semantic claims require current evidence-backed review/probes; they are not proven
 by matching Predicate names. `preserves` specifies behavior that must survive;
 `invalidates` names facts that must be re-observed after this Action.
+Use distinct keys for an observation becoming stale and for behavior that must
+remain preserved. An `invalidates` key cannot also appear in `preserves` or a
+Workflow invariant: invalidating a required assurance prevents unconditional
+execution. For example, `public-validation-observed` may become stale after an
+edit while `ordinary-runtime-behavior-preserved` remains a required behavior.
+Every `preserves` declaration is retained by a composed plan. Describe a read
+operation's lack of side effects in its operation/oracle; a Workflow that edits
+code cannot promise `checkout-unchanged` across the whole plan.
 
 Read/write sets name roles or explicit resources. Current bindings resolve aliases
 before conflict checks. Every modifying Action retains explicit `validate`

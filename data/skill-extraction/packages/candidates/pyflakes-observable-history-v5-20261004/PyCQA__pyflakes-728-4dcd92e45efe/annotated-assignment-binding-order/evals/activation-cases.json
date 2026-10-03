@@ -1,0 +1,29 @@
+{
+  "status": "not_executed",
+  "cases": [
+    {
+      "id": "activate-annotated-self-reference-suppression",
+      "input": "In a fresh module scope, ordinary x = x reports undefined x, annotated x: int = x is silent, and inspection shows the target is bound before initializer analysis.",
+      "expected": "activate",
+      "reason": "The symptom and causal traversal order match the supplied repair."
+    },
+    {
+      "id": "clarify-scope-and-owner",
+      "input": "A report says an annotated variable hides a diagnostic, but supplies no source, scope, prior bindings, or handler inspection.",
+      "expected": "clarify",
+      "reason": "Probe the reproduction and semantic owner before authorizing edits."
+    },
+    {
+      "id": "do-not-activate-runtime-error",
+      "input": "Python raises NameError while executing an annotated assignment; no static-analyzer diagnostic suppression is reported.",
+      "expected": "do_not_activate",
+      "reason": "Runtime evaluation is outside this diagnostic-order repair."
+    },
+    {
+      "id": "do-not-activate-already-correct-order",
+      "input": "The analyzer already processes the initializer before binding the target; an unrelated forward-annotation parsing failure is reported.",
+      "expected": "do_not_activate",
+      "reason": "Neither the evidenced cause nor the targeted diagnostic is present."
+    }
+  ]
+}

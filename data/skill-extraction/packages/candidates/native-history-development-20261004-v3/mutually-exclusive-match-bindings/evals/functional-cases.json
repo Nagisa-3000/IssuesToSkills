@@ -1,0 +1,103 @@
+{
+  "status": "not_executed",
+  "cases": [
+    {
+      "id": "probe-observable-context",
+      "action_id": "mutually-exclusive-match-bindings:probe",
+      "setup": "Pin a public Python checkout with the reported omission. Bind current public analyzer argv for the match reproduction and equivalent if/else control. Capture the initial source diff and locate candidate classifier and test owners.",
+      "checks": [
+        {
+          "id": "diagnostic-contrast",
+          "observation": "Capture analyzer diagnostics for both public snippets with argv, interpreter and exit status.",
+          "expected": "The match snippet reports redefinition of the case-local function name; the equivalent if/else snippet does not report that redefinition."
+        },
+        {
+          "id": "owner-and-omission",
+          "observation": "Inspect the branch-sensitive redefinition call chain and record hashed anchors for its shared classifier and match test owner.",
+          "expected": "The actual classifier used by the diagnostic recognizes existing alternatives but lacks separate match case bodies; both current owner bindings are recorded."
+        },
+        {
+          "id": "probe-output-and-no-edit",
+          "observation": "Inspect the emitted context and compare source diffs before and after the probe.",
+          "expected": "Confirmed context is emitted only after both diagnostic and ownership checks pass; checkout source diff is unchanged."
+        }
+      ]
+    },
+    {
+      "id": "recognize-observable-shape",
+      "action_id": "mutually-exclusive-match-bindings:recognize",
+      "setup": "Provide confirmed probe context and a bound current classifier. Use public AST fixtures containing a two-case match, an if, and a try. Record pre-edit classifier results for the if and try fixtures.",
+      "checks": [
+        {
+          "id": "separate-bodies",
+          "observation": "Inspect the diff and invoke the current classifier on the two-case match AST.",
+          "expected": "The result has two alternatives corresponding to the two original case bodies; no combined case body or global diagnostic suppression is introduced."
+        },
+        {
+          "id": "unchanged-existing-shapes",
+          "observation": "Compare the post-edit if and try classifier results with their recorded pre-edit shapes.",
+          "expected": "The if and try results retain their prior body grouping and handler grouping."
+        },
+        {
+          "id": "availability-and-state",
+          "observation": "Review runtime support and the ast.Match access path; inspect output state, invalidation records and verification closure.",
+          "expected": "Unavailable ast.Match is not accessed on supported older runtimes; classifier output is modified-unvalidated; prior diagnostic and adjacent observations are stale; validate remains linked to recognize."
+        }
+      ]
+    },
+    {
+      "id": "regression-observable-assertion",
+      "action_id": "mutually-exclusive-match-bindings:regression",
+      "setup": "Provide confirmed context and a bound public match suite. Record existing assertions and runtime gating before adding the regression.",
+      "checks": [
+        {
+          "id": "fixture-structure",
+          "observation": "Read the added test fixture and assertion through the current harness.",
+          "expected": "The fixture defines the same function name in case 1 and case _, uses the name after the match, and expects no unused-name redefinition diagnostic."
+        },
+        {
+          "id": "assertion-sensitivity",
+          "observation": "Run the added assertion against the pinned original omission and the repaired classifier using public test commands.",
+          "expected": "The original omission causes the added assertion to fail because of the redefinition diagnostic; the repaired classifier passes the assertion. Missing execution remains UNKNOWN."
+        },
+        {
+          "id": "preservation-and-closure",
+          "observation": "Compare the suite diff, runtime gating, output state and verification closure.",
+          "expected": "Existing assertions and version gating are unchanged; the test output is modified-unvalidated; validate remains linked to regression."
+        }
+      ]
+    },
+    {
+      "id": "validation-observable-results",
+      "action_id": "mutually-exclusive-match-bindings:validate",
+      "setup": "Provide both edit outputs and current public Oracle bindings. Prepare the added regression, existing match tests, if/else and try controls, and a public sequential control consisting of two unused definitions of the same function name in one scope. Bind runtime compatibility checks to the supported policy.",
+      "checks": [
+        {
+          "id": "target-and-suite",
+          "observation": "Execute the bound regression and match-suite argv and capture exit status, test results and diagnostic output.",
+          "expected": "The added regression passes with no target redefinition diagnostic, and existing match tests pass."
+        },
+        {
+          "id": "adjacent-controls",
+          "observation": "Execute the if/else, try-alternative and sequential-redefinition public controls; compare alternative controls with pre-edit observations.",
+          "expected": "If/else and try behavior is unchanged; the genuine sequential unused-name redefinition still produces its redefinition diagnostic."
+        },
+        {
+          "id": "runtime-evidence",
+          "observation": "Inspect or execute the bound supported-runtime availability checks and record which runtimes were covered.",
+          "expected": "No supported runtime accesses an unavailable ast.Match; unavailable coverage is recorded as UNKNOWN rather than PASS."
+        },
+        {
+          "id": "truthful-result-record",
+          "observation": "Inspect the validation record, Oracle check keys and checkout diff after validation.",
+          "expected": "The record includes current argv, interpreter, exit status and per-check PASS/FAIL/UNKNOWN under oracle:<action_id>:<source_oracle_id>; any missing or failing required check prevents public-validation-passed; validation adds no source edits."
+        },
+        {
+          "id": "scope-boundary",
+          "observation": "Inspect the reported acceptance scope and provenance references.",
+          "expected": "Changed-test-only results are not described as whole-project, cross-project or hidden acceptance; no historical execution is invented."
+        }
+      ]
+    }
+  ]
+}

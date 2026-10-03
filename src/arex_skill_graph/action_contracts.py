@@ -6,11 +6,12 @@ import hashlib
 import json
 import math
 import re
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field, fields
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import PurePosixPath
-from typing import Any, Mapping, TypeVar
+from typing import Any, TypeVar
 
 
 class CheckStatus(StrEnum):
@@ -29,10 +30,10 @@ def digest(value: Any) -> str:
 
 
 def utc(value: str) -> datetime:
-    result = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    result = datetime.fromisoformat(value)
     if result.tzinfo is None:
         raise ValueError("timestamps must include a timezone")
-    return result.astimezone(timezone.utc)
+    return result.astimezone(UTC)
 
 
 def contained_resource(value: str) -> str:
@@ -50,7 +51,7 @@ def text(value: Any, name: str) -> str:
 
 def strict(value: Mapping[str, Any], cls: type[T]) -> dict[str, Any]:
     if not isinstance(value, Mapping):
-        raise ValueError(f"{cls.__name__} must be an object")
+        raise ValueError(f"{cls.__name__} must be an object")  # noqa: TRY004 -- JSON contract errors consistently use ValueError.
     unknown = set(value) - {f.name for f in fields(cls)}
     if unknown:
         raise ValueError(f"unknown {cls.__name__} fields: {', '.join(sorted(unknown))}")
@@ -73,7 +74,7 @@ class Predicate:
     def __post_init__(self):
         text(self.key, "predicate key")
         if not isinstance(self.value, (str, bool)):
-            raise ValueError("predicate values must be strings or booleans")
+            raise ValueError("predicate values must be strings or booleans")  # noqa: TRY004 -- JSON contract errors consistently use ValueError.
         if self.evaluator not in {"evidence", "file_exists", "symbol_exists"}:
             raise ValueError("unknown predicate evaluator")
         if self.evaluator != "evidence" and type(self.value) is not bool:
@@ -255,6 +256,20 @@ class ActionContract:
     @classmethod
     def from_dict(cls, value):
         d = strict(value, cls)
+        for key in (
+            "inputs",
+            "outputs",
+            "preconditions",
+            "effects",
+            "preserves",
+            "oracle",
+            "source_ids",
+            "evidence_refs",
+        ):
+            if key not in d:
+                raise ValueError(f"ActionContract.{key} is a required array field")
+            if not isinstance(d[key], (list, tuple)):
+                raise ValueError(f"ActionContract.{key} must be an array, even for one item")  # noqa: TRY004 -- JSON contract errors consistently use ValueError.
         for key in ("inputs", "outputs"):
             d[key] = tuple(Port.from_dict(x) for x in d.get(key, []))
         for key in ("preconditions", "effects", "preserves", "exclusions"):
@@ -335,8 +350,32 @@ class WorkflowContract:
         return asdict(self)
 
 
+def validate_workflow_coherence(workflow: WorkflowContract) -> None:
+    """Reject internally contradictory assurances without inventing current evidence."""
+    invariants = (
+        *workflow.invariants,
+        *(p for action in workflow.actions for p in action.preserves),
+    )
+    for action in workflow.actions:
+        for invariant in invariants:
+            if invariant.key in action.invalidates:
+                raise ValueError(
+                    f"Action {action.id} invalidates preserved behavior {invariant.key}; "
+                    "use distinct freshness-observation keys and behavior assurances"
+                )
+            if any(
+                effect.key == invariant.key
+                and effect.evaluator == invariant.evaluator
+                and effect.value != invariant.value
+                for effect in action.effects
+            ):
+                raise ValueError(
+                    f"Action {action.id} contradicts preserved behavior {invariant.key}"
+                )
+
+
 def read_contract(markdown: str, marker: str = "arex-contract-v4") -> Mapping[str, Any]:
-    matches = re.findall(r"```" + re.escape(marker) + r"\n(.*?)\n```", markdown, re.S)
+    matches = re.findall(r"```" + re.escape(marker) + r"\n(.*?)\n```", markdown, re.DOTALL)
     if len(matches) != 1:
         raise ValueError("resource needs exactly one authored contract block")
 
@@ -354,5 +393,5 @@ def read_contract(markdown: str, marker: str = "arex-contract-v4") -> Mapping[st
         parse_constant=lambda _: (_ for _ in ()).throw(ValueError("nonfinite JSON")),
     )
     if not isinstance(value, Mapping):
-        raise ValueError("contract must be an object")
+        raise ValueError("contract must be an object")  # noqa: TRY004 -- JSON contract errors consistently use ValueError.
     return value

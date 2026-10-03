@@ -9,7 +9,7 @@ from pathlib import Path
 
 from .action_contracts import digest
 from .embeddings import TransformerEncoder
-from .temporal_ranker_data import pair_preferences, TrainingExample, validate_training_snapshot
+from .temporal_ranker_data import TrainingExample, pair_preferences, validate_training_snapshot
 from .workflow_ranker import CRITERIA
 
 
@@ -45,6 +45,37 @@ def scoring_text(task_input, candidate):
     return json.dumps(
         {"current": current, "candidate": history}, ensure_ascii=False, sort_keys=True
     )
+
+
+def calibration_utility(labels):
+    """Aggregate controlled replicates; probe permission is separate from repair utility."""
+    executions = [label for label in labels if label["label_source"] == "execution"]
+    if executions:
+        return sum(
+            bool(label["outcome"] and label["regression_pass"]) for label in executions
+        ) / len(executions)
+    return sum(label["applicability"] == "adaptively_usable" for label in labels) / len(labels)
+
+
+def paired_scoring_tensors(encoder, texts, *, gradients=False):
+    queries, candidates = [], []
+    for text in texts:
+        value = json.loads(text)
+        current, history = value["current"], value["candidate"]
+        queries.append(
+            json.dumps({"problem": current.pop("problem"), **current}, ensure_ascii=False)
+        )
+        candidates.append(
+            json.dumps(
+                {
+                    "mechanism": history.pop("mechanism"),
+                    "summary": history.pop("summary"),
+                    **history,
+                },
+                ensure_ascii=False,
+            )
+        )
+    return encoder.tensors(queries, text_pairs=candidates, gradients=gradients)
 
 
 def train_ranker(
@@ -113,11 +144,15 @@ def train_ranker(
     labels = {"unrelated": 0, "probe_only": 1, "adaptively_usable": 2}
     y = torch.tensor([labels[rows[key].label["applicability"]] for key in keys])
     losses = []
-    cached, cached_tokens = encoder.tensors(texts) if not train_encoder else (None, 0)
+    cached, cached_tokens = (
+        paired_scoring_tensors(encoder, texts) if not train_encoder else (None, 0)
+    )
     tokens_processed = cached_tokens
     for _ in range(epochs):
         encoder.model.train(train_encoder)
-        features, tokens = encoder.tensors(texts, gradients=True) if train_encoder else (cached, 0)
+        features, tokens = (
+            paired_scoring_tensors(encoder, texts, gradients=True) if train_encoder else (cached, 0)
+        )
         tokens_processed += tokens
         scores = head(features)
         pair_losses = []
@@ -144,8 +179,8 @@ def train_ranker(
     head.eval()
     dev_rows = {(r.query_id, r.candidate["id"]): r for r in development}
     dev_keys = sorted(dev_rows)
-    dev_features, dev_tokens = encoder.tensors(
-        [scoring_text(dev_rows[k].task_input, dev_rows[k].candidate) for k in dev_keys]
+    dev_features, dev_tokens = paired_scoring_tensors(
+        encoder, [scoring_text(dev_rows[k].task_input, dev_rows[k].candidate) for k in dev_keys]
     )
     tokens_processed += dev_tokens
     with torch.no_grad():
@@ -156,14 +191,21 @@ def train_ranker(
         temperatures,
         key=lambda t: float(torch.nn.functional.cross_entropy(predictions[:, 1:] / t, dev_y)),
     )
-    values = sorted(set(float(s) for s in predictions[:, 0]))
+    values = sorted({float(s) for s in predictions[:, 0]})
     thresholds = [values[0] - 1, *values, values[-1] + 1]
+    dev_utilities = torch.tensor(
+        [
+            calibration_utility(
+                [row.label for row in development if (row.query_id, row.candidate["id"]) == key]
+            )
+            for key in dev_keys
+        ]
+    )
 
     # Calibrate rejection on development evidence only, separately from score ordering.
     def rejection_loss(threshold):
         accepted = predictions[:, 0] >= threshold
-        usable = dev_y == 2
-        return int((accepted & ~usable).sum()) * 2 + int((~accepted & usable).sum())
+        return float((2 * accepted * (1 - dev_utilities) + (~accepted) * dev_utilities).sum())
 
     threshold = min(thresholds, key=lambda t: (rejection_loss(t), -t))
     output = Path(output_dir).resolve()
@@ -198,7 +240,18 @@ def train_ranker(
         "development_queries": len({r.query_id for r in development}),
         "use_threshold": threshold,
         "temperature": temperature,
+        "rejection_calibration": "aggregate independent execution utility; reviewed full applicability only when execution is absent",
+        "development_execution_candidates": sum(
+            any(
+                row.label["label_source"] == "execution"
+                for row in development
+                if (row.query_id, row.candidate["id"]) == key
+            )
+            for key in dev_keys
+        ),
         "tokens_processed": tokens_processed,
+        "input_encoding": "paired-query-candidate-longest-first-v1",
+        "training_non_tie_pairs": sum(pair["target"] != 0.5 for pair in pairs),
         "objective": "verified within-query pairwise preferences with tie targets plus graded applicability",
         "repair_effectiveness_proven": False,
     }
@@ -237,7 +290,11 @@ class TrainedRankerScorer:
     def evaluate(self, task, capsules, budget):
         budget.charge("model_calls", 1, "trained language-ranker batch")
         texts = [scoring_text(task.to_dict(), c.to_dict()) for c in capsules]
-        pooled, tokens = self.encoder.tensors(texts)
+        pooled, tokens = (
+            paired_scoring_tensors(self.encoder, texts)
+            if self.metadata.get("input_encoding") == "paired-query-candidate-longest-first-v1"
+            else self.encoder.tensors(texts)
+        )
         budget.charge(
             "model_tokens", tokens + 4 * len(capsules), "trained ranker encoded inputs and scores"
         )

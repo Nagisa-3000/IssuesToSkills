@@ -10,7 +10,7 @@ from .action_contracts import SourceRecord, TemporalPolicy
 from .adaptive_budget import BudgetCaps, BudgetLedger
 from .adaptive_guidance import index_native_package, prepare_adaptive_guidance
 from .embeddings import TransformerEncoder
-from .pattern_contracts import extract_native_pattern, publish_v4_bundle, load_native_package
+from .pattern_contracts import extract_native_pattern, load_native_package, publish_v4_bundle
 from .plan_validation import ResourcePolicy
 from .store import CatalogStore
 from .task_context import TaskContext, assert_public
@@ -28,6 +28,16 @@ def read_references(path):
     references = value.get("references") if isinstance(value, dict) else value
     if not isinstance(references, list) or any(not isinstance(ref, dict) for ref in references):
         raise ValueError("references must be an array or a native extraction inventory")
+    if isinstance(value, dict) and value.get("reference_path_base") == "inventory-directory":
+        root = Path(path).resolve().parent
+        resolved = []
+        for reference in references:
+            relative = Path(reference["package_path"])
+            package = (root / relative).resolve()
+            if relative.is_absolute() or not package.is_relative_to(root):
+                raise ValueError("portable native reference escapes its inventory directory")
+            resolved.append({**reference, "package_path": str(package)})
+        references = resolved
     return references
 
 
@@ -77,7 +87,12 @@ def transport_from_args(args, *, replay_key=None, task_id=None):
         raise ValueError("requested credential environment variable is unset; value suppressed")
     return OpenAICompatibleTransport(
         OpenAICompatibleConfig(
-            credential, args.base_url, args.model, max_output_tokens=12000, retries=0
+            credential,
+            args.base_url,
+            args.model,
+            max_output_tokens=12000,
+            retries=0,
+            http_backend=getattr(args, "http_backend", "native"),
         )
     )
 
@@ -134,6 +149,7 @@ def register(subparsers):
         parser.add_argument("--model")
         parser.add_argument("--base-url")
         parser.add_argument("--api-key-env", default="AREX_LLM_API_KEY")
+        parser.add_argument("--http-backend", choices=["native", "windows_pipe"], default="native")
         parser.add_argument("--replay", type=Path)
 
 

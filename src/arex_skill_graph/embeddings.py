@@ -62,12 +62,17 @@ class TransformerEncoder:
         self.calls = 0
         self.tokens_processed = 0
 
-    def tensors(self, texts, *, gradients=False):
+    def tensors(self, texts, *, gradients=False, text_pairs=None):
+        texts = list(texts)
+        pairs = list(text_pairs) if text_pairs is not None else None
+        if pairs is not None and len(pairs) != len(texts):
+            raise ValueError("paired encoder inputs need matching cardinality")
         batch = self.tokenizer(
-            list(texts),
+            texts,
+            text_pair=pairs,
             return_tensors="pt",
             padding=True,
-            truncation=True,
+            truncation="longest_first" if pairs is not None else True,
             max_length=self.max_length,
         )
         context = self.torch.enable_grad() if gradients else self.torch.no_grad()

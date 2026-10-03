@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
-from itertools import combinations
 import math
 import re
+from dataclasses import asdict, dataclass
+from itertools import combinations
 
 from .action_contracts import TemporalPolicy, digest, utc
 from .pattern_contracts import load_native_package
-from .task_context import TaskContext, assert_public
-from .workflow_ranker import CandidateCapsule, workflow_capsule, plan_capsule
 from .plan_validation import ResourcePolicy, TaskWorkflowPlan
+from .task_context import TaskContext, assert_public
+from .workflow_ranker import CandidateCapsule, plan_capsule, workflow_capsule
 
 
 @dataclass(frozen=True)
@@ -64,18 +64,17 @@ class SupervisionLabel:
             type(self.measured_cost) not in (int, float) or not math.isfinite(self.measured_cost)
         ):
             raise ValueError("measured execution cost must be finite")
-        if self.label_source == "execution":
-            if (
-                type(self.outcome) is not bool
-                or type(self.regression_pass) is not bool
-                or not self.evaluator_version
-                or not re.fullmatch(r"[0-9a-f]{64}", self.trajectory_sha256)
-                or self.measured_cost is None
-                or self.measured_cost < 0
-            ):
-                raise ValueError(
-                    "execution label needs completed independent evaluation, trajectory and cost"
-                )
+        if self.label_source == "execution" and (
+            type(self.outcome) is not bool
+            or type(self.regression_pass) is not bool
+            or not self.evaluator_version
+            or not re.fullmatch(r"[0-9a-f]{64}", self.trajectory_sha256)
+            or self.measured_cost is None
+            or self.measured_cost < 0
+        ):
+            raise ValueError(
+                "execution label needs completed independent evaluation, trajectory and cost"
+            )
 
 
 @dataclass(frozen=True)
@@ -328,12 +327,16 @@ def validate_training_snapshot(payload):
 def execution_label_from_run(
     query, candidate_id, candidate_kind, run, *, sampling_probability, replicate=0
 ):
-    """Derive supervision only from finished, independently evaluated controlled runs."""
+    """Include controlled failures after termination and completed independent evaluation."""
     assert_public(run)
     evaluation = run.get("evaluation", {})
     if run.get("task_id") != query.task.task_id or run.get("base_commit") != query.task.base_commit:
         raise ValueError("execution trajectory belongs to another query/base")
-    if not run.get("solver_ended") or not evaluation.get("evaluator_version"):
+    if (
+        not (run.get("solver_ended") or run.get("solver_terminated"))
+        or not evaluation.get("evaluator_version")
+        or evaluation.get("evaluation_completed") is not True
+    ):
         raise ValueError("completed independent execution is required")
     usage = run.get("guidance_usage", [])
     relevant = (
@@ -343,6 +346,8 @@ def execution_label_from_run(
     )
     if not relevant:
         raise ValueError("trajectory did not use the nominated candidate as controlled guidance")
+    if not run.get("requests") or run["budget"].get("model_tokens", 0) <= 0:
+        raise ValueError("controlled guidance did not reach a real solver request")
     return SupervisionLabel(
         query.task.task_id,
         candidate_id,
@@ -352,7 +357,9 @@ def execution_label_from_run(
         ("evaluation:" + evaluation["evaluation_spec_sha256"],),
         "independent-evaluator",
         query.task.input_available_at,
-        outcome=bool(run.get("benchmark_resolved")),
+        outcome=bool(
+            run.get("solver_ended") and not run.get("failure") and run.get("benchmark_resolved")
+        ),
         regression_pass=bool(evaluation.get("regression_exit_codes"))
         and all(code == 0 for code in evaluation["regression_exit_codes"]),
         measured_cost=float(run["budget"]["model_tokens"]),
