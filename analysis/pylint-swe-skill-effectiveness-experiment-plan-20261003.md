@@ -1,5 +1,7 @@
 **Pylint 上的 AREX Skill 效果实验方案 v1**
 
+本方案已被[全量时间切分与自适应 Skill 指导 v2](pylint-temporal-swe-adaptive-skill-plan-v2-20261003.md)取代。v1 的 14 个来源种子、三个问题族及 20 个 Live 候选仅保留为历史联调材料，不再限制正式学习/评测总体；正式执行使用 v2。
+
 日期：2026-10-03。这里的 SWE 指软件工程中的真实 issue 修复任务；首轮目标仓库为 Pylint，任务池来自 SWE-bench Live。方案依据[项目选型报告](first-project-for-issue-derived-skills-20261003.md)和[已审核来源与候选清单](data/first-project-issue-study-20261003/experiment-selection.json)。机器可读方案见[计划清单](experiment-plans/pylint-swe-skill-effectiveness-v1.json)。
 
 建议先做 **5 组、最多 20 个合格任务、每组每题 3 次独立尝试的静态试验**，回答系统能否改善真实修复、相似项目是否提供增量。随后用控制单个因素的实验分析表示、图扩展和适用判断的贡献，再扩展到第二个项目。当前是执行前方案，尚未冻结最终合格题目、模型和预算，也没有新的修复结果。
