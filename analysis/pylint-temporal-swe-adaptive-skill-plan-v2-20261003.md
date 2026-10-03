@@ -144,6 +144,8 @@ Agent 根据实际结果继续修正 task plan；某条历史操作不适用时�
 | 基准适配 | 现有案例准备/资格检查 | 多基准 registry、issue 去重、T 分类、各自官方 harness 和独立隐藏 evaluator |
 | 结果与反馈 | 配对评分和独立 registry | 记录实际动作依据、退回与损害；主实验冻结，不能把评测答案写回知识库 |
 
+Pattern 约束重写、CrossBind 和 Workflow/Task-Plan Ranker 的目标、契约、训练隔离、模块接口及实施路线见[研发设计](pattern-crossbind-ranker-design-20261003.md)与[机器路线图](experiment-plans/pattern-crossbind-ranker-roadmap-v1.json)。这是 S3/S4 的研发细化，尚未实现或训练；启用范围、额外消融和资源配置须在正式冻结前登记。
+
 代码核查发现：当前 _build_guidance 有向 applicability judge 提供 visible_test_patch 的路径。这是旧可见测试实验的设计，在新 SWE 隐藏验收协议中必须移除；judge 只能读取公开 issue、base 和 Agent 自己产生的观察。当前 _render_hit 直接 hydrate 包，尚不足以证明动作适配已经实现。
 
 实现时至少检查：T 后证据被拒绝；全部分页可续传且无截断；重复基准不增加独立题数；不存在的旧路径/接口不能成为当前 binding；相关症状但反例命中时拒绝；无 Skill 能正常回退；两个包的可用动作能够组合；历史顺序只有语义依赖才继承；隐藏测试不进入检索/judge/planner；所有输入与成本可审计。
