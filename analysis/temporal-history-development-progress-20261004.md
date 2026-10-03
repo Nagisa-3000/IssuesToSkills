@@ -3,7 +3,8 @@
 2026-10-04。对照 [模块设计](pattern-crossbind-ranker-design-20261003.md)继续实施。
 **已完成真实历史开发监督和本地参数训练；M4 的完整历史监督、M5 冻结、M6 正式 SWE 实验仍未完成。**
 
-本次审计快照见 [机器记录](results/temporal-history-development-audit-20261004-v1.json)。
+最新审计快照见 [机器记录 v2](results/temporal-history-development-audit-20261004-v2.json)，
+并保留 [v1 快照](results/temporal-history-development-audit-20261004-v1.json)。
 统计属于开发阶段，不能作为 SWE 效果或泛化收益。
 
 | 项目 | 实际进展 | 解释边界 |
@@ -11,7 +12,7 @@
 | 历史证据审查 | Pylint 5,273、Pyflakes 501、Ruff 3,582，共 9,356 条可观察 Issue，全部审查完成 | 截点为 2024-01-01 UTC，exclusive；审查记录不是 Skill；删除和不可读取的历史不能假装恢复 |
 | 正文历史恢复 | 83 条目标中恢复 79 条 | 4 条 Ruff 正文未恢复；另有 Pylint Project V2 事件详情不可读取 |
 | 历史修复资格 | Pyflakes 26 个 Issue 来源通过真实 F2P/P2P 控制及 Issue 关闭关联检查 | 只运行变更的测试文件，未证明全项目或跨项目行为；PR mention 本身不构成修复关联 |
-| 原生包 | v5 的 26 个完整候选包；v6 在重新作者 | 有 SKILL.md、Actions、证据、provenance、eval 定义和 verifier；functional 定义仍未执行，未准入正式 KB |
+| 原生包 | v5、v6 各 26 个完整候选包；v6 已通过契约一致性与全部 verifier | 有 SKILL.md、Actions、证据、provenance、eval 定义和 verifier；functional 定义仍未执行，未准入正式 KB |
 | 历史 query | 严格修复前输入的 9 条，train 4 / development 5 | 每条 query 用自身时间候选库；开发候选库截止 2021-01-01；不加载其修复 diff 或未来 Git 对象 |
 | 执行监督 | 44 个预定分支：33 个执行、11 个硬拒绝；24 条真实候选执行标签 | 硬拒绝和未执行不产生修复失败标签；预算终止为失败；独立 evaluator 在 solver 停止后运行 |
 | 因果重复审查 | 26 个来源及全部 9 个 query 完成模型证据审查，未找到重复或不确定分组 | 是当代审阅意见，可能漏检；不是独立性保证，也不产生修复效用标签 |
@@ -20,6 +21,7 @@
 
 历史 baseline 7/9 通过其独立验收；24 个实际候选分支中 18 个通过。
 候选数因 query 不同，且含按概率抽样的分支，这两个比例不能直接作效果比较。
+上述执行监督及训练均使用 v5；不能将其结果算到重新作者的 v6 包上。
 更重要的是，**同一 query 的候选执行结果全部打平**：当前数据缺少识别优先级的效用区分信号。
 应继续完成 Pylint、Ruff 的完整来源资格与学习，增加独立机制、反例与执行监督，不能挑成功分支来训练。
 
