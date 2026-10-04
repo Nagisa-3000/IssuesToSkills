@@ -59,3 +59,11 @@ Pylint 历史资格快照：**1095/1160** 已处理，**73** 个 verified_resolu
 本轮相关测试为 32 passed，无跳过；修改文件 Ruff E4/E7/E9/F 与 git diff --check 通过。这是新增入口的测试结果，不替换前述完整测试记录，也不构成修复效用验收。
 
 [当前入口的真实候选池核验](results/prepared-plan-execution-readiness-20261005-v2.json)记录代码 hash 和准备文件来源；[先前核验](results/prepared-plan-execution-readiness-20261005-v1.json)保留其较早代码状态。M4 的有效训练、M5 的正式冻结及 M6 的正式实验仍未完成。
+
+## 固定候选的历史 Plan 效果监督执行
+
+已启动固定代码快照下的 27 个历史分支：九个无指导基线与十八个 Plan，单工作线程，实际 copied namespace 隔离和 Solver 结束后的独立验收。此研究为历史开发监督，正式 SWE 运行仍为 0。
+
+首次启动在任何 Solver 执行前终止：复制 inventory 改变了相对 package_path 的解析位置，来源身份 hash 核对失败。保留该记录，不生成修复失败标签。修正后的运行使用内容 hash 固定的原始 inventory 来源位置；九题、十八个 Plan 在特权环境下重新预检通过，候选池保持原身份。
+
+[修正后的运行快照](results/historical-frozen-plan-execution-launch-20261005-v2.json)确认驱动及执行进程存活，完整调度为 27 个分支；该快照完成分支和 Plan 标签均为 0，不提前宣称效果监督或 Ranker 训练完成。[首次终止记录](results/historical-frozen-plan-execution-launch-20261005-v1.json)单独保存。实验使用提交 648f005 的固定代码，后续文档提交不改变运行中的实验。
