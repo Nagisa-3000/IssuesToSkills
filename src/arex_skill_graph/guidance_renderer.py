@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from .action_contracts import CheckStatus
+from .execution_frontier import execution_frontier
 from .plan_validation import topological, validate_task_plan
 from .skill_packages import _resolve
 
@@ -91,6 +92,7 @@ class GuidanceRenderer:
                 {
                     "plan_id": plan.id,
                     "actions": rows,
+                    "execution_frontier": execution_frontier(plan, task),
                     "changes": plan.changes,
                     "stop_conditions": plan.stop_conditions,
                 },

@@ -1,0 +1,599 @@
+{
+  "schema": "native-scope-current-negative-plan-review-v1",
+  "package_sha256": "2483d669defff3f4550d86f289ffda22ad78ed0e464fa0090d4195bd4287d0e6",
+  "action_id": "local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit",
+  "base_commit": "1f58890b3ea7a8683bc21594a7dc773443102893",
+  "actual_observations": [
+    {
+      "argv": [
+        "python3",
+        "-c",
+        "import ast,json,traceback\nfrom pyflakes.checker import Checker\ncodes={'ordinary':'class c:\\n    pass\\ndef func(c: c) -> None:\\n    pass\\n','asynchronous':'class c:\\n    pass\\nasync def func(c: c) -> None:\\n    pass\\n'}\nfailed=False\nfor name,code in codes.items():\n try:\n  checker=Checker(ast.parse(code),filename='<public-probe>')\n  messages=[type(m).__name__ for m in checker.messages]\n  print(json.dumps({'case':name,'messages':messages,'exception':None}))\n  failed=failed or bool(messages)\n except Exception as exc:\n  failed=True\n  print(json.dumps({'case':name,'exception':type(exc).__name__,'detail':str(exc),'trace':traceback.format_exc()}))\nraise SystemExit(1 if failed else 0)\n"
+      ],
+      "exit_code": 0,
+      "output": "{\"case\": \"ordinary\", \"messages\": [], \"exception\": null}\n{\"case\": \"asynchronous\", \"messages\": [], \"exception\": null}\n",
+      "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+      "runtime_sha256": "0a31a3b8fe3fcedc31919e567d1793045feccdc8a766d06832dc6d1358ec9831",
+      "workspace_adopted": false,
+      "timed_out": false,
+      "operation": "run_public_command",
+      "observation_id": "public:observation:2",
+      "context_revision": 2
+    },
+    {
+      "argv": [
+        "bash",
+        "-c",
+        "sed -n '612,624p' pyflakes/checker.py; sed -n '825,835p' pyflakes/checker.py; sed -n '1481,1492p' pyflakes/checker.py; python3 -B -c 'import ast; from pyflakes.checker import Checker, PY35_PLUS; print(\"PY35_PLUS:\", PY35_PLUS); print(\"ordinary registry value:\", repr(Checker._ast_node_scope[ast.FunctionDef])); print(\"async registry value:\", repr(Checker._ast_node_scope.get(ast.AsyncFunctionDef))); print(\"async scope membership:\", ast.AsyncFunctionDef in Checker._ast_node_scope); print(\"shared handler:\", Checker.ASYNCFUNCTIONDEF is Checker.FUNCTIONDEF)'"
+      ],
+      "exit_code": 0,
+      "output": "    _ast_node_scope = {\n        ast.Module: ModuleScope,\n        ast.ClassDef: ClassScope,\n        ast.FunctionDef: FunctionScope,\n        ast.Lambda: FunctionScope,\n        ast.ListComp: GeneratorScope,\n        ast.SetComp: GeneratorScope,\n        ast.GeneratorExp: GeneratorScope,\n        ast.DictComp: GeneratorScope,\n    }\n    if PY35_PLUS:\n        _ast_node_scope[ast.AsyncFunctionDef] = FunctionScope,\n\n    def _getAncestor(self, node, ancestor_type):\n        parent = node\n        while True:\n            if parent is self.root:\n                return None\n            parent = self.getParent(parent)\n            if isinstance(parent, ancestor_type):\n                return parent\n\n    def getScopeNode(self, node):\n        return self._getAncestor(node, tuple(Checker._ast_node_scope.keys()))\n    def ARGUMENTS(self, node):\n        self.handleChildren(node, omit=('defaults', 'kw_defaults'))\n        if PY2:\n            scope_node = self.getScopeNode(node)\n            if node.vararg:\n                self.addBinding(node, Argument(node.vararg, scope_node))\n            if node.kwarg:\n                self.addBinding(node, Argument(node.kwarg, scope_node))\n\n    def ARG(self, node):\n        self.addBinding(node, Argument(node.arg, self.getScopeNode(node)))\n\nPY35_PLUS: True\nordinary registry value: <class 'pyflakes.checker.FunctionScope'>\nasync registry value: (<class 'pyflakes.checker.FunctionScope'>,)\nasync scope membership: True\nshared handler: True\n",
+      "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+      "runtime_sha256": "0a31a3b8fe3fcedc31919e567d1793045feccdc8a766d06832dc6d1358ec9831",
+      "workspace_adopted": false,
+      "timed_out": false,
+      "operation": "run_public_command",
+      "observation_id": "public:observation:5",
+      "context_revision": 5
+    }
+  ],
+  "validation": {
+    "plan_id": "plan:scope-negative-current",
+    "status": "FAIL",
+    "mode": "reject",
+    "checks": [
+      {
+        "code": "task_identity",
+        "status": "PASS",
+        "subject": "plan:scope-negative-current",
+        "rationale": "Plan belongs to this current context.",
+        "evidence_refs": []
+      },
+      {
+        "code": "unique_instances",
+        "status": "PASS",
+        "subject": "plan:scope-negative-current",
+        "rationale": "Plan requires unique Action instances.",
+        "evidence_refs": []
+      },
+      {
+        "code": "root_budget",
+        "status": "PASS",
+        "subject": "plan:scope-negative-current",
+        "rationale": "Independent Pattern and Action resources share the root-package cap.",
+        "evidence_refs": []
+      },
+      {
+        "code": "parent_provenance",
+        "status": "PASS",
+        "subject": "plan:scope-negative-current",
+        "rationale": "Parent workflows are frozen native realizations.",
+        "evidence_refs": []
+      },
+      {
+        "code": "parent_invariants",
+        "status": "PASS",
+        "subject": "local_template:verified-history:b8f8b3836dbeb26b4ee62590:realization:scope",
+        "rationale": "A current binding cannot silently drop parent preserved behavior.",
+        "evidence_refs": []
+      },
+      {
+        "code": "DAG",
+        "status": "PASS",
+        "subject": "plan:scope-negative-current",
+        "rationale": "Dependencies are closed and acyclic.",
+        "evidence_refs": []
+      },
+      {
+        "code": "link_closed",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit",
+        "rationale": "Links refer to actual consumer ports.",
+        "evidence_refs": []
+      },
+      {
+        "code": "link_evidence",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit",
+        "rationale": "Links carry closed provenance.",
+        "evidence_refs": []
+      },
+      {
+        "code": "link_source",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit",
+        "rationale": "Input has exactly one origin.",
+        "evidence_refs": []
+      },
+      {
+        "code": "link_closed",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate",
+        "rationale": "Links refer to actual consumer ports.",
+        "evidence_refs": []
+      },
+      {
+        "code": "link_evidence",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate",
+        "rationale": "Links carry closed provenance.",
+        "evidence_refs": []
+      },
+      {
+        "code": "link_source",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate",
+        "rationale": "Input has exactly one origin.",
+        "evidence_refs": []
+      },
+      {
+        "code": "action_contract",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit",
+        "rationale": "Action matches its native file and package hash.",
+        "evidence_refs": [
+          "PyCQA/pyflakes:401:fix",
+          "PyCQA/pyflakes:401:regression"
+        ]
+      },
+      {
+        "code": "instance_role",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit",
+        "rationale": "Current instance keeps its native semantic operation role.",
+        "evidence_refs": []
+      },
+      {
+        "code": "action_lineage",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit",
+        "rationale": "Every selected/Bridge action has a parent historical realization.",
+        "evidence_refs": []
+      },
+      {
+        "code": "current_semantics",
+        "status": "FAIL",
+        "subject": "action:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit",
+        "rationale": "Actual ordinary and async name-collision probes pass and AsyncFunctionDef membership is already present. This omission repair is not applicable; the tuple-valued entry is a distinct representation limitation.",
+        "evidence_refs": [
+          "current:negative:public:observation:2",
+          "current:negative:public:observation:5"
+        ]
+      },
+      {
+        "code": "current_semantics",
+        "status": "PASS",
+        "subject": "owner:ast-scope-classification",
+        "rationale": "The observed current registry is Checker._ast_node_scope, whose argument lookup was traced in the inspector.",
+        "evidence_refs": [
+          "current:code:checker"
+        ]
+      },
+      {
+        "code": "current_binding",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit",
+        "rationale": "Binding is a current evidence-backed object/interface.",
+        "evidence_refs": [
+          "current:code:checker"
+        ]
+      },
+      {
+        "code": "binding_language",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit",
+        "rationale": "Concrete port objects must use the currently bound implementation language.",
+        "evidence_refs": [
+          "current:code:checker"
+        ]
+      },
+      {
+        "code": "precondition",
+        "status": "FAIL",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit:classification-omission-confirmed",
+        "rationale": "Prerequisite must be observed or produced by a verified predecessor; expected effects remain conditional.",
+        "evidence_refs": [
+          "current:negative:public:observation:2",
+          "current:negative:public:observation:5"
+        ]
+      },
+      {
+        "code": "precondition",
+        "status": "UNKNOWN",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit:ordinary-function-semantics-appropriate",
+        "rationale": "Prerequisite must be observed or produced by a verified predecessor; expected effects remain conditional.",
+        "evidence_refs": []
+      },
+      {
+        "code": "precondition",
+        "status": "UNKNOWN",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit:runtime-policy-reviewed",
+        "rationale": "Prerequisite must be observed or produced by a verified predecessor; expected effects remain conditional.",
+        "evidence_refs": []
+      },
+      {
+        "code": "precondition",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit:role:ast-scope-classification",
+        "rationale": "Prerequisite must be observed or produced by a verified predecessor; expected effects remain conditional.",
+        "evidence_refs": []
+      },
+      {
+        "code": "precondition",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit:role:annotation-regression-tests",
+        "rationale": "Prerequisite must be observed or produced by a verified predecessor; expected effects remain conditional.",
+        "evidence_refs": []
+      },
+      {
+        "code": "port_current_value",
+        "status": "FAIL",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit",
+        "rationale": "Current input is an observed compatible value.",
+        "evidence_refs": []
+      },
+      {
+        "code": "port_current_semantics",
+        "status": "UNKNOWN",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit",
+        "rationale": "Current evidence not yet established",
+        "evidence_refs": []
+      },
+      {
+        "code": "oracle",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit",
+        "rationale": "Each action has a focused public oracle.",
+        "evidence_refs": []
+      },
+      {
+        "code": "current_oracle_binding",
+        "status": "PASS",
+        "subject": "local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit:review-scope-change",
+        "rationale": "Historical commands must be adapted to public current inputs.",
+        "evidence_refs": [
+          "current:code:checker",
+          "current:code:annotation-test"
+        ]
+      },
+      {
+        "code": "current_oracle_semantics",
+        "status": "PASS",
+        "subject": "local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit:review-scope-change",
+        "rationale": "Public current registry inspection verifies the declared post-edit shape; diff and coverage remain review obligations.",
+        "evidence_refs": [
+          "current:code:checker",
+          "current:code:annotation-test"
+        ]
+      },
+      {
+        "code": "invariant_entry",
+        "status": "UNKNOWN",
+        "subject": "ordinary-function-behavior-preserved",
+        "rationale": "Preserved behavior must have current evidence.",
+        "evidence_refs": []
+      },
+      {
+        "code": "invariant_entry",
+        "status": "UNKNOWN",
+        "subject": "adjacent-diagnostics-preserved",
+        "rationale": "Preserved behavior must have current evidence.",
+        "evidence_refs": []
+      },
+      {
+        "code": "invariant_entry",
+        "status": "UNKNOWN",
+        "subject": "runtime-compatibility-preserved",
+        "rationale": "Preserved behavior must have current evidence.",
+        "evidence_refs": []
+      },
+      {
+        "code": "invariant_entry",
+        "status": "UNKNOWN",
+        "subject": "downstream-semantics-preserved",
+        "rationale": "Preserved behavior must have current evidence.",
+        "evidence_refs": []
+      },
+      {
+        "code": "invariant_entry",
+        "status": "UNKNOWN",
+        "subject": "ordinary-function-behavior-preserved",
+        "rationale": "Preserved behavior must have current evidence.",
+        "evidence_refs": []
+      },
+      {
+        "code": "invariant_entry",
+        "status": "UNKNOWN",
+        "subject": "adjacent-diagnostics-preserved",
+        "rationale": "Preserved behavior must have current evidence.",
+        "evidence_refs": []
+      },
+      {
+        "code": "invariant_entry",
+        "status": "UNKNOWN",
+        "subject": "runtime-compatibility-preserved",
+        "rationale": "Preserved behavior must have current evidence.",
+        "evidence_refs": []
+      },
+      {
+        "code": "invariant_entry",
+        "status": "UNKNOWN",
+        "subject": "downstream-semantics-preserved",
+        "rationale": "Preserved behavior must have current evidence.",
+        "evidence_refs": []
+      },
+      {
+        "code": "action_contract",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate",
+        "rationale": "Action matches its native file and package hash.",
+        "evidence_refs": [
+          "PyCQA/pyflakes:401:body",
+          "PyCQA/pyflakes:401:fix",
+          "PyCQA/pyflakes:401:regression"
+        ]
+      },
+      {
+        "code": "instance_role",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate",
+        "rationale": "Current instance keeps its native semantic operation role.",
+        "evidence_refs": []
+      },
+      {
+        "code": "action_lineage",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate",
+        "rationale": "Every selected/Bridge action has a parent historical realization.",
+        "evidence_refs": []
+      },
+      {
+        "code": "current_semantics",
+        "status": "UNKNOWN",
+        "subject": "action:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate",
+        "rationale": "Current evidence not yet established",
+        "evidence_refs": []
+      },
+      {
+        "code": "current_semantics",
+        "status": "UNKNOWN",
+        "subject": "owner:annotation-regression-tests",
+        "rationale": "Current evidence not yet established",
+        "evidence_refs": []
+      },
+      {
+        "code": "current_binding",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate",
+        "rationale": "Binding is a current evidence-backed object/interface.",
+        "evidence_refs": [
+          "current:code:annotation-test"
+        ]
+      },
+      {
+        "code": "binding_language",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate",
+        "rationale": "Concrete port objects must use the currently bound implementation language.",
+        "evidence_refs": [
+          "current:code:annotation-test"
+        ]
+      },
+      {
+        "code": "precondition",
+        "status": "UNKNOWN",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate:async-classification-extended",
+        "rationale": "Prerequisite must be observed or produced by a verified predecessor; expected effects remain conditional.",
+        "evidence_refs": []
+      },
+      {
+        "code": "precondition",
+        "status": "UNKNOWN",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate:async-regression-present",
+        "rationale": "Prerequisite must be observed or produced by a verified predecessor; expected effects remain conditional.",
+        "evidence_refs": []
+      },
+      {
+        "code": "precondition",
+        "status": "UNKNOWN",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate:current-validation-oracles-bound",
+        "rationale": "Prerequisite must be observed or produced by a verified predecessor; expected effects remain conditional.",
+        "evidence_refs": []
+      },
+      {
+        "code": "port_dependency",
+        "status": "FAIL",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate",
+        "rationale": "Producer must precede consumer; lexical ordering is insufficient.",
+        "evidence_refs": []
+      },
+      {
+        "code": "port_contract",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate",
+        "rationale": "Semantic role, artifact, language, scope, phase and state must match.",
+        "evidence_refs": []
+      },
+      {
+        "code": "port_semantics",
+        "status": "UNKNOWN",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate",
+        "rationale": "Current evidence not yet established",
+        "evidence_refs": []
+      },
+      {
+        "code": "oracle",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate",
+        "rationale": "Each action has a focused public oracle.",
+        "evidence_refs": []
+      },
+      {
+        "code": "current_oracle_binding",
+        "status": "UNKNOWN",
+        "subject": "local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate:scope-target-and-controls",
+        "rationale": "Historical commands must be adapted to public current inputs.",
+        "evidence_refs": []
+      },
+      {
+        "code": "current_oracle_semantics",
+        "status": "UNKNOWN",
+        "subject": "local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate:scope-target-and-controls",
+        "rationale": "Current evidence not yet established",
+        "evidence_refs": []
+      },
+      {
+        "code": "current_oracle_binding",
+        "status": "UNKNOWN",
+        "subject": "local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate:annotation-suite",
+        "rationale": "Historical commands must be adapted to public current inputs.",
+        "evidence_refs": []
+      },
+      {
+        "code": "current_oracle_semantics",
+        "status": "UNKNOWN",
+        "subject": "local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate:annotation-suite",
+        "rationale": "Current evidence not yet established",
+        "evidence_refs": []
+      },
+      {
+        "code": "invariant_entry",
+        "status": "UNKNOWN",
+        "subject": "ordinary-function-behavior-preserved",
+        "rationale": "Preserved behavior must have current evidence.",
+        "evidence_refs": []
+      },
+      {
+        "code": "invariant_entry",
+        "status": "UNKNOWN",
+        "subject": "adjacent-diagnostics-preserved",
+        "rationale": "Preserved behavior must have current evidence.",
+        "evidence_refs": []
+      },
+      {
+        "code": "invariant_entry",
+        "status": "UNKNOWN",
+        "subject": "runtime-compatibility-preserved",
+        "rationale": "Preserved behavior must have current evidence.",
+        "evidence_refs": []
+      },
+      {
+        "code": "invariant_entry",
+        "status": "UNKNOWN",
+        "subject": "downstream-semantics-preserved",
+        "rationale": "Preserved behavior must have current evidence.",
+        "evidence_refs": []
+      },
+      {
+        "code": "invariant_entry",
+        "status": "UNKNOWN",
+        "subject": "ordinary-function-behavior-preserved",
+        "rationale": "Preserved behavior must have current evidence.",
+        "evidence_refs": []
+      },
+      {
+        "code": "invariant_entry",
+        "status": "UNKNOWN",
+        "subject": "adjacent-diagnostics-preserved",
+        "rationale": "Preserved behavior must have current evidence.",
+        "evidence_refs": []
+      },
+      {
+        "code": "invariant_entry",
+        "status": "UNKNOWN",
+        "subject": "runtime-compatibility-preserved",
+        "rationale": "Preserved behavior must have current evidence.",
+        "evidence_refs": []
+      },
+      {
+        "code": "invariant_entry",
+        "status": "UNKNOWN",
+        "subject": "downstream-semantics-preserved",
+        "rationale": "Preserved behavior must have current evidence.",
+        "evidence_refs": []
+      },
+      {
+        "code": "write_conflict",
+        "status": "FAIL",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit/current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate",
+        "rationale": "Shared writes/state effects require explicit semantic ordering.",
+        "evidence_refs": []
+      },
+      {
+        "code": "cleanup_closure",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit",
+        "rationale": "Cuts/substitutions retain explicit restore and cleanup operations.",
+        "evidence_refs": []
+      },
+      {
+        "code": "cleanup_closure",
+        "status": "PASS",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-validate",
+        "rationale": "Cuts/substitutions retain explicit restore and cleanup operations.",
+        "evidence_refs": []
+      },
+      {
+        "code": "verification_closure",
+        "status": "FAIL",
+        "subject": "current:local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit",
+        "rationale": "Truncation cannot drop a required validation action.",
+        "evidence_refs": []
+      },
+      {
+        "code": "goal_coverage",
+        "status": "PASS",
+        "subject": "async-classification-extended",
+        "rationale": "Plan predicts required effect; actual repair requires independent acceptance.",
+        "evidence_refs": [
+          "PyCQA/pyflakes:401:fix",
+          "PyCQA/pyflakes:401:regression"
+        ]
+      },
+      {
+        "code": "goal_coverage",
+        "status": "PASS",
+        "subject": "async-regression-present",
+        "rationale": "Plan predicts required effect; actual repair requires independent acceptance.",
+        "evidence_refs": [
+          "PyCQA/pyflakes:401:fix",
+          "PyCQA/pyflakes:401:regression"
+        ]
+      },
+      {
+        "code": "goal_coverage",
+        "status": "PASS",
+        "subject": "public-validation-observed",
+        "rationale": "Plan predicts required effect; actual repair requires independent acceptance.",
+        "evidence_refs": [
+          "PyCQA/pyflakes:401:body",
+          "PyCQA/pyflakes:401:fix",
+          "PyCQA/pyflakes:401:regression"
+        ]
+      },
+      {
+        "code": "goal_coverage",
+        "status": "PASS",
+        "subject": "async-target-behavior-correct",
+        "rationale": "Plan predicts required effect; actual repair requires independent acceptance.",
+        "evidence_refs": [
+          "PyCQA/pyflakes:401:body",
+          "PyCQA/pyflakes:401:fix",
+          "PyCQA/pyflakes:401:regression"
+        ]
+      },
+      {
+        "code": "stop_conditions",
+        "status": "PASS",
+        "subject": "plan:scope-negative-current",
+        "rationale": "Plan has a stop/refresh boundary.",
+        "evidence_refs": []
+      }
+    ],
+    "behavior_verified": false
+  },
+  "known_inapplicable_prerequisite": true,
+  "negative_control_limitation": "Async membership and observed behavior are present; the historical async value is a tuple rather than the ordinary class. No general registry correctness is claimed.",
+  "formal_SWE_runs": 0,
+  "formal_KB_admitted": false
+}

@@ -19,15 +19,22 @@ from pathlib import Path
 from typing import ClassVar
 
 from .action_contracts import digest
+from .action_grounding import review_action_observation
 from .action_observations import record_action_observation
 from .adaptive_budget import BudgetedTransport, BudgetExceeded
 from .adaptive_guidance import prepare_adaptive_guidance
+from .execution_frontier import (
+    action_execution_checks,
+    declared_write_paths,
+    ready_modifying_action,
+)
 from .git_tree_export import exact_git_tar
 from .guidance_renderer import GuidanceRenderer
 from .plan_validation import TaskWorkflowPlan, validate_task_plan
 from .public_snapshot import extract_public_archive
 from .skill_packages import _resolve
 from .task_context import EvidenceAnchor, ObservedFact, assert_public
+from .workspace_state import public_workspace_sha256
 
 
 class IsolationUnavailable(RuntimeError):
@@ -249,6 +256,11 @@ class AdaptiveSolver:
         "record_action_observation requires action_id, current context_revision, summary and outputs. "
         "Each output has port_name, observation_ids and artifact_paths; cite actual broker results or current files. "
         "Port recording is unreviewed and never proves prerequisites, effects or repair success. "
+        "refresh_guidance independently reviews fresh recorded outputs before they can become current inputs. "
+        "A strict functional Action catalog also requires actual ready prerequisites and action_id for modifications. "
+        "Gather all current files and inputs before modifying an Action. A single public command may apply its full change across bound files; code changes invalidate consumed pre-edit evidence. "
+        "While guidance is active, modifying write_file or command requests must provide action_id "
+        "for an Action whose actual prerequisites and inputs are currently ready; planned effects are insufficient. "
         "drop_guidance and finish take empty arguments. "
         "Use public commands to search source and run tests. Read current files before changing them. "
         "Long output is presented as excerpts; use focused commands and paginated file reads to inspect omitted parts. "
@@ -287,10 +299,17 @@ class AdaptiveSolver:
         initial_observations=(),
         recordable_actions=(),
         read_only_workspace=False,
+        enforce_catalog_prerequisites=False,
     ):
         self.ledger.check_time()
         if type(read_only_workspace) is not bool:
             raise ValueError("public workspace mode must be explicitly boolean")
+        if type(enforce_catalog_prerequisites) is not bool:
+            raise ValueError("Action catalog execution mode must be boolean")
+        if enforce_catalog_prerequisites and (not use_frozen_selection or not recordable_actions):
+            raise ValueError(
+                "Strict functional execution requires an explicit frozen Action catalog"
+            )
         assert_public(initial_observations)
         observations, guidance_runs, requests, guidance_usage = (
             list(initial_observations),
@@ -300,6 +319,7 @@ class AdaptiveSolver:
         )
         ended, failed = False, ""
         action_catalog, action_observations, broker_observations = {}, [], {}
+        action_output_reviews, reviewed_records = [], set()
 
         def register_actions(actions):
             for action in actions:
@@ -315,6 +335,16 @@ class AdaptiveSolver:
                         "delivered Action observation catalog labels",
                     )
                     action_catalog[action.id] = action
+
+        def ready_catalog_action(action_id, current):
+            action = action_catalog.get(action_id)
+            if (
+                action
+                and action.kind in {"edit", "bridge", "cleanup"}
+                and action_execution_checks(action, current)["ready"]
+            ):
+                return action
+            return None
 
         with (
             tempfile.TemporaryDirectory(prefix="arex-public-solver-") as scratch,
@@ -347,11 +377,36 @@ class AdaptiveSolver:
             policy = replace(self.policy, verify_head=False)
             selected = None
             prerequisite_probes = 0
+            pending_guidance_refresh = False
             guidance = "Continue solving from current public evidence."
 
             def review():
-                nonlocal current, guidance, selected, prerequisite_probes
+                nonlocal current, guidance, selected, prerequisite_probes, pending_guidance_refresh
                 prerequisite_probes = 0
+                if self.ranker.transport is not None:
+                    for record in action_observations:
+                        if record["id"] in reviewed_records:
+                            continue
+                        if record.get("workspace_sha256") != public_workspace_sha256(current.root):
+                            action_output_reviews.append(
+                                {
+                                    "record_id": record["id"],
+                                    "status": "stale",
+                                    "current_ports_promoted": [],
+                                }
+                            )
+                        else:
+                            current, output_review = review_action_observation(
+                                current,
+                                action_catalog[record["action_id"]],
+                                record,
+                                broker_observations,
+                                self.ranker.transport,
+                                self.ledger,
+                                verify_head=False,
+                            )
+                            action_output_reviews.append(output_review)
+                        reviewed_records.add(record["id"])
                 result = prepare_adaptive_guidance(
                     current,
                     self.store,
@@ -369,6 +424,7 @@ class AdaptiveSolver:
                 )
                 guidance = result["guidance"]
                 guidance_runs.append(result)
+                pending_guidance_refresh = False
                 if selected:
                     register_actions(i.action for i in selected.instances)
                     guidance_usage.append(
@@ -421,6 +477,13 @@ class AdaptiveSolver:
                                 "current": public_context,
                                 "guidance": guidance,
                                 "public_workspace_read_only": read_only_workspace,
+                                "strict_functional_action_catalog": enforce_catalog_prerequisites,
+                                "functional_execution_frontier": [
+                                    action_execution_checks(a, current)
+                                    for a in action_catalog.values()
+                                ]
+                                if enforce_catalog_prerequisites
+                                else [],
                                 "action_observation_catalog": [
                                     {"action_id": a.id, "outputs": [p.name for p in a.outputs]}
                                     for a in action_catalog.values()
@@ -549,6 +612,40 @@ class AdaptiveSolver:
                                     }
                                 )
                                 continue
+                            if pending_guidance_refresh:
+                                observations.append(
+                                    {
+                                        "operation": operation,
+                                        "denied": "The previous guided edit requires refreshed evidence or explicit drop_guidance before another modification.",
+                                    }
+                                )
+                                continue
+                            if selected:
+                                modifying = ready_modifying_action(
+                                    selected, current, args.get("action_id")
+                                )
+                                if modifying is None or relative not in declared_write_paths(
+                                    modifying, current
+                                ):
+                                    observations.append(
+                                        {
+                                            "operation": operation,
+                                            "denied": "Guided editing requires an actual ready Action and its bound write path; expected predecessor outputs are insufficient.",
+                                        }
+                                    )
+                                    continue
+                            if enforce_catalog_prerequisites:
+                                modifying = ready_catalog_action(args.get("action_id"), current)
+                                if modifying is None or relative not in declared_write_paths(
+                                    modifying, current
+                                ):
+                                    observations.append(
+                                        {
+                                            "operation": operation,
+                                            "denied": "The functional Action lacks actual current prerequisites, input ports or its bound write path.",
+                                        }
+                                    )
+                                    continue
                             assert_public(args["content"])
                             path.parent.mkdir(parents=True, exist_ok=True)
                             path.write_text(args["content"])
@@ -562,6 +659,7 @@ class AdaptiveSolver:
                                 if a.path == relative
                             ]
                             current = current.update(anchors=tuple(refreshed))
+                            pending_guidance_refresh = selected is not None
                             selected = None
                             guidance = "Current code changed. Refresh guidance and establish actual postconditions before using historical directives again."
                             result = {"operation": operation, "path": relative, "written": True}
@@ -580,10 +678,22 @@ class AdaptiveSolver:
                                     }
                                 )
                                 continue
+                        ready_modification = (
+                            selected is not None
+                            and ready_modifying_action(selected, current, args.get("action_id"))
+                            is not None
+                        )
+                        catalog_ready = (
+                            ready_catalog_action(args.get("action_id"), current) is not None
+                        )
                         result = tools.run(
                             args["argv"],
                             timeout=args.get("timeout", 60),
-                            readonly_workspace=probe_only or read_only_workspace,
+                            readonly_workspace=probe_only
+                            or read_only_workspace
+                            or pending_guidance_refresh
+                            or (selected is not None and not ready_modification)
+                            or (enforce_catalog_prerequisites and not catalog_ready),
                         )
                         anchor_id = "current:probe:" + str(len(observations))
                         anchor = EvidenceAnchor(
@@ -624,6 +734,7 @@ class AdaptiveSolver:
                             "tool_calls", 1, "explicit fallback from conditional Skill guidance"
                         )
                         selected = None
+                        pending_guidance_refresh = False
                         guidance = "Continue normal public issue solving from current observations."
                         result = {"operation": operation, "fallback_reason": request["rationale"]}
                     elif operation == "refresh_guidance":
@@ -655,6 +766,16 @@ class AdaptiveSolver:
                         raise ValueError("unknown solver operation")
                     changed_anchors = []
                     for anchor in current.anchors:
+                        if anchor.kind == "workspace_snapshot":
+                            workspace_hash = public_workspace_sha256(current.root)
+                            if workspace_hash != anchor.sha256:
+                                changed_anchors.append(
+                                    replace(
+                                        anchor,
+                                        sha256=workspace_hash,
+                                        observation="Public workspace changed; reviewed Action outputs require renewed evidence.",
+                                    )
+                                )
                         if anchor.path:
                             path = _resolve(Path(current.root), anchor.path)
                             if not path.is_file():
@@ -671,6 +792,7 @@ class AdaptiveSolver:
                                     )
                                 )
                     if changed_anchors:
+                        pending_guidance_refresh = pending_guidance_refresh or selected is not None
                         current = current.update(anchors=tuple(changed_anchors))
                         selected = None
                         guidance = "Public tool changed current code; re-observe prerequisites and refresh guidance."
@@ -703,7 +825,9 @@ class AdaptiveSolver:
                 "guidance_runs": guidance_runs,
                 "action_observations": action_observations,
                 "action_observations_semantically_verified": False,
+                "action_output_reviews": action_output_reviews,
                 "explicit_functional_action_catalog": bool(recordable_actions),
+                "strict_functional_action_catalog": enforce_catalog_prerequisites,
                 "public_workspace_read_only": read_only_workspace,
                 "guidance_usage": guidance_usage,
                 "budget": self.ledger.snapshot(),

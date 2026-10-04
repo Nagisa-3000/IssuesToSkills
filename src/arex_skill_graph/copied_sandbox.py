@@ -92,6 +92,13 @@ def _contained_tree(root, *, maximum=512 * 1024**2, public=False):
     return result
 
 
+def _copy_public_file(source, target):
+    """Retain the executable bit while stripping privileged permission bits."""
+    shutil.copyfile(source, target)
+    Path(target).chmod(0o755 if Path(source).stat().st_mode & 0o111 else 0o644)
+    return target
+
+
 def _copy_tree(source, target, *, ignore=()):
     source = Path(source).resolve()
     # Closed symlinks may be retained, but no target outside the supplied tree.
@@ -319,7 +326,7 @@ class CopiedNamespaceTools(NamespaceTools):
         shutil.copytree(self.template, root, symlinks=True, copy_function=os.link)
         _contained_tree(self.checkout, public=True)
         work = root / "workspace"
-        shutil.copytree(self.checkout, work, symlinks=True, copy_function=shutil.copyfile)
+        shutil.copytree(self.checkout, work, symlinks=True, copy_function=_copy_public_file)
         for path in [work, *work.rglob("*")]:
             os.chown(
                 path, 0 if readonly else 65534, 0 if readonly else 65534, follow_symlinks=False
@@ -345,7 +352,7 @@ class CopiedNamespaceTools(NamespaceTools):
         # Recopy files (no hardlinks), strip privileges and adopt by two renames.
         with tempfile.TemporaryDirectory(prefix="arex-adopt-", dir=self.checkout.parent) as scratch:
             staged, old = Path(scratch) / "staged", Path(scratch) / "old"
-            shutil.copytree(work, staged, symlinks=True, copy_function=shutil.copyfile)
+            shutil.copytree(work, staged, symlinks=True, copy_function=_copy_public_file)
             for path in [staged, *staged.rglob("*")]:
                 if not path.is_symlink():
                     path.chmod(0o755 if path.is_dir() or path.stat().st_mode & 0o111 else 0o644)

@@ -35,6 +35,7 @@ def main(argv=None):
     parser.add_argument("--api-key-env", default="AREX_LLM_API_KEY")
     parser.add_argument("--http-backend", default="native", choices=["native", "windows_pipe"])
     parser.add_argument("--public-read-only", action="store_true")
+    parser.add_argument("--enforce-action-prerequisites", action="store_true")
     args = parser.parse_args(argv)
     if args.output_dir.exists():
         raise ValueError("preserve previous native Action exercise; use a new output directory")
@@ -86,6 +87,7 @@ def main(argv=None):
             use_frozen_selection=True,
             recordable_actions=(action,),
             read_only_workspace=args.public_read_only,
+            enforce_catalog_prerequisites=args.enforce_action_prerequisites,
             initial_observations=(
                 {
                     "operation": "native_action_instruction",
@@ -112,6 +114,7 @@ def main(argv=None):
         "formal_SWE_runs": 0,
         "formal_KB_admitted": False,
         "public_read_only": args.public_read_only,
+        "strict_functional_action_catalog": args.enforce_action_prerequisites,
         "resources": [{k: v for k, v in r.items() if k != "chunks"} for r in resources],
         "model": args.model,
         "base_url": args.base_url,

@@ -1,0 +1,156 @@
+{
+  "schema": "native-scope-observed-output-review-calibration-v1",
+  "package_sha256": "2483d669defff3f4550d86f289ffda22ad78ed0e464fa0090d4195bd4287d0e6",
+  "action_id": "local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-inspect",
+  "replay_snapshot_verified": true,
+  "original_trajectory_sha256": "4b259d1ef6dbdeba9b8b83e193ace0a10f7e07107a3238fc71328ae8e50e2a73",
+  "original_record_sha256": "30938a5ae397ed94e98ee0cf2e004c9e71bba49f74ffbe8151aeaac830d17e48",
+  "sealed_replayed_record_sha256": "c4f364948a5693545918dcb1234c0cf6f3ae2fc515d8b1f19f1530ae7739a27a",
+  "explicitly_resealed_legacy_observation": true,
+  "no_new_public_probe_execution": true,
+  "review": {
+    "schema": "arex-action-output-review-v1",
+    "record_id": "action-result:replayed-v2:0",
+    "record_sha256": "c4f364948a5693545918dcb1234c0cf6f3ae2fc515d8b1f19f1530ae7739a27a",
+    "action_id": "local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-inspect",
+    "package_sha256": "2483d669defff3f4550d86f289ffda22ad78ed0e464fa0090d4195bd4287d0e6",
+    "workspace_sha256": "6e4d26c8ef6f0024fcadd84157e1250ab1d8706f70bd9b599a998f7b98f5d70b",
+    "checks": [
+      {
+        "key": "effect:classification-omission-confirmed",
+        "status": "PASS",
+        "rationale": "Actual instrumentation shows that the ordinary argument selects FunctionDef, while the asynchronous argument selects Module because AsyncFunctionDef is absent from the registry. ARG uses the selected node as Argument.source; the collision-binding traceback then reaches getParent(value.source) and fails on Module.parent. This establishes the causal omission, not merely an asynchronous exception.",
+        "evidence_refs": [
+          "action-result:replayed-v2:0:tool:public:observation:4",
+          "action-result:replayed-v2:0:tool:public:observation:2",
+          "action-result:replayed-v2:0:artifact:pyflakes/checker.py"
+        ],
+        "reviewer": "action-output-review:openai/gpt-6.1-sol"
+      },
+      {
+        "key": "effect:ordinary-function-semantics-appropriate",
+        "status": "PASS",
+        "rationale": "The registry maps FunctionDef to the FunctionScope class. ASYNCFUNCTIONDEF aliases FUNCTIONDEF, and their shared deferred body handler already pushes FunctionScope. The ordinary name-collision annotation control completes with no messages or exception. These establish appropriate shared function-scope semantics for the inspected case, without asserting whole-project correctness.",
+        "evidence_refs": [
+          "action-result:replayed-v2:0:tool:public:observation:2",
+          "action-result:replayed-v2:0:tool:public:observation:4",
+          "action-result:replayed-v2:0:artifact:pyflakes/checker.py"
+        ],
+        "reviewer": "action-output-review:openai/gpt-6.1-sol"
+      },
+      {
+        "key": "effect:runtime-policy-reviewed",
+        "status": "PASS",
+        "rationale": "Execution records Python 3.6.15 and PY35_PLUS=true, successfully parses asynchronous syntax, and inspects the existing PY35_PLUS guards for asynchronous loop classifications. The inspected registry is a dict of AST classes to scope classes and lacks asynchronous function membership despite that capability.",
+        "evidence_refs": [
+          "action-result:replayed-v2:0:tool:public:observation:2",
+          "action-result:replayed-v2:0:tool:public:observation:4"
+        ],
+        "reviewer": "action-output-review:openai/gpt-6.1-sol"
+      },
+      {
+        "key": "oracle:confirm-scope-omission",
+        "status": "FAIL",
+        "rationale": "The public target probe exits 1: the ordinary control succeeds, but the asynchronous case raises AttributeError. The subsequent inspection exits 0 because it catches and records that failure; it does not establish a passing target. Owner anchors, registry representation, capability guards, lookup and binding paths are recorded. Preservation evidence is limited to matching before/after hashes for the two inspected files; tracked-file status remains unavailable because git metadata is absent. Thus neither target correctness nor checkout-wide preservation is established.",
+        "evidence_refs": [
+          "action-result:replayed-v2:0:tool:public:observation:1",
+          "action-result:replayed-v2:0:tool:public:observation:2",
+          "action-result:replayed-v2:0:tool:public:observation:3",
+          "action-result:replayed-v2:0:tool:public:observation:4"
+        ],
+        "reviewer": "action-output-review:openai/gpt-6.1-sol"
+      },
+      {
+        "key": "output:scope-review",
+        "status": "PASS",
+        "rationale": "The actual pre-edit code-and-probe record supplies the authored scope-omission context: owner locations, registry and runtime observations, ordinary/asynchronous outcomes, and observed argument ownership connected to the failing binding path. This supports confirmed causal omission, not a repair or passing Oracle. The record explicitly retains uncertainty about tracked-file status.",
+        "evidence_refs": [
+          "action-result:replayed-v2:0:tool:public:observation:2",
+          "action-result:replayed-v2:0:tool:public:observation:4",
+          "action-result:replayed-v2:0:artifact:pyflakes/checker.py",
+          "action-result:replayed-v2:0:artifact:pyflakes/test/test_type_annotations.py"
+        ],
+        "reviewer": "action-output-review:openai/gpt-6.1-sol"
+      }
+    ],
+    "current_ports_promoted": [
+      "scope-review"
+    ],
+    "current_fact_keys": [
+      "classification-omission-confirmed",
+      "ordinary-function-semantics-appropriate",
+      "runtime-policy-reviewed"
+    ],
+    "reviewer": "action-output-review:openai/gpt-6.1-sol",
+    "repair_success_established": false,
+    "formal_KB_admitted": false
+  },
+  "budget": {
+    "caps": {
+      "model_tokens": 300000,
+      "model_calls": 60,
+      "tool_calls": 120,
+      "history_tokens": 6000,
+      "approved_root_packages": 2,
+      "seconds": 1800,
+      "workflow_candidates": 8,
+      "parent_workflows": 2,
+      "beam_width": 4,
+      "composed_plans": 4,
+      "probes_per_round": 2,
+      "review_rounds": 3
+    },
+    "model_tokens": 43266,
+    "model_calls": 1,
+    "tool_calls": 0,
+    "history_tokens": 359,
+    "approved_roots": [
+      "local_template:verified-history:b8f8b3836dbeb26b4ee62590"
+    ],
+    "rounds": 0,
+    "elapsed_seconds": 33.71492202905938,
+    "token_accounting": "provider usage when available, conservative UTF-8 bound otherwise",
+    "history_tokenizer": "cl100k_base",
+    "events": [
+      {
+        "kind": "history_tokens",
+        "amount": 359,
+        "reason": "native Action output-review contract"
+      },
+      {
+        "kind": "model_calls",
+        "amount": 1,
+        "reason": "adaptive model request"
+      },
+      {
+        "kind": "model_tokens",
+        "amount": 43266,
+        "reason": "adaptive model request"
+      }
+    ]
+  },
+  "model": "openai/gpt-6.1-sol",
+  "calls": [
+    {
+      "model": "openai/gpt-6.1-sol",
+      "endpoint": "https://llm.rvnpu.cn/v1/chat/completions",
+      "attempt": 1,
+      "successful": true,
+      "elapsed_ms": 33244.62,
+      "usage": {
+        "completion_tokens": 876,
+        "prompt_tokens": 42390,
+        "total_tokens": 43266,
+        "completion_tokens_details": {
+          "reasoning_tokens": 90
+        }
+      },
+      "response_id": "resp_04e1f14b6113eab0016ac233a0a24087d090f7ed554e4181c9",
+      "stream_requested": true
+    }
+  ],
+  "same_model_family_limit": true,
+  "independent_generalization_established": false,
+  "formal_KB_admitted": false,
+  "formal_SWE_runs": 0
+}

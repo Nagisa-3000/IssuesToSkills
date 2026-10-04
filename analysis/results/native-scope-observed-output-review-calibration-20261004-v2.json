@@ -1,0 +1,160 @@
+{
+  "schema": "native-scope-observed-output-review-calibration-v1",
+  "package_sha256": "2483d669defff3f4550d86f289ffda22ad78ed0e464fa0090d4195bd4287d0e6",
+  "action_id": "local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-inspect",
+  "replay_snapshot_verified": true,
+  "original_trajectory_sha256": "4b259d1ef6dbdeba9b8b83e193ace0a10f7e07107a3238fc71328ae8e50e2a73",
+  "original_record_sha256": "30938a5ae397ed94e98ee0cf2e004c9e71bba49f74ffbe8151aeaac830d17e48",
+  "sealed_replayed_record_sha256": "fec9311994060bd7e968491b161cf7d9e5e6a2429f6b438047d2676194603e01",
+  "explicitly_resealed_legacy_observation": true,
+  "no_new_public_probe_execution": true,
+  "review": {
+    "schema": "arex-action-output-review-v1",
+    "record_id": "action-result:replayed-v2:0",
+    "record_sha256": "fec9311994060bd7e968491b161cf7d9e5e6a2429f6b438047d2676194603e01",
+    "action_id": "local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-inspect",
+    "package_sha256": "2483d669defff3f4550d86f289ffda22ad78ed0e464fa0090d4195bd4287d0e6",
+    "workspace_sha256": "6e4d26c8ef6f0024fcadd84157e1250ab1d8706f70bd9b599a998f7b98f5d70b",
+    "checks": [
+      {
+        "key": "effect:classification-omission-confirmed",
+        "status": "PASS",
+        "rationale": "Actual instrumentation shows that the ordinary argument selects FunctionDef as its scope node, while the asynchronous argument skips its AsyncFunctionDef ancestor and selects Module. The registry lacks AsyncFunctionDef. The unmodified public probe passes the ordinary control but raises AttributeError for the asynchronous target, with a traceback through ARG, addBinding and getParent(value.source). These observations establish the causal omission; the target probe's exit code remains 1.",
+        "evidence_refs": [
+          "action-result:replayed-v2:0:tool:public:observation:2",
+          "action-result:replayed-v2:0:tool:public:observation:4",
+          "current:code:checker"
+        ],
+        "reviewer": "action-output-review:openai/gpt-6.1-sol"
+      },
+      {
+        "key": "effect:ordinary-function-semantics-appropriate",
+        "status": "PASS",
+        "rationale": "Runtime inspection establishes that FunctionDef maps to the FunctionScope class, not an instance. The ordinary collision probe completes without diagnostics. Current code aliases ASYNCFUNCTIONDEF to FUNCTIONDEF and uses the shared deferred function-body path to push FunctionScope, supporting ordinary function scope semantics for this classification context.",
+        "evidence_refs": [
+          "action-result:replayed-v2:0:tool:public:observation:2",
+          "action-result:replayed-v2:0:tool:public:observation:4",
+          "current:code:checker"
+        ],
+        "reviewer": "action-output-review:openai/gpt-6.1-sol"
+      },
+      {
+        "key": "effect:runtime-policy-reviewed",
+        "status": "PASS",
+        "rationale": "Executed inspection records Python 3.6.15 and PY35_PLUS=true. Read-only source inspection covers the version capability flags, guarded asynchronous loop classifications, and shared asynchronous function handler. This establishes that runtime capability policy was reviewed, without claiming verification on other Python versions.",
+        "evidence_refs": [
+          "action-result:replayed-v2:0:tool:public:observation:2",
+          "action-result:replayed-v2:0:tool:public:observation:4"
+        ],
+        "reviewer": "action-output-review:openai/gpt-6.1-sol"
+      },
+      {
+        "key": "oracle:confirm-scope-omission",
+        "status": "PASS",
+        "rationale": "The diagnostic verification obligation is satisfied: execution records the checker and annotation-test owners, registry representation and membership, capability policy, scope lookup and binding path, passing ordinary control, and failing asynchronous target. Before/after hashes match for both inspected files. Git tracked-file status is explicitly recorded as UNKNOWN because repository metadata is unavailable; the snapshot comparison additionally reports unchanged exported files. The unavailable sha256sum check was replaced by executed Python hashing. Confirmation is diagnostic only: the public target probe exits 1, and the later inspection's exit 0 does not establish repaired behavior.",
+        "evidence_refs": [
+          "action-result:replayed-v2:0:tool:public:observation:1",
+          "action-result:replayed-v2:0:tool:public:observation:2",
+          "action-result:replayed-v2:0:tool:public:observation:3",
+          "action-result:replayed-v2:0:tool:public:observation:4",
+          "current:complete-snapshot-comparison"
+        ],
+        "reviewer": "action-output-review:openai/gpt-6.1-sol"
+      },
+      {
+        "key": "output:scope-review",
+        "status": "PASS",
+        "rationale": "The actual code-and-probe record supplies confirmed pre-edit scope-omission context: runtime registry inspection, observed ancestor selection, the ordinary/asynchronous outcome comparison, and the binding traceback establish the authored semantic role. Matching file hashes and the recorded unchanged snapshot support the inspection-only phase. This output confirms a cause, not a repair or whole-project correctness.",
+        "evidence_refs": [
+          "action-result:replayed-v2:0:tool:public:observation:2",
+          "action-result:replayed-v2:0:tool:public:observation:4",
+          "action-result:replayed-v2:0:artifact:pyflakes/checker.py",
+          "action-result:replayed-v2:0:artifact:pyflakes/test/test_type_annotations.py",
+          "current:complete-snapshot-comparison"
+        ],
+        "reviewer": "action-output-review:openai/gpt-6.1-sol"
+      }
+    ],
+    "current_ports_promoted": [
+      "scope-review"
+    ],
+    "current_fact_keys": [
+      "classification-omission-confirmed",
+      "ordinary-function-semantics-appropriate",
+      "runtime-policy-reviewed"
+    ],
+    "reviewer": "action-output-review:openai/gpt-6.1-sol",
+    "repair_success_established": false,
+    "formal_KB_admitted": false
+  },
+  "budget": {
+    "caps": {
+      "model_tokens": 300000,
+      "model_calls": 60,
+      "tool_calls": 120,
+      "history_tokens": 6000,
+      "approved_root_packages": 2,
+      "seconds": 1800,
+      "workflow_candidates": 8,
+      "parent_workflows": 2,
+      "beam_width": 4,
+      "composed_plans": 4,
+      "probes_per_round": 2,
+      "review_rounds": 3
+    },
+    "model_tokens": 43607,
+    "model_calls": 1,
+    "tool_calls": 0,
+    "history_tokens": 359,
+    "approved_roots": [
+      "local_template:verified-history:b8f8b3836dbeb26b4ee62590"
+    ],
+    "rounds": 0,
+    "elapsed_seconds": 33.03738381061703,
+    "token_accounting": "provider usage when available, conservative UTF-8 bound otherwise",
+    "history_tokenizer": "cl100k_base",
+    "events": [
+      {
+        "kind": "history_tokens",
+        "amount": 359,
+        "reason": "native Action output-review contract"
+      },
+      {
+        "kind": "model_calls",
+        "amount": 1,
+        "reason": "adaptive model request"
+      },
+      {
+        "kind": "model_tokens",
+        "amount": 43607,
+        "reason": "adaptive model request"
+      }
+    ]
+  },
+  "model": "openai/gpt-6.1-sol",
+  "calls": [
+    {
+      "model": "openai/gpt-6.1-sol",
+      "endpoint": "https://llm.rvnpu.cn/v1/chat/completions",
+      "attempt": 1,
+      "successful": true,
+      "elapsed_ms": 32603.76,
+      "usage": {
+        "completion_tokens": 906,
+        "prompt_tokens": 42701,
+        "total_tokens": 43607,
+        "completion_tokens_details": {
+          "reasoning_tokens": 57
+        }
+      },
+      "response_id": "resp_06fa17a2e195ca67016ac235512c2087d0bd201baf06b4e0a6",
+      "stream_requested": true
+    }
+  ],
+  "diagnostic_oracle_obligation_clarified": true,
+  "prior_review_retained": "analysis/results/native-scope-observed-output-review-calibration-20261004-v1.json",
+  "same_model_family_limit": true,
+  "independent_generalization_established": false,
+  "formal_KB_admitted": false,
+  "formal_SWE_runs": 0
+}

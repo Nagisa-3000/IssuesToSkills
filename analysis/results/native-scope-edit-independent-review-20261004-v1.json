@@ -1,0 +1,234 @@
+{
+  "schema": "native-scope-edit-independent-review-v1",
+  "package_sha256": "2483d669defff3f4550d86f289ffda22ad78ed0e464fa0090d4195bd4287d0e6",
+  "action_id": "local_template:verified-history:b8f8b3836dbeb26b4ee62590:scope-edit",
+  "actual_trajectory_sha256": "313c04ab244b518be177313a2d253c35838e4e73e1358245473c2edf8705c1f9",
+  "actual_patch_sha256": "8b7ae246a373a80a6403c0211b0fbce3c26dc9d55528142cfda922dc34825250",
+  "runtime_sha256": "0a31a3b8fe3fcedc31919e567d1793045feccdc8a766d06832dc6d1358ec9831",
+  "base_commit": "1f4e3772155ac5102e24b65ef3970d3f1454f4d4",
+  "commands": [
+    {
+      "stage": "base-public-probe",
+      "argv": [
+        "python3",
+        "-c",
+        "import ast,json,traceback\nfrom pyflakes.checker import Checker\ncodes={'ordinary':'class c:\\n    pass\\ndef func(c: c) -> None:\\n    pass\\n','asynchronous':'class c:\\n    pass\\nasync def func(c: c) -> None:\\n    pass\\n'}\nfailed=False\nfor name,code in codes.items():\n try:\n  checker=Checker(ast.parse(code),filename='<public-probe>')\n  messages=[type(m).__name__ for m in checker.messages]\n  print(json.dumps({'case':name,'messages':messages,'exception':None}))\n  failed=failed or bool(messages)\n except Exception as exc:\n  failed=True\n  print(json.dumps({'case':name,'exception':type(exc).__name__,'detail':str(exc),'trace':traceback.format_exc()}))\nraise SystemExit(1 if failed else 0)\n"
+      ],
+      "exit_code": 1,
+      "output": "{\"case\": \"ordinary\", \"messages\": [], \"exception\": null}\n{\"case\": \"asynchronous\", \"exception\": \"AttributeError\", \"detail\": \"'Module' object has no attribute 'parent'\", \"trace\": \"Traceback (most recent call last):\\n  File \\\"<string>\\\", line 7, in <module>\\n  File \\\"/workspace/pyflakes/checker.py\\\", line 657, in __init__\\n    self.runDeferred(self._deferredFunctions)\\n  File \\\"/workspace/pyflakes/checker.py\\\", line 694, in runDeferred\\n    handler()\\n  File \\\"/workspace/pyflakes/checker.py\\\", line 1455, in runFunction\\n    self.handleChildren(node, omit='decorator_list')\\n  File \\\"/workspace/pyflakes/checker.py\\\", line 1054, in handleChildren\\n    self.handleNode(node, tree)\\n  File \\\"/workspace/pyflakes/checker.py\\\", line 1101, in handleNode\\n    handler(node)\\n  File \\\"/workspace/pyflakes/checker.py\\\", line 1480, in ARGUMENTS\\n    self.handleChildren(node, omit=('defaults', 'kw_defaults'))\\n  File \\\"/workspace/pyflakes/checker.py\\\", line 1054, in handleChildren\\n    self.handleNode(node, tree)\\n  File \\\"/workspace/pyflakes/checker.py\\\", line 1101, in handleNode\\n    handler(node)\\n  File \\\"/workspace/pyflakes/checker.py\\\", line 1489, in ARG\\n    self.addBinding(node, Argument(node.arg, self.getScopeNode(node)))\\n  File \\\"/workspace/pyflakes/checker.py\\\", line 862, in addBinding\\n    parent_stmt = self.getParent(value.source)\\n  File \\\"/workspace/pyflakes/checker.py\\\", line 800, in getParent\\n    node = node.parent\\nAttributeError: 'Module' object has no attribute 'parent'\\n\"}\n",
+      "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+      "runtime_sha256": "0a31a3b8fe3fcedc31919e567d1793045feccdc8a766d06832dc6d1358ec9831",
+      "workspace_adopted": false,
+      "timed_out": false
+    },
+    {
+      "stage": "base-affected-suite",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "pyflakes.test.test_type_annotations"
+      ],
+      "exit_code": 0,
+      "output": "s..........\n----------------------------------------------------------------------\nRan 11 tests in 0.050s\n\nOK (skipped=1)\n",
+      "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+      "runtime_sha256": "0a31a3b8fe3fcedc31919e567d1793045feccdc8a766d06832dc6d1358ec9831",
+      "workspace_adopted": false,
+      "timed_out": false
+    },
+    {
+      "stage": "apply-actual-solver-patch",
+      "argv": [
+        "git",
+        "apply",
+        "--whitespace=nowarn",
+        "-"
+      ],
+      "exit_code": 0,
+      "output": "",
+      "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+      "runtime_sha256": "0a31a3b8fe3fcedc31919e567d1793045feccdc8a766d06832dc6d1358ec9831",
+      "workspace_adopted": true,
+      "timed_out": false
+    },
+    {
+      "stage": "post-edit-registry",
+      "argv": [
+        "python3",
+        "-c",
+        "import ast,json\nfrom pyflakes.checker import Checker,FunctionScope,PY35_PLUS\nassert isinstance(Checker._ast_node_scope,dict)\nassert Checker._ast_node_scope[ast.FunctionDef] is FunctionScope\nif PY35_PLUS:\n assert Checker._ast_node_scope.get(ast.AsyncFunctionDef) is FunctionScope\nprint(json.dumps({'registry_shape_review':'PASS','PY35_PLUS':PY35_PLUS}))\n"
+      ],
+      "exit_code": 0,
+      "output": "{\"registry_shape_review\": \"PASS\", \"PY35_PLUS\": true}\n",
+      "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+      "runtime_sha256": "0a31a3b8fe3fcedc31919e567d1793045feccdc8a766d06832dc6d1358ec9831",
+      "workspace_adopted": false,
+      "timed_out": false
+    },
+    {
+      "stage": "post-edit-public-probe",
+      "argv": [
+        "python3",
+        "-c",
+        "import ast,json,traceback\nfrom pyflakes.checker import Checker\ncodes={'ordinary':'class c:\\n    pass\\ndef func(c: c) -> None:\\n    pass\\n','asynchronous':'class c:\\n    pass\\nasync def func(c: c) -> None:\\n    pass\\n'}\nfailed=False\nfor name,code in codes.items():\n try:\n  checker=Checker(ast.parse(code),filename='<public-probe>')\n  messages=[type(m).__name__ for m in checker.messages]\n  print(json.dumps({'case':name,'messages':messages,'exception':None}))\n  failed=failed or bool(messages)\n except Exception as exc:\n  failed=True\n  print(json.dumps({'case':name,'exception':type(exc).__name__,'detail':str(exc),'trace':traceback.format_exc()}))\nraise SystemExit(1 if failed else 0)\n"
+      ],
+      "exit_code": 0,
+      "output": "{\"case\": \"ordinary\", \"messages\": [], \"exception\": null}\n{\"case\": \"asynchronous\", \"messages\": [], \"exception\": null}\n",
+      "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+      "runtime_sha256": "0a31a3b8fe3fcedc31919e567d1793045feccdc8a766d06832dc6d1358ec9831",
+      "workspace_adopted": false,
+      "timed_out": false
+    },
+    {
+      "stage": "post-edit-affected-suite",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "pyflakes.test.test_type_annotations"
+      ],
+      "exit_code": 0,
+      "output": "..s..........\n----------------------------------------------------------------------\nRan 13 tests in 0.058s\n\nOK (skipped=1)\n",
+      "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+      "runtime_sha256": "0a31a3b8fe3fcedc31919e567d1793045feccdc8a766d06832dc6d1358ec9831",
+      "workspace_adopted": false,
+      "timed_out": false
+    }
+  ],
+  "complete_changed_paths": {
+    "pyflakes/checker.py": {
+      "before": [
+        "file",
+        "2f9c6e47e35ba988b7cbb930979e11cf9718a49f021afe2c197eb98f8692a6e2",
+        false
+      ],
+      "after": [
+        "file",
+        "73fbfa6869d0a74d6dcccc48213197be805ca00ad97712b5bb7d0388f319f5be",
+        false
+      ]
+    },
+    "setup.py": {
+      "before": [
+        "file",
+        "f19d5fcef39382e3a008596ca05fc8c88416025d1c01cbc0fa5821bd5727e4f4",
+        true
+      ],
+      "after": [
+        "file",
+        "f19d5fcef39382e3a008596ca05fc8c88416025d1c01cbc0fa5821bd5727e4f4",
+        false
+      ]
+    },
+    "bin/pyflakes": {
+      "before": [
+        "file",
+        "c7697afdcda0b64f3135a91e86d4a613089734fab9198a90d88cf58df75c4726",
+        true
+      ],
+      "after": [
+        "file",
+        "c7697afdcda0b64f3135a91e86d4a613089734fab9198a90d88cf58df75c4726",
+        false
+      ]
+    },
+    "pyflakes/test/test_type_annotations.py": {
+      "before": [
+        "file",
+        "5f1b4f8f025303bdc0b2cd05a7c2327b18d89afec0b5e8081c31297d72c3695f",
+        false
+      ],
+      "after": [
+        "file",
+        "65f8803bb141dca3b0ed7c1bf093895cf0d80bf8b1a4fd161f19aed3089e480d",
+        false
+      ]
+    }
+  },
+  "out_of_scope_changes": {
+    "setup.py": {
+      "before": [
+        "file",
+        "f19d5fcef39382e3a008596ca05fc8c88416025d1c01cbc0fa5821bd5727e4f4",
+        true
+      ],
+      "after": [
+        "file",
+        "f19d5fcef39382e3a008596ca05fc8c88416025d1c01cbc0fa5821bd5727e4f4",
+        false
+      ]
+    },
+    "bin/pyflakes": {
+      "before": [
+        "file",
+        "c7697afdcda0b64f3135a91e86d4a613089734fab9198a90d88cf58df75c4726",
+        true
+      ],
+      "after": [
+        "file",
+        "c7697afdcda0b64f3135a91e86d4a613089734fab9198a90d88cf58df75c4726",
+        false
+      ]
+    }
+  },
+  "preserved_parent_functions": {
+    "getParent": true,
+    "getScopeNode": true,
+    "ARG": true,
+    "ARGUMENTS": true
+  },
+  "preserved_existing_tests": true,
+  "added_test_names": [
+    "test_annotated_parameter_class_collision",
+    "test_async_annotated_parameter_class_collision"
+  ],
+  "assertions": [
+    {
+      "obligation": "registry ordinary and async scope-class shape",
+      "status": "PASS"
+    },
+    {
+      "obligation": "public ordinary and async annotation probes pass after the actual patch",
+      "status": "PASS"
+    },
+    {
+      "obligation": "affected annotation suite passes after the actual patch",
+      "status": "PASS"
+    },
+    {
+      "obligation": "parent traversal and argument handlers preserved",
+      "status": "PASS"
+    },
+    {
+      "obligation": "existing test methods and diagnostic expectations preserved",
+      "status": "PASS"
+    },
+    {
+      "obligation": "actual complete patch stays inside declared Action files",
+      "status": "FAIL"
+    },
+    {
+      "obligation": "missing confirmed prerequisites produce no change or output",
+      "status": "PASS"
+    }
+  ],
+  "functional_edit_acceptance": "FAIL",
+  "failure_class": "copied-backend-permission-drift",
+  "original_solver_scope_change_stays": "unvalidated",
+  "original_action_record_sha256": "e413e5334ff1b57ae87df66d1a2d7829912f22e3aa071988ce08159333e6ad47",
+  "scope_validate_action_executed_by_solver": false,
+  "independent_reviewer_executed_public_checks": true,
+  "original_checkouts_unchanged": true,
+  "unknown_case": {
+    "trajectory_sha256": "40890cb6aa76a2c925fa920908e19772fcaba3a139db7ef554938754217f0ff7",
+    "model_calls": 2,
+    "no_edit": true,
+    "no_output": true
+  },
+  "historical_source_definition_exercise": true,
+  "independent_generalization_established": false,
+  "formal_KB_admitted": false,
+  "formal_SWE_runs": 0,
+  "completed_whole_functional_cases": 0,
+  "limitation": "A host reviewer replayed the complete actual solver patch and public checks after the solver stopped. This is a source-definition calibration, not a solver scope-validate run or hidden repair acceptance. The original patch includes unrelated executable-bit loss; it is not accepted or promoted. The copying fix needs a clean rerun."
+}

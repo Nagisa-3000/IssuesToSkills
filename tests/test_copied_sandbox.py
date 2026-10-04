@@ -16,7 +16,7 @@ from arex_skill_graph.adaptive_runner import (
     hidden_evaluator_from_file,
     make_namespace_tools,
 )
-from arex_skill_graph.copied_sandbox import CopiedNamespaceTools
+from arex_skill_graph.copied_sandbox import CopiedNamespaceTools, _copy_public_file
 from arex_skill_graph.store import CatalogStore
 from arex_skill_graph.workflow_ranker import WorkflowRanker
 
@@ -266,3 +266,32 @@ def test_migrated_interpreter_abi_mismatch_is_rejected(copied_tools, tmp_path):
     cfg.write_text("home = /usr/bin\ninclude-system-site-packages = false\nversion = 99.1.0\n")
     with pytest.raises(IsolationUnavailable, match="ABI disagrees"):
         make_namespace_tools(copied_tools.checkout, BudgetLedger(), venv, backend="namespace-copy")
+
+
+def test_public_copy_preserves_execution_without_privileged_bits(tmp_path):
+    source, target = tmp_path / "script", tmp_path / "copied"
+    source.write_text("#!/bin/sh\nexit 0\n")
+    source.chmod(0o4755)
+    _copy_public_file(source, target)
+    assert target.read_bytes() == source.read_bytes()
+    assert target.stat().st_mode & 0o7777 == 0o755
+    source.chmod(0o640)
+    _copy_public_file(source, target)
+    assert target.stat().st_mode & 0o7777 == 0o644
+
+
+def test_public_executable_survives_readonly_command_and_adoption(copied_tools):
+    script = copied_tools.checkout / "public-script"
+    script.write_text("#!/bin/sh\nprintf SCRIPT_OK\n")
+    script.chmod(0o755)
+    readonly = copied_tools.run(["./public-script"], readonly_workspace=True)
+    assert readonly["exit_code"] == 0 and readonly["output"] == "SCRIPT_OK", readonly
+    assert not readonly["workspace_adopted"]
+    adopted = copied_tools.run(
+        ["python3", "-c", "from pathlib import Path;Path('source.txt').write_text('changed')"]
+    )
+    assert adopted["exit_code"] == 0 and adopted["workspace_adopted"], adopted
+    assert script.stat().st_mode & 0o7777 == 0o755
+    executed = copied_tools.run(["./public-script"])
+    assert executed["exit_code"] == 0 and executed["output"] == "SCRIPT_OK", executed
+    assert script.stat().st_mode & 0o7777 == 0o755

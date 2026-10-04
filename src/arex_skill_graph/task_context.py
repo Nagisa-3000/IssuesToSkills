@@ -68,6 +68,7 @@ class EvidenceAnchor:
             "reproduction",
             "public_test",
             "probe",
+            "workspace_snapshot",
         }:
             raise ValueError("invalid public evidence kind")
         if not re.fullmatch(r"[0-9a-f]{40}", self.base_commit):
@@ -78,6 +79,10 @@ class EvidenceAnchor:
             contained_resource(self.path)
             if not re.fullmatch(r"[0-9a-f]{64}", self.sha256):
                 raise ValueError("code evidence requires content hash")
+        if self.kind == "workspace_snapshot" and (
+            self.path or not re.fullmatch(r"[0-9a-f]{64}", self.sha256)
+        ):
+            raise ValueError("workspace snapshot requires a path-free content seal")
         if self.kind == "current_code" and not self.path:
             raise ValueError("current-code evidence needs a path")
         if self.available_at:
@@ -274,6 +279,11 @@ class TaskContext:
             if result.returncode or result.stdout.strip() != self.base_commit:
                 raise ValueError("checkout HEAD differs from TaskContext base")
         for anchor in self.anchors:
+            if anchor.kind == "workspace_snapshot":
+                from .workspace_state import public_workspace_sha256
+
+                if public_workspace_sha256(root) != anchor.sha256:
+                    raise ValueError("reviewed Action state is stale; refresh observations")
             if anchor.path:
                 candidate = root / anchor.path
                 if (
