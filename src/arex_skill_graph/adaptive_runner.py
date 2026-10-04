@@ -13,6 +13,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+from contextlib import ExitStack
 from dataclasses import replace
 from pathlib import Path
 from typing import ClassVar
@@ -60,6 +61,15 @@ class NamespaceTools:
                     if p.is_file()
                 }
             )
+
+    def close(self):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        self.close()
 
     def run(self, argv, *, timeout=60, stdin=None, charge=True, readonly_workspace=False):
         if not argv or any(not isinstance(a, str) or "\x00" in a for a in argv):
@@ -131,6 +141,19 @@ class NamespaceTools:
             raise IsolationUnavailable(
                 "Namespace/mount/capability preflight failed; public tools were not executed"
             )
+
+
+TOOL_BACKENDS = ("namespace-bind", "namespace-copy")
+
+
+def make_namespace_tools(checkout, ledger, dependency_root=None, *, backend="namespace-bind"):
+    if backend == "namespace-bind":
+        return NamespaceTools(checkout, ledger, dependency_root)
+    if backend == "namespace-copy":
+        from .copied_sandbox import CopiedNamespaceTools
+
+        return CopiedNamespaceTools(checkout, ledger, dependency_root)
+    raise ValueError("unknown sandbox backend; choose an explicit supported backend")
 
 
 def snapshot_base(task, destination):
@@ -240,11 +263,15 @@ class AdaptiveSolver:
         arm="E2",
         dependency_root=None,
         tools_factory=None,
+        sandbox_backend="namespace-bind",
     ):
         self.transport, self.ranker, self.store = transport, ranker, store
         self.policy, self.ledger, self.arm = resource_policy, ledger, arm
         self.dependency_root = dependency_root
         self.tools_factory = tools_factory
+        if sandbox_backend not in TOOL_BACKENDS:
+            raise ValueError("unknown sandbox backend")
+        self.sandbox_backend = sandbox_backend
 
     def run(
         self,
@@ -264,7 +291,10 @@ class AdaptiveSolver:
             [],
         )
         ended, failed = False, ""
-        with tempfile.TemporaryDirectory(prefix="arex-public-solver-") as scratch:
+        with (
+            tempfile.TemporaryDirectory(prefix="arex-public-solver-") as scratch,
+            ExitStack() as cleanup,
+        ):
             scratch = Path(scratch)
             self.ledger.charge(
                 "tool_calls", 2, "pinned base verification and public snapshot archive"
@@ -282,8 +312,11 @@ class AdaptiveSolver:
             tools = (
                 self.tools_factory(current.root, self.ledger)
                 if self.tools_factory
-                else NamespaceTools(current.root, self.ledger, self.dependency_root)
+                else make_namespace_tools(
+                    current.root, self.ledger, self.dependency_root, backend=self.sandbox_backend
+                )
             )
+            cleanup.callback(getattr(tools, "close", lambda: None))
             self.ledger.charge("tool_calls", 1, "enforced namespace preflight")
             tools.preflight()
             policy = replace(self.policy, verify_head=False)
@@ -608,7 +641,9 @@ class AdaptiveSolver:
             return result
 
 
-def hidden_evaluator_from_file(manifest_path, *, dependency_root=None):
+def hidden_evaluator_from_file(
+    manifest_path, *, dependency_root=None, sandbox_backend="namespace-bind"
+):
     """Defer reading private evaluation material until the solver has stopped."""
 
     def evaluate(task, patch):
@@ -617,10 +652,19 @@ def hidden_evaluator_from_file(manifest_path, *, dependency_root=None):
             raise ValueError("independent evaluator identity mismatch")
         from .adaptive_budget import BudgetCaps, BudgetLedger
 
-        with tempfile.TemporaryDirectory(prefix="arex-hidden-evaluator-") as scratch:
+        with (
+            tempfile.TemporaryDirectory(prefix="arex-hidden-evaluator-") as scratch,
+            ExitStack() as cleanup,
+        ):
             snapshot_base(task, Path(scratch) / "evaluation")
             work = Path(scratch) / "evaluation"
-            tools = NamespaceTools(work, BudgetLedger(BudgetCaps(tool_calls=100)), dependency_root)
+            tools = make_namespace_tools(
+                work,
+                BudgetLedger(BudgetCaps(tool_calls=100)),
+                dependency_root,
+                backend=sandbox_backend,
+            )
+            cleanup.callback(tools.close)
             tools.preflight()
             applied = (
                 tools.run(["git", "apply", "--whitespace=nowarn", "-"], stdin=patch.encode())
@@ -653,6 +697,8 @@ def hidden_evaluator_from_file(manifest_path, *, dependency_root=None):
                 "validated_resolved": passed
                 and bool(regression)
                 and all(r["exit_code"] == 0 for r in regression),
+                "isolation": tools.isolation,
+                "runtime_sha256": tools.runtime_sha256,
                 "evaluator_version": spec["evaluator_version"],
                 "evaluation_spec_sha256": digest(spec),
                 "benchmark_exit_codes": [r["exit_code"] for r in benchmark],

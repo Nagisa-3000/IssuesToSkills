@@ -5,10 +5,11 @@ from __future__ import annotations
 import hashlib
 import json
 import tempfile
+from contextlib import ExitStack
 from pathlib import Path
 
 from .adaptive_budget import BudgetCaps, BudgetLedger
-from .adaptive_runner import NamespaceTools, snapshot_base
+from .adaptive_runner import make_namespace_tools, snapshot_base
 from .history_census import fingerprint
 from .history_verification import junit_observations
 from .skill_packages import _resolve
@@ -34,7 +35,7 @@ def restore_evaluation_paths(work, baseline, paths):
             raise ValueError("evaluation test path is not a regular file")
 
 
-def historical_evaluator(verification_path, dependency_root):
+def historical_evaluator(verification_path, dependency_root, *, sandbox_backend="namespace-bind"):
     def evaluate(task, patch):
         # The verification record and hidden assertions are deliberately loaded
         # here, after AdaptiveSolver's last possible model/public tool request.
@@ -59,7 +60,10 @@ def historical_evaluator(verification_path, dependency_root):
                 "test_restore_policy": "independent-regression-paths-from-base-v1",
             }
         )
-        with tempfile.TemporaryDirectory(prefix="arex-history-acceptance-") as scratch:
+        with (
+            tempfile.TemporaryDirectory(prefix="arex-history-acceptance-") as scratch,
+            ExitStack() as cleanup,
+        ):
             work = Path(scratch) / "evaluation"
             snapshot_base(task, work)
             baseline = Path(scratch) / "test-base"
@@ -70,7 +74,13 @@ def historical_evaluator(verification_path, dependency_root):
                     copied = _resolve(baseline, relative)
                     copied.parent.mkdir(parents=True, exist_ok=True)
                     copied.write_bytes(source.read_bytes())
-            tools = NamespaceTools(work, BudgetLedger(BudgetCaps(seconds=600)), dependency_root)
+            tools = make_namespace_tools(
+                work,
+                BudgetLedger(BudgetCaps(seconds=600)),
+                dependency_root,
+                backend=sandbox_backend,
+            )
+            cleanup.callback(tools.close)
             tools.preflight()
             for phase, applied_patch in (
                 ("submission", patch),
@@ -89,6 +99,8 @@ def historical_evaluator(verification_path, dependency_root):
                             "reason": "submitted or independent regression patch did not apply",
                             "evaluation_completed": False,
                             "setup_failure_phase": phase,
+                            "isolation": tools.isolation,
+                            "runtime_sha256": tools.runtime_sha256,
                             "evaluator_version": "historical-regression-acceptance-v2",
                             "evaluation_spec_sha256": spec_hash,
                             "regression_exit_codes": [],
@@ -107,6 +119,8 @@ def historical_evaluator(verification_path, dependency_root):
                 "validated_resolved": resolved,
                 "evaluation_completed": bool(observed)
                 and all(test in observed for test in [*f2p, *p2p]),
+                "isolation": tools.isolation,
+                "runtime_sha256": tools.runtime_sha256,
                 "evaluator_version": "historical-regression-acceptance-v2",
                 "evaluation_spec_sha256": spec_hash,
                 "regression_exit_codes": [0 if preserved else 1],

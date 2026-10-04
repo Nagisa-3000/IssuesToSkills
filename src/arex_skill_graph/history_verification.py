@@ -16,7 +16,7 @@ from pathlib import Path
 
 from .action_contracts import utc
 from .adaptive_budget import BudgetCaps, BudgetLedger
-from .adaptive_runner import NamespaceTools
+from .adaptive_runner import TOOL_BACKENDS, make_namespace_tools
 from .git_tree_export import exact_git_tar
 from .history_census import fingerprint, now, redact_history, write_json
 from .public_snapshot import extract_public_archive
@@ -114,8 +114,18 @@ def infer_historical_pytest_command(paths, repository_files):
 
 
 def verify_historical_repair(
-    repository, metadata, issue_id, cutoff, output, dependency_root, command=None
+    repository,
+    metadata,
+    issue_id,
+    cutoff,
+    output,
+    dependency_root,
+    command=None,
+    *,
+    sandbox_backend="namespace-bind",
 ):
+    if sandbox_backend not in TOOL_BACKENDS:
+        raise ValueError("unknown historical verification sandbox backend")
     output = Path(output)
     if utc(metadata["mergedAt"]) >= utc(cutoff):
         raise ValueError("historical repair was not public before cutoff")
@@ -148,6 +158,8 @@ def verify_historical_repair(
         expected["resolution_relationship_evidence_refs"] = metadata.get(
             "resolution_relationship_evidence_refs", []
         )
+    if sandbox_backend != "namespace-bind":
+        expected["sandbox_backend"] = sandbox_backend
     report_path = output / "verification.json"
     if report_path.exists():
         saved = json.loads(report_path.read_text())
@@ -200,10 +212,14 @@ def verify_historical_repair(
                 raise ValueError(
                     "historical test patch was ignored or did not change its declared files"
                 )
-        tools = NamespaceTools(checkout, ledger, dependency_root)
-        tools.preflight()
-        runtime_hash = tools.runtime_sha256
-        run = tools.run([*command, "--junitxml=/workspace/verification-results.xml"], timeout=120)
+        with make_namespace_tools(
+            checkout, ledger, dependency_root, backend=sandbox_backend
+        ) as tools:
+            tools.preflight()
+            runtime_hash = tools.runtime_sha256
+            run = tools.run(
+                [*command, "--junitxml=/workspace/verification-results.xml"], timeout=120
+            )
         runs[phase] = run
         observations[phase] = junit_observations(checkout / "verification-results.xml")
     original, before, after = (

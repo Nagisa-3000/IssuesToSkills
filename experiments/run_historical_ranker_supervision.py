@@ -17,7 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from arex_skill_graph.adaptive_cli import new_ledger, read_references, transport_from_args
 from arex_skill_graph.adaptive_guidance import index_native_package
-from arex_skill_graph.adaptive_runner import AdaptiveSolver
+from arex_skill_graph.adaptive_runner import TOOL_BACKENDS, AdaptiveSolver
 from arex_skill_graph.embeddings import TransformerEncoder
 from arex_skill_graph.historical_solver_evaluator import historical_evaluator
 from arex_skill_graph.history_census import fingerprint, write_json
@@ -49,6 +49,7 @@ def main(argv=None):
     parser.add_argument("--base-url", required=True)
     parser.add_argument("--http-backend", choices=["native", "windows_pipe"], default="native")
     parser.add_argument("--api-key-env", default="AREX_LLM_API_KEY")
+    parser.add_argument("--sandbox-backend", choices=TOOL_BACKENDS, default="namespace-bind")
     parser.add_argument("--workers", type=int, default=3)
     parser.add_argument("--seed", type=int, default=20261004)
     args = parser.parse_args(argv)
@@ -85,12 +86,15 @@ def main(argv=None):
         "encoder": encoder.descriptor(),
         "solver_system_sha256": fingerprint(AdaptiveSolver.SYSTEM),
         "seed": args.seed,
+        "sandbox_backend": args.sandbox_backend,
         "execution_policy_sha256": fingerprint(
             {
                 p: (Path(__file__).resolve().parents[1] / p).read_text()
                 for p in (
                     "experiments/run_historical_ranker_supervision.py",
                     "src/arex_skill_graph/adaptive_runner.py",
+                    "src/arex_skill_graph/copied_sandbox.py",
+                    "src/arex_skill_graph/copied_sandbox_worker.py",
                     "src/arex_skill_graph/historical_solver_evaluator.py",
                     "src/arex_skill_graph/temporal_ranker_data.py",
                 )
@@ -219,10 +223,13 @@ def main(argv=None):
                     ledger,
                     arm="E1" if reference else "B0",
                     dependency_root=args.dependency_root,
+                    sandbox_backend=args.sandbox_backend,
                 ).run(
                     query.task,
                     evaluator=historical_evaluator(
-                        verification["verification_path"], args.dependency_root
+                        verification["verification_path"],
+                        args.dependency_root,
+                        sandbox_backend=args.sandbox_backend,
                     ),
                     use_frozen_selection=True,
                     initial_plan=initial,

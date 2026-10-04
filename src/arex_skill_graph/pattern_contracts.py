@@ -312,8 +312,16 @@ def inspect_v4_package(root: Path, *, check_manifest: bool = True) -> NativePack
         raise ValueError("duplicate historical realization")
     if {a.id for w in workflows for a in w.actions} != set(by_action):
         raise ValueError("historical realizations must cover native Actions")
-    if not set(provenance["source_workflow_ids"]) == {w.id for w in workflows}:
-        raise ValueError("native historical Workflow identities disagree")
+    if set(provenance["source_workflow_ids"]) != {w.id for w in workflows}:
+        declared = set(provenance["source_workflow_ids"])
+        actual = {w.id for w in workflows}
+        raise ValueError(
+            "native historical Workflow identities disagree: source_workflow_ids must list "
+            "newly authored local realizations; missing="
+            + str(sorted(actual - declared))
+            + "; unexpected="
+            + str(sorted(declared - actual))
+        )
     pattern = None
     if kind != "workflow":
         pattern = PatternContract.from_dict(
@@ -589,11 +597,23 @@ def extract_native_pattern(
             "package_id": p.reference["skill_id"],
             "files": {
                 path.relative_to(p.root).as_posix(): path.read_text()
-                for path in Path(p.root).rglob("*.md")
+                for path in Path(p.root).rglob("*")
+                if path.is_file()
+                and (
+                    path.suffix == ".md"
+                    or path.relative_to(p.root).as_posix() == "references/provenance.json"
+                )
             },
         }
         for p in source_packages
     ]
+    payload["qualification_time_policy"] = (
+        "The cutoff applies to historical issue, implementation and committed regression assertions. "
+        "A later independently recorded replay may qualify those existing artifacts; its checked_at "
+        "is validation time, never historical input availability. Preserve original historical "
+        "test-execution unknown status. Do not backdate replay records, convert them into pre-cutoff "
+        "evidence cards, or claim that newly authored functional eval definitions have executed."
+    )
     payload["authoritative_upstream_packages"] = {
         p.reference["skill_id"]: p.reference["package_sha256"] for p in source_packages
     }

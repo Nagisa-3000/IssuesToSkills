@@ -42,6 +42,14 @@ fix_id, revision (40-character SHA), available_at (timezone required),
 evidence_refs, aliases, copied_from, verified_resolution. Every source must be
 available strictly before cutoff and have independent verified resolution evidence.
 Copies, aliases, mirrors and the same fix do not increase independent support.
+Independent qualification can be replayed after the cutoff using the already-public
+base, implementation and committed assertions. Its checked_at is validation time;
+it is not new historical learned content and must never be backdated. Preserve the
+original historical CI/test-execution status, including unknown. Such source
+qualification does not execute the newly authored Skill functional cases. Inspect
+upstream provenance and qualification scope; a summary is not proof of broader
+whole-project correctness or transfer. If the underlying qualification cannot be
+independently supported, defer instead of inventing execution evidence.
 `source_episode_ids` is exactly the set of packaged SourceRecord `id` values.
 These IDs may identify a particular repair of an issue. Do not substitute issue
 IDs, bug_cluster_id, or aliases. Action and Workflow `source_ids`, and evidence
@@ -127,6 +135,16 @@ block for the primary historical realization, including in Pattern/local-templat
 packages. An index or links to realizations alone is insufficient. Additional
 realizations each contain one complete block in references/realizations/*.md.
 Author the complete bundle or defer; the host never fills in missing contracts.
+Each historical realization must cover only Actions whose source_ids are
+contained in that realization's source_ids. Author source-specific Action
+alternatives when different fixes realize a shared role; do not concatenate
+independent histories into a purported single historical realization. Coverage
+of all packaged Actions is collective across the primary and additional
+realizations. The primary realization need not cover all other realizations.
+provenance.source_workflow_ids is exactly the set of newly authored local
+realization IDs. Preserve original upstream Workflow IDs separately under
+upstream_workflow_ids, with their original package hashes; do not put them in
+source_workflow_ids unless they are also actual local authored realization IDs.
 
 Each block contains:
 id, goal, mechanism, action_ids, source_ids, required_effects, invariants,

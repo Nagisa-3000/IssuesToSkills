@@ -16,7 +16,11 @@ from arex_skill_graph.adaptive_cli import (
     write_json,
 )
 from arex_skill_graph.adaptive_guidance import prepare_adaptive_guidance
-from arex_skill_graph.adaptive_runner import AdaptiveSolver, hidden_evaluator_from_file
+from arex_skill_graph.adaptive_runner import (
+    TOOL_BACKENDS,
+    AdaptiveSolver,
+    hidden_evaluator_from_file,
+)
 from arex_skill_graph.embeddings import TransformerEncoder
 from arex_skill_graph.experiment_metrics import ndcg, summarize_runs
 from arex_skill_graph.plan_validation import ResourcePolicy, TaskWorkflowPlan
@@ -48,6 +52,7 @@ def main(argv=None):
         type=Path,
         help="Pinned isolated virtualenv mounted read-only to solver/evaluator",
     )
+    p.add_argument("--sandbox-backend", choices=TOOL_BACKENDS, default="namespace-bind")
     p.add_argument("--budget", type=Path)
     p.add_argument(
         "--history-tokenizer", choices=["cl100k_base", "utf8_upper_bound"], default="cl100k_base"
@@ -91,6 +96,7 @@ def main(argv=None):
             "prompt_version": WorkflowRanker.PROMPT_VERSION,
             "offline_replay": a.replay is not None,
             "http_backend": a.http_backend,
+            "sandbox_backend": a.sandbox_backend,
             "population_completion_audited": False,
         }
         for record in tasks:
@@ -140,7 +146,9 @@ def main(argv=None):
                     else:
                         evaluator = (
                             hidden_evaluator_from_file(
-                                record["evaluator_manifest"], dependency_root=a.dependency_root
+                                record["evaluator_manifest"],
+                                dependency_root=a.dependency_root,
+                                sandbox_backend=a.sandbox_backend,
                             )
                             if record.get("evaluator_manifest")
                             else None
@@ -156,6 +164,7 @@ def main(argv=None):
                             ledger,
                             arm=solver_arm,
                             dependency_root=a.dependency_root,
+                            sandbox_backend=a.sandbox_backend,
                         ).run(
                             task,
                             evaluator=evaluator,

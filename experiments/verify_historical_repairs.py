@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from arex_skill_graph.adaptive_runner import TOOL_BACKENDS
 from arex_skill_graph.history_census import redact_history, write_json
 from arex_skill_graph.history_verification import verify_historical_repair
 
@@ -61,6 +62,7 @@ def main(argv=None):
         type=Path,
         help="Prepared runtime override; original requests remain immutable",
     )
+    parser.add_argument("--sandbox-backend", choices=TOOL_BACKENDS, default="namespace-bind")
     parser.add_argument("--workers", type=int, default=1)
     args = parser.parse_args(argv)
     requests = json.loads(args.requests.read_text())
@@ -91,6 +93,7 @@ def main(argv=None):
                 args.output_dir / relative,
                 args.dependency_root or request["dependency_root"],
                 request.get("command"),
+                sandbox_backend=args.sandbox_backend,
             )
             result_row = {
                 "issue_id": request["issue_id"],
@@ -144,6 +147,7 @@ def main(argv=None):
             "canonical_requested_count": len(scheduled),
             "alias_policy": "same issue/repository/merge SHA; strongest observed closure then PR metadata; no independent-source multiplication",
             "runtime_override": str(args.dependency_root) if args.dependency_root else None,
+            "sandbox_backend": args.sandbox_backend,
             "full_history_qualified": False,
             "formal_SWE_runs": 0,
         },

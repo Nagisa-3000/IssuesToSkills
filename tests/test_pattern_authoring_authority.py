@@ -184,3 +184,23 @@ def test_primary_workflow_must_have_exactly_one_realization_contract(tmp_path, m
             tmp_path / "output",
         )
     assert not list((tmp_path / "output").rglob("SKILL.md"))
+
+
+def test_pattern_author_receives_source_provenance_and_replay_time_policy(tmp_path):
+    package, _name, _files = source_and_response(tmp_path)
+    transport = Transport(
+        ["AREX-SKILL-DEFERRED 1\nEvidence review pending.\nAREX-SKILL-DEFERRED-END\n"]
+    )
+    assert (
+        extract_native_pattern(transport, [package], TemporalPolicy(CUTOFF), tmp_path / "output")
+        == ()
+    )
+    payload, _ = json.JSONDecoder().raw_decode(transport.calls[0]["user"])
+    files = payload["authored_source_resources"][0]["files"]
+    assert json.loads(files["references/provenance.json"]) == json.loads(
+        (__import__("pathlib").Path(package.root) / "references/provenance.json").read_text()
+    )
+    assert "validation time" in payload["qualification_time_policy"]
+    assert "historical test-execution unknown" in payload["qualification_time_policy"]
+    assert "newly authored functional eval definitions" in payload["qualification_time_policy"]
+    assert not (tmp_path / "output").exists()

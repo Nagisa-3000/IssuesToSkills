@@ -64,3 +64,6 @@ GitHub 的小型审计文件只描述训练和 hash，不假装包含完整模�
 下一阶段继续全历史来源资格、原生包 eval、机制 Pattern 证据与自身/相似/混合 KB，
 完成 benchmark 原 Issue 输入、语义去重及官方与邻近验收，统一冻结后再执行配对与模块实验。
 开发公开题 10034 已暴露，始终排除于正式分母。
+
+
+2026-10-04 服务器接续：复制式隔离已验证并接入历史资格、监督和独立验收。完整回归 324 passed/5 legacy-bind skips，风格修正后 15 focused passed。原生机制作者 v3 的 7 组全部 defer、发布 0 包；已修正 provenance 输入与时间/realization 说明，尚未完成新实作者或功能准入。M4–M6 均未完成。详见 [本次报告](server-copied-sandbox-and-native-authoring-20261004.md)。
