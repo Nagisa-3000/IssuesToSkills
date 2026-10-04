@@ -122,7 +122,13 @@ checkout; target hidden tests or gold-derived commands never enter guidance.
 
 ## Historical Workflow and Pattern
 
-workflow.md and realizations/*.md each contain one `arex-workflow-v4` block:
+references/workflow.md contains exactly one complete `arex-workflow-v4` JSON
+block for the primary historical realization, including in Pattern/local-template
+packages. An index or links to realizations alone is insufficient. Additional
+realizations each contain one complete block in references/realizations/*.md.
+Author the complete bundle or defer; the host never fills in missing contracts.
+
+Each block contains:
 id, goal, mechanism, action_ids, source_ids, required_effects, invariants,
 dependencies, and optional `optional_action_ids` for evidenced conditional branches.
 A dependency has before, after, reason, evidence_refs. Do not embed

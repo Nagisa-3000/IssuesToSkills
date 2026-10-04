@@ -272,22 +272,26 @@ def inspect_v4_package(root: Path, *, check_manifest: bool = True) -> NativePack
         root / "references/workflow.md",
         *sorted((root / "references/realizations").glob("*.md")),
     ]:
-        value = dict(read_contract(path.read_text(), "arex-workflow-v4"))
-        action_ids = strings(value.pop("action_ids"))
-        if not set(action_ids).issubset(by_action):
-            raise ValueError("historical realization has a dangling Action")
-        workflow = WorkflowContract.from_dict(
-            {
-                **value,
-                "actions": [by_action[x].to_dict() for x in action_ids],
-                "package_id": pid,
-                "package_hash": manifest["package_sha256"],
-            }
-        )
-        if not set(workflow.source_ids).issubset(by_source):
-            raise ValueError("historical realization has dangling sources")
-        if any(not set(a.source_ids).issubset(workflow.source_ids) for a in workflow.actions):
-            raise ValueError("historical Action source crosses realization boundary")
+        try:
+            value = dict(read_contract(path.read_text(), "arex-workflow-v4"))
+            action_ids = strings(value.pop("action_ids"))
+            if not set(action_ids).issubset(by_action):
+                raise ValueError("historical realization has a dangling Action")
+            workflow = WorkflowContract.from_dict(
+                {
+                    **value,
+                    "actions": [by_action[x].to_dict() for x in action_ids],
+                    "package_id": pid,
+                    "package_hash": manifest["package_sha256"],
+                }
+            )
+            if not set(workflow.source_ids).issubset(by_source):
+                raise ValueError("historical realization has dangling sources")
+            if any(not set(a.source_ids).issubset(workflow.source_ids) for a in workflow.actions):
+                raise ValueError("historical Action source crosses realization boundary")
+        except (ValueError, TypeError, KeyError) as error:
+            resource = path.relative_to(root).as_posix()
+            raise ValueError(f"Historical Workflow resource {resource}: {error}") from None
         workflows.append(workflow)
     if len({w.id for w in workflows}) != len(workflows):
         raise ValueError("duplicate historical realization")
@@ -432,6 +436,28 @@ def publish_v4_bundle(
                     if not action["id"].startswith(authoritative_package_id + ":"):
                         raise ValueError(
                             "native Action identity is outside its authoritative package namespace"
+                        )
+                if (
+                    authoritative_package_id is not None
+                    and provenance["package_kind"] != "workflow"
+                    and (
+                        relative == "references/workflow.md"
+                        or (
+                            relative.startswith("references/realizations/")
+                            and relative.endswith(".md")
+                        )
+                    )
+                ):
+                    try:
+                        workflow = read_contract(content, "arex-workflow-v4")
+                    except (ValueError, TypeError, KeyError) as error:
+                        raise ValueError(
+                            f"Historical Workflow resource {relative}: {error}"
+                        ) from None
+                    if not workflow["id"].startswith(authoritative_package_id + ":"):
+                        raise ValueError(
+                            f"native realization {relative} identity is outside its "
+                            "authoritative package namespace"
                         )
                 if relative.startswith("references/evidence/") and relative.endswith(".md"):
                     row = read_contract(content, "arex-evidence-v4")

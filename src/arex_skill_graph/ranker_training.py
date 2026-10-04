@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import random
 from pathlib import Path
 
@@ -78,6 +79,13 @@ def paired_scoring_tensors(encoder, texts, *, gradients=False):
     return encoder.tensors(queries, text_pairs=candidates, gradients=gradients)
 
 
+def require_finite_tensor(value, context):
+    import torch
+
+    if not bool(torch.isfinite(value).all()):
+        raise ValueError(f"{context} contains nonfinite values")
+
+
 def train_ranker(
     payload,
     model_path,
@@ -91,7 +99,7 @@ def train_ranker(
     lora_target_modules=(),
 ):
     validate_training_snapshot(payload)
-    if epochs <= 0 or learning_rate <= 0:
+    if epochs <= 0 or not math.isfinite(learning_rate) or learning_rate <= 0:
         raise ValueError("invalid training hyperparameters")
     try:
         import torch
@@ -154,7 +162,9 @@ def train_ranker(
             paired_scoring_tensors(encoder, texts, gradients=True) if train_encoder else (cached, 0)
         )
         tokens_processed += tokens
+        require_finite_tensor(features, "training features")
         scores = head(features)
+        require_finite_tensor(scores, "training scores")
         pair_losses = []
         for pair in pairs:
             left = key_index[(pair["query_id"], pair["left"])]
@@ -171,9 +181,12 @@ def train_ranker(
         loss = torch.stack(pair_losses).mean() + 0.25 * torch.nn.functional.cross_entropy(
             scores[:, 1:], y
         )
+        require_finite_tensor(loss, "training loss")
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        for parameter in params:
+            require_finite_tensor(parameter, "trained parameters")
         losses.append(float(loss.detach()))
     encoder.model.eval()
     head.eval()
@@ -185,6 +198,8 @@ def train_ranker(
     tokens_processed += dev_tokens
     with torch.no_grad():
         predictions = head(dev_features)
+    require_finite_tensor(dev_features, "development features")
+    require_finite_tensor(predictions, "development predictions")
     dev_y = torch.tensor([labels[dev_rows[k].label["applicability"]] for k in dev_keys])
     temperatures = [0.5, 1.0, 2.0, 4.0]
     temperature = min(
@@ -267,7 +282,18 @@ class TrainedRankerScorer:
         import torch
 
         root = Path(checkpoint).resolve()
-        metadata = json.loads((root / "ranker.json").read_text())
+        metadata = json.loads(
+            (root / "ranker.json").read_text(),
+            parse_constant=lambda _: (_ for _ in ()).throw(
+                ValueError("ranker metadata contains nonfinite values")
+            ),
+        )
+        for field in ("temperature", "use_threshold"):
+            value = metadata.get(field)
+            if type(value) not in {int, float} or not math.isfinite(value):
+                raise ValueError(f"ranker {field} must be finite")
+        if metadata["temperature"] <= 0:
+            raise ValueError("ranker temperature must be positive")
         if metadata.get("schema") != "historical-language-workflow-ranker-v1":
             raise ValueError("unsupported trained ranker checkpoint")
         if metadata["checkpoint_sha256"] != digest(
@@ -283,6 +309,8 @@ class TrainedRankerScorer:
         self.head.load_state_dict(
             torch.load(root / "head.pt", map_location="cpu", weights_only=True)
         )
+        for parameter in self.head.parameters():
+            require_finite_tensor(parameter, "ranker head")
         self.head.eval()
         self.metadata, self.torch = metadata, torch
         self.model_version = "trained-ranker:" + metadata["checkpoint_sha256"]
@@ -298,9 +326,12 @@ class TrainedRankerScorer:
         budget.charge(
             "model_tokens", tokens + 4 * len(capsules), "trained ranker encoded inputs and scores"
         )
+        require_finite_tensor(pooled, "ranker features")
         with self.torch.no_grad():
             outputs = self.head(pooled)
             probabilities = self.torch.softmax(outputs[:, 1:] / self.metadata["temperature"], dim=1)
+        require_finite_tensor(outputs, "ranker outputs")
+        require_finite_tensor(probabilities, "ranker probabilities")
         rows = []
         for capsule, values, probs in zip(capsules, outputs.tolist(), probabilities.tolist()):
             grade = max(range(3), key=lambda k: probs[k])

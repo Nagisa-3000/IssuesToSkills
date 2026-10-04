@@ -312,3 +312,75 @@ def test_online_neural_query_encoding_uses_shared_budget(tmp_path):
     assert len(vectors[0]) == base.dimensions
     assert ledger.model_calls == 1 and ledger.model_tokens > 0
     assert encoder.descriptor() == base.descriptor()
+
+
+@pytest.mark.parametrize("learning_rate", [float("nan"), float("inf")])
+def test_ranker_rejects_nonfinite_training_configuration(tmp_path, learning_rate):
+    from arex_skill_graph.ranker_training import train_ranker
+
+    data, *_ = make_dataset(tmp_path)
+    with pytest.raises(ValueError, match="hyperparameters"):
+        train_ranker(
+            data, tmp_path / "unused-model", tmp_path / "checkpoint", learning_rate=learning_rate
+        )
+
+
+@pytest.mark.parametrize(
+    "mutation", ["nan_head", "inf_head", "zero_temperature", "nan_temperature", "inf_threshold"]
+)
+def test_integrity_checked_ranker_rejects_invalid_numeric_state(tmp_path, mutation):
+    import hashlib
+    import json
+
+    from arex_skill_graph.ranker_training import TrainedRankerScorer, train_ranker
+
+    torch = pytest.importorskip("torch")
+    data, *_ = make_dataset(tmp_path)
+    model = tmp_path / "tiny-model"
+    tiny_model(model)
+    root = tmp_path / "checkpoint"
+    metadata = train_ranker(data, model, root, epochs=1)
+    if mutation.endswith("_head"):
+        state = torch.load(root / "head.pt", map_location="cpu", weights_only=True)
+        state["weight"][0, 0] = float("nan") if mutation == "nan_head" else float("inf")
+        torch.save(state, root / "head.pt")
+        metadata["head_sha256"] = hashlib.sha256((root / "head.pt").read_bytes()).hexdigest()
+        metadata["checkpoint_sha256"] = digest(
+            {k: v for k, v in metadata.items() if k != "checkpoint_sha256"}
+        )
+    elif mutation == "zero_temperature":
+        metadata["temperature"] = 0.0
+        metadata["checkpoint_sha256"] = digest(
+            {k: v for k, v in metadata.items() if k != "checkpoint_sha256"}
+        )
+    elif mutation == "nan_temperature":
+        metadata["temperature"] = float("nan")
+    else:
+        metadata["use_threshold"] = float("inf")
+    (root / "ranker.json").write_text(json.dumps(metadata))
+    with pytest.raises(ValueError, match="nonfinite|positive"):
+        TrainedRankerScorer(root)
+
+
+def test_nonfinite_ranker_features_fail_and_keep_call_accounting(tmp_path, monkeypatch):
+    from arex_skill_graph.action_contracts import TemporalPolicy
+    from arex_skill_graph.ranker_training import TrainedRankerScorer, train_ranker
+
+    torch = pytest.importorskip("torch")
+    data, package, task, *_ = make_dataset(tmp_path)
+    model = tmp_path / "tiny-model"
+    tiny_model(model)
+    checkpoint = tmp_path / "checkpoint"
+    train_ranker(data, model, checkpoint, epochs=1)
+    scorer = TrainedRankerScorer(checkpoint)
+    policy = ResourcePolicy(TemporalPolicy(CUTOFF), (package.reference,))
+    capsules = [workflow_capsule(w, task, policy) for w in package.workflows]
+    monkeypatch.setattr(
+        scorer.encoder,
+        "tensors",
+        lambda texts, **_: (torch.full((len(texts), scorer.encoder.dimensions), float("nan")), 8),
+    )
+    ledger = BudgetLedger()
+    with pytest.raises(ValueError, match="ranker features.*nonfinite"):
+        scorer.evaluate(task, capsules, ledger)
+    assert ledger.model_calls == 1 and ledger.model_tokens > 0

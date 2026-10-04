@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from pathlib import Path
 
 from arex_skill_graph.mining.local_episode import LocalMergeEpisodeExtractor
 
@@ -13,7 +13,7 @@ class LocalMergeEpisodeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             repo = Path(directory) / "repo"
             repo.mkdir()
-            self._git(repo, "init")
+            self._git(repo, "init", "--initial-branch=master")
             self._git(repo, "config", "user.name", "Test User")
             self._git(repo, "config", "user.email", "test@example.com")
             readme = repo / "README.md"
@@ -68,7 +68,7 @@ class LocalMergeEpisodeTests(unittest.TestCase):
             root = Path(directory)
             repo = root / "repo"
             repo.mkdir()
-            self._git(repo, "init")
+            self._git(repo, "init", "--initial-branch=master")
             self._git(repo, "config", "user.name", "Test User")
             self._git(repo, "config", "user.email", "test@example.com")
             (repo / "README.md").write_text("base\n", encoding="utf-8")

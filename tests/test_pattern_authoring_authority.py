@@ -110,3 +110,75 @@ def test_valid_reviewed_abstraction_is_still_publishable(tmp_path):
         expected_kind="pattern",
     )
     assert derived.pattern.mechanism == MECHANISM and derived.kind == "pattern"
+
+
+def canonical_response(package, name, files):
+    response = bundle_from_files(name, files)
+    pid = package.reference["skill_id"]
+    for action in package.actions:
+        response = response.replace(json.dumps(action.id), json.dumps(pid + ":" + action.id))
+    for workflow in package.workflows:
+        response = response.replace(json.dumps(workflow.id), json.dumps(pid + ":" + workflow.id))
+    return response
+
+
+@pytest.mark.parametrize("local", [False, True])
+def test_canonical_abstraction_namespaces_actions_and_realizations(tmp_path, local):
+    package, name, files = source_and_response(tmp_path, local=local)
+    pid = package.reference["skill_id"]
+    (derived,) = extract_native_pattern(
+        Transport([canonical_response(package, name, files)]),
+        [package],
+        TemporalPolicy(CUTOFF),
+        tmp_path / "output",
+        canonical_package_id=pid,
+        reviewed_mechanism=MECHANISM,
+    )
+    assert all(w.id.startswith(pid + ":") for w in derived.workflows)
+    assert all(a.id.startswith(pid + ":") for a in derived.actions)
+
+
+@pytest.mark.parametrize(
+    "resource", ["references/workflow.md", "references/realizations/workflow-b.md"]
+)
+def test_realization_namespace_drift_never_publishes(tmp_path, resource):
+    package, name, files = source_and_response(tmp_path)
+    response = canonical_response(package, name, files)
+    authored, _ = parse_bundle(response)
+    files = authored[name]
+    files[resource] = files[resource].replace(
+        json.dumps(
+            package.reference["skill_id"]
+            + ":workflow:"
+            + ("a" if resource.endswith("/workflow.md") else "b")
+        ),
+        json.dumps("workflow:outside-namespace"),
+    )
+    with pytest.raises(ValueError, match="authoritative package namespace"):
+        extract_native_pattern(
+            Transport([bundle_from_files(name, files)]),
+            [package],
+            TemporalPolicy(CUTOFF),
+            tmp_path / "output",
+            canonical_package_id=package.reference["skill_id"],
+        )
+    assert not list((tmp_path / "output").rglob("SKILL.md"))
+
+
+@pytest.mark.parametrize("malformation", ["index_only", "duplicate_block"])
+def test_primary_workflow_must_have_exactly_one_realization_contract(tmp_path, malformation):
+    package, name, files = source_and_response(tmp_path)
+    if malformation == "index_only":
+        files["references/workflow.md"] = (
+            "# Index" + chr(10) * 2 + "See realizations for historical Workflows." + chr(10)
+        )
+    else:
+        files["references/workflow.md"] *= 2
+    with pytest.raises(ValueError, match=r"references/workflow\.md: .*exactly one"):
+        publish_v4_bundle(
+            bundle_from_files(name, files),
+            package.sources,
+            TemporalPolicy(CUTOFF),
+            tmp_path / "output",
+        )
+    assert not list((tmp_path / "output").rglob("SKILL.md"))
