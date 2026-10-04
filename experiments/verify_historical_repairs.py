@@ -5,6 +5,7 @@ import argparse
 import json
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
@@ -55,6 +56,12 @@ def main(argv=None):
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--cutoff", default="2024-01-01T00:00:00Z")
     parser.add_argument("--population-register", type=Path)
+    parser.add_argument(
+        "--dependency-root",
+        type=Path,
+        help="Prepared runtime override; original requests remain immutable",
+    )
+    parser.add_argument("--workers", type=int, default=1)
     args = parser.parse_args(argv)
     requests = json.loads(args.requests.read_text())
     if args.population_register:
@@ -68,7 +75,10 @@ def main(argv=None):
             raise ValueError("historical verification population integrity changed")
     results = []
     scheduled = canonical_repair_requests(requests)
-    for request, aliases in scheduled:
+    if args.workers < 1:
+        raise ValueError("historical verification workers must be positive")
+
+    def run_request(request, aliases):
         relative = request["issue_id"].replace("/", "__").replace(":", "-")
         if args.population_register:
             relative += "-" + request["metadata"]["mergeCommit"]["oid"][:12]
@@ -79,37 +89,48 @@ def main(argv=None):
                 request["issue_id"],
                 args.cutoff,
                 args.output_dir / relative,
-                request["dependency_root"],
+                args.dependency_root or request["dependency_root"],
                 request.get("command"),
             )
-            results.append(
-                {
-                    "issue_id": request["issue_id"],
-                    "verified_resolution": result["verified_resolution"],
-                    "verification_path": str(args.output_dir / relative / "verification.json"),
-                    "fix_id": request["metadata"].get("fix_id"),
-                    "request_aliases": aliases,
-                    "fail_to_pass_count": len(result["fail_to_pass"]),
-                    "pass_to_pass_count": len(result["pass_to_pass"]),
-                }
-            )
-            print(json.dumps(results[-1]), flush=True)
+            result_row = {
+                "issue_id": request["issue_id"],
+                "verified_resolution": result["verified_resolution"],
+                "verification_path": str(args.output_dir / relative / "verification.json"),
+                "fix_id": request["metadata"].get("fix_id"),
+                "request_aliases": aliases,
+                "fail_to_pass_count": len(result["fail_to_pass"]),
+                "pass_to_pass_count": len(result["pass_to_pass"]),
+            }
         except (ValueError, RuntimeError, OSError, subprocess.CalledProcessError) as error:
-            results.append(
+            result_row = {
+                "issue_id": request["issue_id"],
+                "verified_resolution": False,
+                "fix_id": request["metadata"].get("fix_id"),
+                "request_aliases": aliases,
+                "reason": (
+                    "historical source command failed"
+                    if isinstance(error, subprocess.CalledProcessError)
+                    else redact_history(str(error))
+                ),
+            }
+            write_json(args.output_dir / relative / "verification-failure.json", result_row)
+        print(json.dumps(result_row), flush=True)
+        return result_row
+
+    with ThreadPoolExecutor(max_workers=args.workers) as executor:
+        pending = [executor.submit(run_request, request, aliases) for request, aliases in scheduled]
+        for future in as_completed(pending):
+            results.append(future.result())
+            write_json(
+                args.output_dir / "verification-progress.json",
                 {
-                    "issue_id": request["issue_id"],
-                    "verified_resolution": False,
-                    "fix_id": request["metadata"].get("fix_id"),
-                    "request_aliases": aliases,
-                    "reason": (
-                        "historical source command failed"
-                        if isinstance(error, subprocess.CalledProcessError)
-                        else redact_history(str(error))
-                    ),
-                }
+                    "completed_count": len(results),
+                    "canonical_requested_count": len(scheduled),
+                    "results": results,
+                    "full_history_qualified": False,
+                    "formal_SWE_runs": 0,
+                },
             )
-            write_json(args.output_dir / relative / "verification-failure.json", results[-1])
-            print(json.dumps(results[-1]), flush=True)
     write_json(
         args.output_dir / "verification-inventory.json",
         {
@@ -122,6 +143,7 @@ def main(argv=None):
             "requested_count": len(requests),
             "canonical_requested_count": len(scheduled),
             "alias_policy": "same issue/repository/merge SHA; strongest observed closure then PR metadata; no independent-source multiplication",
+            "runtime_override": str(args.dependency_root) if args.dependency_root else None,
             "full_history_qualified": False,
             "formal_SWE_runs": 0,
         },

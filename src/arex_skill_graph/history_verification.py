@@ -70,6 +70,49 @@ def junit_observations(path):
     return observations
 
 
+def infer_historical_pytest_command(paths, repository_files):
+    """Select actual test harnesses, never execute Pylint fixture files as tests."""
+    files = set(repository_files)
+    functional = [p for p in paths if p.startswith("tests/functional/")]
+    targets = {
+        p
+        for p in paths
+        if p.endswith(".py") and Path(p).name.startswith("test_") and p not in functional
+    }
+    if functional:
+        if "tests/test_functional.py" not in files:
+            raise ValueError("historical functional fixture layout requires an explicit verifier")
+        # Existing cases beside each changed fixture are included as neighboring
+        # controls. Selection depends on the pinned base tree, not solver results.
+        directories = {Path(p).parent for p in functional}
+        names = sorted(
+            {Path(p).stem for p in functional if Path(p).suffix in {".py", ".txt", ".rc"}}
+            | {
+                Path(p).stem
+                for p in files
+                if Path(p).parent in directories and Path(p).suffix == ".py"
+            }
+        )
+        if not names or any(not re.fullmatch(r"[A-Za-z0-9_]+", name) for name in names):
+            raise ValueError("historical functional selector is unavailable or ambiguous")
+        # Mixing unit tests with -k fixture names would silently deselect units.
+        # Run their modules in full together with the functional harness instead.
+        if targets:
+            return ["python3", "-m", "pytest", *sorted(targets), "tests/test_functional.py", "-q"]
+        return [
+            "python3",
+            "-m",
+            "pytest",
+            "tests/test_functional.py",
+            "-k",
+            " or ".join(names),
+            "-q",
+        ]
+    if not targets:
+        raise ValueError("historical test framework requires an explicit verifier command")
+    return ["python3", "-m", "pytest", *sorted(targets), "-q"]
+
+
 def verify_historical_repair(
     repository, metadata, issue_id, cutoff, output, dependency_root, command=None
 ):
@@ -121,10 +164,10 @@ def verify_historical_repair(
     if not production.strip() or not tests.strip():
         raise ValueError("repair lacks independently executable changed regression tests")
     if command is None:
-        targets = [p for p in paths if p.endswith(".py") and Path(p).name.startswith("test_")]
-        if not targets:
-            raise ValueError("historical test framework requires an explicit verifier command")
-        command = ["python3", "-m", "pytest", *sorted(set(targets)), "-q"]
+        files = subprocess.check_output(
+            ["git", "--git-dir", str(repository), "ls-tree", "-r", "--name-only", base], text=True
+        ).splitlines()
+        command = infer_historical_pytest_command(paths, files)
     output.mkdir(parents=True, exist_ok=True)
     observations, runs = {}, {}
     ledger = BudgetLedger(BudgetCaps(seconds=1800, tool_calls=20))

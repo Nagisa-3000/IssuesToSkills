@@ -31,6 +31,7 @@ class OpenAICompatibleConfig:
     max_output_tokens: int = 5000
     retries: int = 2
     http_backend: str = "native"
+    stream_responses: bool = False
 
 
 class OpenAICompatibleTransport:
@@ -117,6 +118,8 @@ class OpenAICompatibleTransport:
         return result
 
     def _request(self, body: Mapping[str, Any]) -> Mapping[str, Any]:
+        if self.config.stream_responses:
+            body = {**body, "stream": True, "stream_options": {"include_usage": True}}
         endpoint = self.config.base_url.rstrip("/") + "/chat/completions"
         request = Request(
             endpoint,
@@ -141,7 +144,11 @@ class OpenAICompatibleTransport:
                         raw = response.read().decode("utf-8")
                 if safe_text(raw, [self.config.api_key]) != raw:
                     raise ValueError("credential-like value in service response")
-                envelope = json.loads(raw)
+                envelope = (
+                    completion_from_sse(raw)
+                    if self.config.stream_responses and not raw.lstrip().startswith("{")
+                    else json.loads(raw)
+                )
                 if not isinstance(envelope, Mapping):
                     raise TypeError("LLM service response must be an object")
                 if envelope.get("error"):
@@ -158,6 +165,7 @@ class OpenAICompatibleTransport:
                         "request_elapsed_ms": round((time.perf_counter() - started) * 1000, 2),
                         "usage": envelope.get("usage"),
                         "response_id": envelope.get("id"),
+                        "stream_requested": self.config.stream_responses,
                     }
                 )
                 return envelope
@@ -266,3 +274,47 @@ class OpenAICompatibleTransport:
         if not isinstance(value, Mapping):
             raise TypeError("LLM JSON response must be an object")
         return value
+
+
+def completion_from_sse(raw: str) -> Mapping[str, Any]:
+    """Assemble a complete text response; partial streams never become Skills."""
+    fragments, usage, response_id, finish, done = [], None, None, None, False
+    for line in raw.splitlines():
+        if not line.strip() or line.startswith((":", "event:", "id:", "retry:")):
+            continue
+        if not line.startswith("data:") or done:
+            raise ValueError("invalid completion event stream")
+        data = line[5:].strip()
+        if data == "[DONE]":
+            done = True
+            continue
+        event = json.loads(data)
+        if not isinstance(event, Mapping) or event.get("error"):
+            raise ValueError("completion stream reported an error")
+        if event.get("id"):
+            if response_id is not None and response_id != event["id"]:
+                raise ValueError("completion stream changed response identity")
+            response_id = event["id"]
+        if event.get("usage") is not None:
+            usage = event["usage"]
+        for choice in event.get("choices", []):
+            if choice.get("index", 0) != 0:
+                raise ValueError("completion stream contains multiple choices")
+            content = choice.get("delta", {}).get("content")
+            if content is not None:
+                if not isinstance(content, str) or finish is not None:
+                    raise ValueError("invalid text fragment in completion stream")
+                fragments.append(content)
+            if choice.get("finish_reason") is not None:
+                if finish is not None:
+                    raise ValueError("completion stream ended a choice twice")
+                finish = choice["finish_reason"]
+    if not done or finish is None:
+        raise ValueError("incomplete completion stream; no response was recorded")
+    return {
+        "id": response_id,
+        "choices": [
+            {"index": 0, "message": {"content": "".join(fragments)}, "finish_reason": finish}
+        ],
+        "usage": usage,
+    }

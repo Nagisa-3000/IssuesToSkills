@@ -13,8 +13,22 @@ try {
     $taskClient.DefaultRequestHeaders.Authorization = [System.Net.Http.Headers.AuthenticationHeaderValue]::new('Bearer', [string]$taskInput.credential)
     $taskBody = $taskInput.body | ConvertTo-Json -Depth 100 -Compress
     $taskContent = [System.Net.Http.StringContent]::new($taskBody, [Text.Encoding]::UTF8, 'application/json')
-    $taskResponse = $taskClient.PostAsync($taskUri, $taskContent).GetAwaiter().GetResult()
-    $taskText = $taskResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult()
+    if ($taskInput.body.stream -eq $true) {
+        $taskRequest = [System.Net.Http.HttpRequestMessage]::new([System.Net.Http.HttpMethod]::Post, $taskUri)
+        $taskRequest.Content = $taskContent
+        $taskResponse = $taskClient.SendAsync($taskRequest, [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead).GetAwaiter().GetResult()
+        $taskStream = $taskResponse.Content.ReadAsStreamAsync().GetAwaiter().GetResult()
+        $taskReader = [IO.StreamReader]::new($taskStream, [Text.Encoding]::UTF8)
+        $taskBuffer = [Text.StringBuilder]::new()
+        while (($taskLine = $taskReader.ReadLine()) -ne $null) {
+            [void]$taskBuffer.AppendLine($taskLine)
+        }
+        $taskText = $taskBuffer.ToString()
+        $taskReader.Dispose()
+    } else {
+        $taskResponse = $taskClient.PostAsync($taskUri, $taskContent).GetAwaiter().GetResult()
+        $taskText = $taskResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult()
+    }
     $taskResult = @{status=[int]$taskResponse.StatusCode; body=$taskText}
     [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
     [Console]::Out.Write(($taskResult | ConvertTo-Json -Depth 100 -Compress))
@@ -26,4 +40,6 @@ try {
     $taskInput = $null
     $taskBody = $null
     $taskText = $null
+    $taskLine = $null
+    $taskBuffer = $null
 }
