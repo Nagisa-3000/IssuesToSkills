@@ -277,8 +277,18 @@ class TaskContext:
                 capture_output=True,
                 check=False,
             )
-            if result.returncode or result.stdout.strip() != self.base_commit:
+            if result.returncode:
+                raise ValueError(
+                    "current checkout Git identity is unavailable; check ownership and metadata"
+                )
+            if result.stdout.strip() != self.base_commit:
                 raise ValueError("checkout HEAD differs from TaskContext base")
+            top = subprocess.run(
+                ["git", "-C", str(root), "rev-parse", "--show-toplevel"],
+                text=True, capture_output=True, check=False,
+            )
+            if top.returncode or Path(top.stdout.strip()).resolve() != root:
+                raise ValueError("checkout repository root differs from TaskContext root")
         for anchor in self.anchors:
             if anchor.kind in {"workspace_snapshot", "workspace_execution_snapshot"}:
                 from .workspace_state import (

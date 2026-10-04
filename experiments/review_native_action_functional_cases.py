@@ -187,6 +187,8 @@ def main(argv=None):
                 transport.config, max_output_tokens=5000, timeout_seconds=180, stream_responses=True
             )
             ledger = BudgetLedger(BudgetCaps(model_tokens=1000000, history_tokens=20000))
+            phase = "current_task_identity"
+            task.verify()
             phase = "action_record_review"
             records = []
             for record in trajectory["action_observations"]:

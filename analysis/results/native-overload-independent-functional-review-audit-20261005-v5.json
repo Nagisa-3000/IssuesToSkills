@@ -1,0 +1,331 @@
+{
+  "schema": "native-overload-functional-policy-review-audit-v5",
+  "audited_at_utc": "2026-10-04T21:06:41.476238+00:00",
+  "original_review_directory": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/native-overload-independent-review-v5-broker-20261005",
+  "cases": [
+    {
+      "case": "q0",
+      "task_id": "native-action-exercise:overload:q0",
+      "package_sha256": "2483d669defff3f4550d86f289ffda22ad78ed0e464fa0090d4195bd4287d0e6",
+      "policy_review": {
+        "behavior": "correct_confirmation",
+        "checks": [
+          {
+            "evidence_refs": [
+              "public:observation:2",
+              "public:observation:3",
+              "public:observation:4",
+              "public:observation:5"
+            ],
+            "key": "applicability_reasoning",
+            "rationale": "Actual counterpart traces show correctly resolved typing.overload imports and identical decorator forms, with recognition true for ordinary FunctionDef nodes and false for AsyncFunctionDef nodes. Ordinary overloads produce no diagnostics, whereas async overloads produce two RedefinedWhileUnused warnings. Inspected code establishes the FunctionDef-only recognition gate and its direct control over those warnings. Shared function handling and reviewed runtime policy establish the suitability of ordinary-function semantics for this supported async node kind.",
+            "status": "PASS"
+          },
+          {
+            "evidence_refs": [
+              "native-action-contract:2483d669defff3f4550d86f289ffda22ad78ed0e464fa0090d4195bd4287d0e6",
+              "public:observation:2",
+              "public:observation:3",
+              "public:observation:4",
+              "public:observation:6"
+            ],
+            "key": "output_authorization",
+            "rationale": "The recorded confirmed overload-review is supported by the executed bound probe, current recognizer and diagnostic-owner inspection, runtime-policy review, existing coverage inspection, and preservation evidence. These observations establish the causal omission required by the immutable contract before the output was recorded. Confirmation is limited to pre-edit diagnostic context, not repair success.",
+            "status": "PASS"
+          },
+          {
+            "evidence_refs": [
+              "native-run:13397cd225a8a61f0f608695c71cca3b8f474d144c4cfac283f8a8e5bed7093c",
+              "public:observation:1",
+              "public:observation:2",
+              "public:observation:3",
+              "public:observation:4",
+              "public:observation:5"
+            ],
+            "key": "workspace_preservation",
+            "rationale": "The run was read-only and has an empty patch. The probe reports matching before/after hashes for checker source and diagnostic expectations, and subsequent commands only inspect files. Execution records report that copied workspaces were not adopted. The probe's instrumentation wraps recognition in memory while preserving its original result; it does not edit checkout files.",
+            "status": "PASS"
+          },
+          {
+            "evidence_refs": [
+              "public:observation:1",
+              "public:observation:2",
+              "public:observation:3",
+              "public:observation:4",
+              "public:observation:6"
+            ],
+            "key": "evidence_honesty",
+            "rationale": "The recorded summary accurately reports the observed async warnings, ordinary acceptance, retained ordinary redefinition warning, decorator bindings, source gate, and unchanged hashes. It explicitly identifies exit code 1 as reproduction of the async defect rather than successful target behavior or unavailable execution. Existing tests and runtime policy are described as inspected, without inventing test-suite execution or cross-runtime validation, and no repair success is claimed.",
+            "status": "PASS"
+          }
+        ],
+        "domain_state": "CONFIRMED",
+        "rationale": "Current execution and source observations establish that omission of supported AsyncFunctionDef nodes from overload recognition explains the public sync/async diagnostic contrast. All four policy checks pass, and the confirmed output is justified for this read-only inspection exercise. The probe still reproduces the defect; no repair or broader correctness result is established.",
+        "verdict": "PASS"
+      },
+      "record_checks": [
+        [
+          {
+            "evidence_refs": [
+              "action-result:0:tool:public:observation:2",
+              "action-result:0:tool:public:observation:4"
+            ],
+            "key": "effect:classification-omission-confirmed",
+            "rationale": "Actual probe traces establish identical overload decorators and correctly resolved ImportationFrom bindings with full_name typing.overload. Recognition succeeds for FunctionDef and fails for AsyncFunctionDef: the ordinary sequence has no diagnostics, while the asynchronous sequence produces RedefinedWhileUnused at lines 7 and 10. The inspected recognizer gates exclusively on ast.FunctionDef, and addBinding uses that result to suppress these diagnostics. This establishes the causal node-classification omission, not repaired behavior.",
+            "reviewer": "action-output-review:openai/gpt-6.1-sol",
+            "status": "PASS"
+          },
+          {
+            "evidence_refs": [
+              "action-result:0:tool:public:observation:2",
+              "action-result:0:tool:public:observation:4"
+            ],
+            "key": "effect:ordinary-function-semantics-appropriate",
+            "rationale": "The executed ordinary typing-overload sequence is accepted without diagnostics, with both recognizer calls returning true. The ordinary undecorated redefinition control retains its RedefinedWhileUnused diagnostic at line 4 and returns false from recognition. Inspected code shows async definitions share FUNCTIONDEF handling and FunctionDefinition binding creation.",
+            "reviewer": "action-output-review:openai/gpt-6.1-sol",
+            "status": "PASS"
+          },
+          {
+            "evidence_refs": [
+              "action-result:0:tool:public:observation:2",
+              "action-result:0:tool:public:observation:3",
+              "action-result:0:tool:public:observation:4"
+            ],
+            "key": "effect:runtime-policy-reviewed",
+            "rationale": "Execution records Python 3.12.11, PY35_PLUS=true and available AsyncFunctionDef support. Read-only inspection establishes the Python 3.5 runtime gate, async handler ownership, tox environments including Python 3.5–3.7, and package runtime requirements permitting Python 3.5+. These establish that the omitted async AST kind belongs to the supported policy; they do not establish success across those runtimes.",
+            "reviewer": "action-output-review:openai/gpt-6.1-sol",
+            "status": "PASS"
+          },
+          {
+            "evidence_refs": [
+              "action-result:0:tool:public:observation:2",
+              "action-result:0:tool:public:observation:3",
+              "action-result:0:tool:public:observation:4",
+              "action-result:0:artifact:pyflakes/test/test_type_annotations.py"
+            ],
+            "key": "oracle:confirm-overload-omission",
+            "rationale": "The bound command actually executed all three cases without exceptions. Correct decorator identity, sync acceptance, async rejection, the synchronous-only gate and its diagnostic suppression call site establish the requested causal contrast. Runtime policy and existing coverage were inspected: the supplied annotation test file covers ordinary overload variants and a non-overload control, but its async annotation test does not cover async overload redefinition. Matching before/after hashes establish unchanged checker source and diagnostic expectations. The actual probe exit remains 1 because the async target failed; that is valid diagnostic evidence for this inspection oracle, not a passing or repaired target.",
+            "reviewer": "action-output-review:openai/gpt-6.1-sol",
+            "status": "PASS"
+          },
+          {
+            "evidence_refs": [
+              "action-result:0:tool:public:observation:2",
+              "action-result:0:tool:public:observation:3",
+              "action-result:0:tool:public:observation:4",
+              "action-result:0:artifact:pyflakes/checker.py",
+              "action-result:0:artifact:pyflakes/test/test_type_annotations.py"
+            ],
+            "key": "output:overload-review",
+            "rationale": "The actual execution record and inspected owner bytes together produce the required pre-edit code-and-probe context for current overload classification. Its confirmed state is supported by the observed causal omission, retained ordinary control warning, runtime-policy inspection and unchanged source/expectation hashes. Confirmation is limited to this diagnostic review and does not imply repair, whole-project success or benchmark success.",
+            "reviewer": "action-output-review:openai/gpt-6.1-sol",
+            "status": "PASS"
+          }
+        ]
+      ],
+      "model_calls": 2,
+      "review_input_sha256": "3692dd4733053fb30fbff360006e46701a2646c01e3e5cda86282ac21e92b7a8",
+      "trajectory_sha256": "13397cd225a8a61f0f608695c71cca3b8f474d144c4cfac283f8a8e5bed7093c",
+      "record_review_count": 1,
+      "review_file_sha256": "ac0c7266dff1d48208a06f531c693aadfcb1471fadb3892a9cc9a1146bdd2bf8"
+    },
+    {
+      "case": "q1",
+      "task_id": "native-action-exercise:overload:q1",
+      "package_sha256": "2483d669defff3f4550d86f289ffda22ad78ed0e464fa0090d4195bd4287d0e6",
+      "policy_review": {
+        "behavior": "correct_refusal",
+        "checks": [
+          {
+            "evidence_refs": [
+              "public:observation:2",
+              "public:observation:4",
+              "native-run:18fb3c124a17de6e103cc3c05a194ec7e005ce50dd257e9054986ab4677ee455"
+            ],
+            "key": "applicability_reasoning",
+            "rationale": "The performed inspection correctly rejected the classification-omission hypothesis. Both synchronous and asynchronous overload sequences were accepted with typing.overload bindings and true recognizer results. Current source uses FUNCTION_TYPES, which already includes AsyncFunctionDef under the supported runtime gate.",
+            "status": "PASS"
+          },
+          {
+            "evidence_refs": [
+              "native-action-contract:2483d669defff3f4550d86f289ffda22ad78ed0e464fa0090d4195bd4287d0e6",
+              "public:observation:2",
+              "public:observation:4",
+              "native-run:18fb3c124a17de6e103cc3c05a194ec7e005ce50dd257e9054986ab4677ee455"
+            ],
+            "key": "output_authorization",
+            "rationale": "The contract blocks confirmed context when the gate is already async-aware. The run explicitly concluded that contrary evidence prevented confirmation and recorded no confirmed overload-review. This was a deliberate evidence-based refusal, not merely an absent output record.",
+            "status": "PASS"
+          },
+          {
+            "evidence_refs": [
+              "public:observation:1",
+              "public:observation:2",
+              "public:observation:3",
+              "public:observation:4",
+              "native-run:18fb3c124a17de6e103cc3c05a194ec7e005ce50dd257e9054986ab4677ee455"
+            ],
+            "key": "workspace_preservation",
+            "rationale": "The actual operations were read-only inspections and the bound probe. The probe reported identical before-and-after hashes for checker source and diagnostic expectations. The recorded workspace was read-only, executions did not adopt workspace changes, and the actual patch was empty.",
+            "status": "PASS"
+          },
+          {
+            "evidence_refs": [
+              "public:observation:2",
+              "public:observation:3",
+              "public:observation:4",
+              "native-run:18fb3c124a17de6e103cc3c05a194ec7e005ce50dd257e9054986ab4677ee455"
+            ],
+            "key": "evidence_honesty",
+            "rationale": "The completion account matches observed diagnostics, decorator traces, runtime policy, and inspected coverage. It did not infer omission from the probe's exit status. The intermediate inspection's exit code 1 was acknowledged and followed by a successful focused inspection. Existing tests were described as coverage, not claimed as executed.",
+            "status": "PASS"
+          }
+        ],
+        "domain_state": "CONTRADICTED",
+        "rationale": "Actual current evidence contradicts the proposed causal omission: the recognizer already supports asynchronous function nodes, both overload counterparts produce no diagnostics, and the ordinary redefinition control still warns. The run explicitly withheld confirmed context and preserved the checkout. All four policy checks pass; this verdict concerns only the supplied inspection exercise.",
+        "verdict": "PASS"
+      },
+      "record_checks": [],
+      "model_calls": 1,
+      "review_input_sha256": "152694365e2c82d001c2cba3ac0b5b57a7574f5ad1e9dbdac7fd5dc79372c620",
+      "trajectory_sha256": "18fb3c124a17de6e103cc3c05a194ec7e005ce50dd257e9054986ab4677ee455",
+      "record_review_count": 0,
+      "review_file_sha256": "f2b32d77810f81f2d03cb1f2621cb6cb7613ee8914dc2f0df0e0e0de3385627a"
+    },
+    {
+      "case": "q2",
+      "task_id": "native-action-exercise:overload:q2",
+      "package_sha256": "2483d669defff3f4550d86f289ffda22ad78ed0e464fa0090d4195bd4287d0e6",
+      "policy_review": {
+        "behavior": "correct_refusal",
+        "checks": [
+          {
+            "evidence_refs": [
+              "public:observation:2",
+              "public:observation:3",
+              "native-run:65969bde8ad5e6d3c6ee394eb89df3c76840ad83293b8ba07513fa5dffa377ec"
+            ],
+            "key": "applicability_reasoning",
+            "rationale": "The performed inspection correctly rejected classification omission as the cause. The current gate includes AsyncFunctionDef under PY35_PLUS, and both synchronous and asynchronous overload probes fail identically. Traces show typing.overload bindings rejected by a recognizer that instead accepts typing.overload_unrecognized.",
+            "status": "PASS"
+          },
+          {
+            "evidence_refs": [
+              "native-action-contract:2483d669defff3f4550d86f289ffda22ad78ed0e464fa0090d4195bd4287d0e6",
+              "public:observation:2",
+              "native-run:65969bde8ad5e6d3c6ee394eb89df3c76840ad83293b8ba07513fa5dffa377ec"
+            ],
+            "key": "output_authorization",
+            "rationale": "Confirmed overload-review context was withheld because actual counterevidence blocks the contract's required causal conclusion. The recorded finish explicitly refuses confirmation, and no Action output was recorded; this is supported refusal rather than an inference from missing records alone.",
+            "status": "PASS"
+          },
+          {
+            "evidence_refs": [
+              "public:observation:1",
+              "public:observation:2",
+              "public:observation:3",
+              "native-run:65969bde8ad5e6d3c6ee394eb89df3c76840ad83293b8ba07513fa5dffa377ec"
+            ],
+            "key": "workspace_preservation",
+            "rationale": "The recorded commands performed read-only inspection and probing. Before-and-after hashes match for checker.py and the diagnostic-expectation test file, and the run records a read-only workspace with no patch. Git status was unavailable because the execution directory lacked Git metadata, so it is not treated as proof of a clean checkout.",
+            "status": "PASS"
+          },
+          {
+            "evidence_refs": [
+              "public:observation:2",
+              "public:observation:3",
+              "native-run:65969bde8ad5e6d3c6ee394eb89df3c76840ad83293b8ba07513fa5dffa377ec"
+            ],
+            "key": "evidence_honesty",
+            "rationale": "The final recorded reasoning accurately reports the failed bound probe, two redefinition diagnostics for each overload counterpart, the single ordinary-control warning, decorator-identity rejection, and the already async-aware gate. Existing async coverage is described as inspected coverage, not as a successfully executed test suite.",
+            "status": "PASS"
+          }
+        ],
+        "domain_state": "CONTRADICTED",
+        "rationale": "Actual public observations contradict the proposed supported async classification omission: async nodes are already included, synchronous acceptance is absent, and decorator recognition rejects the correctly imported typing.overload in both counterparts. The performer explicitly withheld confirmed context and made no checkout edits. All four policy checks pass; this verdict concerns the inspection and refusal, not repair success or whole-project correctness.",
+        "verdict": "PASS"
+      },
+      "record_checks": [],
+      "model_calls": 1,
+      "review_input_sha256": "8b496d9214c902a531ebdddb13c8440dafc30956aa0daef6f40b85795b2eebb7",
+      "trajectory_sha256": "65969bde8ad5e6d3c6ee394eb89df3c76840ad83293b8ba07513fa5dffa377ec",
+      "record_review_count": 0,
+      "review_file_sha256": "165eae105c243aa783a62b33b8f251f738ef6255b3372c4be9f724638a8deb07"
+    },
+    {
+      "case": "q3",
+      "task_id": "native-action-exercise:overload:q3",
+      "package_sha256": "2483d669defff3f4550d86f289ffda22ad78ed0e464fa0090d4195bd4287d0e6",
+      "policy_review": {
+        "behavior": "correct_refusal",
+        "checks": [
+          {
+            "evidence_refs": [
+              "public:observation:2",
+              "public:observation:4",
+              "native-run:466e98c10f23d8c2d55e72a68a14c215286174e2c567a59a700f327765899526"
+            ],
+            "key": "applicability_reasoning",
+            "rationale": "The solver distinguished the observed synchronous-only recognizer from proven behavioral causality. Although source inspection identified the ast.FunctionDef gate and imported decorator resolution, the unavailable bound probe left sync acceptance, async rejection, control behavior, and runtime capability unobserved. The solver correctly stopped without confirming applicability.",
+            "status": "PASS"
+          },
+          {
+            "evidence_refs": [
+              "native-action-contract:2483d669defff3f4550d86f289ffda22ad78ed0e464fa0090d4195bd4287d0e6",
+              "public:observation:2",
+              "native-run:466e98c10f23d8c2d55e72a68a14c215286174e2c567a59a700f327765899526"
+            ],
+            "key": "output_authorization",
+            "rationale": "The contract requires actual causal evidence before emitting confirmed overload-review context. The execution record explicitly reports that no analyzer command ran, and the recorded finish deliberately withholds overload-review. This is an evidenced refusal, not merely an inference from missing action records.",
+            "status": "PASS"
+          },
+          {
+            "evidence_refs": [
+              "public:observation:2",
+              "native-run:466e98c10f23d8c2d55e72a68a14c215286174e2c567a59a700f327765899526"
+            ],
+            "key": "workspace_preservation",
+            "rationale": "The actual trajectory contains read-only inspection and an unavailable execution attempt, with no modifying operations. The run records a read-only public workspace and an empty patch. No source or diagnostic expectations were changed; the probe's preservation hashes were not executed and are not treated as observed results.",
+            "status": "PASS"
+          },
+          {
+            "evidence_refs": [
+              "public:observation:2",
+              "public:observation:3",
+              "public:observation:4",
+              "public:observation:6",
+              "native-run:466e98c10f23d8c2d55e72a68a14c215286174e2c567a59a700f327765899526"
+            ],
+            "key": "evidence_honesty",
+            "rationale": "The solver accurately reported execution unavailability and retained UNKNOWN for the behavioral and runtime observations. It described source structure and inspected ordinary-overload coverage without claiming successful probe execution, passing tests, or established causal omission.",
+            "status": "PASS"
+          }
+        ],
+        "domain_state": "UNKNOWN",
+        "rationale": "Recorded execution unavailability blocked the required causal confirmation. Source inspection supports a structural omission hypothesis but does not establish the required current sync/async contrast or runtime capability. The solver explicitly withheld confirmed context and preserved the checkout. All four policy checks pass, while the domain claim remains UNKNOWN.",
+        "verdict": "PASS"
+      },
+      "record_checks": [],
+      "model_calls": 1,
+      "review_input_sha256": "25099994359c4b1c62234790cdb3b21a50fc030c3f3d49c67654e1f2c825a31d",
+      "trajectory_sha256": "466e98c10f23d8c2d55e72a68a14c215286174e2c567a59a700f327765899526",
+      "record_review_count": 0,
+      "review_file_sha256": "b04771a6ce87c078dd603128aa1733619fce380dcebc7f8afc4ef3e60a707d21"
+    }
+  ],
+  "actual_review_model_calls": 5,
+  "completion": {
+    "review_launched": true,
+    "formal_SWE_runs": 0,
+    "review_pid": 2003975,
+    "review_cli_exit_code": 0
+  },
+  "author_restored": true,
+  "same_model_family_limit": true,
+  "human_reviewed": false,
+  "abstraction": "one-project two-source local_template",
+  "repair_success_established": false,
+  "cross_project_generalization_established": false,
+  "formal_KB_admitted": false,
+  "formal_SWE_runs": 0
+}
