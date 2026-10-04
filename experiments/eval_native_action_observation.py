@@ -35,6 +35,7 @@ def main(argv=None):
     parser.add_argument("--api-key-env", default="AREX_LLM_API_KEY")
     parser.add_argument("--http-backend", default="native", choices=["native", "windows_pipe"])
     parser.add_argument("--public-read-only", action="store_true")
+    parser.add_argument("--execution-unavailable-fixture", action="store_true")
     parser.add_argument("--enforce-action-prerequisites", action="store_true")
     args = parser.parse_args(argv)
     if args.output_dir.exists():
@@ -72,6 +73,45 @@ def main(argv=None):
         transport.config, max_output_tokens=4000, timeout_seconds=180, stream_responses=True
     )
     policy = ResourcePolicy(temporal, (package.reference,))
+    tools_factory = None
+    if args.execution_unavailable_fixture:
+        from arex_skill_graph.adaptive_runner import make_namespace_tools
+
+        class UnavailableExecution:
+            def __init__(self, checkout, budget):
+                self.inner = make_namespace_tools(
+                    checkout, budget, args.dependency_root, backend="namespace-copy"
+                )
+                self.budget = budget
+                self.isolation = self.inner.isolation
+                self.runtime_sha256 = self.inner.runtime_sha256
+
+            def preflight(self):
+                return self.inner.preflight()
+
+            def close(self):
+                self.inner.close()
+
+            def run(self, argv, **kwargs):
+                if kwargs.get("charge", True):
+                    self.budget.charge(
+                        "tool_calls", 1, "controlled unavailable public execution attempt"
+                    )
+                self.budget.check_time()
+                return {
+                    "argv": list(argv),
+                    "exit_code": None,
+                    "output": "Public command execution is unavailable in this controlled "
+                    "evidence fixture; no analyzer command was executed.",
+                    "execution_available": False,
+                    "workspace_adopted": False,
+                    "timed_out": False,
+                    "isolation": self.isolation,
+                    "runtime_sha256": self.runtime_sha256,
+                    "fixture_policy": "native-command-execution-unavailable-v1",
+                }
+
+        tools_factory = UnavailableExecution
     with CatalogStore(args.output_dir / "development-catalog.sqlite") as store:
         store.initialize()
         result = AdaptiveSolver(
@@ -82,6 +122,7 @@ def main(argv=None):
             ledger,
             dependency_root=args.dependency_root,
             sandbox_backend="namespace-copy",
+            tools_factory=tools_factory,
         ).run(
             task,
             use_frozen_selection=True,
@@ -114,6 +155,7 @@ def main(argv=None):
         "formal_SWE_runs": 0,
         "formal_KB_admitted": False,
         "public_read_only": args.public_read_only,
+        "controlled_execution_unavailable": args.execution_unavailable_fixture,
         "strict_functional_action_catalog": args.enforce_action_prerequisites,
         "resources": [{k: v for k, v in r.items() if k != "chunks"} for r in resources],
         "model": args.model,
