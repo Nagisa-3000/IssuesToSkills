@@ -11,3 +11,7 @@
 此前 v3 原生机制作者任务已终止：26 个包、7 个发现组、10 次实际调用，全部 defer、发布 0 包。拒绝涉及 Action 跨 realization 来源边界及本地/上游 Workflow ID 混淆；另有作者因缺少可检查的 qualification 信息或机制支持不足而 defer。没有放宽准入或由宿主补写契约。原生作者现接收上游 provenance；协议明确历史输入与后续旧断言复验时间、本地与上游 IDs、各来源 Action 范围。尚未执行修正后的真实重作者。见 [作者终态](results/server-native-mechanism-authoring-outcome-20261004-v3.json)。同一项目支持仍只能是 local_template；互补修复不能强行算作同一完整机制的重复实现。
 
 下一步按原历史总体注册表，用新后端复验 Pyflakes 51 个请求和 Pylint 1,319 个请求，保留 alias 合并及所有不合格/环境失败。随后恢复因果资格 reconciliation、原生 Skill 功能验证及逐 query 时间重建的 Pattern/Ranker 监督。M4 未完成；正式库和 cohort 未冻结，正式 SWE solver runs=0，qualified N 未确定。复制式后端通过不等于官方 SWE Docker 协议资格完成；Ruff Rust、官方协议和 M5/M6 仍待推进。
+
+服务器历史总体复验已实际启动（源码固定于 4907b5cb315ad14d776907645fad25cc86203120）：Pyflakes 51 个原请求去重为 45 项、3 workers；Pylint 1,319 个原请求去重为 1,160 项、4 workers。实际进程与当次进度见 [调度审计](results/server-historical-requalification-dispatch-20261004-v1.json)。复验结果使用新的服务器目录，不覆盖既有资格记录。首次调度只在系统 Python 3.10 导入阶段失败，未产生子任务；随后使用项目 Python 3.12.11 完成调度。
+
+本次调度观察更新：Pyflakes 完成 45/45 项，26 项通过旧修复因果资格；Pylint 完成 89/1160 项，仍在运行。这些资格不等于 Skill 功能准入或正式 SWE 成效。

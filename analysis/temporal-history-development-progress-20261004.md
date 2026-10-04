@@ -67,3 +67,7 @@ GitHub 的小型审计文件只描述训练和 hash，不假装包含完整模�
 
 
 2026-10-04 服务器接续：复制式隔离已验证并接入历史资格、监督和独立验收。完整回归 324 passed/5 legacy-bind skips，风格修正后 15 focused passed。原生机制作者 v3 的 7 组全部 defer、发布 0 包；已修正 provenance 输入与时间/realization 说明，尚未完成新实作者或功能准入。M4–M6 均未完成。详见 [本次报告](server-copied-sandbox-and-native-authoring-20261004.md)。
+
+已启动服务器历史复验：Pyflakes 45 canonical 请求、Pylint 1,160 canonical 请求。源码固定 4907b5c，使用显式 namespace-copy 后端；原注册表、旧复验和失败记录均保留。当前快照见 [调度审计](results/server-historical-requalification-dispatch-20261004-v1.json)。这些是历史资格复验，正式 SWE solver runs 仍为 0。
+
+本次调度观察更新：Pyflakes 完成 45/45 项，26 项通过旧修复因果资格；Pylint 完成 89/1160 项，仍在运行。这些资格不等于 Skill 功能准入或正式 SWE 成效。
