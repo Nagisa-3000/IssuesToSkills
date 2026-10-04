@@ -23,3 +23,12 @@ Pylint #8120 已有真实因果尝试，而不是完全没有执行：目标 tes
 端口负例隔离了其他条件：只有 input:overload-review 未获满足，角色、前提和已绑定 Oracle 均通过。q1 缺少输入，2 次 solver 调用，刷新指导后拒绝修改；q2 为 post-edit/unvalidated，1 次调用直接拒绝修改。独立上下文复核各 1 次调用，两者均为 policy PASS/correct_refusal，领域状态为 CONTRADICTED。两 checkout 内容和权限一致、均无补丁和编辑记录。它们是同项目、受控输入的定义演练；正确拒绝没有建立修复成功、跨项目泛化或完整功能验收。
 
 下一步验收仍需：编辑/验证正例的全部保留义务；两项候选的真实源资格；有支持的 Pattern 和可绑定互补 Action；真实重写与两父组合；有效适用性及执行效果监督。原冻结池的无关标签和平局结果保持原样，不能用新候选改写旧实验。其后才能训练与校准、联合冻结正式协议，执行配对 SWE 和消融。
+
+
+## #8120 的后续资格复验与历史时间线缺口
+
+上述 v1 的失败记录继续保留。后续[资格复验 v7](results/pylint-8120-causal-requalification-20261005-v7.json)使用符合历史测试声明的固定依赖，原始 base、base 加回归断言、历史 fixed 的退出码分别为 0、1、0。目标 fixture 从 FAIL 到 PASS，regression_newtype_fstring 邻近控制在三组中均 PASS；没有删除邻近控制或全局抑制警告。
+
+[GitHub 关闭证明](results/pylint-8120-authoritative-closure-proof-20261005-v1.json)独立确认 PR #8123 为 #8120 的实际 closer，修复时间为 2023-01-28T09:29:29Z。#1279 继续保守地属于同一 bug cluster，不能额外增加独立支持。#8120 现已通过限定范围的历史来源资格，尚未证明跨项目机制归纳、当前 Action 绑定或 Skill 迁移成功；它仍不可用于 2021 年以前的训练/开发库。Ruff #5124 的 Rust 因果验证仍未完成。
+
+这次核查发现，#8120 的完整时间线存档遗漏了旧状态快照保留的关闭和改标题事件。[全历史覆盖审计](results/historical-timeline-state-coverage-audit-20261005-v1.json)共发现 2542 个有已知状态/标题事件缺口的 Issue。新的严格读取会标记缺口，保留原存档和输入版本；分页完成及存档 hash 只能证明已存内容，不能独立证明时间线完整。尚未补采这些缺口，不据此扩增 source、Pattern 或正式 KB 的统计。

@@ -11,7 +11,7 @@ from pathlib import Path
 from .action_contracts import utc
 from .history_census import fingerprint, now, redact_history, write_json
 from .history_text_recovery import load_text_recovery
-from .history_timeline import temporal_event_view
+from .history_timeline import state_title_coverage_gaps, temporal_event_view
 from .llm_http import OpenAICompatibleConfig, OpenAICompatibleTransport
 
 DISPOSITIONS = frozenset(
@@ -258,7 +258,13 @@ def observable_evidence(
             "timeline_metadata_complete": bool(timeline_manifest.exists()),
         }
         if strict_metadata:
-            gaps = timeline.get(ident["number"], {}).get("unavailable_event_metadata", [])
+            gaps = list(timeline.get(ident["number"], {}).get("unavailable_event_metadata", []))
+            if ident["number"] not in timeline:
+                gaps.append({"reason": "issue-missing-from-paginated-timeline"})
+            else:
+                gaps.extend(
+                    state_title_coverage_gaps(row["as_of"]["state_title_events"], events, cutoff)
+                )
             if gaps:
                 item["timeline_metadata_complete"] = False
                 item["timeline_metadata_gaps"] = gaps

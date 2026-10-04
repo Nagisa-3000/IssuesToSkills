@@ -282,3 +282,108 @@ def test_full_unchanged_population_reuses_reviews_without_model_calls(tmp_path, 
     assert result["full_history_qualified"] is False
     with pytest.raises(ValueError, match="separate"):
         review_population(records, prior, config, prior_records=records, prior_output=prior)
+
+
+def _set_state_title_coverage(root, state_events, events, *, omit_timeline_row=False):
+    folder = root / "example__repo"
+    issue = json.loads((folder / "issues.json").read_text())
+    issue["records"][0]["as_of"]["state_title_events"] = state_events
+    write_json(folder / "issues.json", issue)
+    manifest = json.loads((folder / "manifest.json").read_text())
+    manifest["issue_pages"][0]["sha256"] = fingerprint(issue)
+    write_json(folder / "manifest.json", manifest)
+    timeline = json.loads((folder / "timeline.json").read_text())
+    timeline["records"][0]["events"] = events
+    timeline["records"][0]["all_event_types_paginated"] = True
+    timeline["records"][0]["unavailable_event_metadata"] = []
+    if omit_timeline_row:
+        timeline["records"] = []
+    write_json(folder / "timeline.json", timeline)
+    tm = json.loads((folder / "timeline-manifest.json").read_text())
+    tm["batches"][0]["sha256"] = fingerprint(timeline["records"])
+    tm["all_event_types_paginated"] = True
+    write_json(folder / "timeline-manifest.json", tm)
+
+
+def test_paginated_timeline_cannot_hide_independently_observed_closure_or_rename(tmp_path):
+    # Pylint #8120's archived all-type timeline had a PR mention and comments,
+    # but omitted the closure and rename retained by the earlier state census.
+    root, _ = versioned_fixture(tmp_path)
+    states = [
+        {"kind": "RenamedTitleEvent", "available_at": "2023-01-27T19:34:35Z"},
+        {"kind": "ClosedEvent", "available_at": "2023-01-28T09:29:30Z"},
+    ]
+    mention = {
+        "__typename": "CrossReferencedEvent",
+        "id": "pr-mention",
+        "createdAt": "2023-01-27T21:16:31Z",
+        "willCloseTarget": False,
+        "source": {
+            "__typename": "PullRequest",
+            "number": 2,
+            "repository": {"nameWithOwner": "example/repo"},
+            "createdAt": "2023-01-27T21:16:31Z",
+            "mergedAt": "2023-01-28T09:29:29Z",
+            "mergeCommit": {"oid": "a" * 40},
+        },
+    }
+    _set_state_title_coverage(root, states, [mention])
+    files = {p: p.read_bytes() for p in root.rglob("*.json")}
+    result = observable_evidence(
+        root, "example/repo", CUTOFF, strict_metadata=True,
+        repair_locator_mode="all_pre_cutoff_mentions",
+    )[0]
+    assert result["timeline_metadata_complete"] is False
+    assert {gap["event_type"] for gap in result["timeline_metadata_gaps"]} == {
+        "ClosedEvent", "RenamedTitleEvent"
+    }
+    assert result["resolution_candidates"][0]["relationship"] == "mention_only_not_verified_resolution"
+    assert not any(e["kind"] == "ClosedEvent" for e in result["evidence"])
+    assert all(p.read_bytes() == content for p, content in files.items())
+
+
+def test_current_timeline_with_all_known_state_events_retains_actual_closure_proof(tmp_path):
+    root, _ = versioned_fixture(tmp_path)
+    states = [{"kind": "ClosedEvent", "available_at": "2023-01-28T09:29:30Z"}]
+    close = {
+        "__typename": "ClosedEvent",
+        "id": "actual-closure-node",
+        "createdAt": "2023-01-28T09:29:30+00:00",
+        "closer": {
+            "__typename": "PullRequest",
+            "number": 2,
+            "repository": {"nameWithOwner": "example/repo"},
+            "createdAt": "2023-01-27T21:16:31Z",
+            "mergedAt": "2023-01-28T09:29:29Z",
+            "mergeCommit": {"oid": "a" * 40},
+        },
+    }
+    _set_state_title_coverage(root, states, [close])
+    result = observable_evidence(
+        root, "example/repo", CUTOFF, strict_metadata=True,
+        repair_locator_mode="all_pre_cutoff_mentions",
+    )[0]
+    assert result["timeline_metadata_complete"] is True
+    assert "timeline_metadata_gaps" not in result
+    assert result["resolution_candidates"][0]["relationship"] == "direct_closure"
+    assert result["resolution_candidates"][0]["source_event_id"].endswith("actual-closure-node")
+
+
+def test_timeline_manifest_does_not_imply_coverage_for_an_absent_issue(tmp_path):
+    root, _ = versioned_fixture(tmp_path)
+    _set_state_title_coverage(root, [], [], omit_timeline_row=True)
+    result = observable_evidence(root, "example/repo", CUTOFF, strict_metadata=True)[0]
+    assert result["timeline_metadata_complete"] is False
+    assert result["timeline_metadata_gaps"] == [
+        {"reason": "issue-missing-from-paginated-timeline"}
+    ]
+
+
+def test_state_title_coverage_does_not_require_post_cutoff_events():
+    from arex_skill_graph.history_timeline import state_title_coverage_gaps
+
+    states = [
+        {"kind": "ClosedEvent", "available_at": CUTOFF},
+        {"kind": "ReopenedEvent", "available_at": AFTER},
+    ]
+    assert state_title_coverage_gaps(states, [], CUTOFF) == []

@@ -142,6 +142,35 @@ def temporal_event_view(event, cutoff):
     return result
 
 
+def state_title_coverage_gaps(state_title_events, events, cutoff):
+    """Reconcile independent state/title observations with a paginated timeline.
+
+    Pagination and archive hashes establish what was saved, not that GitHub
+    returned every historical event. Missing observations stay gaps; this does
+    not manufacture timeline IDs, closure proofs, or repair knowledge.
+    """
+    kinds = {"ClosedEvent", "ReopenedEvent", "RenamedTitleEvent"}
+    observed = {
+        (event["__typename"], utc(event["createdAt"]))
+        for event in events
+        if event.get("__typename") in kinds and event.get("createdAt")
+    }
+    gaps = []
+    for event in state_title_events:
+        if event.get("kind") not in kinds or utc(event["available_at"]) >= utc(cutoff):
+            continue
+        identity = (event["kind"], utc(event["available_at"]))
+        if identity not in observed:
+            gaps.append(
+                {
+                    "event_type": event["kind"],
+                    "available_at": event["available_at"],
+                    "reason": "known-state-title-event-missing-from-paginated-timeline",
+                }
+            )
+    return gaps
+
+
 class TimelineCensus:
     def __init__(self, root, repository, cutoff, api, progress=print):
         self.root = Path(root) / repository.replace("/", "__")

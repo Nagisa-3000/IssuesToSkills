@@ -2,7 +2,7 @@
 
 **目标尚未全部完成。M0–M3 已有实现和契约测试，真实功能、跨项目重写与组合验收仍不完整；M4 尚无合格的训练 Ranker；M5 尚未正式冻结；M6 的正式 SWE 运行仍为 0。**
 
-最新机器快照为 [v10](results/pattern-crossbind-ranker-current-status-20261005-v10.json)。[v9](results/pattern-crossbind-ranker-current-status-20261005-v9.json) 保留原生验证第二版完成时的状态。[v8](results/pattern-crossbind-ranker-current-status-20261005-v8.json) 保留验证第二版运行前的状态。[v7](results/pattern-crossbind-ranker-current-status-20261005-v7.json) 及更早版本保留当时的状态，不随新结果改写。代码、真实 Action 验收、泛化效果分别统计。
+最新机器快照为 [v11](results/pattern-crossbind-ranker-current-status-20261005-v11.json)。[v10](results/pattern-crossbind-ranker-current-status-20261005-v10.json) 保留端口拒绝控制完成时的状态。[v9](results/pattern-crossbind-ranker-current-status-20261005-v9.json) 保留原生验证第二版完成时的状态。[v8](results/pattern-crossbind-ranker-current-status-20261005-v8.json) 保留验证第二版运行前的状态。[v7](results/pattern-crossbind-ranker-current-status-20261005-v7.json) 及更早版本保留当时的状态，不随新结果改写。代码、真实 Action 验收、泛化效果分别统计。
 
 | 阶段 | 已实现或实际完成 | 尚缺的验收 |
 | --- | --- | --- |
@@ -50,11 +50,31 @@ q1 缺输入，实际用 2 次模型调用，刷新指导后拒绝修改；q2 �
 
 两项 2023 年修复不能进入 2021 年训练截止之前的 query/catalog。Ruff 还缺合格 Rust 因果验证 harness 与完整隔离运行环境。没有生成或确认新跨项目 Pattern，没有执行新两父组合，也没有新训练 checkpoint。
 
-本次固定审阅快照包含 9 个 Pylint 来源、9 个通过原生结构/来源验证的包和 27 个 Action 定义；完成来源的实际 authoring 调用为 21。全为 definition_only_not_executed、没有 Pattern、没有正式 KB 准入；之后仍在抽取的结果不计入该固定快照。见 [证据审计](results/cross-project-mechanism-evidence-audit-20261005-v1.json)。
+v10 固定审阅快照包含 9 个 Pylint 来源、9 个通过原生结构/来源验证的包和 27 个 Action 定义；完成来源的实际 authoring 调用为 21。全为 definition_only_not_executed、没有 Pattern、没有正式 KB 准入；之后仍在抽取的结果不计入该固定快照。见 [证据审计](results/cross-project-mechanism-evidence-audit-20261005-v1.json)。
+
+## 历史证据资格修复和时间线完整性纠正
+
+Pylint #8120 已完成新的独立[因果资格复验](results/pylint-8120-causal-requalification-20261005-v7.json)，旧失败版本未改写。历史 requirements_test_min.txt 固定 astroid==2.13.3 和 pytest~=7.2；旧环境的 astroid 2.15.8 超过项目上界，pytest 8.4.2 也不满足测试范围。新环境使用固定 Python 3.10.18、astroid 2.13.3、pytest 7.2.1 及记录了 wheel hash 的依赖，三组运行的隔离 runtime hash 完全相同。
+
+| 对照 | 退出码 | redefined_variable_type | regression_newtype_fstring |
+| --- | --- | --- | --- |
+| 原始 base | 0 | PASS | PASS |
+| base 加历史回归测试 | 1 | FAIL | PASS |
+| 历史 fixed | 0 | PASS | PASS |
+
+测试选择器保持不变，邻近控制保留，未全局忽略警告。得到 1 个 fail-to-pass 功能测试身份和 2 个 original-base pass-to-pass 身份；这是每组 2 个功能 fixture 的有限范围，不是整项目验证。
+
+[权威关闭证据](results/pylint-8120-authoritative-closure-proof-20261005-v1.json)确认 PR #8123 于 2023-01-28 合并后自动关闭 #8120。公开修复时间继续为 2023-01-28T09:29:29Z；2026 年的复验只作为来源资格证明，不能倒填为历史执行或纳入 2021 年之前的查询。该次复验 0 次模型调用、0 次 solver 修复、0 次正式 SWE 运行；尚未建立跨项目 Pattern 或迁移收益。
+
+核查还发现 #8120 的旧完整时间线缓存缺少原状态快照保存的关闭和改标题事件。新增 state_title_coverage_gaps 将独立的 pre-cutoff 状态/标题事件与严格读取的时间线交叉核对；缺失记录产生明确 metadata gap，缺少整条 Issue 时间线也不再因 manifest 存在而视为完整。已有 PR 提及保持原关系，不补造事件 ID、关闭证明或修复结论；旧页和固定模型输入保持不变。
+
+[全部 9356 条记录的覆盖审计](results/historical-timeline-state-coverage-audit-20261005-v1.json)发现 2542 个 Issue 有这类缺口：Pylint 2088、Pyflakes 54、Ruff 400。Issue 身份普查数量未变，但分页完成与 hash 通过不证明事件完整。旧审计中这类元数据完整性的表述需按新结果限定；这些缺口仍待补采、复核并建立新的输入版本。已有独立因果证明与有限测试资格单独记录，不能由元数据缺口推断修复无效，也不能将缺口当成合格历史经验。
+
+v11 的[独立定义快照](results/pylint-native-definition-snapshot-20261005-v12.json)包含 12 个完成的 Pylint 来源、12 个通过原生结构/来源验证的包、38 个 Action 定义和 26 次完成来源的实际 authoring 调用。均为 definition_only_not_executed；0 个跨项目 Pattern、0 个正式 KB 准入。正在生成的输出和未审阅的包继续保留在服务器，未批量发布。
 
 ## 工程检查、数据范围与剩余验收
 
-当前最终实现完整测试 **566 passed、19 skipped**；接续及相关定向测试 **52 passed、5 skipped**。修改文件的 Ruff E4/E7/E9/F 与 git diff --check 通过。跳过项不计为通过，工程检查不能替代泛化、修复效果或 SWE 验收。
+当前最终实现完整测试 **570 passed、19 skipped**，耗时 126.37 秒；新增时间线检查及相关定向测试 **20 passed**。此前接续及相关定向测试的 **52 passed、5 skipped** 记录保留。修改文件的 Ruff E4/E7/E9/F 与 git diff --check 通过。跳过项不计为通过，工程检查不能替代泛化、修复效果或 SWE 验收。
 
 历史范围保持 Pylint 5273、Pyflakes 501、Ruff 3582，共 **9356 个 Issue**。主截止 T=2024-01-01T00:00:00Z，训练截止 τ=2021-01-01T00:00:00Z，均为严格时间边界。已暴露的 Pylint #10034 继续排除正式评价。
 
