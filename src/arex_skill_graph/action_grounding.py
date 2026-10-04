@@ -16,7 +16,7 @@ from .action_observations import WITNESS_OPERATIONS
 from .adaptive_budget import BudgetedTransport
 from .skill_packages import _resolve
 from .task_context import EvidenceAnchor, ObservedFact, PortValue, SemanticCheck, assert_public
-from .workspace_state import public_workspace_sha256
+from .workspace_state import public_workspace_execution_sha256, public_workspace_sha256
 
 
 def observation_evidence(action, record, task, broker_observations):
@@ -30,18 +30,19 @@ def observation_evidence(action, record, task, broker_observations):
         "action_resource": action.resource,
         "task_id": task.task_id,
         "base_commit": task.base_commit,
-        "schema": "arex-action-observation-v2",
+        "schema": "arex-action-observation-v3",
         "semantic_validation": "unreviewed",
         "current_facts_promoted": False,
         "current_ports_promoted": False,
         "repair_success_established": False,
     }
     if any(record.get(k) != v for k, v in expected.items()):
-        raise ValueError("Action observation is not an authoritative witnessed v2 record")
+        raise ValueError("Action observation is not an authoritative witnessed v3 record")
     if (
         type(record.get("context_revision")) is not int
         or not 0 <= record["context_revision"] <= task.revision
         or record.get("workspace_sha256") != public_workspace_sha256(task.root)
+        or record.get("workspace_execution_sha256") != public_workspace_execution_sha256(task.root)
     ):
         raise ValueError("Action observation belongs to a stale public workspace")
     ports = {p.name: p for p in action.outputs}
@@ -110,10 +111,10 @@ def observation_evidence(action, record, task, broker_observations):
             raise ValueError("Action observation cannot use a declaration as a witness")
     seal = EvidenceAnchor(
         "current:action-workspace",
-        "workspace_snapshot",
-        "Content seal of the public workspace for reviewed Action results.",
+        "workspace_execution_snapshot",
+        "Content and permission seal of the public workspace for reviewed Action results.",
         task.base_commit,
-        sha256=record["workspace_sha256"],
+        sha256=record["workspace_execution_sha256"],
     )
     return emitted, tuple(anchors), seal
 
@@ -137,9 +138,9 @@ def review_action_observation(
     for anchor in current.anchors:
         row = asdict(anchor)
         if anchor.path:
-            row["current_source"] = _resolve(Path(current.root), anchor.path).read_text(
-                errors="replace"
-            )
+            path = _resolve(Path(current.root), anchor.path)
+            row["current_source"] = path.read_text(errors="replace")
+            row["current_mode"] = path.stat().st_mode & 0o7777
         evidence.append(row)
     assert_public(evidence)
     contract = {
@@ -274,6 +275,7 @@ def review_action_observation(
         "action_id": action.id,
         "package_sha256": action.package_hash,
         "workspace_sha256": record["workspace_sha256"],
+        "workspace_execution_sha256": record["workspace_execution_sha256"],
         "checks": [asdict(c) for c in checks],
         "current_ports_promoted": [v.port.name for v in ports],
         "current_fact_keys": [f.key for f in facts],

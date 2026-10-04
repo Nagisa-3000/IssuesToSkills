@@ -227,3 +227,22 @@ def test_diagnostic_probe_can_confirm_cause_without_establishing_repaired_behavi
     assert current.port_values
     assert record["witnesses"][0]["record"]["exit_code"] == 1
     assert not audit["repair_success_established"]
+
+
+def test_permission_only_change_invalidates_record_and_reviewed_inputs(tmp_path):
+    _package, task, action, record, observations, response = observed(tmp_path)
+    current, _audit = review(task, action, record, observations, response)
+    target = Path(task.root, "context.py")
+    target.chmod(0o755 if target.stat().st_mode & 0o111 == 0 else 0o644)
+    with pytest.raises(ValueError, match="stale"):
+        current.verify()
+    with pytest.raises(ValueError, match="stale"):
+        review(task, action, record, observations, response)
+
+
+def test_content_only_v2_receipt_is_not_silently_promoted(tmp_path):
+    _package, task, action, record, observations, response = observed(tmp_path)
+    record["schema"] = "arex-action-observation-v2"
+    record.pop("workspace_execution_sha256")
+    with pytest.raises(ValueError, match="v3"):
+        review(task, action, record, observations, response)

@@ -13,7 +13,7 @@ from pathlib import Path
 from .action_contracts import digest
 from .skill_packages import _resolve
 from .task_context import PortValue, assert_public
-from .workspace_state import public_workspace_sha256
+from .workspace_state import public_workspace_execution_sha256, public_workspace_sha256
 
 MAX_ARTIFACT_BYTES = 16 * 1024 * 1024
 WITNESS_OPERATIONS = frozenset({"read_file", "write_file", "run_public_command"})
@@ -104,7 +104,8 @@ def record_action_observation(action, request, task, broker_observations, *, rec
     if any(not set(value["evidence_refs"]).issubset(witnesses) for value in emitted):
         raise ValueError("Action observation witness references are not closed")
     result = {
-        "schema": "arex-action-observation-v2",
+        "schema": "arex-action-observation-v3",
+        "workspace_execution_sha256": public_workspace_execution_sha256(task.root),
         "workspace_sha256": public_workspace_sha256(task.root),
         "id": record_id,
         "action_id": action.id,

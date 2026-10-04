@@ -147,3 +147,53 @@ def test_read_only_action_exercise_denies_source_writes(tmp_path):
     assert result["public_workspace_read_only"]
     assert "read-only" in result["public_observations"][0]["denied"]
     assert Path(task.root, "checker.py").read_text() == original
+
+
+def test_invalid_approved_witness_is_rejected_and_can_be_corrected(tmp_path):
+    package, task, policy = make_fixture(tmp_path)
+    action = package.actions[0]
+
+    def record_step(identity):
+        return {
+            "operation": "record_action_observation",
+            "arguments": {
+                "action_id": action.id,
+                "context_revision": task.revision + 1,
+                "summary": "Record actual failed probe outcomes without accepting the repair.",
+                "outputs": [
+                    {"port_name": p.name, "observation_ids": [identity], "artifact_paths": []}
+                    for p in action.outputs
+                ],
+            },
+            "rationale": "Preserve witnessed outputs for separate review.",
+        }
+
+    steps = [
+        {
+            "operation": "run_public_command",
+            "arguments": {"argv": ["python3", "checker.py"]},
+            "rationale": "Observe a real public fixture failure.",
+        },
+        record_step("public:non-tool-guidance-refresh"),
+        record_step("public:observation:0"),
+        {"operation": "finish", "arguments": {}, "rationale": "Finish corrected record fixture."},
+    ]
+    with CatalogStore(tmp_path / "store.sqlite") as store:
+        store.initialize()
+        result = AdaptiveSolver(
+            ReplayTransport(steps),
+            WorkflowRanker(),
+            store,
+            policy,
+            BudgetLedger(BudgetCaps(history_tokens=200000)),
+            tools_factory=FixtureTools,
+        ).run(task, use_frozen_selection=True, recordable_actions=(action,))
+    assert result["solver_ended"] and not result["failure"]
+    denied = result["public_observations"][1]
+    assert not denied["recorded"]
+    assert denied["available_tool_observation_ids"] == ["public:observation:0"]
+    assert denied["current_context_revision"] == task.revision + 1
+    assert "non-tool" in denied["denied"]
+    assert len(result["action_observations"]) == 1
+    assert result["action_observations"][0]["witnesses"][0]["record"]["exit_code"] != 0
+    assert not result["action_observations"][0]["current_ports_promoted"]

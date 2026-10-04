@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import ClassVar
 
+import pytest
 from adaptive_fixture import make_fixture
 
 from arex_skill_graph.action_contracts import Dependency
@@ -232,3 +233,76 @@ def test_strict_functional_catalog_cannot_edit_from_unknown_inputs(tmp_path):
     assert result["strict_functional_action_catalog"]
     assert "actual current prerequisites" in result["public_observations"][0]["denied"]
     assert RecordingTools.calls[0]["readonly_workspace"]
+
+
+@pytest.mark.parametrize("outside", [False, True])
+@pytest.mark.parametrize("strict", [False, True])
+def test_ready_action_command_audits_the_actual_bound_write_set(tmp_path, outside, strict):
+    package, task, policy = make_fixture(tmp_path, pattern=False)
+    action = next(a for a in package.actions if a.id == "guard:a")
+    port = next(a for a in package.actions if a.id == "detect:a").outputs[0]
+    task = task.update(
+        facts=(ObservedFact("context_known", True, ("current:context",)),),
+        port_values=(PortValue(port, ("current:context",)),),
+        checks=(
+            SemanticCheck(
+                "current-connect:context:guard:a:context",
+                "PASS",
+                "Reviewed synthetic current input",
+                ("current:context",),
+                "fixture-review",
+            ),
+        ),
+    )
+    plan = plan_for(package, task)
+
+    class EditingTools(RecordingTools):
+        def run(self, argv, *, readonly_workspace=False, **options):
+            assert not readonly_workspace
+            source = self.root / "checker.py"
+            source.write_text(source.read_text().replace("return True", "return context != 'type'"))
+            if outside:
+                (self.root / "extra.py").write_text("out_of_scope = True")
+            return {"argv": argv, "exit_code": 0, "output": "Fixture executed a command edit"}
+
+    with CatalogStore(tmp_path / "command.sqlite") as store:
+        store.initialize()
+        result = AdaptiveSolver(
+            ReplayTransport(
+                [
+                    {
+                        "operation": "run_public_command",
+                        "arguments": {"action_id": action.id, "argv": ["fixture-edit"]},
+                        "rationale": "Execute an actually ready Action command",
+                    },
+                    {
+                        "operation": "finish",
+                        "arguments": {},
+                        "rationale": "End bound scope fixture",
+                    },
+                ]
+            ),
+            WorkflowRanker(),
+            store,
+            policy,
+            BudgetLedger(BudgetCaps(history_tokens=200000)),
+            tools_factory=EditingTools,
+        ).run(
+            task,
+            use_frozen_selection=True,
+            initial_plan=plan,
+            recordable_actions=(action,),
+            enforce_catalog_prerequisites=strict,
+        )
+    assert result["solver_ended"] and not result["failure"]
+    observation = result["public_observations"][0]
+    assert observation["write_scope_accepted"] is not outside
+    if outside:
+        assert observation["exit_code"] == 125 and observation["workspace_rollback"]
+        assert observation["process_exit_code"] == 0
+        assert observation["out_of_scope_paths"] == ["extra.py"]
+        assert not result["patch"]
+    else:
+        assert observation["exit_code"] == 0
+        assert "return context != 'type'" in result["patch"]
+    assert not Path(task.root, "extra.py").exists()

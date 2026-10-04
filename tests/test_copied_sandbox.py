@@ -295,3 +295,43 @@ def test_public_executable_survives_readonly_command_and_adoption(copied_tools):
     executed = copied_tools.run(["./public-script"])
     assert executed["exit_code"] == 0 and executed["output"] == "SCRIPT_OK", executed
     assert script.stat().st_mode & 0o7777 == 0o755
+
+
+def test_scoped_actual_command_rolls_back_unrelated_files_and_permissions(copied_tools):
+    from arex_skill_graph.workspace_state import public_workspace_execution_sha256
+    from arex_skill_graph.workspace_transactions import run_scoped_command
+
+    script = copied_tools.checkout / "public-script"
+    script.write_text("#!/bin/sh\nexit 0\n")
+    script.chmod(0o755)
+    before = public_workspace_execution_sha256(copied_tools.checkout)
+    result = run_scoped_command(
+        copied_tools.checkout,
+        {"source.txt"},
+        lambda: copied_tools.run(
+            [
+                "python3",
+                "-c",
+                "import pathlib,os;pathlib.Path('source.txt').write_text('unaccepted');"
+                "pathlib.Path('extra.py').write_text('outside');os.chmod('public-script',0o644)",
+            ]
+        ),
+    )
+    assert result["exit_code"] == 125 and result["process_exit_code"] == 0, result
+    assert result["workspace_rollback"] and not result["write_scope_accepted"]
+    assert result["out_of_scope_paths"] == ["extra.py", "public-script"]
+    assert public_workspace_execution_sha256(copied_tools.checkout) == before
+
+
+def test_scoped_actual_command_retains_valid_bound_changes(copied_tools):
+    from arex_skill_graph.workspace_transactions import run_scoped_command
+
+    result = run_scoped_command(
+        copied_tools.checkout,
+        {"source.txt"},
+        lambda: copied_tools.run(
+            ["python3", "-c", "from pathlib import Path;Path('source.txt').write_text('accepted')"]
+        ),
+    )
+    assert result["exit_code"] == 0 and result["write_scope_accepted"], result
+    assert (copied_tools.checkout / "source.txt").read_text() == "accepted"

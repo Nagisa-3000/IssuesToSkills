@@ -34,7 +34,12 @@ from .plan_validation import TaskWorkflowPlan, validate_task_plan
 from .public_snapshot import extract_public_archive
 from .skill_packages import _resolve
 from .task_context import EvidenceAnchor, ObservedFact, assert_public
-from .workspace_state import public_workspace_sha256
+from .workspace_state import (
+    copy_verified_workspace_modes,
+    public_workspace_execution_sha256,
+    public_workspace_sha256,
+)
+from .workspace_transactions import run_scoped_command
 
 
 class IsolationUnavailable(RuntimeError):
@@ -170,6 +175,8 @@ def snapshot_base(task, destination):
     destination = Path(destination)
     destination.mkdir()
     extract_public_archive(raw, destination)
+    if any(a.kind == "workspace_execution_snapshot" for a in task.anchors):
+        copy_verified_workspace_modes(task.root, destination)
     initial = replace(task, root=str(destination))
     initial.verify(verify_head=False)
     for path in destination.rglob("*"):
@@ -387,7 +394,11 @@ class AdaptiveSolver:
                     for record in action_observations:
                         if record["id"] in reviewed_records:
                             continue
-                        if record.get("workspace_sha256") != public_workspace_sha256(current.root):
+                        if record.get("workspace_sha256") != public_workspace_sha256(
+                            current.root
+                        ) or record.get(
+                            "workspace_execution_sha256"
+                        ) != public_workspace_execution_sha256(current.root):
                             action_output_reviews.append(
                                 {
                                     "record_id": record["id"],
@@ -678,23 +689,40 @@ class AdaptiveSolver:
                                     }
                                 )
                                 continue
-                        ready_modification = (
-                            selected is not None
-                            and ready_modifying_action(selected, current, args.get("action_id"))
-                            is not None
+                        modifying = (
+                            ready_modifying_action(selected, current, args.get("action_id"))
+                            if selected is not None
+                            else None
                         )
-                        catalog_ready = (
-                            ready_catalog_action(args.get("action_id"), current) is not None
-                        )
-                        result = tools.run(
-                            args["argv"],
-                            timeout=args.get("timeout", 60),
-                            readonly_workspace=probe_only
+                        catalog_modifying = ready_catalog_action(args.get("action_id"), current)
+                        readonly = (
+                            probe_only
                             or read_only_workspace
                             or pending_guidance_refresh
-                            or (selected is not None and not ready_modification)
-                            or (enforce_catalog_prerequisites and not catalog_ready),
+                            or (selected is not None and modifying is None)
+                            or (enforce_catalog_prerequisites and catalog_modifying is None)
                         )
+
+                        def invoke():
+                            return tools.run(
+                                args["argv"],
+                                timeout=args.get("timeout", 60),
+                                readonly_workspace=readonly,
+                            )
+
+                        allowed = None
+                        if not readonly and (modifying or enforce_catalog_prerequisites):
+                            allowed = declared_write_paths(modifying or catalog_modifying, current)
+                            if enforce_catalog_prerequisites:
+                                allowed &= declared_write_paths(catalog_modifying, current)
+                        if allowed is not None:
+                            self.ledger.charge(
+                                "tool_calls", 1, "current Action command write-set audit"
+                            )
+                            result = run_scoped_command(current.root, allowed, invoke)
+                            self.ledger.check_time()
+                        else:
+                            result = invoke()
                         anchor_id = "current:probe:" + str(len(observations))
                         anchor = EvidenceAnchor(
                             anchor_id,
@@ -703,7 +731,12 @@ class AdaptiveSolver:
                             current.base_commit,
                             exit_code=result["exit_code"],
                         )
-                        current = current.update(
+                        current = replace(
+                            current,
+                            facts=tuple(
+                                f for f in current.facts if f.key != "last_public_probe_passed"
+                            ),
+                        ).update(
                             anchors=(anchor,),
                             facts=(
                                 ObservedFact(
@@ -711,7 +744,10 @@ class AdaptiveSolver:
                                     result["exit_code"] == 0,
                                     (anchor_id,),
                                 ),
-                            ),
+                            )
+                            if result.get("execution_available", True)
+                            and result.get("exit_code") is not None
+                            else (),
                         )
                     elif operation == "record_action_observation":
                         self.ledger.charge("tool_calls", 1, "witnessed Action output recording")
@@ -720,15 +756,25 @@ class AdaptiveSolver:
                             raise ValueError(
                                 "Action observation was not delivered from an approved source"
                             )
-                        record = record_action_observation(
-                            action,
-                            args,
-                            current,
-                            broker_observations,
-                            record_id="action-result:" + str(len(action_observations)),
-                        )
-                        action_observations.append(record)
-                        result = {"operation": operation, "record": record}
+                        try:
+                            record = record_action_observation(
+                                action,
+                                args,
+                                current,
+                                broker_observations,
+                                record_id="action-result:" + str(len(action_observations)),
+                            )
+                        except ValueError as exc:
+                            result = {
+                                "operation": operation,
+                                "recorded": False,
+                                "denied": str(exc),
+                                "current_context_revision": current.revision,
+                                "available_tool_observation_ids": sorted(broker_observations),
+                            }
+                        else:
+                            action_observations.append(record)
+                            result = {"operation": operation, "record": record}
                     elif operation == "drop_guidance":
                         self.ledger.charge(
                             "tool_calls", 1, "explicit fallback from conditional Skill guidance"
@@ -766,8 +812,12 @@ class AdaptiveSolver:
                         raise ValueError("unknown solver operation")
                     changed_anchors = []
                     for anchor in current.anchors:
-                        if anchor.kind == "workspace_snapshot":
-                            workspace_hash = public_workspace_sha256(current.root)
+                        if anchor.kind in {"workspace_snapshot", "workspace_execution_snapshot"}:
+                            workspace_hash = (
+                                public_workspace_execution_sha256(current.root)
+                                if anchor.kind == "workspace_execution_snapshot"
+                                else public_workspace_sha256(current.root)
+                            )
                             if workspace_hash != anchor.sha256:
                                 changed_anchors.append(
                                     replace(

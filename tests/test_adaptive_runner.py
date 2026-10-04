@@ -318,3 +318,132 @@ def test_frozen_pool_cli_compares_prompted_and_trained_with_isolated_branches(tm
     assert result["configuration"]["offline_replay"] is True
     assert result["repair_effectiveness_proven"] is False
     assert Path(task.root, "checker.py").read_text() == original
+
+
+def test_snapshot_preserves_reviewed_execution_modes(tmp_path):
+    from dataclasses import replace
+    from arex_skill_graph.adaptive_runner import snapshot_base
+    from arex_skill_graph.task_context import EvidenceAnchor
+    from arex_skill_graph.workspace_state import public_workspace_execution_sha256
+
+    _, task, _ = make_fixture(tmp_path)
+    Path(task.root).chmod(0o750)
+    Path(task.root, "checker.py").chmod(0o664)
+    Path(task.root, "context.py").chmod(0o640)
+    seal = public_workspace_execution_sha256(task.root)
+    task = replace(
+        task,
+        anchors=(
+            *task.anchors,
+            EvidenceAnchor(
+                "reviewed:workspace",
+                "workspace_execution_snapshot",
+                "Reviewed public state",
+                task.base_commit,
+                sha256=seal,
+            ),
+        ),
+    )
+    copied = snapshot_base(task, tmp_path / "snapshot")
+    copied.verify(verify_head=False)
+    assert public_workspace_execution_sha256(copied.root) == seal
+    assert not Path(copied.root, ".git").exists()
+
+
+def test_snapshot_does_not_transfer_reviewed_modes_to_different_content(tmp_path):
+    import hashlib
+    from dataclasses import replace
+    from arex_skill_graph.adaptive_runner import snapshot_base
+    from arex_skill_graph.task_context import EvidenceAnchor
+    from arex_skill_graph.workspace_state import public_workspace_execution_sha256
+
+    _, task, _ = make_fixture(tmp_path)
+    path = Path(task.root, "checker.py")
+    path.write_text(path.read_text().replace("return True", "return False"))
+    anchors = tuple(
+        replace(a, sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+        if a.path == "checker.py"
+        else a
+        for a in task.anchors
+    )
+    task = replace(
+        task,
+        anchors=(
+            *anchors,
+            EvidenceAnchor(
+                "reviewed:workspace",
+                "workspace_execution_snapshot",
+                "Reviewed changed state",
+                task.base_commit,
+                sha256=public_workspace_execution_sha256(task.root),
+            ),
+        ),
+    )
+    task.verify()
+    with pytest.raises(ValueError, match="content differs from the pinned base archive"):
+        snapshot_base(task, tmp_path / "snapshot")
+
+
+@pytest.mark.parametrize("exit_code,expected", [(0, True), (1, False), (None, None)])
+def test_unexecuted_public_probe_is_unknown_and_drops_the_old_fact(tmp_path, exit_code, expected):
+    from arex_skill_graph.task_context import ObservedFact
+
+    _, task, policy = make_fixture(tmp_path)
+    task = task.update(
+        facts=(ObservedFact("last_public_probe_passed", True, ("current:checker",)),)
+    )
+
+    class ProbeTools:
+        isolation = "test-only-probe-fixture"
+        runtime_sha256 = "test-only"
+
+        def __init__(self, root, ledger):
+            pass
+
+        def preflight(self):
+            pass
+
+        def close(self):
+            pass
+
+        def run(self, argv, **options):
+            return {
+                "argv": argv,
+                "exit_code": exit_code,
+                "execution_available": exit_code is not None,
+                "output": "Fixture outcome",
+            }
+
+    class CapturingReplay(ReplayTransport):
+        def __init__(self, steps):
+            super().__init__(steps)
+            self.contexts = []
+
+        def complete(self, **kwargs):
+            self.contexts.append(json.loads(kwargs["user"])["current"])
+            return super().complete(**kwargs)
+
+    replay = CapturingReplay(
+        [
+            {
+                "operation": "run_public_command",
+                "arguments": {"argv": ["python3", "-V"]},
+                "rationale": "Observe an execution availability control",
+            },
+            {"operation": "finish", "arguments": {}, "rationale": "Finish broker fixture"},
+        ]
+    )
+    with CatalogStore(tmp_path / "probe.sqlite") as store:
+        store.initialize()
+        result = AdaptiveSolver(
+            replay,
+            WorkflowRanker(),
+            store,
+            policy,
+            BudgetLedger(BudgetCaps(history_tokens=200000)),
+            arm="B0",
+            tools_factory=ProbeTools,
+        ).run(task)
+    assert result["solver_ended"] and not result["failure"]
+    latest = [f for f in replay.contexts[-1]["facts"] if f["key"] == "last_public_probe_passed"]
+    assert ([f["value"] for f in latest] == [expected]) if expected is not None else not latest
