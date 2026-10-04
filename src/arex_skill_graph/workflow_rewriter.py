@@ -428,3 +428,40 @@ def rewrite_workflow(
     return RewriteResult(
         tuple(candidates[: budget.caps.composed_plans]), tuple(unmet), tuple(probes), tuple(reasons)
     )
+
+
+def rebind_frozen_plan(plan, task, resource_policy):
+    """Renew current bindings/dependencies without introducing another candidate."""
+    from dataclasses import replace
+
+    if plan.task_id != task.task_id or plan.base_commit != task.base_commit:
+        raise ValueError("frozen candidate belongs to another public query/base")
+    packages = resource_policy.load()
+    actions = {a.id: a for p in packages for a in p.actions}
+    workflows = {w.id: w for p in packages for w in p.workflows}
+    if any(actions.get(i.action.id) != i.action for i in plan.instances):
+        raise ValueError("frozen candidate Action differs from authoritative package")
+    if any(wid not in workflows for wid in plan.parent_workflow_ids):
+        raise ValueError("frozen candidate parent is missing")
+    if plan.pattern and not any(p.pattern == plan.pattern for p in packages):
+        raise ValueError("frozen candidate Pattern differs from authoritative package")
+    rebound = bind_selection(
+        task,
+        plan.pattern,
+        tuple(i.action for i in plan.instances),
+        tuple(workflows[wid] for wid in plan.parent_workflow_ids),
+        changes=(
+            *plan.changes,
+            {
+                "operation": "rebind_frozen_candidate",
+                "nominated_plan_id": plan.id,
+                "reason": "Renew current evidence and bindings; keep nominated Action/Pattern/parent identities.",
+            },
+        ),
+    )
+    return replace(
+        rebound,
+        required_effects=tuple(dict.fromkeys((*plan.required_effects, *rebound.required_effects))),
+        invariants=tuple(dict.fromkeys((*plan.invariants, *rebound.invariants))),
+        stop_conditions=plan.stop_conditions,
+    )

@@ -253,6 +253,7 @@ def test_execution_supervision_needs_actual_controlled_guidance(tmp_path):
         "evaluation": {
             "evaluation_completed": True,
             "evaluator_version": "synthetic-independent",
+            "causal_controls_passed": True,
             "evaluation_spec_sha256": "a" * 64,
             "regression_exit_codes": [0],
         },
@@ -260,6 +261,43 @@ def test_execution_supervision_needs_actual_controlled_guidance(tmp_path):
     }
     label = execution_label_from_run(query, "workflow:a", "workflow", run, sampling_probability=0.5)
     assert label.outcome and label.regression_pass and label.label_source == "execution"
+    switched = {
+        **run,
+        "guidance_usage": [
+            *run["guidance_usage"],
+            {"plan_id": "plan:other", "parent_workflow_ids": ["workflow:b"]},
+        ],
+    }
+    with pytest.raises(ValueError, match="switched away"):
+        execution_label_from_run(
+            query, "workflow:a", "workflow", switched, sampling_probability=0.5
+        )
+    with pytest.raises(ValueError, match="switched away"):
+        execution_label_from_run(query, "plan:one", "plan", switched, sampling_probability=0.5)
+    rebound = {
+        **run,
+        "guidance_usage": [
+            *run["guidance_usage"],
+            {
+                "plan_id": "plan:rebound",
+                "nominated_plan_id": "plan:one",
+                "parent_workflow_ids": ["workflow:a"],
+            },
+        ],
+    }
+    assert execution_label_from_run(
+        query, "plan:one", "plan", rebound, sampling_probability=0.5
+    ).outcome
+
+    for controls in (False, None):
+        with pytest.raises(ValueError, match="causally reconciled"):
+            execution_label_from_run(
+                query,
+                "workflow:a",
+                "workflow",
+                {**run, "evaluation": {**run["evaluation"], "causal_controls_passed": controls}},
+                sampling_probability=0.5,
+            )
     with pytest.raises(ValueError, match="did not use"):
         execution_label_from_run(query, "workflow:b", "workflow", run, sampling_probability=0.5)
     with pytest.raises(ValueError, match="independent"):

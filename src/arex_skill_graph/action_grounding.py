@@ -180,6 +180,9 @@ def review_action_observation(
                 "base_commit": current.base_commit,
                 "current_evidence": evidence,
                 "authored_contract": contract,
+                "bound_current_oracles": [
+                    asdict(o) for o in current.oracles if o.action_id == action.id
+                ],
                 "solver_claim": record["summary"],
                 "observed_outputs": record["outputs"],
                 "expected_check_keys": sorted(expected),
@@ -221,6 +224,38 @@ def review_action_observation(
     if {c.key for c in checks} != expected or len(checks) != len(expected):
         raise ValueError("Action review must account for every requested check exactly once")
     by_key = {c.key: c for c in checks}
+    if action.kind == "validate":
+        commands = [
+            w["record"]
+            for w in record["witnesses"]
+            if w["kind"] == "broker_observation"
+            and w["record"].get("operation") == "run_public_command"
+        ]
+        for oracle in action.oracle:
+            if by_key["oracle:" + oracle.id].status != CheckStatus.PASS:
+                continue
+            bound = next(
+                (
+                    o
+                    for o in current.oracles
+                    if o.action_id == action.id and o.source_oracle_id == oracle.id
+                ),
+                None,
+            )
+            matches = [o for o in commands if bound and o.get("argv") == list(bound.command)]
+            latest = (
+                max(matches, key=lambda item: item.get("context_revision", -1)) if matches else None
+            )
+            if (
+                latest is None
+                or latest.get("execution_available", True) is not True
+                or latest.get("exit_code") != 0
+                or latest.get("timed_out", False)
+                or latest.get("workspace_execution_sha256") != record["workspace_execution_sha256"]
+            ):
+                raise ValueError(
+                    "validation Oracle PASS requires its bound command to pass on the current sealed workspace"
+                )
     facts = []
     goals = {p.key for p in task.goals}
     anchor_map = {a.id: a for a in current.anchors}

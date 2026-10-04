@@ -22,7 +22,7 @@ from .action_contracts import digest
 from .action_grounding import review_action_observation
 from .action_observations import record_action_observation
 from .adaptive_budget import BudgetedTransport, BudgetExceeded
-from .adaptive_guidance import prepare_adaptive_guidance
+from .adaptive_guidance import current_grounding, prepare_adaptive_guidance
 from .execution_frontier import (
     action_execution_checks,
     declared_write_paths,
@@ -40,6 +40,7 @@ from .workspace_state import (
     public_workspace_sha256,
 )
 from .workspace_transactions import run_scoped_command
+from .workflow_rewriter import rebind_frozen_plan
 
 
 class IsolationUnavailable(RuntimeError):
@@ -418,15 +419,49 @@ class AdaptiveSolver:
                             )
                             action_output_reviews.append(output_review)
                         reviewed_records.add(record["id"])
-                result = prepare_adaptive_guidance(
-                    current,
-                    self.store,
-                    policy,
-                    self.ranker,
-                    self.ledger,
-                    arm=self.arm,
-                    ground_with_model=self.ranker.transport is not None,
-                )
+                if use_frozen_selection:
+                    # Fixed-candidate supervision permits fresh current binding,
+                    # never a new rewrite/composition/retrieval choice.
+                    if initial_plan and self.ranker.transport is not None:
+                        scoped = [
+                            p
+                            for p in policy.load()
+                            if p.reference["skill_id"] in initial_plan.package_ids
+                        ]
+                        current = current_grounding(
+                            current,
+                            scoped,
+                            self.ranker.transport,
+                            self.ledger,
+                            verify_head=policy.verify_head,
+                        )
+                    rebound = (
+                        rebind_frozen_plan(initial_plan, current, policy) if initial_plan else None
+                    )
+                    report = validate_task_plan(rebound, current, policy) if rebound else None
+                    if report and report.status == "FAIL":
+                        rebound = None
+                    result = {
+                        "schema": "frozen-candidate-rebinding-v1",
+                        "task_context": current.to_dict(),
+                        "selected_plan": rebound.to_dict() if rebound else None,
+                        "nominated_plan_id": initial_plan.id if initial_plan else None,
+                        "candidate_generation_frozen": True,
+                        "validation": report.to_dict() if report else None,
+                        "guidance": GuidanceRenderer(policy, self.ledger).render(rebound, current)
+                        if rebound
+                        else "Continue normal public issue solving from current observations.",
+                    }
+                else:
+                    result = prepare_adaptive_guidance(
+                        current,
+                        self.store,
+                        policy,
+                        self.ranker,
+                        self.ledger,
+                        arm=self.arm,
+                        ground_with_model=self.ranker.transport is not None,
+                    )
                 current = type(current).from_dict(result["task_context"])
                 selected = (
                     TaskWorkflowPlan.from_dict(result["selected_plan"])
@@ -441,6 +476,9 @@ class AdaptiveSolver:
                     guidance_usage.append(
                         {
                             "plan_id": selected.id,
+                            "nominated_plan_id": initial_plan.id
+                            if use_frozen_selection and initial_plan
+                            else None,
                             "parent_workflow_ids": list(selected.parent_workflow_ids),
                             "context_revision": current.revision,
                         }
@@ -723,6 +761,9 @@ class AdaptiveSolver:
                             self.ledger.check_time()
                         else:
                             result = invoke()
+                        result["workspace_execution_sha256"] = public_workspace_execution_sha256(
+                            current.root
+                        )
                         anchor_id = "current:probe:" + str(len(observations))
                         anchor = EvidenceAnchor(
                             anchor_id,
@@ -880,6 +921,8 @@ class AdaptiveSolver:
                 "strict_functional_action_catalog": enforce_catalog_prerequisites,
                 "public_workspace_read_only": read_only_workspace,
                 "guidance_usage": guidance_usage,
+                "candidate_generation_frozen": use_frozen_selection,
+                "nominated_plan_id": initial_plan.id if initial_plan else None,
                 "budget": self.ledger.snapshot(),
                 "isolation": tools.isolation,
                 "runtime_sha256": tools.runtime_sha256,

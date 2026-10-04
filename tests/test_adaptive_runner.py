@@ -447,3 +447,87 @@ def test_unexecuted_public_probe_is_unknown_and_drops_the_old_fact(tmp_path, exi
     assert result["solver_ended"] and not result["failure"]
     latest = [f for f in replay.contexts[-1]["facts"] if f["key"] == "last_public_probe_passed"]
     assert ([f["value"] for f in latest] == [expected]) if expected is not None else not latest
+
+
+def test_frozen_refresh_rebinds_without_running_candidate_generation(tmp_path, monkeypatch):
+    import arex_skill_graph.adaptive_runner as runner
+    from test_adaptive_contracts import good_plan
+
+    package, task, policy = make_fixture(tmp_path)
+    initial = good_plan(package, task)
+    before = initial.to_dict()
+
+    def reject_generation(*_args, **_kwargs):
+        raise AssertionError("fixed candidate refresh invoked retrieval/rewrite/composition")
+
+    monkeypatch.setattr(runner, "prepare_adaptive_guidance", reject_generation)
+
+    class EmptyTestTools:
+        isolation = "test-only-no-command-execution"
+        runtime_sha256 = "test-only"
+
+        def __init__(self, *_args):
+            pass
+
+        def preflight(self):
+            pass
+
+        def close(self):
+            pass
+
+    replay = ReplayTransport(
+        [
+            {
+                "operation": "refresh_guidance",
+                "arguments": {},
+                "rationale": "Renew fixed current binding",
+            },
+            {"operation": "finish", "arguments": {}, "rationale": "End fixed-scope protocol test"},
+        ]
+    )
+    with CatalogStore(tmp_path / "frozen.sqlite") as store:
+        store.initialize()
+        result = AdaptiveSolver(
+            replay,
+            WorkflowRanker(),
+            store,
+            policy,
+            BudgetLedger(BudgetCaps(history_tokens=200000)),
+            tools_factory=EmptyTestTools,
+        ).run(task, use_frozen_selection=True, initial_plan=initial)
+    assert result["solver_ended"] and not result["failure"]
+    assert result["candidate_generation_frozen"] is True
+    assert result["nominated_plan_id"] == initial.id
+    refresh = result["guidance_runs"][0]
+    assert refresh["candidate_generation_frozen"] is True
+    refreshed = refresh["selected_plan"]
+    assert tuple(refreshed["parent_workflow_ids"]) == initial.parent_workflow_ids
+    assert {i["action"]["id"] for i in refreshed["instances"]} == {
+        i.action.id for i in initial.instances
+    }
+    assert all(
+        row.get("nominated_plan_id", initial.id) == initial.id for row in result["guidance_usage"]
+    )
+    assert initial.to_dict() == before
+
+
+def test_frozen_rebinding_retains_actions_and_rejects_tampered_contract(tmp_path):
+    from dataclasses import replace
+    from test_adaptive_contracts import good_plan
+    from arex_skill_graph.workflow_rewriter import rebind_frozen_plan
+
+    package, task, policy = make_fixture(tmp_path)
+    initial = good_plan(package, task)
+    updated = task.update()
+    rebound = rebind_frozen_plan(initial, updated, policy)
+    assert rebound.context_revision == updated.revision
+    assert rebound.parent_workflow_ids == initial.parent_workflow_ids
+    assert tuple(i.action for i in rebound.instances) == tuple(i.action for i in initial.instances)
+    assert set(initial.required_effects).issubset(rebound.required_effects)
+    assert set(initial.invariants).issubset(rebound.invariants)
+    changed = replace(initial.instances[0].action, operation="invented unsourced operation")
+    corrupted = replace(
+        initial, instances=(replace(initial.instances[0], action=changed), *initial.instances[1:])
+    )
+    with pytest.raises(ValueError, match="authoritative"):
+        rebind_frozen_plan(corrupted, updated, policy)

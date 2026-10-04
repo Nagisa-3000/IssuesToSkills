@@ -338,6 +338,10 @@ def execution_label_from_run(
         or evaluation.get("evaluation_completed") is not True
     ):
         raise ValueError("completed independent execution is required")
+    if evaluation.get("causal_controls_passed") is not True:
+        raise ValueError(
+            "causally reconciled independent evaluation is required for utility supervision"
+        )
     usage = run.get("guidance_usage", [])
     relevant = (
         [record for record in usage if record["plan_id"] == candidate_id]
@@ -346,6 +350,15 @@ def execution_label_from_run(
     )
     if not relevant:
         raise ValueError("trajectory did not use the nominated candidate as controlled guidance")
+    if candidate_kind == "workflow":
+        switched = any(record["parent_workflow_ids"] != [candidate_id] for record in usage)
+    else:
+        switched = any(
+            record["plan_id"] != candidate_id and record.get("nominated_plan_id") != candidate_id
+            for record in usage
+        )
+    if switched:
+        raise ValueError("trajectory switched away from the nominated controlled candidate")
     if not run.get("requests") or run["budget"].get("model_tokens", 0) <= 0:
         raise ValueError("controlled guidance did not reach a real solver request")
     return SupervisionLabel(

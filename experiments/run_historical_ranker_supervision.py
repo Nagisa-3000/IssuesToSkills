@@ -20,8 +20,9 @@ from arex_skill_graph.adaptive_guidance import index_native_package
 from arex_skill_graph.adaptive_runner import TOOL_BACKENDS, AdaptiveSolver
 from arex_skill_graph.embeddings import TransformerEncoder
 from arex_skill_graph.historical_solver_evaluator import historical_evaluator
+from arex_skill_graph.historical_plan_pool import freeze_plan_candidates
 from arex_skill_graph.history_census import fingerprint, write_json
-from arex_skill_graph.plan_validation import ResourcePolicy, validate_task_plan
+from arex_skill_graph.plan_validation import ResourcePolicy, TaskWorkflowPlan, validate_task_plan
 from arex_skill_graph.store import CatalogStore
 from arex_skill_graph.task_context import TaskContext
 from arex_skill_graph.temporal_ranker_data import (
@@ -50,8 +51,14 @@ def main(argv=None):
     parser.add_argument("--http-backend", choices=["native", "windows_pipe"], default="native")
     parser.add_argument("--api-key-env", default="AREX_LLM_API_KEY")
     parser.add_argument("--sandbox-backend", choices=TOOL_BACKENDS, default="namespace-bind")
-    parser.add_argument("--workers", type=int, default=3)
+    parser.add_argument("--workers", type=int, default=1)
+    parser.add_argument("--candidate-kind", choices=["workflow", "plan", "both"], default="both")
     parser.add_argument("--seed", type=int, default=20261004)
+    parser.add_argument(
+        "--prepare-only",
+        action="store_true",
+        help="Freeze public candidate pools and schedule without model or solver execution",
+    )
     args = parser.parse_args(argv)
     import torch
 
@@ -86,6 +93,8 @@ def main(argv=None):
         "encoder": encoder.descriptor(),
         "solver_system_sha256": fingerprint(AdaptiveSolver.SYSTEM),
         "seed": args.seed,
+        "candidate_kind": args.candidate_kind,
+        "candidate_generation_frozen": True,
         "sandbox_backend": args.sandbox_backend,
         "execution_policy_sha256": fingerprint(
             {
@@ -97,6 +106,9 @@ def main(argv=None):
                     "src/arex_skill_graph/copied_sandbox_worker.py",
                     "src/arex_skill_graph/historical_solver_evaluator.py",
                     "src/arex_skill_graph/temporal_ranker_data.py",
+                    "src/arex_skill_graph/historical_plan_pool.py",
+                    "src/arex_skill_graph/workflow_rewriter.py",
+                    "src/arex_skill_graph/crossbind.py",
                 )
             }
         ),
@@ -111,7 +123,7 @@ def main(argv=None):
     if checkpoint.exists() and json.loads(checkpoint.read_text()) != identity:
         raise ValueError("controlled historical study identity changed; use a new version")
     write_json(checkpoint, identity)
-    scheduled, coverage = [], []
+    scheduled, coverage, plan_pools = [], [], {}
     for query in queries:
         policy, eligible, catalog_hash, rejected = eligible_catalog(
             query,
@@ -156,18 +168,70 @@ def main(argv=None):
         if remaining:
             chosen.append((rng.choice(remaining), 1.0 / len(remaining)))
         case = query.task.task_id.replace("/", "__").replace(":", "-")
-        scheduled.append((query, None, None, policy, 1.0, case + "/baseline"))
-        for number, (index, probability) in enumerate(chosen, 1):
-            package, workflow = candidates[index]
-            scheduled.append(
-                (
-                    query,
-                    package.reference,
-                    workflow,
-                    policy,
-                    probability,
-                    case + "/candidate-" + str(number),
+        scheduled.append((query, (), None, "baseline", None, policy, 1.0, case + "/baseline"))
+        if args.candidate_kind in {"workflow", "both"}:
+            for number, (index, probability) in enumerate(chosen, 1):
+                package, workflow = candidates[index]
+                initial = bind_selection(query.task, None, workflow.actions, (workflow,))
+                scheduled.append(
+                    (
+                        query,
+                        (package.reference,),
+                        workflow.id,
+                        "workflow",
+                        initial,
+                        policy,
+                        probability,
+                        case + "/candidate-" + str(number),
+                    )
                 )
+        if args.candidate_kind in {"plan", "both"}:
+            parents = tuple(candidates[i][1].id for i, _ in chosen if reports[i].status != "FAIL")[
+                :2
+            ]
+            pattern_id = next(
+                (
+                    p.pattern.id
+                    for p in resources.load()
+                    if p.pattern
+                    and set(parents).issubset(p.pattern.supporting_workflow_ids)
+                    and query.task.semantic("pattern:" + p.pattern.id).status == "PASS"
+                ),
+                None,
+            )
+            pool = freeze_plan_candidates(
+                query.task,
+                resources,
+                parents,
+                new_ledger(tokenizer="cl100k_base"),
+                pattern_id=pattern_id,
+            )
+            plan_pools[query.task.task_id] = pool
+            for number, candidate in enumerate(pool["candidates"], 1):
+                plan = TaskWorkflowPlan.from_dict(candidate["plan"])
+                roots = tuple(ref for ref in eligible if ref["skill_id"] in plan.package_ids)
+                scheduled.append(
+                    (
+                        query,
+                        roots,
+                        plan.id,
+                        "plan",
+                        plan,
+                        policy,
+                        1.0,
+                        case + "/plan-" + str(number),
+                    )
+                )
+        if args.prepare_only:
+            write_json(
+                args.output_dir / "preparation-progress.json",
+                {
+                    "completed_queries": len(plan_pools),
+                    "requested_queries": len(queries),
+                    "active_query": query.task.task_id,
+                    "solver_runs": 0,
+                    "formal_SWE_runs": 0,
+                },
             )
         coverage.append(
             {
@@ -183,9 +247,43 @@ def main(argv=None):
             }
         )
     write_json(args.output_dir / "candidate-coverage.json", coverage)
+    write_json(args.output_dir / "plan-pools.json", plan_pools)
+    write_json(
+        args.output_dir / "plans.json",
+        {qid: [c["plan"] for c in pool["candidates"]] for qid, pool in plan_pools.items()},
+    )
+
+    write_json(
+        args.output_dir / "controlled-schedule.json",
+        [
+            {
+                "query_id": b[0].task.task_id,
+                "candidate_id": b[2],
+                "candidate_kind": b[3],
+                "sampling_probability": b[6],
+                "relative_output": b[7],
+            }
+            for b in scheduled
+        ],
+    )
+    if args.prepare_only:
+        print(
+            json.dumps(
+                {
+                    "prepared_queries": len(queries),
+                    "scheduled_branches": len(scheduled),
+                    "model_calls": 0,
+                    "solver_runs": 0,
+                    "formal_SWE_runs": 0,
+                }
+            )
+        )
+        return 0
 
     def run_branch(branch):
-        query, reference, workflow, policy, probability, relative = branch
+        query, branch_refs, candidate_id, candidate_kind, initial, policy, probability, relative = (
+            branch
+        )
         directory = args.output_dir / relative
         saved_path = directory / "run.json"
         if saved_path.exists():
@@ -195,19 +293,15 @@ def main(argv=None):
         branch_encoder = TransformerEncoder(str(args.embedding_model))
         with CatalogStore(directory / "controlled-catalog.sqlite", encoder=branch_encoder) as store:
             store.initialize()
-            if reference:
+            for reference in branch_refs:
                 index_native_package(store, reference, policy)
-            resources = ResourcePolicy(policy, (reference,) if reference else ())
-            initial = (
-                bind_selection(query.task, None, workflow.actions, (workflow,))
-                if workflow
-                else None
-            )
+            resources = ResourcePolicy(policy, branch_refs)
             report = validate_task_plan(initial, query.task, resources) if initial else None
             if report and report.status == "FAIL":
                 row = {
                     "query_id": query.task.task_id,
-                    "candidate_id": workflow.id,
+                    "candidate_id": candidate_id,
+                    "candidate_kind": candidate_kind,
                     "status": "hard_rejected_unrun",
                     "report": report.to_dict(),
                     "failure_label_created": False,
@@ -221,7 +315,11 @@ def main(argv=None):
                     store,
                     resources,
                     ledger,
-                    arm="E1" if reference else "B0",
+                    arm="E2"
+                    if initial and len(initial.parent_workflow_ids) > 1
+                    else "E1"
+                    if initial
+                    else "B0",
                     dependency_root=args.dependency_root,
                     sandbox_backend=args.sandbox_backend,
                 ).run(
@@ -236,7 +334,8 @@ def main(argv=None):
                 )
                 row = {
                     "query_id": query.task.task_id,
-                    "candidate_id": workflow.id if workflow else None,
+                    "candidate_id": candidate_id,
+                    "candidate_kind": candidate_kind,
                     "status": "executed",
                     "run": result,
                     "live_calls": transport.calls,
@@ -244,20 +343,28 @@ def main(argv=None):
                     "label": None,
                 }
                 if (
-                    workflow
+                    initial
                     and result.get("solver_terminated")
                     and result.get("evaluation", {}).get("evaluation_completed") is True
+                    and result.get("evaluation", {}).get("causal_controls_passed") is True
                 ):
-                    label = execution_label_from_run(
-                        query, workflow.id, "workflow", result, sampling_probability=probability
-                    )
-                    label = replace(
-                        label,
-                        applicability="probe_only"
-                        if report.mode == "probe_only"
-                        else "adaptively_usable",
-                    )
-                    row["label"] = asdict(label)
+                    try:
+                        label = execution_label_from_run(
+                            query,
+                            candidate_id,
+                            candidate_kind,
+                            result,
+                            sampling_probability=probability,
+                        )
+                        label = replace(
+                            label,
+                            applicability="probe_only"
+                            if report.mode == "probe_only"
+                            else "adaptively_usable",
+                        )
+                        row["label"] = asdict(label)
+                    except ValueError as error:
+                        row["supervision_exclusion_reason"] = str(error)
         write_json(saved_path, row)
         print(
             json.dumps(
@@ -283,7 +390,8 @@ def main(argv=None):
                 branch = pending[future]
                 row = {
                     "query_id": branch[0].task.task_id,
-                    "candidate_id": branch[2].id if branch[2] else None,
+                    "candidate_id": branch[2],
+                    "candidate_kind": branch[3],
                     "status": "infrastructure_or_protocol_failure",
                     "failure_type": type(error).__name__,
                     "failure_label_created": False,

@@ -246,3 +246,88 @@ def test_content_only_v2_receipt_is_not_silently_promoted(tmp_path):
     record.pop("workspace_execution_sha256")
     with pytest.raises(ValueError, match="v3"):
         review(task, action, record, observations, response)
+
+
+@pytest.mark.parametrize(
+    "bad", ["wrong_command", "unexecuted", "failed", "stale", "missing_binding", "timed_out"]
+)
+def test_validation_oracle_cannot_pass_without_current_bound_execution(tmp_path, bad):
+    from arex_skill_graph.workspace_state import public_workspace_execution_sha256
+
+    _, task, action, _, observations, response = observed(tmp_path, kind="validate")
+    command = next(o.command for o in task.oracles if o.action_id == action.id)
+    broker = observations["public:observation:0"]
+    broker.update(
+        argv=list(command), workspace_execution_sha256=public_workspace_execution_sha256(task.root)
+    )
+    if bad == "wrong_command":
+        broker["argv"] = ["python3", "-V"]
+    elif bad == "unexecuted":
+        broker.update(exit_code=None, execution_available=False)
+    elif bad == "failed":
+        broker["exit_code"] = 1
+    elif bad == "stale":
+        broker["workspace_execution_sha256"] = "0" * 64
+    elif bad == "missing_binding":
+        task = replace(task, oracles=())
+    else:
+        broker["timed_out"] = True
+    record = record_action_observation(
+        action,
+        {
+            "action_id": action.id,
+            "context_revision": task.revision,
+            "summary": "Synthetic attempted validation, not acceptance.",
+            "outputs": [
+                {
+                    "port_name": p.name,
+                    "observation_ids": [broker["observation_id"]],
+                    "artifact_paths": ["context.py"],
+                }
+                for p in action.outputs
+            ],
+        },
+        task,
+        observations,
+        record_id="action-result:0",
+    )
+    with pytest.raises(ValueError, match="bound command"):
+        review(task, action, record, observations, response)
+
+
+def test_current_validation_oracle_and_outcome_record_remain_separate(tmp_path):
+    from arex_skill_graph.workspace_state import public_workspace_execution_sha256
+
+    _, task, action, _, observations, response = observed(tmp_path, kind="validate")
+    command = next(o.command for o in task.oracles if o.action_id == action.id)
+    broker = observations["public:observation:0"]
+    broker.update(
+        argv=list(command), workspace_execution_sha256=public_workspace_execution_sha256(task.root)
+    )
+    record = record_action_observation(
+        action,
+        {
+            "action_id": action.id,
+            "context_revision": task.revision,
+            "summary": "Current executed public command, separately reviewed semantic obligations.",
+            "outputs": [
+                {
+                    "port_name": p.name,
+                    "observation_ids": [broker["observation_id"]],
+                    "artifact_paths": [],
+                }
+                for p in action.outputs
+            ],
+        },
+        task,
+        observations,
+        record_id="action-result:0",
+    )
+    current, audit = review(task, action, record, observations, response)
+    assert current.port_values and not audit["repair_success_established"]
+    for row in response["checks"]:
+        if row["key"].startswith("oracle:"):
+            row.update(status="UNKNOWN", evidence_refs=[])
+    current, audit = review(task, action, record, observations, response)
+    assert current.port_values and not audit["repair_success_established"]
+    assert any(c["key"].startswith("oracle:") and c["status"] == "UNKNOWN" for c in audit["checks"])
