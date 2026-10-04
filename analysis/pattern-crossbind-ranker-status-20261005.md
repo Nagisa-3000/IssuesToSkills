@@ -16,11 +16,11 @@
 
 验证 Action 的 Oracle PASS 需要真实当前绑定命令执行成功，且执行见证的工作区内容/权限封印与当前收据一致。超时、未执行、不同命令、过期封印不能通过。审查输入包含当前 Oracle 命令与完整义务。outcomes-recorded 输出允许含 FAIL/UNKNOWN；生成记录不等于修复接受。
 
-历史评测 v3 在 Solver 结束后独立运行原始代码与 production-only 的已知历史修复，使用同一回归断言、运行时和测试身份。原始目标必须失败、原始对照必须通过、已知修复必须通过。不一致、缺失测试或执行不可用时排除效果监督，不把基础设施问题标为 Skill 失败。快照已重评 **6/9** 个历史题，其余仍在运行。旧轨迹与标签保留，重评结果另存。
+历史评测 v3 在 Solver 结束后独立运行原始代码与 production-only 的已知历史修复，使用同一回归断言、运行时和测试身份。原始目标必须失败、原始对照必须通过、已知修复必须通过。不一致、缺失测试或执行不可用时排除效果监督，不把基础设施问题标为 Skill 失败。快照已重评 **9/9** 个历史题。旧轨迹与标签保留，重评结果另存。
 
 此前 use_frozen_selection 只固定起始计划，刷新后仍调用候选生成。现在受控刷新保持原 Action、Pattern、父 Workflow，仅按当前证据更新绑定、依赖与验证；非法时回退。轨迹保留原候选身份，切换其他候选不能生成该候选的效果标签。
 
-historical_plan_pool.py 冻结原计划、单 Workflow 重写与受限 CrossBind 搜索结果。相同执行结构去重，保留多种来源与拒绝报告。run_historical_ranker_supervision.py 支持 --candidate-kind workflow|plan|both，导出 plan-pools.json、数据集编译可用的 plans.json 与受控运行清单。--prepare-only 不进行模型或修复执行。真实九题候选池仍在准备；未执行候选不标失败。没有合格当前 Pattern 时保留 None，不强制套用预设机制。
+historical_plan_pool.py 冻结原计划、单 Workflow 重写与受限 CrossBind 搜索结果。相同执行结构去重，保留多种来源与拒绝报告。run_historical_ranker_supervision.py 支持 --candidate-kind workflow|plan|both，导出 plan-pools.json、数据集编译可用的 plans.json 与受控运行清单。--prepare-only 不发起 LLM 调用或修复执行，但使用真实本地 embedding 模型。九题候选池已完成：18 个 Plan、0 个两父 Workflow 组合、0 个当前已确认 Pattern；尚未产生 Plan 执行监督。未执行候选不标失败。没有合格当前 Pattern 时保留 None，不强制套用预设机制。
 
 ## 实际 Action 小实验
 
@@ -40,6 +40,10 @@ historical_plan_pool.py 冻结原计划、单 Workflow 重写与受限 CrossBind
 
 完整测试：**451 passed、19 skipped**。额外权限下的 copied namespace、Broker 与 Solver 子集：**32 passed、5 skipped**；另外的 Action 记录子集：**4 passed、0 skipped**。普通运行的跳过项包括无特权 Broker/namespace 的环境限制；额外权限下仍跳过的 5 项为服务器不支持的 user namespace 路径。跳过不计为通过，真实 copied namespace 路径已执行。本轮 Python 文件 Ruff E4/E7/E9/F 通过；全仓库此前 211 项既有发现未在本轮清理，不宣称全仓库 lint clean。
 
-Pylint 历史资格快照：**1088/1160** 已处理，**72** 个 verified_resolution；全历史资格未完成。Pylint、Pyflakes、Ruff 的 9356 个历史 Issue 范围、T=2024-01-01、τ=2021-01-01 保持；已暴露的 Pylint #10034 排除正式评估。新作者目录保持原样，不批量提交或晋升。
+Pylint 历史资格快照：**1095/1160** 已处理，**73** 个 verified_resolution；全历史资格未完成。Pylint、Pyflakes、Ruff 的 9356 个历史 Issue 范围、T=2024-01-01、τ=2021-01-01 保持；已暴露的 Pylint #10034 排除正式评估。新作者目录保持原样，不批量提交或晋升。
 
-机器可读快照：[当前状态](results/pattern-crossbind-ranker-current-status-20261005-v3.json)。运行路径与快照不代表最终计数；仍需完成控制、产生有效 Plan 监督和非平局偏好，再训练/校准，最后冻结并执行正式 SWE 配对与模块消融实验。
+候选池与重核详情：[双入口监督准备](results/historical-dual-ranker-supervision-preparation-20261005-v1.json)。本地 embedding 的九个推理批次与零次 LLM 调用分别记录。
+
+机器可读快照：[当前状态](results/pattern-crossbind-ranker-current-status-20261005-v3.json)。运行路径与快照不代表最终计数；仍需补全原生功能验收、产生有效 Plan 执行监督和训练非平局偏好，再训练/校准，最后冻结并执行正式 SWE 配对与模块消融实验。
+
+更新后的历史 Workflow 监督：24 个样本、21 对偏好，训练非平局偏好为 0，Plan 执行样本为 0。监督更新未触发新权重训练，也未完成 M4 验收。

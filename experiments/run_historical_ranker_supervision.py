@@ -272,7 +272,8 @@ def main(argv=None):
                 {
                     "prepared_queries": len(queries),
                     "scheduled_branches": len(scheduled),
-                    "model_calls": 0,
+                    "llm_calls": 0,
+                    "embedding_batches": len(queries),
                     "solver_runs": 0,
                     "formal_SWE_runs": 0,
                 }
