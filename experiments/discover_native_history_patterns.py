@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from arex_skill_graph.action_contracts import TemporalPolicy
 from arex_skill_graph.adaptive_cli import read_references, transport_from_args
+from arex_skill_graph.generation_context import generation_context_for_packages
 from arex_skill_graph.history_census import fingerprint, write_json
 from arex_skill_graph.pattern_contracts import extract_native_pattern, load_native_package
 
@@ -61,6 +62,9 @@ def main(argv=None):
         }
         for package in packages
     ]
+    generation_context = generation_context_for_packages(
+        packages, source_corpus_sha256=fingerprint(corpus)
+    )
     transport = transport_from_args(args)
     transport.config = replace(
         transport.config,
@@ -141,6 +145,7 @@ def main(argv=None):
                 expected_kind=kind,
                 audit_dir=args.audit_dir / key[:24],
                 max_attempts=3,
+                generation_context=generation_context,
             )
             if any(package.kind != kind for package in authored):
                 raise ValueError("authored abstraction overclaims source repository diversity")
@@ -174,6 +179,7 @@ def main(argv=None):
             "references": [ref for row in results for ref in row["references"]],
             "results": results,
             "source_package_count": len(packages),
+            "generation_context": generation_context.to_dict(),
             "source_corpus_sha256": fingerprint(corpus),
             "preset_families_used": False,
             "arbitrary_source_top_N_used": False,

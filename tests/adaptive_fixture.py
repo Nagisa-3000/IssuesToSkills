@@ -1,20 +1,20 @@
 """Synthetic native authored bundle; no real SWE labels or transfer claim."""
 
-from dataclasses import asdict
 import hashlib
 import json
 import subprocess
+from dataclasses import asdict
 
-from arex_skill_graph.action_contracts import SourceRecord, TemporalPolicy, Port, Predicate
+from arex_skill_graph.action_contracts import Port, Predicate, SourceRecord, TemporalPolicy
 from arex_skill_graph.pattern_contracts import publish_v4_bundle
 from arex_skill_graph.plan_validation import ResourcePolicy
 from arex_skill_graph.task_context import (
-    TaskContext,
-    EvidenceAnchor,
     Binding,
+    CurrentOracle,
+    EvidenceAnchor,
     ObservedFact,
     SemanticCheck,
-    CurrentOracle,
+    TaskContext,
 )
 
 CUTOFF = "2024-01-01T00:00:00Z"
@@ -312,6 +312,14 @@ def authored_bundle(
                 "split": "train_candidate",
                 "holdout_used": False,
                 "package_kind": kind,
+                **({"generation_context": {
+                    "schema": "arex-generation-context-v1",
+                    "source_corpus_sha256": hashlib.sha256(
+                        json.dumps([asdict(x) for x in records], sort_keys=True).encode()
+                    ).hexdigest(),
+                    "source_package_hashes": {},
+                    "sources": [asdict(x) for x in records],
+                }} if pattern else {}),
                 "cutoff": CUTOFF,
                 "sources": [asdict(x) for x in records],
                 "source_episode_ids": sorted(s.id for s in records),

@@ -9,6 +9,7 @@ from test_native_authority import bundle_from_files
 
 from arex_skill_graph.action_contracts import TemporalPolicy
 from arex_skill_graph.direct_skill_extraction import parse_bundle
+from arex_skill_graph.generation_context import generation_context_for_packages
 from arex_skill_graph.pattern_contracts import extract_native_pattern, publish_v4_bundle
 
 
@@ -39,6 +40,7 @@ def source_and_response(tmp_path, *, local=False):
     provenance["source_package_hashes"] = {
         package.reference["skill_id"]: package.reference["package_sha256"]
     }
+    provenance["generation_context"] = generation_context_for_packages([package]).to_dict()
     files["references/provenance.json"] = json.dumps(provenance)
     return package, name, files
 

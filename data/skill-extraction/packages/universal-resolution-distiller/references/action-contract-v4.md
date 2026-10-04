@@ -148,6 +148,16 @@ roles and claimed boundaries must follow actual historical evidence. Defer rathe
 than force a Pattern from a preset issue family. Preserve upstream source package
 hashes/resource locators in provenance when abstracting existing native packages.
 Copy `authoritative_upstream_packages` exactly into `source_package_hashes`.
+Copy the supplied `authoritative_generation_context` exactly into
+`generation_context` in provenance. This records every source/package read in
+corpus discovery and inherited abstractions, including sources not selected as
+mechanism support. It has schema `arex-generation-context-v1`,
+source_corpus_sha256, source_package_hashes, and authoritative SourceRecord
+sources. These dependencies do not count as additional independent support.
+All generation-context sources must precede the task/query cutoff and avoid its
+issue/fix/cluster/alias identities. A later discovery input can invalidate an
+earlier-time training candidate even if it is absent from the final support set.
+Do not drop, retime or rewrite context records to make a Pattern eligible.
 Namespace new Action and realization IDs by the new package ID to avoid catalog
 collisions; retain original IDs and resource hashes in historical provenance.
 

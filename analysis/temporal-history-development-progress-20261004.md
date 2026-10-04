@@ -7,6 +7,8 @@
 并保留 [v1 快照](results/temporal-history-development-audit-20261004-v1.json)。
 统计属于开发阶段，不能作为 SWE 效果或泛化收益。
 
+2026-10-04 服务器迁移及后续时间隔离修正见 [迁移报告](server-migration-and-temporal-generation-context-20261004.md)。完整源码和历史资料已恢复，v6 检查点完成数值与双重重载审计；12 个训练偏好对全部为平局。最新代码验证为 311 passed、5 skipped，skip 为不可用的挂载隔离测试。下表和旧机器快照记录更早的 v5 开发状态，不将其比例算作 v6 修复收益。M4/M5/M6 仍未完成。
+
 | 项目 | 实际进展 | 解释边界 |
 | --- | --- | --- |
 | 历史证据审查 | Pylint 5,273、Pyflakes 501、Ruff 3,582，共 9,356 条可观察 Issue，全部审查完成 | 截点为 2024-01-01 UTC，exclusive；审查记录不是 Skill；删除和不可读取的历史不能假装恢复 |

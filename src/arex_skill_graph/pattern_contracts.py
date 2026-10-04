@@ -24,6 +24,7 @@ from .action_contracts import (
     utc,
     validate_workflow_coherence,
 )
+from .generation_context import GenerationContext, generation_context_for_packages
 
 V4_SCHEMA = "arex-skill-package-v4"
 
@@ -150,10 +151,16 @@ class NativePackage:
     pattern: PatternContract | None
     evidence_ids: tuple[str, ...]
     cutoff: str
+    generation_context: GenerationContext | None = None
 
     def admit(self, policy: TemporalPolicy):
         for source in self.sources:
             policy.check(source)
+        if self.generation_context:
+            for source in self.generation_context.sources:
+                policy.check(source)
+        elif self.kind != "workflow":
+            raise ValueError("native abstraction lacks complete generation context")
 
 
 def inspect_v4_package(root: Path, *, check_manifest: bool = True) -> NativePackage:
@@ -227,6 +234,14 @@ def inspect_v4_package(root: Path, *, check_manifest: bool = True) -> NativePack
     policy = TemporalPolicy(provenance["cutoff"])
     for source in sources:
         policy.check(source)
+    generation_context = None
+    if "generation_context" in provenance:
+        generation_context = GenerationContext.from_dict(provenance["generation_context"])
+        generation_context.require_support(sources, provenance.get("source_package_hashes"))
+        for source in generation_context.sources:
+            policy.check(source)
+    elif kind != "workflow":
+        raise ValueError("native abstraction lacks complete generation context")
     evidence = {}
     for path in (root / "references/evidence").glob("*.md"):
         row = read_contract(path.read_text(), "arex-evidence-v4")
@@ -354,6 +369,7 @@ def inspect_v4_package(root: Path, *, check_manifest: bool = True) -> NativePack
         pattern,
         tuple(evidence),
         policy.cutoff,
+        generation_context,
     )
 
 
@@ -530,6 +546,7 @@ def extract_native_pattern(
     expected_kind=None,
     audit_dir=None,
     max_attempts=1,
+    generation_context=None,
 ):
     """Corpus-level extraction from validated file resources, never predefined families."""
     for package in source_packages:
@@ -595,6 +612,13 @@ def extract_native_pattern(
             "Abstract only this reviewed causal mechanism. Use its exact text in the Pattern "
             "and every supporting historical realization; defer if the evidence cannot support it."
         )
+    generation_context = generation_context or generation_context_for_packages(source_packages)
+    generation_context.require_support(
+        tuple(sources.values()), payload["authoritative_upstream_packages"]
+    )
+    for source in generation_context.sources:
+        policy.check(source)
+    payload["authoritative_generation_context"] = generation_context.to_dict()
     # Verify parent package lineage before publishing any authored Pattern.
     from .direct_skill_extraction import parse_bundle
     from .history_census import redact_history, write_json
@@ -626,6 +650,13 @@ def extract_native_pattern(
                 ):
                     raise ValueError(
                         "Pattern upstream package hashes disagree with authoritative sources"
+                    )
+                if (
+                    provenance.get("generation_context")
+                    != payload["authoritative_generation_context"]
+                ):
+                    raise ValueError(
+                        "Pattern complete generation context differs from authoring authority"
                     )
                 if provenance.get("package_kind") != supported_kind:
                     raise ValueError("authored abstraction overclaims source repository diversity")
@@ -670,6 +701,7 @@ def extract_native_pattern(
                         "authoritative_package_id": canonical_package_id,
                         "reviewed_mechanism": reviewed_mechanism,
                         "supported_kind": supported_kind,
+                        "generation_context": generation_context.to_dict(),
                         "functional_validation": "definition-only-not-executed",
                     },
                 )
