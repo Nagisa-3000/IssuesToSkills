@@ -13,6 +13,7 @@ from arex_skill_graph.adaptive_cli import read_references, transport_from_args
 from arex_skill_graph.generation_context import generation_context_for_packages
 from arex_skill_graph.history_census import fingerprint, write_json
 from arex_skill_graph.pattern_contracts import extract_native_pattern, load_native_package
+from arex_skill_graph.qualification_authority import load_source_qualifications
 
 SYSTEM = (
     "Review the entire supplied historical Skill corpus for independently supported causal mechanisms. "
@@ -30,6 +31,12 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     for option in ("references", "output-dir", "audit-dir"):
         parser.add_argument("--" + option, type=Path, required=True)
+    parser.add_argument(
+        "--verifications",
+        type=Path,
+        required=True,
+        help="Completed canonical historical verification inventory; report coverage is checked before API calls",
+    )
     parser.add_argument("--model", required=True)
     parser.add_argument("--base-url", required=True)
     parser.add_argument("--api-key-env", default="AREX_LLM_API_KEY")
@@ -50,6 +57,11 @@ def main(argv=None):
     by_id = {package.reference["skill_id"]: package for package in packages}
     if len(by_id) != len(packages):
         raise ValueError("duplicate native source package")
+    sources = {source.id: source for package in packages for source in package.sources}
+    qualification_records = load_source_qualifications(
+        args.verifications, tuple(sources.values()), policy
+    )
+    qualifications = {record.source_id: record for record in qualification_records}
     corpus = [
         {
             "package_id": package.reference["skill_id"],
@@ -87,6 +99,12 @@ def main(argv=None):
         args.audit_dir / "discovery-provenance.json",
         {
             "source_corpus_sha256": fingerprint(corpus),
+            "qualification_report_hashes": {
+                sid: record.verification_sha256 for sid, record in qualifications.items()
+            },
+            "qualification_inventory_sha256": fingerprint(
+                json.loads(args.verifications.read_text())
+            ),
             "system_sha256": fingerprint(SYSTEM),
             "discovery_response_sha256": fingerprint(discovery),
             "model": args.model,
@@ -121,6 +139,7 @@ def main(argv=None):
         if (
             len({source.bug_cluster_id for source in sources}) < 2
             or len({source.fix_id for source in sources}) < 2
+            or len({source.revision for source in sources}) < 2
         ):
             raise ValueError("Pattern group lacks independent historical defect/fix identities")
         refs = set(group.get("evidence_refs", []))
@@ -146,6 +165,9 @@ def main(argv=None):
                 audit_dir=args.audit_dir / key[:24],
                 max_attempts=3,
                 generation_context=generation_context,
+                qualification_records=tuple(
+                    qualifications[sid] for sid in sorted({s.id for s in sources})
+                ),
             )
             if any(package.kind != kind for package in authored):
                 raise ValueError("authored abstraction overclaims source repository diversity")

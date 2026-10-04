@@ -50,6 +50,15 @@ qualification does not execute the newly authored Skill functional cases. Inspec
 upstream provenance and qualification scope; a summary is not proof of broader
 whole-project correctness or transfer. If the underlying qualification cannot be
 independently supported, defer instead of inventing execution evidence.
+When the caller supplies `independent_qualification_records`, inspect their complete
+original-base, base-with-regression and historical-fixed observations, pinned
+issue/fix/revision identity, closure evidence and runtime consistency. These are
+validation-only records kept in the authoring audit, separate from historical
+source cards and Skill functional outcomes. Copy
+`authoritative_qualification_report_hashes` exactly into
+`qualification_report_hashes` in provenance. Never use contemporary replay logs
+or dependency details as historical mechanisms or newly executed Skill evals.
+
 `source_episode_ids` is exactly the set of packaged SourceRecord `id` values.
 These IDs may identify a particular repair of an issue. Do not substitute issue
 IDs, bug_cluster_id, or aliases. Action and Workflow `source_ids`, and evidence

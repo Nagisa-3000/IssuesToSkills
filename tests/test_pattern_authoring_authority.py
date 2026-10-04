@@ -186,6 +186,17 @@ def test_primary_workflow_must_have_exactly_one_realization_contract(tmp_path, m
     assert not list((tmp_path / "output").rglob("SKILL.md"))
 
 
+def test_same_commit_with_different_fix_labels_is_not_independent_support(tmp_path):
+    response, sources = authored_bundle()
+    changed = replace(sources[1], revision=sources[0].revision)
+    response = response.replace(json.dumps(sources[1].revision), json.dumps(changed.revision))
+    with pytest.raises(ValueError, match="aliases of one bug/fix"):
+        publish_v4_bundle(
+            response, [sources[0], changed], TemporalPolicy(CUTOFF), tmp_path / "output"
+        )
+    assert not list((tmp_path / "output").rglob("SKILL.md"))
+
+
 def test_pattern_author_receives_source_provenance_and_replay_time_policy(tmp_path):
     package, _name, _files = source_and_response(tmp_path)
     transport = Transport(

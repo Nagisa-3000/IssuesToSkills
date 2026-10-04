@@ -102,7 +102,11 @@ class PatternContract:
         if not source_ids.issubset(sources):
             raise ValueError("Pattern source is dangling")
         records = [sources[x] for x in source_ids]
-        if len({s.bug_cluster_id for s in records}) < 2 or len({s.fix_id for s in records}) < 2:
+        if (
+            len({s.bug_cluster_id for s in records}) < 2
+            or len({s.fix_id for s in records}) < 2
+            or len({s.revision for s in records}) < 2
+        ):
             raise ValueError("aliases of one bug/fix are not independent Pattern support")
         identities = [{s.id, *s.aliases, *s.copied_from} for s in records]
         if any(a & b for i, a in enumerate(identities) for b in identities[i + 1 :]):
@@ -555,6 +559,7 @@ def extract_native_pattern(
     audit_dir=None,
     max_attempts=1,
     generation_context=None,
+    qualification_records=None,
 ):
     """Corpus-level extraction from validated file resources, never predefined families."""
     for package in source_packages:
@@ -568,6 +573,7 @@ def extract_native_pattern(
     if (
         len({s.bug_cluster_id for s in sources.values()}) < 2
         or len({s.fix_id for s in sources.values()}) < 2
+        or len({s.revision for s in sources.values()}) < 2
     ):
         raise ValueError("insufficient independent Pattern evidence")
     supported_kind = (
@@ -649,6 +655,29 @@ def extract_native_pattern(
         for path in (Path(package.root) / "references/evidence").glob("*.md")
         for row in [read_contract(path.read_text(), "arex-evidence-v4")]
     }
+    qualification_hashes = None
+    if qualification_records is not None:
+        records = {record.source_id: record for record in qualification_records}
+        if len(records) != len(qualification_records) or set(records) != set(sources):
+            raise ValueError("Pattern qualification records must cover its exact source set")
+        for sid, record in records.items():
+            record.validate(sources[sid], policy)
+        qualification_hashes = {sid: records[sid].verification_sha256 for sid in sorted(records)}
+        payload["independent_qualification_records"] = [
+            records[sid].to_dict() for sid in sorted(records)
+        ]
+        payload["authoritative_qualification_report_hashes"] = qualification_hashes
+        payload["qualification_instruction"] = (
+            "Inspect these complete independent replay reports as validation provenance only. "
+            "Copy authoritative_qualification_report_hashes exactly into qualification_report_hashes "
+            "in provenance. Do not turn checked_at, runtime details or contemporary replay outputs "
+            "into pre-cutoff evidence, mechanisms or Skill functional evaluation success."
+        )
+        if audit_dir is not None:
+            write_json(
+                Path(audit_dir) / "qualification-input.json",
+                payload["independent_qualification_records"],
+            )
     prompt = json.dumps(payload, ensure_ascii=False) + "\n" + protocol.read_text()
     failures = []
     for attempt in range(1, max_attempts + 1):
@@ -678,6 +707,11 @@ def extract_native_pattern(
                     raise ValueError(
                         "Pattern complete generation context differs from authoring authority"
                     )
+                if (
+                    qualification_hashes is not None
+                    and provenance.get("qualification_report_hashes") != qualification_hashes
+                ):
+                    raise ValueError("Pattern qualification report hashes disagree with authority")
                 if provenance.get("package_kind") != supported_kind:
                     raise ValueError("authored abstraction overclaims source repository diversity")
                 pattern = read_contract(files["SKILL.md"], "arex-pattern-v4")
@@ -721,6 +755,7 @@ def extract_native_pattern(
                         "authoritative_package_id": canonical_package_id,
                         "reviewed_mechanism": reviewed_mechanism,
                         "supported_kind": supported_kind,
+                        "qualification_report_hashes": qualification_hashes,
                         "generation_context": generation_context.to_dict(),
                         "functional_validation": "definition-only-not-executed",
                     },
