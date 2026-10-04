@@ -560,6 +560,7 @@ def extract_native_pattern(
     max_attempts=1,
     generation_context=None,
     qualification_records=None,
+    seal_generation_context=False,
 ):
     """Corpus-level extraction from validated file resources, never predefined families."""
     for package in source_packages:
@@ -645,6 +646,21 @@ def extract_native_pattern(
     for source in generation_context.sources:
         policy.check(source)
     payload["authoritative_generation_context"] = generation_context.to_dict()
+    if type(seal_generation_context) is not bool:
+        raise ValueError("generation context sealing must be explicitly boolean")
+    if seal_generation_context:
+        from .native_provenance_authority import generation_context_reference
+
+        payload["authoritative_generation_context_reference"] = generation_context_reference(
+            generation_context
+        )
+        payload["generation_context_instruction"] = (
+            "In provenance.generation_context write exactly the supplied authority reference. "
+            "The publisher checks its digest and deterministically embeds the entire caller context. "
+            "Do not author generation_context_materialization; that field is reserved for the publisher. "
+            "Every Skill instruction, Action, realization, evidence card and eval remains directly authored. "
+            "Missing or malformed semantic resources are rejected, never filled by the host."
+        )
     # Verify parent package lineage before publishing any authored Pattern.
     from .direct_skill_extraction import parse_bundle
     from .history_census import redact_history, write_json
@@ -690,7 +706,23 @@ def extract_native_pattern(
             if audit_dir is not None:
                 Path(audit_dir).mkdir(parents=True, exist_ok=True)
                 (Path(audit_dir) / f"authored-attempt-{attempt}.txt").write_text(response)
-            authored, _deferred = parse_bundle(response)
+            native_response = response
+            if seal_generation_context:
+                from .native_provenance_authority import materialize_generation_context
+
+                native_response, authority_audit = materialize_generation_context(
+                    response, generation_context
+                )
+                if audit_dir is not None:
+                    write_json(
+                        Path(audit_dir)
+                        / f"generation-context-materialization-attempt-{attempt}.json",
+                        authority_audit,
+                    )
+                    (Path(audit_dir) / f"materialized-attempt-{attempt}.txt").write_text(
+                        native_response
+                    )
+            authored, _deferred = parse_bundle(native_response)
             for files in authored.values():
                 provenance = json.loads(files["references/provenance.json"])
                 if (
@@ -723,7 +755,7 @@ def extract_native_pattern(
                 ):
                     raise ValueError("native author changed the reviewed causal mechanism")
             return publish_v4_bundle(
-                response,
+                native_response,
                 tuple(sources.values()),
                 policy,
                 output_root,
@@ -757,6 +789,7 @@ def extract_native_pattern(
                         "supported_kind": supported_kind,
                         "qualification_report_hashes": qualification_hashes,
                         "generation_context": generation_context.to_dict(),
+                        "generation_context_sealing": seal_generation_context,
                         "functional_validation": "definition-only-not-executed",
                     },
                 )

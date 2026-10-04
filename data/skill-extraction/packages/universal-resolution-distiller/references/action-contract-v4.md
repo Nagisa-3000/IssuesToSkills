@@ -64,6 +64,31 @@ These IDs may identify a particular repair of an issue. Do not substitute issue
 IDs, bug_cluster_id, or aliases. Action and Workflow `source_ids`, and evidence
 `source_id`, use the same authoritative SourceRecord IDs.
 
+## Sealed generation metadata
+
+When the caller explicitly enables generation-context sealing and supplies
+`authoritative_generation_context_reference`, put that exact reference object
+in `provenance.generation_context`. Its shape is
+`{"schema":"arex-generation-context-authority-v1","sha256":"<supplied digest>"}`.
+Inspect the full supplied context to understand the learning boundary; the digest
+names the entire caller-owned record, including uncited discovery sources.
+
+The publisher verifies the declared digest, embeds the complete immutable
+context in provenance, and adds its own `generation_context_materialization`
+attestation. Leave that reserved attestation to the publisher. Keep every
+SourceRecord, upstream package hash and qualification report hash exact.
+
+Write all Skill instructions, Action/Pattern/Workflow contracts, evidence cards
+and evaluation cases completely. Sealing expands only the declared provenance
+field; malformed or missing semantic resources still reject publication. Raw
+model bundles, materialized bundles and unchanged-resource hashes are audited
+separately. A sealed package remains self-contained and its full discovery
+context still limits earlier-query admission.
+
+Without this explicit caller mode, author the complete context directly under
+the existing v4 protocol. Functional definitions remain unexecuted until their
+observable checks actually run.
+
 ## Action ports and state
 
 Each readable Action card contains exactly one fenced `arex-contract-v4` JSON

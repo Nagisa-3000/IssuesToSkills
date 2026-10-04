@@ -18,7 +18,11 @@ PHASES = ("original_base", "base_with_regression", "historical_fixed")
 
 
 def validate_historical_qualification(report, source, policy, *, fix_aliases=()):
-    """Recompute causal controls and check exact issue/fix/revision/time authority."""
+    """Check artifacts under both the query and original replay boundaries.
+
+    Later validation never changes report hashes, artifact dates, or learned
+    content. NativePackage.admit additionally checks the full generation context.
+    """
     policy.check(source)
     identity = report["identity"]
     qid = identity["issue_id"]
@@ -29,7 +33,7 @@ def validate_historical_qualification(report, source, policy, *, fix_aliases=())
         or qid.rsplit(":", 1)[0] != source.repository
         or identity["merge_commit"] != source.revision
         or not re.fullmatch(r"[0-9a-f]{40}", identity["base_commit"])
-        or identity["cutoff_exclusive"] != policy.cutoff
+        or utc(source.available_at) >= utc(identity["cutoff_exclusive"])
         or identity.get("fix_id") not in {source.fix_id, *fix_aliases}
         or utc(identity["repair_available_at"]) > utc(source.available_at)
         or utc(identity["repair_available_at"]) >= utc(policy.cutoff)

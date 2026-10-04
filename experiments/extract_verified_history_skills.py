@@ -51,7 +51,6 @@ def author_case(record, verification, diff, policy, output, audit, config):
     if (
         verification.get("verified_resolution") is not True
         or verification["identity"]["issue_id"] != qid
-        or verification["identity"]["cutoff_exclusive"] != policy.cutoff
         or fingerprint(verification["observations"]) != verification["observations_sha256"]
     ):
         raise ValueError("native authoring requires a matching independently verified source")

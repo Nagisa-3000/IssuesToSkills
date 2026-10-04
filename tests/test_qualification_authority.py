@@ -108,7 +108,7 @@ def write_inventory(tmp_path, record, report, *, aliases=()):
         ("issue_id", "example/repo:99"),
         ("merge_commit", "b" * 40),
         ("fix_id", "example/repo:pr:99"),
-        ("cutoff_exclusive", "2025-01-01T00:00:00Z"),
+        ("cutoff_exclusive", "2020-01-01T00:00:00Z"),
         ("repair_available_at", "2024-01-01T00:00:00Z"),
     ],
 )
@@ -265,3 +265,44 @@ def test_unqualified_or_changed_report_never_publishes(tmp_path, mutation):
     assert not list((tmp_path / "output").rglob("SKILL.md"))
     if mutation != "authored_hash":
         assert not transport.calls
+
+
+@pytest.mark.parametrize("query_cutoff", ["2021-01-01T00:00:00Z", "2025-01-01T00:00:00Z"])
+def test_later_replay_can_validate_older_artifacts_without_rewriting_report(tmp_path, query_cutoff):
+    report = report_for(source())
+    original = copy.deepcopy(report)
+    path = write_inventory(tmp_path, source(), report)
+    (qualification,) = load_source_qualifications(path, [source()], TemporalPolicy(query_cutoff))
+    qualification.validate(source(), TemporalPolicy(query_cutoff))
+    assert qualification.report == original
+    assert qualification.verification_sha256 == fingerprint(original)
+    assert qualification.report["identity"]["cutoff_exclusive"] == CUTOFF
+    assert qualification.report["checked_at"] > query_cutoff
+
+
+def test_query_cutoff_remains_exclusive_even_with_later_successful_replay():
+    with pytest.raises(ValueError, match="not available before cutoff"):
+        validate_historical_qualification(
+            report_for(source()), source(), TemporalPolicy(source().available_at)
+        )
+
+
+def test_artifact_must_also_precede_the_report_own_validation_boundary():
+    report = report_for(source())
+    report["identity"]["cutoff_exclusive"] = source().available_at
+    with pytest.raises(ValueError, match="identity/time"):
+        validate_historical_qualification(report, source(), TemporalPolicy("2021-01-01T00:00:00Z"))
+
+
+@pytest.mark.parametrize("exclusion", ["identity", "cluster", "fix"])
+def test_replay_cannot_reauthorize_query_self_or_same_bug_or_fix(exclusion):
+    s = source()
+    settings = {
+        "identity": {"excluded_ids": (s.aliases[0],)},
+        "cluster": {"excluded_clusters": (s.bug_cluster_id,)},
+        "fix": {"excluded_fixes": (s.fix_id,)},
+    }[exclusion]
+    with pytest.raises(ValueError, match="excluded identity/bug cluster/fix"):
+        validate_historical_qualification(
+            report_for(s), s, TemporalPolicy("2021-01-01T00:00:00Z", **settings)
+        )

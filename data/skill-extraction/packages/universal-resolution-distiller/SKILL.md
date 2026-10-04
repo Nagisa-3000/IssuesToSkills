@@ -46,7 +46,7 @@ Defer when implementation-bearing evidence cannot establish a reusable contract.
 anchor Issue/PR/commit and frozen split
   -> inspect pinned parent diff, implementation, call sites and tests
   -> model authors SKILL.md, Workflow, Actions, evidence, provenance and evals
-  -> host persists authored file contents unchanged
+  -> host preserves authored semantics and seals explicitly declared input metadata
   -> validate complete package, Action/evidence closure and hashes
   -> derive Episode and Action/Workflow index projections from package files
   -> admit package-backed candidates to graph/SQLite/HNSW
@@ -83,6 +83,11 @@ ports are permitted for probes; expected effects are never observed results.
 Compose only compatible, currently grounded operations. Include sourced Bridges
 and verification closure; UNKNOWN authorizes probes, FAIL rejects modification.
 Legacy v3 extraction remains the default until v4 is explicitly selected.
+For a caller-selected generation-context authority mode, read the sealed-metadata
+section of that protocol. Declare the supplied context digest in provenance; the
+publisher embeds the complete record and audits raw/final bundle hashes. Every
+Action, Pattern, realization and eval remains model-authored. Full learning
+dependencies continue to constrain query time, including uncited sources.
 
 ## Reusable Workflow contract
 

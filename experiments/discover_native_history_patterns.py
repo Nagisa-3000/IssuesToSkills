@@ -49,6 +49,11 @@ def main(argv=None):
     )
     parser.add_argument("--authoring-timeout", type=float, default=900)
     parser.add_argument("--stream-responses", action="store_true")
+    parser.add_argument(
+        "--seal-generation-context",
+        action="store_true",
+        help="Model declares an exact context digest; host embeds complete provenance metadata only",
+    )
     args = parser.parse_args(argv)
     if args.output_dir.exists() or args.audit_dir.exists():
         raise ValueError("Pattern experiment output exists; preserve it and use a new version")
@@ -112,6 +117,7 @@ def main(argv=None):
             "reused_discovery_audit": str(args.discovery_audit) if args.discovery_audit else None,
             "authoring_timeout_seconds": args.authoring_timeout,
             "stream_responses": args.stream_responses,
+            "generation_context_sealing": args.seal_generation_context,
         },
     )
     write_json(args.audit_dir / "discovery-response.json", discovery)
@@ -165,6 +171,7 @@ def main(argv=None):
                 audit_dir=args.audit_dir / key[:24],
                 max_attempts=3,
                 generation_context=generation_context,
+                seal_generation_context=args.seal_generation_context,
                 qualification_records=tuple(
                     qualifications[sid] for sid in sorted({s.id for s in sources})
                 ),
