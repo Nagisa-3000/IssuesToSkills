@@ -34,7 +34,7 @@ def bind_selection(
         ActionInstance(
             "instance:" + a.id,
             a,
-            tuple(b for b in task.bindings if b.role == a.owner_role),
+            tuple(b for b in task.bindings if b.role in a.required_binding_roles),
             a.semantic_role,
             "Bind current objects; execute only after actual preconditions/oracles hold.",
         )

@@ -67,9 +67,19 @@ def workflow_capsule(workflow, task, policy: ResourcePolicy):
         )
     ]
     decisions = [task.semantic("action:" + a.id) for a in mandatory]
-    decisions += [task.semantic("owner:" + a.owner_role) for a in mandatory]
+    decisions += [task.semantic("owner:" + r) for a in mandatory for r in a.required_binding_roles]
     statuses = [d.status for d in decisions]
     for a in mandatory:
+        languages = {p.language.casefold() for p in (*a.inputs, *a.outputs)} - {"agnostic"}
+        for role in a.required_binding_roles:
+            binding = next((b for b in task.bindings if b.role == role), None)
+            statuses.append(
+                CheckStatus.UNKNOWN
+                if binding is None
+                else CheckStatus.PASS
+                if not languages or languages == {binding.language.casefold()}
+                else CheckStatus.FAIL
+            )
         for p in a.preconditions:
             # Missing prerequisite can be supplied during rewrite, not unconditionally authorized.
             status = task.condition(p)

@@ -285,7 +285,9 @@ class TaskContext:
                 raise ValueError("checkout HEAD differs from TaskContext base")
             top = subprocess.run(
                 ["git", "-C", str(root), "rev-parse", "--show-toplevel"],
-                text=True, capture_output=True, check=False,
+                text=True,
+                capture_output=True,
+                check=False,
             )
             if top.returncode or Path(top.stdout.strip()).resolve() != root:
                 raise ValueError("checkout repository root differs from TaskContext root")
@@ -328,13 +330,36 @@ class TaskContext:
                 qualified, bare = set(), set()
 
                 def symbols(node, scope=(), qualified=qualified, bare=bare):
+                    def declare(name):
+                        qualified.add(".".join((*scope, name)))
+                        bare.add(name)
+
+                    def targets(target):
+                        if isinstance(target, ast.Name):
+                            declare(target.id)
+                        elif isinstance(target, (ast.Tuple, ast.List)):
+                            for item in target.elts:
+                                targets(item)
+                        elif isinstance(target, ast.Starred):
+                            targets(target.value)
+
                     for child in ast.iter_child_nodes(node):
                         if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-                            name = (*scope, child.name)
-                            qualified.add(".".join(name))
-                            bare.add(child.name)
-                            symbols(child, name)
+                            declare(child.name)
+                            symbols(child, (*scope, child.name))
                         else:
+                            if isinstance(child, ast.Assign):
+                                for target in child.targets:
+                                    targets(target)
+                            elif isinstance(child, ast.AnnAssign):
+                                targets(child.target)
+                            elif isinstance(child, ast.Import):
+                                for alias in child.names:
+                                    declare(alias.asname or alias.name.split(".")[0])
+                            elif isinstance(child, ast.ImportFrom):
+                                for alias in child.names:
+                                    if alias.name != "*":
+                                        declare(alias.asname or alias.name)
                             symbols(child, scope)
 
                 symbols(ast.parse(source))

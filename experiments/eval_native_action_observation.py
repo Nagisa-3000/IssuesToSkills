@@ -37,6 +37,7 @@ def main(argv=None):
     parser.add_argument("--public-read-only", action="store_true")
     parser.add_argument("--execution-unavailable-fixture", action="store_true")
     parser.add_argument("--enforce-action-prerequisites", action="store_true")
+    parser.add_argument("--ground-current-action", action="store_true")
     args = parser.parse_args(argv)
     if args.output_dir.exists():
         raise ValueError("preserve previous native Action exercise; use a new output directory")
@@ -73,6 +74,41 @@ def main(argv=None):
         transport.config, max_output_tokens=4000, timeout_seconds=180, stream_responses=True
     )
     policy = ResourcePolicy(temporal, (package.reference,))
+    if args.ground_current_action:
+        from arex_skill_graph.adaptive_guidance import current_grounding
+
+        # Scope the request to the already loaded immutable Action; files remain unchanged.
+        scope = replace(package, actions=(action,), workflows=(), pattern=None)
+        try:
+            task = current_grounding(task, (scope,), transport, ledger)
+        except Exception as error:
+            from arex_skill_graph.llm_http import safe_text
+
+            failure = {
+                "schema": "native-action-grounding-failure-v1",
+                "failure_type": type(error).__name__,
+                "failure_reason": safe_text(str(error), [transport.config.api_key]),
+                "model_calls": len(transport.calls),
+                "actual_action_records": 0,
+                "authored_Action_executed": False,
+                "formal_SWE_runs": 0,
+                "formal_KB_admitted": False,
+            }
+            (args.output_dir / "calls.json").write_text(
+                json.dumps(transport.calls, indent=2) + "\n"
+            )
+            (args.output_dir / "grounding-transcript.json").write_text(
+                json.dumps(getattr(transport, "transcripts", []), ensure_ascii=False, indent=2)
+                + "\n"
+            )
+            (args.output_dir / "exercise-failure.json").write_text(
+                json.dumps(failure, indent=2) + "\n"
+            )
+            print(json.dumps(failure))
+            return 1
+        (args.output_dir / "grounded-task.json").write_text(
+            json.dumps(task.to_dict(), ensure_ascii=False, indent=2) + "\n"
+        )
     tools_factory = None
     if args.execution_unavailable_fixture:
         from arex_skill_graph.adaptive_runner import make_namespace_tools
@@ -142,6 +178,9 @@ def main(argv=None):
         json.dumps(result, ensure_ascii=False, indent=2) + "\n"
     )
     (args.output_dir / "calls.json").write_text(json.dumps(transport.calls, indent=2) + "\n")
+    (args.output_dir / "model-transcripts.json").write_text(
+        json.dumps(getattr(transport, "transcripts", []), ensure_ascii=False, indent=2) + "\n"
+    )
     audit = {
         "schema": "native-action-definition-exercise-v1",
         "task_id": task.task_id,
@@ -157,6 +196,7 @@ def main(argv=None):
         "public_read_only": args.public_read_only,
         "controlled_execution_unavailable": args.execution_unavailable_fixture,
         "strict_functional_action_catalog": args.enforce_action_prerequisites,
+        "current_action_grounded": args.ground_current_action,
         "resources": [{k: v for k, v in r.items() if k != "chunks"} for r in resources],
         "model": args.model,
         "base_url": args.base_url,

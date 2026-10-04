@@ -287,6 +287,29 @@ class ActionContract:
             d[key] = strings(d.get(key, []))
         return cls(**d)
 
+    @property
+    def required_binding_roles(self) -> tuple[str, ...]:
+        """Current objects referenced by the owner, access sets and existence checks.
+
+        Evidence predicates are facts, even when their keys start with role:.
+        Future effects do not require an already existing implementation object.
+        Bare access-set tokens retain their literal-path interpretation.
+        """
+        roles = {self.owner_role}
+        roles.update(
+            item.removeprefix("role:")
+            for item in (*self.read_set, *self.write_set)
+            if item.startswith("role:")
+        )
+        roles.update(
+            predicate.key.removeprefix("role:")
+            for predicate in (*self.preconditions, *self.preserves, *self.exclusions)
+            if predicate.evaluator != "evidence" and predicate.key.startswith("role:")
+        )
+        for role in roles:
+            text(role, "binding role")
+        return (self.owner_role, *sorted(roles - {self.owner_role}))
+
     def to_dict(self):
         return asdict(self)
 

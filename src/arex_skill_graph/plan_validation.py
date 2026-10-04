@@ -375,7 +375,7 @@ def validate_task_plan(
             instance.id,
             "Every selected/Bridge action has a parent historical realization.",
         )
-        for key in ("action:" + a.id, "owner:" + a.owner_role):
+        for key in ("action:" + a.id, *("owner:" + r for r in a.required_binding_roles)):
             decision = task.semantic(key)
             add(
                 "current_semantics",
@@ -384,30 +384,32 @@ def validate_task_plan(
                 decision.rationale,
                 decision.evidence_refs,
             )
-        binding = next((b for b in instance.bindings if b.role == a.owner_role), None)
-        if binding is None:
-            add(
-                "current_binding",
-                CheckStatus.UNKNOWN,
-                instance.id,
-                "Locate and check the current semantic owner.",
-            )
-        else:
-            boolean(
-                "current_binding",
-                binding in task.bindings,
-                instance.id,
-                "Binding is a current evidence-backed object/interface.",
-                binding.evidence_refs,
-            )
-            languages = {p.language.casefold() for p in (*a.inputs, *a.outputs)} - {"agnostic"}
-            boolean(
-                "binding_language",
-                not languages or languages == {binding.language.casefold()},
-                instance.id,
-                "Concrete port objects must use the currently bound implementation language.",
-                binding.evidence_refs,
-            )
+        for role in a.required_binding_roles:
+            binding = next((b for b in instance.bindings if b.role == role), None)
+            subject = instance.id if role == a.owner_role else instance.id + ":role:" + role
+            if binding is None:
+                add(
+                    "current_binding",
+                    CheckStatus.UNKNOWN,
+                    subject,
+                    "Locate and check every current owner and referenced auxiliary role.",
+                )
+            else:
+                boolean(
+                    "current_binding",
+                    binding in task.bindings,
+                    subject,
+                    "Binding is a current evidence-backed object/interface.",
+                    binding.evidence_refs,
+                )
+                languages = {p.language.casefold() for p in (*a.inputs, *a.outputs)} - {"agnostic"}
+                boolean(
+                    "binding_language",
+                    not languages or languages == {binding.language.casefold()},
+                    subject,
+                    "Concrete port objects must use the currently bound implementation language.",
+                    binding.evidence_refs,
+                )
         state = state_for(ancestors[instance.id])
         for pre in a.preconditions:
             observed = state.get((pre.key, pre.evaluator))

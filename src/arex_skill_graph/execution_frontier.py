@@ -13,16 +13,27 @@ def action_execution_checks(action, task):
             {"key": key, "status": str(status), "rationale": rationale, "evidence_refs": list(refs)}
         )
 
-    for key in ("action:" + action.id, "owner:" + action.owner_role):
+    for key in ("action:" + action.id, *("owner:" + r for r in action.required_binding_roles)):
         check = task.semantic(key)
         add(key, check.status, check.rationale, check.evidence_refs)
-    binding = next((b for b in task.bindings if b.role == action.owner_role), None)
-    add(
-        "binding",
-        CheckStatus.PASS if binding else CheckStatus.UNKNOWN,
-        "The current owner must be bound.",
-        binding.evidence_refs if binding else (),
-    )
+    languages = {p.language.casefold() for p in (*action.inputs, *action.outputs)} - {"agnostic"}
+    for role in action.required_binding_roles:
+        binding = next((b for b in task.bindings if b.role == role), None)
+        add(
+            "binding" if role == action.owner_role else "binding:" + role,
+            CheckStatus.PASS if binding else CheckStatus.UNKNOWN,
+            "Every current owner and referenced auxiliary role must be bound.",
+            binding.evidence_refs if binding else (),
+        )
+        if binding:
+            add(
+                "binding-language:" + role,
+                CheckStatus.PASS
+                if not languages or languages == {binding.language.casefold()}
+                else CheckStatus.FAIL,
+                "The bound current implementation must match concrete port languages.",
+                binding.evidence_refs,
+            )
     for pre in action.preconditions:
         add(
             "precondition:" + pre.key,
