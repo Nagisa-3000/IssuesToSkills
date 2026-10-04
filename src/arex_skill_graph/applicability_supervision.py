@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import re
 from pathlib import PurePosixPath
@@ -27,8 +28,10 @@ PROPOSAL_SYSTEM = (
     'current interface binding, and focused/regression validation. A missing state that a '
     'verified predecessor can establish is not an incompatible prerequisite. A plausible '
     'but unestablished binding is UNKNOWN, not PASS. Static and runtime states are distinct. '
-    'Every check cites supplied candidate-history evidence and current or privileged problem '
-    'evidence. Unrelated requires a definite incompatible check; adaptively_usable requires '
+    'Every check cites exact evidence[].id values from allowed_citations, with candidate-history '
+    'and current or privileged problem evidence. Inner Episode IDs, anchor IDs and file names '
+    'are not citation targets unless also enumerated in allowed_citations. Unrelated requires '
+    'a definite incompatible check; adaptively_usable requires '
     'all checks PASS; probe_only requires supported mechanism, no FAIL, and an unresolved '
     'check; otherwise use unknown. Operational hard_mode is not a reviewed applicability '
     'grade. Return exactly query_id, candidate_id, grade, checks, limitations. Checks use '
@@ -47,7 +50,9 @@ REVIEW_SYSTEM = (
     'the rubric. Return exactly query_id, candidate_id, proposal_sha256, reviewed_grade, '
     'verdict ACCEPT/REJECT/UNKNOWN, check_reviews and rationale. Each check_review has key, '
     'status SUPPORTED/CONTRADICTED/UNKNOWN, evidence_refs and rationale. Cite supplied '
-    'candidate-history and current/privileged evidence in every check. Limits of the '
+    'candidate-history and current/privileged evidence in every check. Use only exact '
+    'evidence[].id values enumerated in allowed_citations; inner source/anchor IDs are data, '
+    'not citation targets. Limits of the '
     'historical control scope remain limits of the label. No repair efficacy is established.'
 )
 
@@ -311,6 +316,19 @@ def label_from_review(packet, proposal, review, *, reviewer, replicate=0):
                             packet['input_available_at'], replicate=replicate)
 
 
+def evidence_response_schema(base_schema, packet, *, proposal=None):
+    """Constrain citations to actual supplied artifacts, without resolving invented aliases."""
+    schema = copy.deepcopy(base_schema)
+    for key in ('query_id', 'candidate_id'):
+        schema['properties'][key]['const'] = packet[key]
+    checks_key = 'check_reviews' if proposal is not None else 'checks'
+    citation_items = schema['properties'][checks_key]['items']['properties']['evidence_refs']['items']
+    citation_items['enum'] = [e['id'] for e in packet['evidence']]
+    if proposal is not None:
+        schema['properties']['proposal_sha256']['const'] = digest(proposal)
+    return schema
+
+
 def review_applicability(packet, transport, budget, *, reviewer, replicate=0):
     validate_packet(packet)
     adapter = BudgetedTransport(transport, budget)
@@ -318,16 +336,20 @@ def review_applicability(packet, transport, budget, *, reviewer, replicate=0):
                    'offline historical candidate capsule')
     budget.history(json.dumps([e for e in packet['evidence'] if e['role'] == 'candidate_history'],
                               ensure_ascii=False), 'offline historical package evidence')
-    proposal = adapter.complete(system=PROPOSAL_SYSTEM,
-                                user=json.dumps(packet, ensure_ascii=False),
-                                response_schema=PROPOSAL_SCHEMA)
+    allowed = [{'id': e['id'], 'role': e['role']} for e in packet['evidence']]
+    proposal = adapter.complete(
+        system=PROPOSAL_SYSTEM,
+        user=json.dumps({'evidence_packet': packet, 'allowed_citations': allowed}, ensure_ascii=False),
+        response_schema=evidence_response_schema(PROPOSAL_SCHEMA, packet),
+    )
     validate_proposal(proposal, packet)
     # The independent call gets the original evidence, no ranking scores or solver self-preference.
     review = adapter.complete(system=REVIEW_SYSTEM,
                               user=json.dumps({'evidence_packet': packet, 'proposal': proposal,
-                                               'proposal_sha256': digest(proposal)},
+                                               'proposal_sha256': digest(proposal),
+                                               'allowed_citations': allowed},
                                               ensure_ascii=False),
-                              response_schema=REVIEW_SCHEMA)
+                              response_schema=evidence_response_schema(REVIEW_SCHEMA, packet, proposal=proposal))
     label = label_from_review(packet, proposal, review, reviewer=reviewer, replicate=replicate)
     return {
         'schema': 'historical-applicability-independent-review-v1',

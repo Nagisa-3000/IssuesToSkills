@@ -244,7 +244,10 @@ def test_proposal_is_not_a_label_and_independent_call_gets_original_evidence():
                                  reviewer='synthetic-review')
     assert len(transport.calls) == 2
     assert transport.calls[0]['system'] != transport.calls[1]['system']
-    assert json.loads(transport.calls[0]['user']) == item
+    first = json.loads(transport.calls[0]['user'])
+    assert first['evidence_packet'] == item
+    assert first['allowed_citations'] == [{'id': e['id'], 'role': e['role']} for e in item['evidence']]
+    assert json.loads(transport.calls[1]['user'])['allowed_citations'] == first['allowed_citations']
     second = json.loads(transport.calls[1]['user'])
     assert second['evidence_packet'] == item and second['proposal_sha256'] == digest(proposed)
     assert result['label']['label_source'] == 'evidence_review'
@@ -264,6 +267,45 @@ def test_invalid_proposal_stops_before_review_and_cannot_manufacture_supervision
 
     transport = Transport()
     with pytest.raises(ValueError, match='all six'):
+        review_applicability(item, transport, BudgetLedger(BudgetCaps(history_tokens=60000)),
+                             reviewer='synthetic-review')
+    assert len(transport.calls) == 1
+
+
+def test_response_schemas_enumerate_artifacts_not_inner_episode_or_anchor_ids():
+    from arex_skill_graph.applicability_supervision import (
+        PROPOSAL_SCHEMA, REVIEW_SCHEMA, evidence_response_schema,
+    )
+
+    item = packet()
+    proposed = proposal(item)
+    before = copy.deepcopy(PROPOSAL_SCHEMA)
+    schemas = [(evidence_response_schema(PROPOSAL_SCHEMA, item), 'checks'),
+               (evidence_response_schema(REVIEW_SCHEMA, item, proposal=proposed), 'check_reviews')]
+    for schema, key in schemas:
+        ids = schema['properties'][key]['items']['properties']['evidence_refs']['items']['enum']
+        assert ids == [e['id'] for e in item['evidence']]
+        assert 'current:issue' not in ids and 'history:implementation' not in ids
+        assert schema['properties']['query_id']['const'] == item['query_id']
+        assert schema['properties']['candidate_id']['const'] == item['candidate_id']
+    assert schemas[1][0]['properties']['proposal_sha256']['const'] == digest(proposed)
+    assert PROPOSAL_SCHEMA == before
+
+
+def test_inner_source_citations_are_rejected_without_host_alias_repair():
+    item = packet()
+    proposed = proposal(item)
+    proposed['checks'][0]['evidence_refs'] = ['history:implementation', 'current:issue']
+
+    class Transport:
+        calls = []
+
+        def complete(self, **call):
+            self.calls.append(call)
+            return proposed
+
+    transport = Transport()
+    with pytest.raises(ValueError, match='attributable evidence'):
         review_applicability(item, transport, BudgetLedger(BudgetCaps(history_tokens=60000)),
                              reviewer='synthetic-review')
     assert len(transport.calls) == 1
