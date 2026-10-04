@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from itertools import combinations
-from typing import Mapping
 
 from .action_contracts import (
     ActionContract,
@@ -400,10 +400,10 @@ def validate_task_plan(
                 "Binding is a current evidence-backed object/interface.",
                 binding.evidence_refs,
             )
-            languages = {p.language for p in (*a.inputs, *a.outputs)} - {"agnostic"}
+            languages = {p.language.casefold() for p in (*a.inputs, *a.outputs)} - {"agnostic"}
             boolean(
                 "binding_language",
-                not languages or languages == {binding.language},
+                not languages or languages == {binding.language.casefold()},
                 instance.id,
                 "Concrete port objects must use the currently bound implementation language.",
                 binding.evidence_refs,

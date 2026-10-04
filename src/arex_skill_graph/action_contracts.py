@@ -116,9 +116,9 @@ class Port:
 
     def compatible(self, consumer: Port) -> bool:
         # A candidate connection; semantic evidence is checked separately.
-        return all(
+        return self.language.casefold() == consumer.language.casefold() and all(
             getattr(self, key) == getattr(consumer, key)
-            for key in ("semantic_role", "artifact_kind", "language", "scope", "phase", "state")
+            for key in ("semantic_role", "artifact_kind", "scope", "phase", "state")
         )
 
 

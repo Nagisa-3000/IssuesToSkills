@@ -6,9 +6,10 @@ import ast
 import hashlib
 import re
 import subprocess
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 from .action_contracts import CheckStatus, Port, Predicate, strict, strings, text, utc
 
@@ -290,16 +291,14 @@ class TaskContext:
             if not anchor.path:
                 raise ValueError("binding requires current code evidence")
             source = (root / anchor.path).read_text(encoding="utf-8")
-            extensions = {"Python": {".py", ".pyi"}, "Rust": {".rs"}}
-            if (
-                binding.language in extensions
-                and Path(anchor.path).suffix not in extensions[binding.language]
-            ):
+            extensions = {"python": {".py", ".pyi"}, "rust": {".rs"}}
+            language = binding.language.casefold()
+            if language in extensions and Path(anchor.path).suffix not in extensions[language]:
                 raise ValueError("bound language disagrees with current implementation file")
-            if binding.language == "Python" and binding.symbol:
+            if language == "python" and binding.symbol:
                 qualified, bare = set(), set()
 
-                def symbols(node, scope=()):
+                def symbols(node, scope=(), qualified=qualified, bare=bare):
                     for child in ast.iter_child_nodes(node):
                         if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                             name = (*scope, child.name)

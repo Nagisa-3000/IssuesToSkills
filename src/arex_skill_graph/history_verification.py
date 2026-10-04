@@ -73,6 +73,10 @@ def junit_observations(path):
 def infer_historical_pytest_command(paths, repository_files):
     """Select actual test harnesses, never execute Pylint fixture files as tests."""
     files = set(repository_files)
+    if any(path.startswith("pylint/test/") for path in paths):
+        from .legacy_unittest import legacy_unittest_command
+
+        return legacy_unittest_command(paths, repository_files)
     functional = [p for p in paths if p.startswith("tests/functional/")]
     targets = {
         p
