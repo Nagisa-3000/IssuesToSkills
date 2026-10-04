@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import ClassVar
 
 from .action_contracts import digest
+from .action_observations import record_action_observation
 from .adaptive_budget import BudgetedTransport, BudgetExceeded
 from .adaptive_guidance import prepare_adaptive_guidance
 from .git_tree_export import exact_git_tar
@@ -238,13 +239,16 @@ class AdaptiveSolver:
         "Solve the current public software issue using current repository observations. Historical guidance is conditional, not a patch to copy. "
         "Use the broker tools. Unknown plan prerequisites require public probes. Refresh observations after edits and failed oracles. "
         "No hidden evaluator, future history, host filesystem, network or credentials are accessible to tools. Return one request JSON: "
-        "operation = list_files | read_file | write_file | run_public_command | read_skill_resource | refresh_guidance | drop_guidance | finish; arguments is an object; rationale is text. "
+        "operation = list_files | read_file | write_file | run_public_command | read_skill_resource | refresh_guidance | drop_guidance | record_action_observation | finish; arguments is an object; rationale is text. "
         "list_files arguments: prefix (optional repository directory), offset (default 0), limit (1..200). "
         "read_file requires path, with optional start_line (1-based) and limit (1..400; default 200); "
         "write_file requires path and complete content (both strings). "
         "run_public_command requires argv, an array of command/argument strings, and optional timeout seconds; "
         "for shell syntax use argv=['bash','-c','the public shell command']. A command string alone is invalid. "
         "read_skill_resource requires package_id and resource strings. refresh_guidance accepts code_paths, a string array. "
+        "record_action_observation requires action_id, current context_revision, summary and outputs. "
+        "Each output has port_name, observation_ids and artifact_paths; cite actual broker results or current files. "
+        "Port recording is unreviewed and never proves prerequisites, effects or repair success. "
         "drop_guidance and finish take empty arguments. "
         "Use public commands to search source and run tests. Read current files before changing them. "
         "Long output is presented as excerpts; use focused commands and paginated file reads to inspect omitted parts. "
@@ -281,8 +285,12 @@ class AdaptiveSolver:
         use_frozen_selection=False,
         initial_plan=None,
         initial_observations=(),
+        recordable_actions=(),
+        read_only_workspace=False,
     ):
         self.ledger.check_time()
+        if type(read_only_workspace) is not bool:
+            raise ValueError("public workspace mode must be explicitly boolean")
         assert_public(initial_observations)
         observations, guidance_runs, requests, guidance_usage = (
             list(initial_observations),
@@ -291,6 +299,23 @@ class AdaptiveSolver:
             [],
         )
         ended, failed = False, ""
+        action_catalog, action_observations, broker_observations = {}, [], {}
+
+        def register_actions(actions):
+            for action in actions:
+                old = action_catalog.get(action.id)
+                if old is not None and old != action:
+                    raise ValueError("Action observation identity changed its source contract")
+                if old is None:
+                    self.ledger.approve_root(action.package_id)
+                    self.ledger.history(
+                        json.dumps(
+                            {"action_id": action.id, "outputs": [p.name for p in action.outputs]}
+                        ),
+                        "delivered Action observation catalog labels",
+                    )
+                    action_catalog[action.id] = action
+
         with (
             tempfile.TemporaryDirectory(prefix="arex-public-solver-") as scratch,
             ExitStack() as cleanup,
@@ -345,6 +370,7 @@ class AdaptiveSolver:
                 guidance = result["guidance"]
                 guidance_runs.append(result)
                 if selected:
+                    register_actions(i.action for i in selected.instances)
                     guidance_usage.append(
                         {
                             "plan_id": selected.id,
@@ -354,6 +380,17 @@ class AdaptiveSolver:
                     )
 
             try:
+                if recordable_actions:
+                    if not use_frozen_selection:
+                        raise ValueError(
+                            "Explicit functional Action catalogs require fixed selection"
+                        )
+                    authoritative = {a.id: a for p in policy.load() for a in p.actions}
+                    if any(authoritative.get(a.id) != a for a in recordable_actions):
+                        raise ValueError(
+                            "Functional Action catalog differs from authored resources"
+                        )
+                    register_actions(recordable_actions)
                 if use_frozen_selection:
                     selected = initial_plan
                     if initial_plan:
@@ -364,6 +401,8 @@ class AdaptiveSolver:
                                 "context_revision": current.revision,
                             }
                         )
+                    if initial_plan:
+                        register_actions(i.action for i in initial_plan.instances)
                     guidance = (
                         GuidanceRenderer(policy, self.ledger).render(initial_plan, current)
                         if initial_plan
@@ -381,6 +420,12 @@ class AdaptiveSolver:
                             {
                                 "current": public_context,
                                 "guidance": guidance,
+                                "public_workspace_read_only": read_only_workspace,
+                                "action_observation_catalog": [
+                                    {"action_id": a.id, "outputs": [p.name for p in a.outputs]}
+                                    for a in action_catalog.values()
+                                ],
+                                "action_observation_assurance": "unreviewed; records do not promote facts or ports",
                                 "public_tree": {
                                     "top_level": sorted(
                                         p.name for p in Path(current.root).iterdir()
@@ -409,6 +454,12 @@ class AdaptiveSolver:
                         "list_files": {},
                         "refresh_guidance": {},
                         "drop_guidance": {},
+                        "record_action_observation": {
+                            "action_id": str,
+                            "context_revision": int,
+                            "summary": str,
+                            "outputs": list,
+                        },
                         "finish": {},
                     }
                     if operation not in fields or any(
@@ -479,6 +530,14 @@ class AdaptiveSolver:
                             }
                             assert_public(result)
                         else:
+                            if read_only_workspace:
+                                observations.append(
+                                    {
+                                        "operation": operation,
+                                        "denied": "This public Action exercise has a read-only workspace.",
+                                    }
+                                )
+                                continue
                             if (
                                 selected
                                 and validate_task_plan(selected, current, policy).mode != "use"
@@ -524,7 +583,7 @@ class AdaptiveSolver:
                         result = tools.run(
                             args["argv"],
                             timeout=args.get("timeout", 60),
-                            readonly_workspace=probe_only,
+                            readonly_workspace=probe_only or read_only_workspace,
                         )
                         anchor_id = "current:probe:" + str(len(observations))
                         anchor = EvidenceAnchor(
@@ -544,6 +603,22 @@ class AdaptiveSolver:
                                 ),
                             ),
                         )
+                    elif operation == "record_action_observation":
+                        self.ledger.charge("tool_calls", 1, "witnessed Action output recording")
+                        action = action_catalog.get(args["action_id"])
+                        if action is None:
+                            raise ValueError(
+                                "Action observation was not delivered from an approved source"
+                            )
+                        record = record_action_observation(
+                            action,
+                            args,
+                            current,
+                            broker_observations,
+                            record_id="action-result:" + str(len(action_observations)),
+                        )
+                        action_observations.append(record)
+                        result = {"operation": operation, "record": record}
                     elif operation == "drop_guidance":
                         self.ledger.charge(
                             "tool_calls", 1, "explicit fallback from conditional Skill guidance"
@@ -599,6 +674,11 @@ class AdaptiveSolver:
                         current = current.update(anchors=tuple(changed_anchors))
                         selected = None
                         guidance = "Public tool changed current code; re-observe prerequisites and refresh guidance."
+                    result["operation"] = operation
+                    result["observation_id"] = "public:observation:" + str(len(observations))
+                    result["context_revision"] = current.revision
+                    if operation in {"read_file", "write_file", "run_public_command"}:
+                        broker_observations[result["observation_id"]] = dict(result)
                     observations.append(result)
             except BudgetExceeded as exc:
                 failed = str(exc)
@@ -621,6 +701,10 @@ class AdaptiveSolver:
                 "requests": requests,
                 "public_observations": observations,
                 "guidance_runs": guidance_runs,
+                "action_observations": action_observations,
+                "action_observations_semantically_verified": False,
+                "explicit_functional_action_catalog": bool(recordable_actions),
+                "public_workspace_read_only": read_only_workspace,
                 "guidance_usage": guidance_usage,
                 "budget": self.ledger.snapshot(),
                 "isolation": tools.isolation,
