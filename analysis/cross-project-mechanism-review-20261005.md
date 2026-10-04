@@ -1,0 +1,25 @@
+# 跨项目机制核查与原生端口验收（2026-10-05）
+
+**尚未确认新的跨项目 Pattern、完成两父 Workflow 组合或证明修复收益。** 本轮建立两个真实端口拒绝边界，并核对值得继续验证的源代码机制。机器证据见 [机制审计](results/cross-project-mechanism-evidence-audit-20261005-v1.json)及[端口审计](results/native-overload-edit-port-controls-audit-20261005-v1.json)。
+
+本轮对三项目完整的已存储历史人口 9356 条记录读取 as-of 标题，再按开发线索检查相关公开报告、修复关系和实际 commit diff。标题线索只用于定位。这不是全体 Issue 的语义处置完成，也不用于正式 benchmark 选题。
+
+| 来源 | 实际修复机制 | 本轮判定与限制 |
+| --- | --- | --- |
+| Pyflakes #401、#470 | 分别补充 async 函数作用域分类、overload 函数类别，保持同步语义和 runtime gating | 已有同项目两来源 local_template，尚未完成全部功能验收 |
+| [Pylint #8120](https://github.com/pylint-dev/pylint/issues/8120) / [PR #8123](https://github.com/pylint-dev/pylint/pull/8123) | 将 async 的 visit/leave 回调接到已有作用域回调，恢复状态边界 | 有机制对应可能，既有资格尝试未获接受，尚未原生归纳及迁移验收；关联 #1279 不能算第二个独立支持 |
+| [Ruff #5124](https://github.com/astral-sh/ruff/issues/5124) / [PR #5125](https://github.com/astral-sh/ruff/pull/5125) | AsyncWith 接入已有 With 分支，保持 target/body 语义，同时修改当前 Rust API 和 regression fixtures | 值得进一步核验；Python 的具体 Action 端口不能直接变成 Rust 对象绑定 |
+| [Pylint #1126](https://github.com/pylint-dev/pylint/issues/1126) | 将 accessed 属性堆栈改成以真实 class scope 为键的映射 | async 出现在复现中，实际修复并非 async 分类扩展，不能据此并入同机制 |
+| [Ruff #4047](https://github.com/astral-sh/ruff/issues/4047) / [PR #4067](https://github.com/astral-sh/ruff/pull/4067) | 汇总 Args、Keyword Args 等文档段的名字集合，再统一判断 missing_args | 与 Pylint #3092 的签名类型证据收集责任不同，不能凭 keyword-only 症状直接交换 Action；另行研究参数文档机制 |
+
+Pylint #8120 已有真实因果尝试，而不是完全没有执行：目标 test_functional[redefined_variable_type] 出现 fail-to-pass；但邻近 regression_newtype_fstring 在原 base 和历史 fixed 都失败，出现由 is_standard_module 的 DeprecationWarning 引发的 astroid-error。原 base、加 regression 的 base 和 fixed 三次退出码均为 1，artifact/issue relationship 标志也未获确认，因此 verified_resolution=false。现有结果、控制题和 warning 策略均保留。下一步应根据 pinned 源码声明校准依赖与来源证明，不能删除失败控制或全局隐藏 warning 来得到资格 PASS。
+
+共同抽象目前是有待核验的假设：异步节点已经进入分析，但同步语义分类或分派遗漏等价变体。迁移仍须证明当前 async 变体能复用对应的普通节点语义、责任边界正确、必要进入/退出动作完整，以及相邻行为保留。类型名或诊断词相似不能建立这些事实。
+
+时间边界保持不变：T=2024-01-01T00:00:00Z，训练截止 τ=2021-01-01T00:00:00Z。Pylint #8120 的实际修复在 2023-01-28、Ruff #5124 在 2023-06-15 公开。它们均不能成为 2021 年之前训练 query 的经验，也不能进入冻在 2021 年的开发目录。较早出现的同 bug 报告不把后来修复的知识回填到过去。
+
+当前历史因果 verifier 仍使用 pytest/JUnit 协议，运行时复制以 Python 及声明的可执行文件为主。传入 cargo 命令后仍附加 pytest 的 JUnit 参数，不构成 Rust harness；工具链出现在服务器上，也不等于存在合格隔离 Rust 环境。需要独立支持 Rust test identities、fixture/snapshot 断言、锁定依赖、运行时封存和三阶段因果对照，之后再进行 native authoring、归纳和组合。当前报告不把未执行的对照填为 PASS。
+
+端口负例隔离了其他条件：只有 input:overload-review 未获满足，角色、前提和已绑定 Oracle 均通过。q1 缺少输入，2 次 solver 调用，刷新指导后拒绝修改；q2 为 post-edit/unvalidated，1 次调用直接拒绝修改。独立上下文复核各 1 次调用，两者均为 policy PASS/correct_refusal，领域状态为 CONTRADICTED。两 checkout 内容和权限一致、均无补丁和编辑记录。它们是同项目、受控输入的定义演练；正确拒绝没有建立修复成功、跨项目泛化或完整功能验收。
+
+下一步验收仍需：编辑/验证正例的全部保留义务；两项候选的真实源资格；有支持的 Pattern 和可绑定互补 Action；真实重写与两父组合；有效适用性及执行效果监督。原冻结池的无关标签和平局结果保持原样，不能用新候选改写旧实验。其后才能训练与校准、联合冻结正式协议，执行配对 SWE 和消融。

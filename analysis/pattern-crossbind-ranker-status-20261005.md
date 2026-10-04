@@ -2,7 +2,7 @@
 
 **目标尚未全部完成。M0–M3 已有实现和契约测试，真实功能、跨项目重写与组合验收仍不完整；M4 尚无合格的训练 Ranker；M5 尚未正式冻结；M6 的正式 SWE 运行仍为 0。**
 
-最新机器快照为 [v9](results/pattern-crossbind-ranker-current-status-20261005-v9.json)。[v8](results/pattern-crossbind-ranker-current-status-20261005-v8.json) 保留验证第二版运行前的状态。[v7](results/pattern-crossbind-ranker-current-status-20261005-v7.json) 及更早版本保留当时的状态，不随新结果改写。代码、真实 Action 验收、泛化效果分别统计。
+最新机器快照为 [v10](results/pattern-crossbind-ranker-current-status-20261005-v10.json)。[v9](results/pattern-crossbind-ranker-current-status-20261005-v9.json) 保留原生验证第二版完成时的状态。[v8](results/pattern-crossbind-ranker-current-status-20261005-v8.json) 保留验证第二版运行前的状态。[v7](results/pattern-crossbind-ranker-current-status-20261005-v7.json) 及更早版本保留当时的状态，不随新结果改写。代码、真实 Action 验收、泛化效果分别统计。
 
 | 阶段 | 已实现或实际完成 | 尚缺的验收 |
 | --- | --- | --- |
@@ -39,6 +39,18 @@
 新增**显式接续**入口只允许一致、未陈旧的执行封印，并复制精确公开内容与权限，排除 Git metadata、拒绝外部链接并复验复制期间变化。正式入口的默认 pinned-base 行为保持原样。真实封存输入的[确定性交接对照](results/native-overload-validation-state-transfer-control-20261005-v1.json)通过：默认入口仍拒绝修改后的 checkout，显式入口的封印与实际执行记录一致。该对照为 0 次模型调用，不能当作 Action 功能验收。native 验证第二版已实际完成：**5 次模型调用、1 个真实验证记录、solver 正常结束、0 字节新增 patch**。两个绑定命令分别真实执行、退出码均为 0、未超时；公开目标和非 overload 控制通过，受影响的 type-annotation 模块 **24 项测试通过**，工作区封印保持不变。见 [真实执行审计](results/native-overload-validation-exercise-audit-20261005-v2.json)。
 
 其[独立复核](results/native-overload-validation-independent-review-audit-20261005-v2.json)实际用 **2 次调用**，确认 public-validation-observed、async-target-behavior-correct、overload-suite 和 outcomes-recorded 输出；运行时兼容性、下游语义及完整 target-and-controls Oracle 仍为 UNKNOWN。policy verdict 为 **PASS / correct_refusal**：Agent 正确保留未知、拒绝重复修改和过度确认。领域状态仍为 UNKNOWN，**完整功能验收仍未通过，包未晋升**。这建立了同项目定义演练中的诊断→编辑→只读验证状态传递及拒绝边界，未建立新 Issue 泛化、跨项目迁移或 SWE 效果。
+
+## 新增端口拒绝边界与共同机制核查
+
+两个此前只准备、未执行的编辑端口负例已实际完成：[执行与独立复核审计](results/native-overload-edit-port-controls-audit-20261005-v1.json)。复用真实 grounding 的角色、前提和 Oracle，在精确一致的独立公开 checkout 上只改变输入端口并取消相应连接确认。两场景执行前仅 input:overload-review 为 UNKNOWN，其余准入条件为 PASS。
+
+q1 缺输入，实际用 2 次模型调用，刷新指导后拒绝修改；q2 的输出为 post-edit/unvalidated，实际用 1 次调用直接拒绝修改。两者 solver 正常结束、补丁均为 0 字节、编辑 Action 记录均为 0，内容与权限封印保持一致。独立上下文复核各用 1 次调用，两者 policy 都为 PASS/correct_refusal，领域状态都为 CONTRADICTED：原缺陷仍在，正确拒绝没有修复问题。这补上端口拒绝边界，未完成编辑正例全部保留义务、整个功能 suite、新问题泛化或 SWE 验收。supervisor 已结束，历史作者原 PID/start ticks 恢复并独立核实为运行状态；全部模型请求继续串行。
+
+[共同机制核查](cross-project-mechanism-review-20261005.md)从完整 9356 条已存储记录的 as-of 标题定位开发线索，再读取报告、修复关系及实际 diff。Pylint #8120 补上 async 进入/退出回调，Ruff #5124 补上 AsyncWith 分类分支，值得进一步资格复现与归纳。Pylint #1126 修复作用域映射，Ruff #4047 修复文档参数集合合并，不能仅凭 async/keyword-only 症状混入同一机制。
+
+两项 2023 年修复不能进入 2021 年训练截止之前的 query/catalog。Ruff 还缺合格 Rust 因果验证 harness 与完整隔离运行环境。没有生成或确认新跨项目 Pattern，没有执行新两父组合，也没有新训练 checkpoint。
+
+本次固定审阅快照包含 9 个 Pylint 来源、9 个通过原生结构/来源验证的包和 27 个 Action 定义；完成来源的实际 authoring 调用为 21。全为 definition_only_not_executed、没有 Pattern、没有正式 KB 准入；之后仍在抽取的结果不计入该固定快照。见 [证据审计](results/cross-project-mechanism-evidence-audit-20261005-v1.json)。
 
 ## 工程检查、数据范围与剩余验收
 
