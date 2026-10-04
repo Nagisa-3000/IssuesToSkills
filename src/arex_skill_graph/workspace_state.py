@@ -78,3 +78,26 @@ def copy_verified_workspace_modes(source, destination):
     for name in sorted(before, key=lambda name: (name != ".", name.count("/")), reverse=True):
         if "mode" in before[name]:
             (destination / name).chmod(before[name]["mode"])
+
+
+def copy_sealed_public_workspace(source, destination, expected_execution_sha256):
+    """Copy an explicitly resumed public state, preserving its closed content/mode seal."""
+    source, destination = Path(source).resolve(), Path(destination)
+    before = public_workspace_entries(source)
+    sealed = _sha256({"schema": "arex-public-workspace-execution-state-v1", "entries": before})
+    if sealed != expected_execution_sha256:
+        raise ValueError("resumed public workspace differs from its execution seal")
+    destination.mkdir()
+    for name, entry in before.items():
+        if name != "." and entry["kind"] == "directory":
+            (destination / name).mkdir(parents=True, exist_ok=True)
+    for name, entry in before.items():
+        if entry["kind"] == "file":
+            (destination / name).write_bytes((source / name).read_bytes())
+        elif entry["kind"] == "link":
+            (destination / name).symlink_to(entry["target"])
+    for name in sorted(before, key=lambda n: (n != ".", n.count("/")), reverse=True):
+        if "mode" in before[name]:
+            (destination / name).chmod(before[name]["mode"])
+    if public_workspace_entries(source) != before or public_workspace_entries(destination) != before:
+        raise ValueError("sealed public state changed while transferring execution input")

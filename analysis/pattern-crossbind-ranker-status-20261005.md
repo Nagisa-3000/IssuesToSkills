@@ -1,35 +1,51 @@
 # Pattern、CrossBind 与 Ranker 的实际完成度（2026-10-05）
 
-**目标尚未全部完成。M0–M3 已有代码和契约测试，真实泛化与组合验收仍不完整；M4 尚无合格的训练 Ranker，M5 尚未正式冻结，M6 的正式 SWE 运行仍为 0。**
+**目标尚未全部完成。M0–M3 已有实现和契约测试，真实功能、跨项目重写与组合验收仍不完整；M4 尚无合格的训练 Ranker；M5 尚未正式冻结；M6 的正式 SWE 运行仍为 0。**
 
-当前机器快照为 [v7](results/pattern-crossbind-ranker-current-status-20261005-v7.json)。[v6](results/pattern-crossbind-ranker-current-status-20261005-v6.json) 保留引用协议实跑前的状态。[v5](results/pattern-crossbind-ranker-current-status-20261005-v5.json) 保留当时的状态；其中 v9 数据集仍在编译、原生 Action 的 v3 复核仍排队等描述已由以下实际结果更新。
+最新机器快照为 [v9](results/pattern-crossbind-ranker-current-status-20261005-v9.json)。[v8](results/pattern-crossbind-ranker-current-status-20261005-v8.json) 保留验证第二版运行前的状态。[v7](results/pattern-crossbind-ranker-current-status-20261005-v7.json) 及更早版本保留当时的状态，不随新结果改写。代码、真实 Action 验收、泛化效果分别统计。
 
 | 阶段 | 已实现或实际完成 | 尚缺的验收 |
 | --- | --- | --- |
-| M0 | Action/Pattern/Task 契约；输入输出见证、当前绑定、工作区封印、来源与包 hash；精确 Git root/HEAD 验证 | 原生编辑及验证 Action 的完整功能案例、跨项目可用性 |
-| M1 | 单 Workflow 重写；依赖 DAG、必要效果、不变量检查；历史不可变，每项变化保留来源和理由 | 在新 Issue 上确认真实 Pattern，执行重写并证明收益 |
-| M2 | Bind/Cut/Match/Bridge/Compose/Validate；PASS/FAIL/UNKNOWN、冲突与循环检查；两个父 Workflow、四个组合候选上限 | 真实互补来源的两父组合执行、独立验证与效果证据 |
-| M3 | Workflow 与 Plan 两处 prompted 排序；准入门槛、拒绝、先探查、受限 Action 补召回与统一预算 | 完整开发集校准、真实效果验证 |
-| M4 | 逐题时间隔离、修复/别名/复制来源排除、两类候选监督与训练工具；42 条真实执行观察已编译；全部 42 个适用性证据包已封存 | 获接受的独立适用性标签、有效训练偏好、合格训练模型与校准 |
-| M5 | 正式冻结和独立评估工具 | 正式 KB、题目、模型、预算和验收协议的联合冻结 |
-| M6 | 配对修复、模块消融和冻结候选池排序评估入口 | 正式 SWE 配对实验与消融尚未运行 |
+| M0 | Action/Pattern/Task 契约；输入输出见证；主责任与辅助读写角色绑定；来源/包 hash；工作区内容与权限封存；独立输出复核与状态保存；显式封存状态接续 | 原生编辑、验证 Action 的完整正反例功能验收，跨项目可用性 |
+| M1 | 单 Workflow 重写；当前依赖 DAG、必要效果、不变量；历史 Workflow 不变，每项重写保留来源及理由 | 新 Issue 上确认真实 Pattern，执行重写并证明收益 |
+| M2 | Bind/Cut/Match/Bridge/Compose/Validate；PASS/FAIL/UNKNOWN；冲突、循环与验证完整性检查；最多两个父 Workflow、四个组合候选 | 真实互补来源的两父组合执行及独立效果验证 |
+| M3 | Workflow 与 Plan 两处 prompted 排序；准入失败、拒绝全部、先探查；按缺失角色补召回 Action；共享预算 | 开发集校准及真实效果验证 |
+| M4 | 按题时间隔离；修复、别名和复制来源排除；两类候选监督与训练工具；42 条执行观察和 42 条获接受的适用性标签已合并为 84 条观察 | 有效正负适用性监督、有依据的非平局排序偏好、合格训练权重及校准 |
+| M5 | 正式冻结和独立评估工具 | KB、题目、模型、预算与验收协议的联合冻结 |
+| M6 | 配对修复、模块消融及冻结候选池排序比较入口 | 正式 SWE 配对实验和消融尚未运行 |
 
-历史开发实验已结束：**27/27 分支**，包括 9 个基础 Agent 和 18 个冻结 Plan。基础 Agent 修复 **7/9**，Plan 分支修复 **14/18**；每道题的三个分支修复结果一致。该固定池没有已确认 Pattern、两个父 Workflow 的组合或原生 Action 执行记录。指导分支提供探查义务后回退。这是历史开发监督，不能证明 Skill、重写或 CrossBind 提高了 SWE 修复率。原始固定代码和结果保留，未重跑或改写原实验。
+## 当前最重要的实验结果
 
-v9 数据集编译已实际成功（311.58 秒，0 次模型调用）：**42 条执行观察**，包括 24 条 Workflow、18 条 Plan；20 条训练观察、22 条开发观察，形成 30 对偏好。训练侧 **16 对全是平局**；开发侧 13 对平局、1 对非平局。执行标签的 applicability 均为未知，operational_mode 与经验适用性分开。没有把未执行候选标失败，也没有制造非平局来启动权重训练。v8 的 300 秒超时版本及原始输入继续保留。
+历史开发实验完成 **27/27 分支**，包括 9 个基础 Agent 分支和 18 个冻结 Plan 分支。基础 Agent 修复 **7/9**，Plan 分支修复 **14/18**；逐题看，三个分支的修复结果相同。固定池没有已确认 Pattern、两父 Workflow 的组合或原生 Action 执行记录，指导分支探查后回退。**这没有建立 Skill、重写或 CrossBind 的修复收益。** 原固定代码和结果保留，未用新实现改写原实验。
 
-新增 [适用性监督模块](../src/arex_skill_graph/applicability_supervision.py) 与 [历史复核 CLI](../experiments/review_historical_applicability.py)。每个候选分别检查机制、责任边界、前提、反例、绑定及验证；先提出带双侧证据引用的标签，再以原始证据和独立上下文复核。单次提案、UNKNOWN、拒绝及不完整的复核均不能创建标签。标签只监督 applicability，不产生 repair utility、execution outcome 或操作授权。实际复核仍使用同一模型族，明确记录 model_generated_label=true、human_reviewed=false、independent_model_family=false，不能称为人工或跨模型判定。
+全部 **42/42 候选/问题组合**已完成适用性提案及独立上下文复核，共 **84 次实际模型调用**；42 个标签全部获接受，全部为 **unrelated**，其中 24 个 Workflow、18 个 Plan。每项检查机制、责任边界、前提、反例、绑定及验证，并引用封存的双侧证据。详见 [完整复核审计](results/historical-applicability-completed-review-audit-20261005-v2.json)。这些是同一模型族的独立上下文判断，明确记录 human_reviewed=false、independent_model_family=false，不是人工或跨模型判定，不建立修复 utility。
 
-准备流程已对**全部 42 个冻结候选/问题组合**完成校验：候选与公开输入 hash 一致；按题重建或冻结目录；排除自身答案、同一修复、重复来源和已暴露题；重新准入原生包；公开代码从准确的 pinned base 读取，同时包含生产修复和回归断言所涉及的文件。历史修复、资格验证和独立因果对照只能进入离线标签评估器。准备包的复用还要检查完整候选集合、独立 oracle 的文件 hash、每个包的身份与封印，不能偷偷删题或换候选。此阶段 **0 次模型调用、0 个标签**。42 项真实复核在 Pylint authoring 的请求完成边界串行调度。v1 实跑发生引用协议失败：7 次实际模型调用、7 个拒绝响应、0 个接受标签；剩余 35 项未启动，不能标为失败候选。模型引用了包内 Episode/anchor ID，而接口只接受证据 artifact ID，详见 [保留的失败审计](results/historical-applicability-citation-failure-audit-20261005-v1.json)。该版本在无活动请求的完成边界安全结束，作者已恢复。现在明确提供可引用 artifact 清单，并把实际 ID 枚举及题目/候选身份写入每次响应 Schema；校验标准保持不变，没有由 host 替换引用或制造标签。v2 使用同一完整的冻结 42 项候选池重跑。截至当前快照，1 项已获接受，等级分布为 {"unrelated": 1}；这些标签尚未并入训练数据，也不建立修复效果。接受数量以快照中的 actual progress 为准，排队、协议修正及 Schema 测试均不算监督完成。
+[最终监督合并审计](results/historical-dual-supervision-merge-audit-20261005-v11.json)核验每个接受标签的原始证明、完整人口、历史因果对照及所有时间/候选身份。合并仍使用原冻结编译器，验证公开输入、候选、catalog hash 和时间切分保持一致。新数据为 **84 条观察：42 条执行监督 + 42 条适用性监督；40 条训练观察、44 条开发观察**。执行观察的 applicability 继续为未知，不能由操作模式推断；适用性标签也没有被填上执行结果。历史修复和隐藏断言仅供离线标签评估，不进入 Ranker 的公开输入。
 
-原生 overload-inspect 四场景实验已完成独立上下文复核，见 [v5 复核审计](results/native-overload-independent-functional-review-audit-20261005-v5.json)。原始演练为 **26 次模型调用**；该版复核为 **5 次调用**。q0 的五项 authored checks 全部 PASS，确认一个只读 overload-review；q1 已有 async-aware gate、q2 装饰器身份机制不同，均正确拒绝确认；q3 执行不可用，也正确拒绝，但领域状态仍为 UNKNOWN。四项 policy verdict 均 PASS。**这证明诊断输出与拒绝边界，不证明编辑成功、修复成功或跨项目泛化。**该包仍是 Pyflakes 的两个来源形成的 local_template，没有晋升正式 KB。
+偏好仍为 **30 对：训练 16 对全部平局；开发 13 对平局、1 对非平局**。没有把未执行候选标失败，没有制造优先级来训练，没有新合格 Ranker 权重。该候选池支持拒绝错误经验的监督，尚不提供选择有效修复经验的充分信号。需要先获得真实可适用、可适配的经验和效果差异，再训练排序。v10 合并器误读终止字段而退出的版本保留，0 次模型调用；v11 已实际编译成功，耗时 326.34 秒，0 次合并模型调用。
 
-原生复核的 v1/v2 协议失败、v3 调用前被取代和 v4 的所有权失败均保留。v4 q0 实际是 Git 的 dubious ownership 导致无法读取身份，并非 fixture 使用了父项目 HEAD；四个 fixture 有各自独立、未变化的 Git HEAD。v5 使用准确的 broker owner 校验这些 fixture。代码现在区分“Git 身份不可读”与“HEAD 真正不同”，并拒绝未版本化目录继承父仓库的身份，未增加全局 safe.directory。
+## 原生 Action 闭环的实际边界
 
-Pylint 资格流程已处理 **1160/1160** 个规范化候选，得到 **78** 个 verified 来源，范围是修改测试，不能描述为整项目完整验证。authoring v1 的必需协议资源缺失属于基础设施失败（0 包、0 次模型调用）。v2 针对全部合格来源串行抽取，不设预定族或任意 top-N。当前快照中的结构合法包仍是 **definition_only_not_executed**；不得把结构验证等同于 Action 功能验收或正式 KB 准入。pyflakes-mechanism-history-v5 的未审阅输出与其他失败版本继续保留。
+原生包仍为 Pyflakes 的两来源 **local_template**，不是跨项目 Pattern，未晋升正式 KB。overload-inspect 四场景已完成独立复核：[v5 审计](results/native-overload-independent-functional-review-audit-20261005-v5.json)。q0 的五项 authored checks 全部 PASS，确认一个只读、修改前的 overload-review；已有 async-aware gate、其他装饰器机制及执行不可用三个边界均拒绝确认。不可用场景的领域状态仍为 UNKNOWN。这证明诊断输出及拒绝边界，不能证明修复或泛化。
 
-当前完整测试 **525 passed、19 skipped**。新增适用性协议与 CLI 集成测试 **45 passed**；Task Git 身份及原生 reviewer 的当前变化也包含在完整测试中。修改 Python 文件的 Ruff E4/E7/E9/F 与 git diff --check 通过。跳过项不计为通过。这些结果验证工程行为，不确认泛化、修复收益或 SWE 有效性。
+编辑场景的前三次真实准入各用 1 次模型调用，并因多余未来检查、嵌套 argv、拼接符号名被拒绝；全部版本保留，没有由 host 过滤字段或填 PASS。第四版实际用 **8 次模型调用**修改两个文件，产生 **1695 字节 patch 和 1 个 overload-change 记录**。公开探针的语义输出和 3 个定向测试提供了当前范围内的支持，但 solver 随后耗尽共享 token 预算，未正常结束，不能计为已完成修复。
 
-历史范围保持 Pylint 5273、Pyflakes 501、Ruff 3582，共 **9356 个 Issue**；主截止 T=2024-01-01T00:00:00Z，训练截止 τ=2021-01-01T00:00:00Z，均为严格时间边界。已暴露的 Pylint #10034 继续排除正式评价。
+独立复核在单独 checkout 精确重放实际 patch，并核对内容和权限封印。旧的修改前事实、绑定、端口与语义检查按锚点变化失效。两版输出复核共 **4 次实际调用**，均确认异步分类扩展、新增回归覆盖和 post-edit/unvalidated 输出端口；普通函数行为与相邻诊断有支持，编辑 Oracle、运行时兼容性和下游语义仍为 UNKNOWN。完整 policy 未获接受：第一版缺少执行时的认证输入并发生引用协议失败；第二版保留了 correct_confirmation 与 UNKNOWN domain_state 的矛盾响应。没有改判或删除失败结果。见 [v1 审计](results/native-overload-edit-output-review-audit-20261005-v1.json) 和 [v2 输入上下文审计](results/native-overload-edit-output-review-audit-20261005-v2-input-context.json)。
 
-后续验收顺序仍是：完成原生编辑、验证 Action 的正反例；核验 Pylint 抽取并验证 Pyflakes/Pylint/Ruff 的实际共同机制及互补动作；获得有依据的适用性和效果监督后训练、校准；最后联合冻结并执行正式 SWE 配对与消融实验。在这些证据出现前，目标保持未完成。
+评估 CLI 现在保存独立复核后的 Task，并把执行时的认证输入与修改后状态分开、使用不同的证据命名空间。只有接受的记录复核才能产生当前输出事实；存在输出端口不能代替未完成的功能 Oracle。
+
+验证 Action 的第一版真实 grounding 完成后，在工具启动前失败：solver 重新导出 pinned Git base，不能接续实际封存的修改后内容。其原始调用 metadata 在未处理异常前未写出，该限制已单独记录：[bootstrap 失败审计](results/native-overload-validation-bootstrap-failure-audit-20261005-v1.json)。未执行验证命令，0 个验证 Action 记录，不能统计为验证通过。
+
+新增**显式接续**入口只允许一致、未陈旧的执行封印，并复制精确公开内容与权限，排除 Git metadata、拒绝外部链接并复验复制期间变化。正式入口的默认 pinned-base 行为保持原样。真实封存输入的[确定性交接对照](results/native-overload-validation-state-transfer-control-20261005-v1.json)通过：默认入口仍拒绝修改后的 checkout，显式入口的封印与实际执行记录一致。该对照为 0 次模型调用，不能当作 Action 功能验收。native 验证第二版已实际完成：**5 次模型调用、1 个真实验证记录、solver 正常结束、0 字节新增 patch**。两个绑定命令分别真实执行、退出码均为 0、未超时；公开目标和非 overload 控制通过，受影响的 type-annotation 模块 **24 项测试通过**，工作区封印保持不变。见 [真实执行审计](results/native-overload-validation-exercise-audit-20261005-v2.json)。
+
+其[独立复核](results/native-overload-validation-independent-review-audit-20261005-v2.json)实际用 **2 次调用**，确认 public-validation-observed、async-target-behavior-correct、overload-suite 和 outcomes-recorded 输出；运行时兼容性、下游语义及完整 target-and-controls Oracle 仍为 UNKNOWN。policy verdict 为 **PASS / correct_refusal**：Agent 正确保留未知、拒绝重复修改和过度确认。领域状态仍为 UNKNOWN，**完整功能验收仍未通过，包未晋升**。这建立了同项目定义演练中的诊断→编辑→只读验证状态传递及拒绝边界，未建立新 Issue 泛化、跨项目迁移或 SWE 效果。
+
+## 工程检查、数据范围与剩余验收
+
+当前最终实现完整测试 **566 passed、19 skipped**；接续及相关定向测试 **52 passed、5 skipped**。修改文件的 Ruff E4/E7/E9/F 与 git diff --check 通过。跳过项不计为通过，工程检查不能替代泛化、修复效果或 SWE 验收。
+
+历史范围保持 Pylint 5273、Pyflakes 501、Ruff 3582，共 **9356 个 Issue**。主截止 T=2024-01-01T00:00:00Z，训练截止 τ=2021-01-01T00:00:00Z，均为严格时间边界。已暴露的 Pylint #10034 继续排除正式评价。
+
+Pylint 资格流程已处理 1160 个规范化候选，得到 78 个 verified 来源，资格范围是修改测试，不能描述为整项目完整验证。针对全体合格来源的抽取不设预定族或任意 top-N。结构合法的包继续属于 definition_only_not_executed。未审阅的 pyflakes-mechanism-history-v5、Pylint authoring 输出与全部失败版本保留，未批量提交或自动纳入正式 KB。
+
+剩余工作是：完成原生编辑/验证的真实正反例；核验 Pyflakes/Pylint/Ruff 的共同机制与互补 Action，并执行真实两父组合；获得有效适用性和效果监督后训练、校准；最后联合冻结 KB、模型、题目、预算和验收协议，执行正式 SWE 配对及模块/Ranker 消融。目标仍未完成。

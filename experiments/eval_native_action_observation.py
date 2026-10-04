@@ -38,7 +38,10 @@ def main(argv=None):
     parser.add_argument("--execution-unavailable-fixture", action="store_true")
     parser.add_argument("--enforce-action-prerequisites", action="store_true")
     parser.add_argument("--ground-current-action", action="store_true")
+    parser.add_argument("--resume-reviewed-public-state", action="store_true")
     args = parser.parse_args(argv)
+    if args.resume_reviewed_public_state and not args.enforce_action_prerequisites:
+        raise ValueError("resuming observed public state requires explicit Action prerequisites")
     if args.output_dir.exists():
         raise ValueError("preserve previous native Action exercise; use a new output directory")
     temporal = TemporalPolicy(args.cutoff)
@@ -148,32 +151,56 @@ def main(argv=None):
                 }
 
         tools_factory = UnavailableExecution
-    with CatalogStore(args.output_dir / "development-catalog.sqlite") as store:
-        store.initialize()
-        result = AdaptiveSolver(
-            transport,
-            WorkflowRanker(),
-            store,
-            policy,
-            ledger,
-            dependency_root=args.dependency_root,
-            sandbox_backend="namespace-copy",
-            tools_factory=tools_factory,
-        ).run(
-            task,
-            use_frozen_selection=True,
-            recordable_actions=(action,),
-            read_only_workspace=args.public_read_only,
-            enforce_catalog_prerequisites=args.enforce_action_prerequisites,
-            initial_observations=(
-                {
-                    "operation": "native_action_instruction",
-                    "package_id": action.package_id,
-                    "action_id": action.id,
-                    "resources": resources,
-                },
-            ),
+    try:
+        with CatalogStore(args.output_dir / "development-catalog.sqlite") as store:
+            store.initialize()
+            result = AdaptiveSolver(
+                transport,
+                WorkflowRanker(),
+                store,
+                policy,
+                ledger,
+                dependency_root=args.dependency_root,
+                sandbox_backend="namespace-copy",
+                tools_factory=tools_factory,
+            ).run(
+                task,
+                use_frozen_selection=True,
+                recordable_actions=(action,),
+                read_only_workspace=args.public_read_only,
+                resume_reviewed_state=args.resume_reviewed_public_state,
+                enforce_catalog_prerequisites=args.enforce_action_prerequisites,
+                initial_observations=(
+                    {
+                        "operation": "native_action_instruction",
+                        "package_id": action.package_id,
+                        "action_id": action.id,
+                        "resources": resources,
+                    },
+                ),
+            )
+    except Exception as error:
+        from arex_skill_graph.llm_http import safe_text
+
+        failure = {
+            "schema": "native-action-execution-failure-v1",
+            "failure_type": type(error).__name__,
+            "failure_reason": safe_text(str(error), [transport.config.api_key]),
+            "model_calls": len(transport.calls),
+            "trajectory_not_returned": True,
+            "actual_action_records": None,
+            "authored_Action_executed": None,
+            "functional_cases_passed": None,
+            "formal_SWE_runs": 0,
+            "formal_KB_admitted": False,
+        }
+        (args.output_dir / "calls.json").write_text(json.dumps(transport.calls, indent=2) + "\n")
+        (args.output_dir / "model-transcripts.json").write_text(
+            json.dumps(getattr(transport, "transcripts", []), ensure_ascii=False, indent=2) + "\n"
         )
+        (args.output_dir / "exercise-failure.json").write_text(json.dumps(failure, indent=2) + "\n")
+        print(json.dumps(failure))
+        return 1
     (args.output_dir / "trajectory.json").write_text(
         json.dumps(result, ensure_ascii=False, indent=2) + "\n"
     )
@@ -194,6 +221,7 @@ def main(argv=None):
         "formal_SWE_runs": 0,
         "formal_KB_admitted": False,
         "public_read_only": args.public_read_only,
+        "resumed_reviewed_public_state": args.resume_reviewed_public_state,
         "controlled_execution_unavailable": args.execution_unavailable_fixture,
         "strict_functional_action_catalog": args.enforce_action_prerequisites,
         "current_action_grounded": args.ground_current_action,

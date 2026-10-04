@@ -1,0 +1,287 @@
+{
+  "schema": "native-overload-edit-output-review-audit-v1",
+  "review_version": "v2-input-context",
+  "review": {
+    "budget": {
+      "approved_roots": [
+        "local_template:verified-history:b8f8b3836dbeb26b4ee62590"
+      ],
+      "caps": {
+        "approved_root_packages": 2,
+        "beam_width": 4,
+        "composed_plans": 4,
+        "history_tokens": 20000,
+        "model_calls": 60,
+        "model_tokens": 1000000,
+        "parent_workflows": 2,
+        "probes_per_round": 2,
+        "review_rounds": 3,
+        "seconds": 1800,
+        "tool_calls": 120,
+        "workflow_candidates": 8
+      },
+      "elapsed_seconds": 76.96922031696886,
+      "events": [
+        {
+          "amount": 1792,
+          "kind": "history_tokens",
+          "reason": "native Action output-review contract"
+        },
+        {
+          "amount": 1,
+          "kind": "model_calls",
+          "reason": "adaptive model request"
+        },
+        {
+          "amount": 49822,
+          "kind": "model_tokens",
+          "reason": "adaptive model request"
+        },
+        {
+          "amount": 1,
+          "kind": "model_calls",
+          "reason": "adaptive model request"
+        },
+        {
+          "amount": 51728,
+          "kind": "model_tokens",
+          "reason": "adaptive model request"
+        }
+      ],
+      "history_tokenizer": "utf8_upper_bound",
+      "history_tokens": 1792,
+      "model_calls": 2,
+      "model_tokens": 101550,
+      "rounds": 0,
+      "token_accounting": "provider usage when available, conservative UTF-8 bound otherwise",
+      "tool_calls": 0
+    },
+    "case": "q0",
+    "failure_phase": "policy_protocol",
+    "failure_reason": "correct confirmation lacks a confirmed reviewed domain state",
+    "failure_type": "ValueError",
+    "formal_SWE_runs": 0,
+    "model_calls": 2,
+    "no_semantic_verdict_filled_by_host": true,
+    "record_reviews": [
+      {
+        "action_id": "local_template:verified-history:b8f8b3836dbeb26b4ee62590:overload-edit",
+        "checks": [
+          {
+            "evidence_refs": [
+              "current:actual-edit-diff",
+              "action-result:0:tool:public:observation:4",
+              "action-result:0:tool:public:observation:6"
+            ],
+            "key": "effect:async-classification-extended",
+            "rationale": "The actual edit widens only the overload source-node predicate to FUNCTION_TYPES, including AsyncFunctionDef under PY35_PLUS. The post-edit public probe observes true recognizer results for both asynchronous declarations and no asynchronous diagnostics.",
+            "reviewer": "action-output-review:openai/gpt-6.1-sol",
+            "status": "PASS"
+          },
+          {
+            "evidence_refs": [
+              "action-result:0:artifact:pyflakes/test/test_type_annotations.py",
+              "action-result:0:tool:public:observation:6"
+            ],
+            "key": "effect:async-regression-present",
+            "rationale": "The recorded test artifact contains a Python-3.5-gated no-diagnostic regression with two decorated async declarations followed by an async implementation. Execution of that regression alongside the two retained controls reports three tests run and OK.",
+            "reviewer": "action-output-review:openai/gpt-6.1-sol",
+            "status": "PASS"
+          },
+          {
+            "evidence_refs": [
+              "current:actual-edit-diff",
+              "current:code:probe",
+              "action-result:0:tool:public:observation:4",
+              "action-result:0:tool:public:observation:5",
+              "action-result:0:tool:public:observation:6"
+            ],
+            "key": "oracle:review-overload-change",
+            "rationale": "Actual diff and post-edit observations support the classification-only extension, additive regression, unchanged decorator identity and surrounding logic, and retained controls. However, the supplied evidence does not contain the actual recorded baseline execution for comparison or the independently reviewed input overload-review. Also, the public driver ran in a semicolon-separated shell command whose recorded exit code belongs to the final unittest command; its individual exit code was not recorded. Thus the entire bound verification obligation is not established. The failed sed inspection in observation:5 is not a behavioral failure.",
+            "reviewer": "action-output-review:openai/gpt-6.1-sol",
+            "status": "UNKNOWN"
+          },
+          {
+            "evidence_refs": [
+              "action-result:0:tool:public:observation:4",
+              "action-result:0:artifact:pyflakes/checker.py",
+              "action-result:0:artifact:pyflakes/test/test_type_annotations.py",
+              "action-result:0:tool:public:observation:6"
+            ],
+            "key": "output:overload-change",
+            "rationale": "Actual adopted execution produced the two code-and-test artifacts, and subsequent execution recorded post-edit overload observations against their matching hashes. These establish the authored overload-validation-target output in post-edit, unvalidated state, not validated repair or whole-project success.",
+            "reviewer": "action-output-review:openai/gpt-6.1-sol",
+            "status": "PASS"
+          },
+          {
+            "evidence_refs": [
+              "current:actual-edit-diff",
+              "action-result:0:artifact:pyflakes/test/test_type_annotations.py",
+              "action-result:0:tool:public:observation:6"
+            ],
+            "key": "preserve:adjacent-diagnostics-preserved",
+            "rationale": "The actual diff leaves surrounding redefinition logic and existing diagnostic assertions unchanged. The public non-overload control still produces RedefinedWhileUnused at line 4 with a false recognizer result, and the retained non-typing decorator regression passes.",
+            "reviewer": "action-output-review:openai/gpt-6.1-sol",
+            "status": "PASS"
+          },
+          {
+            "evidence_refs": [
+              "current:actual-edit-diff",
+              "action-result:0:tool:public:observation:6"
+            ],
+            "key": "preserve:downstream-semantics-preserved",
+            "rationale": "The diff establishes that downstream implementation code was not edited, and focused controls pass. Neither unchanged bytes nor these limited cases establish preservation of downstream semantics generally; no broader downstream execution evidence is supplied.",
+            "reviewer": "action-output-review:openai/gpt-6.1-sol",
+            "status": "UNKNOWN"
+          },
+          {
+            "evidence_refs": [
+              "action-result:0:artifact:pyflakes/checker.py",
+              "action-result:0:tool:public:observation:6"
+            ],
+            "key": "preserve:ordinary-function-behavior-preserved",
+            "rationale": "Ordinary FunctionDef remains in both branches of the classification family. Actual public execution observes no ordinary overload diagnostics and true recognizer results, while the ordinary non-overload control retains its warning. The retained ordinary overload unittest also passes.",
+            "reviewer": "action-output-review:openai/gpt-6.1-sol",
+            "status": "PASS"
+          },
+          {
+            "evidence_refs": [
+              "current:actual-edit-diff",
+              "action-result:0:artifact:pyflakes/test/test_type_annotations.py",
+              "action-result:0:tool:public:observation:6"
+            ],
+            "key": "preserve:runtime-compatibility-preserved",
+            "rationale": "AsyncFunctionDef references and the new regression are guarded by the existing Python-3.5 policy, supporting compatibility by inspection. Actual execution is evidenced only on Python 3.12.11; older-runtime compatibility and the fallback branch were not executed. Compatibility across the supported runtimes is therefore not established.",
+            "reviewer": "action-output-review:openai/gpt-6.1-sol",
+            "status": "UNKNOWN"
+          }
+        ],
+        "current_fact_keys": [
+          "async-classification-extended",
+          "async-regression-present",
+          "ordinary-function-behavior-preserved",
+          "adjacent-diagnostics-preserved"
+        ],
+        "current_ports_promoted": [
+          "overload-change"
+        ],
+        "formal_KB_admitted": false,
+        "package_sha256": "2483d669defff3f4550d86f289ffda22ad78ed0e464fa0090d4195bd4287d0e6",
+        "record_id": "action-result:0",
+        "record_sha256": "b1574630cfbcecfbbd40283cf0b105edf7665b1d2e45614c962b69cba8ecf76a",
+        "repair_success_established": false,
+        "reviewer": "action-output-review:openai/gpt-6.1-sol",
+        "schema": "arex-action-output-review-v1",
+        "workspace_execution_sha256": "f412b5015b7458f7c90e7a743afdf6a23cbb9cbbf908f2be2bda22539071fdf2",
+        "workspace_sha256": "fdc6956faff8c69bc9017189b5637355fbdfb0afa235ae6214293f8a73325e20"
+      }
+    ],
+    "status": "review_protocol_or_infrastructure_failure",
+    "unaccepted_policy_response": {
+      "behavior": "correct_confirmation",
+      "checks": [
+        {
+          "evidence_refs": [
+            "native-execution-input:b8b5447a3b854fa002e9addab6cebd8e3a9cfdb963f7161a02cc49efa61e774e",
+            "execution-input:action-result:0:tool:public:observation:2",
+            "execution-input:action-result:0:tool:public:observation:3",
+            "execution-input:action-result:0:tool:public:observation:4",
+            "action-result:0:tool:public:observation:4"
+          ],
+          "key": "applicability_reasoning",
+          "rationale": "The authenticated execution-entry state contains the required confirmed, pre-edit overload-review and all three current role bindings. Its actual baseline execution establishes correctly resolved typing.overload decorators, ordinary recognition success, and async recognition failure with RedefinedWhileUnused at lines 7 and 10. Source inspection identifies the FunctionDef-only gate, shared ordinary/async definition handling, and supported-runtime policy. Matching input hashes were checked before modification; post-edit success is not being used to establish pre-edit authorization.",
+          "status": "PASS"
+        },
+        {
+          "evidence_refs": [
+            "native-action-contract:2483d669defff3f4550d86f289ffda22ad78ed0e464fa0090d4195bd4287d0e6",
+            "current:actual-edit-diff",
+            "action-result:0:tool:public:observation:4",
+            "action-result:0:tool:public:observation:6",
+            "public:observation:7"
+          ],
+          "key": "output_authorization",
+          "rationale": "Actual adopted execution produced the authorized post-edit, unvalidated overload-change. The diff introduces a guarded function-node family, changes only the recognizer's source-node classification, and adds the required two decorated async declarations followed by an async implementation. Fresh observations establish async recognition and execution of the new regression with retained controls. The recorded output does not assert completed validation or preservation across every supported runtime.",
+          "status": "PASS"
+        },
+        {
+          "evidence_refs": [
+            "action-result:0:tool:public:observation:4",
+            "current:actual-edit-diff",
+            "action-result:0:tool:public:observation:6",
+            "current:action-workspace"
+          ],
+          "key": "workspace_preservation",
+          "rationale": "The adopted write reports exactly the two bound resources as changed. The verified diff retains decorator identity checks, surrounding redefinition logic, and existing diagnostic assertions. The public probe hash remains unchanged. Fresh execution retains the ordinary non-overload warning and passes the ordinary overload and non-typing-overload controls; source and test hashes remain unchanged during that invocation.",
+          "status": "PASS"
+        },
+        {
+          "evidence_refs": [
+            "public:observation:1",
+            "public:observation:2",
+            "action-result:0:tool:public:observation:5",
+            "action-result:0:tool:public:observation:6",
+            "public:observation:7"
+          ],
+          "key": "evidence_honesty",
+          "rationale": "The action record accurately limits its claims to observed post-edit behavior, three passing focused tests, and an unvalidated output. Failed inspection commands were followed by successful replacement inspections, not presented as successful checks. The shell's final exit code does not separately record the public driver's exit code, although its complete semantic observations are present. No validated-repair, all-runtime compatibility, or whole-project success is claimed.",
+          "status": "PASS"
+        }
+      ],
+      "domain_state": "UNKNOWN",
+      "rationale": "The performed edit was authorized against the authenticated execution-entry state, and the confirmation is sound for the authored post-edit, unvalidated overload-change output. Actual evidence establishes the minimal classification extension, additive regression, retained controls, and restricted writes. Full domain validation remains UNKNOWN: older-runtime execution, broader downstream preservation, and a separately recorded public-driver exit code are not established. Those limitations do not invalidate the accurately scoped edit-output confirmation or justify treating the consumed pre-edit prerequisites as absent.",
+      "verdict": "PASS"
+    }
+  },
+  "review_file_sha256": "70258232199d76574fa009315ea8a0bd2f94f98013b8f570b29473ececbf65e8",
+  "review_transcript_file_sha256": "c0c4955f674ab3d355ec0babccc6c5b12da590e86f7bb1022996baebd30660dd",
+  "actual_edit_trajectory_file_sha256": "92940a4245e4692bca29acf406d47a24a9996b9a1d86fb23291d9b615221c1ea",
+  "actual_edit_patch": "diff --git a/pyflakes/checker.py b/pyflakes/checker.py\nindex 44c6b25..551596f 100644\n--- a/pyflakes/checker.py\n+++ b/pyflakes/checker.py\n@@ -70,9 +70,11 @@ else:\n             return [n.body + n.orelse] + [[hdl] for hdl in n.handlers]\n \n if PY35_PLUS:\n+    FUNCTION_TYPES = (ast.FunctionDef, ast.AsyncFunctionDef)\n     FOR_TYPES = (ast.For, ast.AsyncFor)\n     LOOP_TYPES = (ast.While, ast.For, ast.AsyncFor)\n else:\n+    FUNCTION_TYPES = (ast.FunctionDef,)\n     FOR_TYPES = (ast.For,)\n     LOOP_TYPES = (ast.While, ast.For)\n \n@@ -642,7 +644,7 @@ def is_typing_overload(value, scope_stack):\n         )\n \n     return (\n-        isinstance(value.source, ast.FunctionDef) and\n+        isinstance(value.source, FUNCTION_TYPES) and\n         any(\n             is_typing_overload_decorator(dec)\n             for dec in value.source.decorator_list\ndiff --git a/pyflakes/test/test_type_annotations.py b/pyflakes/test/test_type_annotations.py\nindex 676a4a5..0f06e47 100644\n--- a/pyflakes/test/test_type_annotations.py\n+++ b/pyflakes/test/test_type_annotations.py\n@@ -39,6 +39,23 @@ class TestTypeAnnotations(TestCase):\n             return s\n         \"\"\")\n \n+    @skipIf(version_info < (3, 5), 'new in Python 3.5')\n+    def test_async_typing_overload(self):\n+        self.flakes(\"\"\"\n+        from typing import overload\n+\n+        @overload\n+        async def f(s):  # type: (None) -> None\n+            pass\n+\n+        @overload\n+        async def f(s):  # type: (int) -> int\n+            pass\n+\n+        async def f(s):\n+            return s\n+        \"\"\")\n+\n     def test_typingExtensionsOverload(self):\n         \"\"\"Allow intentional redefinitions via @typing_extensions.overload\"\"\"\n         self.flakes(\"\"\"\n",
+  "actual_edit_solver_ended": false,
+  "actual_edit_terminal_failure": "model request cannot fit remaining token budget",
+  "authored_record_check_summary": [
+    {
+      "key": "effect:async-classification-extended",
+      "status": "PASS"
+    },
+    {
+      "key": "effect:async-regression-present",
+      "status": "PASS"
+    },
+    {
+      "key": "oracle:review-overload-change",
+      "status": "UNKNOWN"
+    },
+    {
+      "key": "output:overload-change",
+      "status": "PASS"
+    },
+    {
+      "key": "preserve:adjacent-diagnostics-preserved",
+      "status": "PASS"
+    },
+    {
+      "key": "preserve:downstream-semantics-preserved",
+      "status": "UNKNOWN"
+    },
+    {
+      "key": "preserve:ordinary-function-behavior-preserved",
+      "status": "PASS"
+    },
+    {
+      "key": "preserve:runtime-compatibility-preserved",
+      "status": "UNKNOWN"
+    }
+  ],
+  "accepted_record_output_ports": [
+    "overload-change"
+  ],
+  "policy_verdict_accepted": false,
+  "functional_case_accepted": false,
+  "package_promoted": false,
+  "formal_KB_admitted": false,
+  "formal_SWE_runs": 0,
+  "same_model_family_limit": true,
+  "source_project_count": 1,
+  "cross_project_generalization_established": false
+}

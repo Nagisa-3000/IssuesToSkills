@@ -35,6 +35,7 @@ from .public_snapshot import extract_public_archive
 from .skill_packages import _resolve
 from .task_context import EvidenceAnchor, ObservedFact, assert_public
 from .workspace_state import (
+    copy_sealed_public_workspace,
     copy_verified_workspace_modes,
     public_workspace_execution_sha256,
     public_workspace_sha256,
@@ -170,14 +171,22 @@ def make_namespace_tools(checkout, ledger, dependency_root=None, *, backend="nam
     raise ValueError("unknown sandbox backend; choose an explicit supported backend")
 
 
-def snapshot_base(task, destination):
+def snapshot_base(task, destination, *, resume_reviewed_state=False):
     task.verify()
-    raw = exact_git_tar(["git", "-C", task.root], task.base_commit)
+    if type(resume_reviewed_state) is not bool:
+        raise ValueError("public state resume mode must be an explicit boolean")
     destination = Path(destination)
-    destination.mkdir()
-    extract_public_archive(raw, destination)
-    if any(a.kind == "workspace_execution_snapshot" for a in task.anchors):
-        copy_verified_workspace_modes(task.root, destination)
+    execution_seals = {a.sha256 for a in task.anchors if a.kind == "workspace_execution_snapshot"}
+    if resume_reviewed_state:
+        if len(execution_seals) != 1:
+            raise ValueError("resuming current public state requires one consistent execution seal")
+        copy_sealed_public_workspace(task.root, destination, next(iter(execution_seals)))
+    else:
+        raw = exact_git_tar(["git", "-C", task.root], task.base_commit)
+        destination.mkdir()
+        extract_public_archive(raw, destination)
+        if execution_seals:
+            copy_verified_workspace_modes(task.root, destination)
     initial = replace(task, root=str(destination))
     initial.verify(verify_head=False)
     for path in destination.rglob("*"):
@@ -307,6 +316,7 @@ class AdaptiveSolver:
         initial_observations=(),
         recordable_actions=(),
         read_only_workspace=False,
+        resume_reviewed_state=False,
         enforce_catalog_prerequisites=False,
     ):
         self.ledger.check_time()
@@ -362,7 +372,9 @@ class AdaptiveSolver:
             self.ledger.charge(
                 "tool_calls", 2, "pinned base verification and public snapshot archive"
             )
-            current = snapshot_base(task, scratch / "work")
+            current = snapshot_base(
+                task, scratch / "work", resume_reviewed_state=resume_reviewed_state
+            )
             baseline = scratch / "baseline"
             shutil.copytree(current.root, baseline, symlinks=True)
             initial_snapshot = digest(
@@ -920,6 +932,7 @@ class AdaptiveSolver:
                 "explicit_functional_action_catalog": bool(recordable_actions),
                 "strict_functional_action_catalog": enforce_catalog_prerequisites,
                 "public_workspace_read_only": read_only_workspace,
+                "resumed_reviewed_public_state": resume_reviewed_state,
                 "guidance_usage": guidance_usage,
                 "candidate_generation_frozen": use_frozen_selection,
                 "nominated_plan_id": initial_plan.id if initial_plan else None,
