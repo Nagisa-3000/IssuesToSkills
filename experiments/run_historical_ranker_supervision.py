@@ -20,7 +20,11 @@ from arex_skill_graph.adaptive_guidance import index_native_package
 from arex_skill_graph.adaptive_runner import TOOL_BACKENDS, AdaptiveSolver
 from arex_skill_graph.embeddings import TransformerEncoder
 from arex_skill_graph.historical_solver_evaluator import historical_evaluator
-from arex_skill_graph.historical_plan_pool import freeze_plan_candidates
+from arex_skill_graph.historical_plan_pool import (
+    freeze_plan_candidates,
+    load_prepared_plan_study,
+    verify_frozen_plan_pool,
+)
 from arex_skill_graph.history_census import fingerprint, write_json
 from arex_skill_graph.plan_validation import ResourcePolicy, TaskWorkflowPlan, validate_task_plan
 from arex_skill_graph.store import CatalogStore
@@ -57,9 +61,16 @@ def main(argv=None):
     parser.add_argument(
         "--prepare-only",
         action="store_true",
-        help="Freeze public candidate pools and schedule without model or solver execution",
+        help="Freeze public candidate pools without LLM or solver execution; local embeddings still run",
+    )
+    parser.add_argument(
+        "--prepared-dir",
+        type=Path,
+        help="Execute existing frozen Plan pools without regenerating candidates",
     )
     args = parser.parse_args(argv)
+    if args.prepared_dir and (args.prepare_only or args.candidate_kind != "plan"):
+        parser.error("--prepared-dir requires --candidate-kind plan and excludes --prepare-only")
     import torch
 
     torch.set_num_threads(1)
@@ -119,6 +130,11 @@ def main(argv=None):
         "development_population": True,
         "full_history_qualified": False,
     }
+    prepared = load_prepared_plan_study(args.prepared_dir, identity) if args.prepared_dir else None
+    if prepared is not None:
+        if set(prepared["plan_pools"]) != {query.task.task_id for query in queries}:
+            raise ValueError("prepared Plan pool does not preserve the complete query population")
+        identity["prepared_pool_lineage"] = prepared["lineage"]
     checkpoint = args.output_dir / "study-identity.json"
     if checkpoint.exists() and json.loads(checkpoint.read_text()) != identity:
         raise ValueError("controlled historical study identity changed; use a new version")
@@ -132,6 +148,36 @@ def main(argv=None):
             main_cutoff=register["main_cutoff"],
         )
         resources = ResourcePolicy(policy, eligible)
+        if prepared is not None:
+            pool = prepared["plan_pools"][query.task.task_id]
+            plans = verify_frozen_plan_pool(pool, query.task, resources, new_ledger())
+            by_plan_id = {plan.id: plan for plan in plans}
+            plan_pools[query.task.task_id] = pool
+            for row in prepared["schedule"]:
+                if row["query_id"] != query.task.task_id:
+                    continue
+                initial = by_plan_id.get(row["candidate_id"])
+                roots = tuple(
+                    ref
+                    for ref in eligible
+                    if initial is not None and ref["skill_id"] in initial.package_ids
+                )
+                scheduled.append(
+                    (
+                        query,
+                        roots,
+                        row["candidate_id"],
+                        row["candidate_kind"],
+                        initial,
+                        policy,
+                        row["sampling_probability"],
+                        row["relative_output"],
+                    )
+                )
+            coverage.append(
+                next(row for row in prepared["coverage"] if row["query_id"] == query.task.task_id)
+            )
+            continue
         candidates = [(p, w) for p in resources.load() for w in p.workflows]
         similarities = encoder.encode(
             [query.task.public_problem]
@@ -291,11 +337,12 @@ def main(argv=None):
             return json.loads(saved_path.read_text())
         transport = transport_from_args(args)
         ledger = new_ledger(tokenizer="cl100k_base")
-        branch_encoder = TransformerEncoder(str(args.embedding_model))
+        branch_encoder = TransformerEncoder(str(args.embedding_model)) if prepared is None else None
         with CatalogStore(directory / "controlled-catalog.sqlite", encoder=branch_encoder) as store:
             store.initialize()
-            for reference in branch_refs:
-                index_native_package(store, reference, policy)
+            if prepared is None:
+                for reference in branch_refs:
+                    index_native_package(store, reference, policy)
             resources = ResourcePolicy(policy, branch_refs)
             report = validate_task_plan(initial, query.task, resources) if initial else None
             if report and report.status == "FAIL":
