@@ -584,10 +584,7 @@ def extract_native_pattern(
         raise ValueError("requested abstraction overclaims source repository diversity")
     if type(max_attempts) is not int or not 1 <= max_attempts <= 3:
         raise ValueError("native Pattern authoring attempts must be between one and three")
-    protocol = (
-        Path(__file__).resolve().parents[2]
-        / "data/skill-extraction/packages/universal-resolution-distiller/references/action-contract-v4.md"
-    )
+    protocol = native_authoring_protocol_path()
     payload = {
         "sources": [asdict(s) for s in sources.values()],
         "workflows": [w.to_dict() for p in source_packages for w in p.workflows],
@@ -795,16 +792,24 @@ def extract_native_pattern(
                 )
 
 
+def native_authoring_protocol_path(project_root=None):
+    root = Path(project_root) if project_root is not None else Path(__file__).resolve().parents[2]
+    protocol = (
+        root
+        / "data/skill-extraction/packages/universal-resolution-distiller/references/action-contract-v4.md"
+    )
+    if not protocol.is_file():
+        raise FileNotFoundError("native authoring protocol is missing from the execution snapshot")
+    return protocol
+
+
 def native_extraction_prompt(sources, evidence, policy):
     from .task_context import assert_public
 
     for source in sources:
         policy.check(source)
     assert_public(evidence)
-    protocol = (
-        Path(__file__).resolve().parents[2]
-        / "data/skill-extraction/packages/universal-resolution-distiller/references/action-contract-v4.md"
-    )
+    protocol = native_authoring_protocol_path()
     return (
         json.dumps(
             {

@@ -21,6 +21,15 @@ from arex_skill_graph.temporal_ranker_data import (
 from arex_skill_graph.workflow_ranker import workflow_capsule
 
 
+def source_input_hashes(args):
+    names = ("queries", "references", "labels", "plans", "excluded_query_ids")
+    return {
+        name: digest(read_json(path))
+        for name in names
+        if (path := getattr(args, name, None)) is not None
+    }
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("queries", "references", "labels", "output"):
@@ -75,9 +84,7 @@ def main(argv=None):
         "examples": [asdict(e) for e in examples],
         "pairs": list(pair_preferences(examples)),
         "audits": audits,
-        "source_input_hashes": {
-            k: digest(read_json(getattr(args, k))) for k in ("queries", "references", "labels")
-        },
+        "source_input_hashes": source_input_hashes(args),
         "repair_effectiveness_proven": False,
     }
     result["dataset_sha256"] = digest(result)

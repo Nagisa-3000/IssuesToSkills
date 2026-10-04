@@ -261,6 +261,9 @@ def test_execution_supervision_needs_actual_controlled_guidance(tmp_path):
     }
     label = execution_label_from_run(query, "workflow:a", "workflow", run, sampling_probability=0.5)
     assert label.outcome and label.regression_pass and label.label_source == "execution"
+    assert label.applicability is None and label.operational_mode is None
+    authorized = replace(label, operational_mode="probe_only")
+    assert authorized.applicability is None and authorized.operational_mode == "probe_only"
     switched = {
         **run,
         "guidance_usage": [
@@ -422,3 +425,142 @@ def test_nonfinite_ranker_features_fail_and_keep_call_accounting(tmp_path, monke
     with pytest.raises(ValueError, match="ranker features.*nonfinite"):
         scorer.evaluate(task, capsules, ledger)
     assert ledger.model_calls == 1 and ledger.model_tokens > 0
+
+
+def executed_label(reviewed, *, outcome=True, applicability=None):
+    return replace(
+        reviewed,
+        label_source="execution",
+        applicability=applicability,
+        outcome=outcome,
+        regression_pass=True,
+        measured_cost=100,
+        evaluator_version="synthetic-independent-controls",
+        trajectory_sha256="a" * 64,
+        operational_mode="probe_only",
+    )
+
+
+def test_operational_execution_grades_cannot_be_semantic_supervision(tmp_path):
+    from arex_skill_graph.ranker_training import reviewed_applicability_targets
+    from arex_skill_graph.temporal_ranker_data import TrainingExample
+
+    data, *_ = make_dataset(tmp_path)
+    examples = [TrainingExample(**row) for row in data["examples"][:2]]
+    legacy = [
+        replace(
+            e,
+            label=asdict(
+                executed_label(SupervisionLabel(**e.label), applicability=e.label["applicability"])
+            ),
+        )
+        for e in examples
+    ]
+    # Opposite old authorization grades cannot turn equal executed outcomes into preferences.
+    pairs = pair_preferences(legacy)
+    assert len(pairs) == 1 and pairs[0]["target"] == 0.5
+    keys = [(e.query_id, e.candidate["id"]) for e in legacy]
+    assert reviewed_applicability_targets(legacy, keys) == ([], [])
+    # One executed candidate and one reviewed candidate lack a common comparison target.
+    assert pair_preferences([legacy[0], examples[1]]) == ()
+
+
+def test_independent_reviews_and_execution_replicates_can_coexist(tmp_path):
+    from arex_skill_graph.ranker_training import reviewed_applicability_targets
+
+    data, package, _task, queries, reviews, provider = make_dataset(tmp_path)
+    executions = [executed_label(r, outcome=r.candidate_id == "workflow:a") for r in reviews]
+    examples, _ = build_examples(
+        queries,
+        [package.reference],
+        [*reviews, *executions],
+        provider,
+        training_cutoff=data["training_cutoff"],
+        main_cutoff=CUTOFF,
+    )
+    assert len(examples) == 12
+    pairs = pair_preferences(examples)
+    assert len(pairs) == 3 and all(p["target"] == 1.0 for p in pairs)
+    assert all(p["supervision"] == "execution" and p["observations"] == [1, 1] for p in pairs)
+    keys = [(queries[0].task.task_id, "workflow:a"), (queries[0].task.task_id, "workflow:b")]
+    assert reviewed_applicability_targets(examples, keys) == (
+        [0, 1],
+        [[0.0, 0.0, 1.0], [1.0, 0.0, 0.0]],
+    )
+    conflicting = replace(reviews[0], applicability="unrelated", replicate=1)
+    mixed, _ = build_examples(
+        queries,
+        [package.reference],
+        [*reviews, *executions, conflicting],
+        provider,
+        training_cutoff=data["training_cutoff"],
+        main_cutoff=CUTOFF,
+    )
+    assert reviewed_applicability_targets(mixed, keys)[1][0] == [0.5, 0.0, 0.5]
+
+
+def test_evidence_review_cannot_claim_unknown_grade_or_operational_permission(tmp_path):
+    _data, _package, _task, _queries, reviews, _provider = make_dataset(tmp_path)
+    with pytest.raises(ValueError, match="reviewed applicability"):
+        replace(reviews[0], applicability=None)
+    with pytest.raises(ValueError, match="not an applicability review"):
+        replace(reviews[0], operational_mode="probe_only")
+
+
+def test_execution_only_or_legacy_semantic_head_cannot_authorize_edits(tmp_path):
+    import hashlib
+    import json
+
+    from arex_skill_graph.action_contracts import TemporalPolicy
+    from arex_skill_graph.ranker_training import TrainedRankerScorer, train_ranker
+    from arex_skill_graph.temporal_ranker_data import TrainingExample
+
+    torch = pytest.importorskip("torch")
+    data, package, task, *_ = make_dataset(tmp_path)
+    rows = []
+    for row in data["examples"]:
+        label = executed_label(
+            SupervisionLabel(**row["label"]),
+            outcome=row["candidate"]["id"] == "workflow:a",
+            applicability=row["label"]["applicability"],
+        )
+        rows.append({**row, "label": asdict(label)})
+    data = {
+        **data,
+        "examples": rows,
+        "pairs": list(pair_preferences([TrainingExample(**r) for r in rows])),
+    }
+    data["dataset_sha256"] = digest({k: v for k, v in data.items() if k != "dataset_sha256"})
+    model = tmp_path / "model"
+    tiny_model(model)
+    checkpoint = tmp_path / "checkpoint"
+    metadata = train_ranker(data, model, checkpoint, epochs=1)
+    supervision = metadata["applicability_supervision"]
+    assert supervision["training_reviewed_candidates"] == 0
+    assert supervision["development_reviewed_candidates"] == 0
+    assert supervision["trained"] is False and supervision["temperature_calibrated"] is False
+    assert metadata["temperature"] == 1.0
+    state = torch.load(checkpoint / "head.pt", map_location="cpu", weights_only=True)
+    state["weight"][1:] = 0
+    state["bias"][1:] = torch.tensor([-1000.0, -1000.0, 1000.0])
+    torch.save(state, checkpoint / "head.pt")
+    metadata["head_sha256"] = hashlib.sha256((checkpoint / "head.pt").read_bytes()).hexdigest()
+    policy = ResourcePolicy(TemporalPolicy(CUTOFF), (package.reference,))
+    capsules = [workflow_capsule(w, task, policy) for w in package.workflows]
+    for legacy in (False, True):
+        if legacy:
+            metadata.pop("applicability_supervision")
+        metadata["checkpoint_sha256"] = digest(
+            {k: v for k, v in metadata.items() if k != "checkpoint_sha256"}
+        )
+        (checkpoint / "ranker.json").write_text(json.dumps(metadata))
+        scorer = TrainedRankerScorer(checkpoint)
+        evaluation = scorer.evaluate(task, capsules, BudgetLedger())
+        rejected = scorer.evaluate(
+            task, [replace(c, hard_mode="reject") for c in capsules], BudgetLedger()
+        )
+        assert all(e["mode"] == "reject" for e in rejected["evaluations"])
+        assert all(
+            e["mode"] in {"reject", "probe_only"} and e["uncertainty"] == 1.0
+            for e in evaluation["evaluations"]
+        )

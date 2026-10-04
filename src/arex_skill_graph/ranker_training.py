@@ -58,6 +58,32 @@ def calibration_utility(labels):
     return sum(label["applicability"] == "adaptively_usable" for label in labels) / len(labels)
 
 
+def reviewed_applicability_targets(examples, keys):
+    """Only independent evidence-review labels supervise the semantic head.
+
+    Legacy execution applicability strings are retained for audit compatibility,
+    but never become reviewed grades. Repeated reviews form soft targets rather
+    than letting input order choose a reviewer or invent a consensus winner.
+    """
+    grades = {"unrelated": 0, "probe_only": 1, "adaptively_usable": 2}
+    grouped = {}
+    for example in examples:
+        if example.label["label_source"] == "evidence_review":
+            key = (example.query_id, example.candidate["id"])
+            grouped.setdefault(key, []).append(example.label["applicability"])
+    indices, targets = [], []
+    for index, key in enumerate(keys):
+        if key not in grouped:
+            continue
+        reviews = grouped[key]
+        values = [0.0, 0.0, 0.0]
+        for grade in reviews:
+            values[grades[grade]] += 1.0 / len(reviews)
+        indices.append(index)
+        targets.append(values)
+    return indices, targets
+
+
 def paired_scoring_tensors(encoder, texts, *, gradients=False):
     queries, candidates = [], []
     for text in texts:
@@ -149,8 +175,8 @@ def train_ranker(
     keys = sorted(rows)
     key_index = {key: i for i, key in enumerate(keys)}
     texts = [scoring_text(rows[key].task_input, rows[key].candidate) for key in keys]
-    labels = {"unrelated": 0, "probe_only": 1, "adaptively_usable": 2}
-    y = torch.tensor([labels[rows[key].label["applicability"]] for key in keys])
+    reviewed_indices, reviewed_targets = reviewed_applicability_targets(training, keys)
+    reviewed_y = torch.tensor(reviewed_targets, dtype=torch.float32)
     losses = []
     cached, cached_tokens = (
         paired_scoring_tensors(encoder, texts) if not train_encoder else (None, 0)
@@ -178,9 +204,11 @@ def train_ranker(
                     scores[left, 0] - scores[right, 0], target
                 )
             )
-        loss = torch.stack(pair_losses).mean() + 0.25 * torch.nn.functional.cross_entropy(
-            scores[:, 1:], y
-        )
+        loss = torch.stack(pair_losses).mean()
+        if reviewed_indices:
+            loss = loss + 0.25 * torch.nn.functional.cross_entropy(
+                scores[reviewed_indices, 1:], reviewed_y
+            )
         require_finite_tensor(loss, "training loss")
         optimizer.zero_grad()
         loss.backward()
@@ -200,12 +228,19 @@ def train_ranker(
         predictions = head(dev_features)
     require_finite_tensor(dev_features, "development features")
     require_finite_tensor(predictions, "development predictions")
-    dev_y = torch.tensor([labels[dev_rows[k].label["applicability"]] for k in dev_keys])
-    temperatures = [0.5, 1.0, 2.0, 4.0]
-    temperature = min(
-        temperatures,
-        key=lambda t: float(torch.nn.functional.cross_entropy(predictions[:, 1:] / t, dev_y)),
+    dev_reviewed_indices, dev_reviewed_targets = reviewed_applicability_targets(
+        development, dev_keys
     )
+    temperature = 1.0
+    if reviewed_indices and dev_reviewed_indices:
+        dev_y = torch.tensor(dev_reviewed_targets, dtype=torch.float32)
+        temperatures = [0.5, 1.0, 2.0, 4.0]
+        temperature = min(
+            temperatures,
+            key=lambda t: float(
+                torch.nn.functional.cross_entropy(predictions[dev_reviewed_indices, 1:] / t, dev_y)
+            ),
+        )
     values = sorted({float(s) for s in predictions[:, 0]})
     thresholds = [values[0] - 1, *values, values[-1] + 1]
     dev_utilities = torch.tensor(
@@ -255,6 +290,13 @@ def train_ranker(
         "development_queries": len({r.query_id for r in development}),
         "use_threshold": threshold,
         "temperature": temperature,
+        "applicability_supervision": {
+            "trained": bool(reviewed_indices),
+            "training_reviewed_candidates": len(reviewed_indices),
+            "development_reviewed_candidates": len(dev_reviewed_indices),
+            "temperature_calibrated": bool(reviewed_indices and dev_reviewed_indices),
+            "execution_only_labels_used": 0,
+        },
         "rejection_calibration": "aggregate independent execution utility; reviewed full applicability only when execution is absent",
         "development_execution_candidates": sum(
             any(
@@ -267,7 +309,7 @@ def train_ranker(
         "tokens_processed": tokens_processed,
         "input_encoding": "paired-query-candidate-longest-first-v1",
         "training_non_tie_pairs": sum(pair["target"] != 0.5 for pair in pairs),
-        "objective": "verified within-query pairwise preferences with tie targets plus graded applicability",
+        "objective": "verified within-query preferences with ties; semantic applicability uses independent evidence reviews only",
         "repair_effectiveness_proven": False,
     }
     # Absolute paths are convenience only; reload resolves the self-contained base-model directory.
@@ -334,14 +376,29 @@ class TrainedRankerScorer:
         require_finite_tensor(probabilities, "ranker probabilities")
         rows = []
         for capsule, values, probs in zip(capsules, outputs.tolist(), probabilities.tolist()):
-            grade = max(range(3), key=lambda k: probs[k])
-            mode = (
-                "reject"
-                if grade == 0 or values[0] < self.metadata["use_threshold"]
-                else "probe_only"
-                if capsule.hard_mode == "probe_only" or grade == 1
-                else "use"
+            semantic_supervised = (
+                self.metadata.get("applicability_supervision", {}).get("trained") is True
             )
+            if semantic_supervised:
+                grade = max(range(3), key=lambda k: probs[k])
+                mode = (
+                    "reject"
+                    if capsule.hard_mode == "reject"
+                    or grade == 0
+                    or values[0] < self.metadata["use_threshold"]
+                    else "probe_only"
+                    if capsule.hard_mode == "probe_only" or grade == 1
+                    else "use"
+                )
+                uncertainty = 1 - max(probs)
+            else:
+                # Unsupervised or legacy semantic logits cannot authorize edits.
+                mode = (
+                    "reject"
+                    if capsule.hard_mode == "reject" or values[0] < self.metadata["use_threshold"]
+                    else "probe_only"
+                )
+                uncertainty = 1.0
             refs = [a.id for a in task.anchors]
             criteria = {
                 criterion: {
@@ -355,10 +412,14 @@ class TrainedRankerScorer:
                     "id": capsule.id,
                     "mode": mode,
                     "utility": values[0],
-                    "uncertainty": 1 - max(probs),
+                    "uncertainty": uncertainty,
                     "criteria_evidence": criteria,
                     "unmet_preconditions": list(capsule.conditions) if mode == "probe_only" else [],
-                    "rationale": "Historical supervised ranker prediction with current hard-mode restriction.",
+                    "rationale": (
+                        "Historical supervised ranker prediction with current hard-mode restriction."
+                        if semantic_supervised
+                        else "Utility prediction only; no independently reviewed applicability supervision. Probe or reject; do not authorize edits."
+                    ),
                 }
             )
         return {"evaluations": rows}

@@ -404,12 +404,7 @@ def main(argv=None):
                             result,
                             sampling_probability=probability,
                         )
-                        label = replace(
-                            label,
-                            applicability="probe_only"
-                            if report.mode == "probe_only"
-                            else "adaptively_usable",
-                        )
+                        label = replace(label, operational_mode=report.mode)
                         row["label"] = asdict(label)
                     except ValueError as error:
                         row["supervision_exclusion_reason"] = str(error)

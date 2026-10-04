@@ -29,7 +29,7 @@ class SupervisionLabel:
     query_id: str
     candidate_id: str
     candidate_kind: str
-    applicability: str
+    applicability: str | None
     label_source: str
     evidence_refs: tuple[str, ...]
     reviewer: str
@@ -41,10 +41,21 @@ class SupervisionLabel:
     trajectory_sha256: str = ""
     sampling_probability: float = 1.0
     replicate: int = 0
+    operational_mode: str | None = None
 
     def __post_init__(self):
-        if self.applicability not in {"unrelated", "probe_only", "adaptively_usable"}:
+        if self.applicability is not None and self.applicability not in {
+            "unrelated",
+            "probe_only",
+            "adaptively_usable",
+        }:
             raise ValueError("invalid graded applicability")
+        if self.label_source == "evidence_review" and self.applicability is None:
+            raise ValueError("evidence review needs a reviewed applicability grade")
+        if self.operational_mode not in {None, "use", "probe_only", "reject"}:
+            raise ValueError("invalid operational authorization mode")
+        if self.label_source == "evidence_review" and self.operational_mode is not None:
+            raise ValueError("operational authorization is not an applicability review")
         if (
             self.label_source not in {"evidence_review", "execution"}
             or not self.evidence_refs
@@ -147,7 +158,7 @@ def build_examples(
         fixes[query.fix_id] = split
     by_label = {}
     for label in labels:
-        key = (label.query_id, label.candidate_id, label.replicate)
+        key = (label.query_id, label.candidate_id, label.label_source, label.replicate)
         if key in by_label:
             raise ValueError("duplicate supervision observation")
         by_label[key] = label
@@ -235,22 +246,27 @@ def pair_preferences(examples):
         for e in items:
             candidates.setdefault(e.candidate["id"], []).append(e)
 
+        def selected(entries, source):
+            return [e for e in entries if e.label["label_source"] == source]
+
         def score(entries, execution=False):
             labels = [e.label for e in entries]
-            executions = [item for item in labels if item["label_source"] == "execution"]
             if execution:
                 return sum(
-                    int(item["outcome"] and item["regression_pass"]) for item in executions
-                ) / len(executions)
+                    int(item["outcome"] and item["regression_pass"]) for item in labels
+                ) / len(labels)
             values = {"unrelated": 0, "probe_only": 1, "adaptively_usable": 2}
             return sum(values[item["applicability"]] for item in labels) / len(labels)
 
         for left, right in combinations(sorted(candidates), 2):
-            both_executed = all(
-                any(e.label["label_source"] == "execution" for e in candidates[cid])
-                for cid in (left, right)
-            )
-            a, b = score(candidates[left], both_executed), score(candidates[right], both_executed)
+            both_executed = all(selected(candidates[cid], "execution") for cid in (left, right))
+            source = "execution" if both_executed else "evidence_review"
+            observations = [selected(candidates[cid], source) for cid in (left, right)]
+            if not all(observations):
+                # Operational grades on an execution are not reviewed mechanism labels.
+                # A missing execution or independent review does not imply a loser.
+                continue
+            a, b = (score(entries, both_executed) for entries in observations)
             pairs.append(
                 {
                     "query_id": qid,
@@ -261,10 +277,10 @@ def pair_preferences(examples):
                     "target": 1.0 if a > b else 0.0 if a < b else 0.5,
                     "supervision": "execution" if both_executed else "reviewed_applicability",
                     "tie": a == b,
-                    "observations": [len(candidates[left]), len(candidates[right])],
+                    "observations": [len(entries) for entries in observations],
                     "sampling_probabilities": [
-                        candidates[left][0].label["sampling_probability"],
-                        candidates[right][0].label["sampling_probability"],
+                        min(e.label["sampling_probability"] for e in entries)
+                        for entries in observations
                     ],
                 }
             )
@@ -365,7 +381,7 @@ def execution_label_from_run(
         query.task.task_id,
         candidate_id,
         candidate_kind,
-        "adaptively_usable",
+        None,
         "execution",
         ("evaluation:" + evaluation["evaluation_spec_sha256"],),
         "independent-evaluator",
