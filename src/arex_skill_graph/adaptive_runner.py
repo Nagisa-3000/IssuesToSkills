@@ -372,9 +372,15 @@ def solver_observation_view(observation, *, output_limit=5000, working_set_ids=(
     record = observation.get("record") if isinstance(observation, dict) else None
     if not isinstance(record, dict) or not isinstance(record.get("witnesses"), list):
         if isinstance(observation, dict) and observation.get("operation") == "run_public_command":
-            return _broker_observation_view(
-                observation, include_excerpt=True, output_limit=output_limit
+            retained_output = observation.get("observation_id") in working_set_ids
+            result = _broker_observation_view(
+                observation, include_excerpt=not retained_output, output_limit=output_limit
             )
+            if retained_output:
+                result["output_location"] = (
+                    "evidence_working_set.pages; exact small stored output retained"
+                )
+            return result
         if isinstance(observation, dict) and observation.get("operation") in {
             "read_file",
             "read_public_evidence",
@@ -596,7 +602,7 @@ class AdaptiveSolver:
         "Use public commands to search source and run tests. Read current files before changing them. "
         "Long output is presented as excerpts; use focused commands and paginated file reads to inspect omitted parts. "
         "budget reports the actual shared remaining balance before this request; every model/tool call is still metered. "
-        "evidence_working_set retains bounded exact pages actually read in this run through later requests; consult source freshness and omission counts. "
+        "evidence_working_set retains bounded exact reads and complete small actual this-run command outputs through later requests; consult projection kind, source freshness and omission counts before rereading. "
         "Do not omit required checks or infer completion from budget pressure. "
         "Only recent observations are replayed. Probe and Action receipt views may summarize duplicated broker bodies; full evidence stays sealed for independent review. These views do not confirm effects or promote facts. After actual checks and required Action recording, explicitly finish; recording alone does not end the run."
     )

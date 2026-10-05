@@ -151,7 +151,11 @@ def test_solver_keeps_read_failure_through_other_tools_and_marks_it_stale_after_
                     },
                     "rationale": "Inspect failed domain result once",
                 }
-            page = frame["evidence_working_set"]["pages"][-1]
+            page = next(
+                p
+                for p in frame["evidence_working_set"]["pages"]
+                if p["projection_kind"] == "explicit_evidence_read"
+            )
             assert json.loads(page["content"])["/cases"] == [failed_case]
             assert "PUBLIC TEXT EXCERPT" not in page["content"]
             assert not frame["current_run"]["recorded_actions"]

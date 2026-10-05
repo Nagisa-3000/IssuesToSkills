@@ -130,20 +130,92 @@ def read_public_evidence(task, broker_observations, arguments):
     }
 
 
+def _small_broker_output_page(identity, record):
+    """Project only a complete small stored output of an actual this-run command."""
+    if (
+        record.get("observation_id") != identity
+        or record.get("operation") != "run_public_command"
+        or record.get("denied")
+        or not isinstance(record.get("output"), str)
+        or len(record["output"]) > 4000
+    ):
+        return None
+    content = record["output"]
+    assert_public(content)
+    content_hash = hashlib.sha256(content.encode()).hexdigest()
+    return {
+        "operation": "run_public_command",
+        "projection_kind": "current_run_broker_output",
+        "observation_id": identity,
+        "evidence_id": identity,
+        "source": "current_run_broker_record",
+        "field": "output",
+        "json_pointer": None,
+        "stored_record_sha256": digest(record),
+        "field_sha256": content_hash,
+        "selection_sha256": content_hash,
+        "offset": 0,
+        "total_characters": len(content),
+        "next_offset": None,
+        "content": content,
+        **{
+            key: record[key]
+            for key in (
+                "exit_code",
+                "process_exit_code",
+                "execution_available",
+                "timed_out",
+                "context_revision",
+                "protocol_error",
+                "workspace_rollback",
+                "write_scope_accepted",
+            )
+            if key in record
+        },
+        "assurance": (
+            "Model projection of the complete small stored output of this-run broker execution; "
+            "not a reader event, fresh execution, a new witness, semantic acceptance or authorization. "
+            "Original process status and record identity remain authoritative."
+        ),
+    }
+
+
 def solver_evidence_working_set(task, broker_observations, reads, *, workspace_execution_sha256):
-    """Retain bounded exact this-run reads, with explicit stale-source information."""
-    pages, seen, characters = [], set(), 0
-    for read in reversed(list(reads.values())):
-        if read.get("denied") or not isinstance(read.get("content"), str):
-            continue
+    """Retain exact reads and small broker outputs, without creating observations."""
+    candidates = []
+    for identity, record in broker_observations.items():
+        page = _small_broker_output_page(identity, record)
+        if page is not None:
+            candidates.append(page)
+    broker_output_count = len(candidates)
+    for read in reads.values():
+        if (
+            not read.get("denied")
+            and isinstance(read.get("content"), str)
+            and len(read["content"]) <= 4000
+        ):
+            candidates.append({**read, "projection_kind": "explicit_evidence_read"})
+
+    def sequence(item):
+        index, page = item
+        match = re.fullmatch(r"public:observation:([0-9]+)", page.get("observation_id", ""))
+        return (int(match[1]) if match else -1, index)
+
+    pages, seen, characters, deduplicated = [], set(), 0, 0
+    for _, read in reversed(sorted(enumerate(candidates), key=sequence)):
         selector = (
             read["evidence_id"],
             read["field"],
+            read["stored_record_sha256"],
             read.get("json_pointer"),
             tuple(sorted(read.get("json_pointers") or [])),
             read["offset"],
+            read.get("total_characters"),
+            read.get("next_offset"),
+            hashlib.sha256(read["content"].encode()).hexdigest(),
         )
         if selector in seen:
+            deduplicated += 1
             continue
         seen.add(selector)
         if len(pages) >= 8 or characters + len(read["content"]) > 12000:
@@ -181,15 +253,23 @@ def solver_evidence_working_set(task, broker_observations, reads, *, workspace_e
         )
         pages.append(page)
         characters += len(read["content"])
+    retained_reads = sum(p["projection_kind"] == "explicit_evidence_read" for p in pages)
+    retained_outputs = len(pages) - retained_reads
     return {
-        "schema": "solver-public-evidence-working-set-v1",
+        "schema": "solver-public-evidence-working-set-v2",
         "max_pages": 8,
+        "max_page_content_characters": 4000,
         "max_content_characters": 12000,
         "pages": list(reversed(pages)),
-        "omitted_read_count": len(reads) - len(pages),
+        "omitted_read_count": len(reads) - retained_reads,
+        "eligible_broker_output_count": broker_output_count,
+        "omitted_broker_output_count": broker_output_count - retained_outputs,
+        "deduplicated_page_count": deduplicated,
         "assurance": (
-            "Exact bounded pages actually read in this run; old pages may be evicted. "
-            "Source/workspace identity is not semantic acceptance, prerequisite satisfaction, "
-            "an Oracle witness or edit authorization. Full original reads remain sealed."
+            "Exact bounded reads and complete small outputs of actual this-run broker executions; "
+            "identical pages are deduplicated and old pages may be evicted. Projection does not "
+            "create a reader event, execution, witness, fact, authorization or finish. "
+            "Source/workspace identity is not semantic acceptance or prerequisite satisfaction. "
+            "Full original reads and broker records remain sealed."
         ),
     }
