@@ -215,3 +215,77 @@ def test_pattern_author_receives_source_provenance_and_replay_time_policy(tmp_pa
     assert "historical test-execution unknown" in payload["qualification_time_policy"]
     assert "newly authored functional eval definitions" in payload["qualification_time_policy"]
     assert not (tmp_path / "output").exists()
+
+
+def mechanism_review_packet(package):
+    return {
+        "schema": "arex-authoring-mechanism-review-v1",
+        "discovery_group_id": package.reference["skill_id"],
+        "reviewed_mechanism": MECHANISM,
+        "limitations": ["Synthetic owner boundary only; no transfer success established."],
+        "rationale": "Independent fixture review restricts causal support.",
+        "evidence_refs": list(package.evidence_ids),
+        "support_package_ids": [package.reference["skill_id"]],
+        "adjudicated_review_sha256": "a" * 64,
+        "authoring_manifest_sha256": "b" * 64,
+    }
+
+
+@pytest.mark.parametrize("drift", [None, "omitted", "lost_limits"])
+def test_native_author_must_preserve_exact_reviewed_limits(tmp_path, drift):
+    package, name, files = source_and_response(tmp_path)
+    packet = mechanism_review_packet(package)
+    provenance = json.loads(files["references/provenance.json"])
+    provenance["mechanism_review"] = json.loads(json.dumps(packet))
+    if drift == "omitted":
+        provenance.pop("mechanism_review")
+    elif drift == "lost_limits":
+        provenance["mechanism_review"]["limitations"] = []
+    files["references/provenance.json"] = json.dumps(provenance)
+    transport = Transport([canonical_response(package, name, files)])
+
+    def execute():
+        return extract_native_pattern(
+            transport,
+            [package],
+            TemporalPolicy(CUTOFF),
+            tmp_path / "output",
+            canonical_package_id=package.reference["skill_id"],
+            reviewed_mechanism=MECHANISM,
+            mechanism_review=packet,
+            audit_dir=tmp_path / "audit",
+        )
+
+    if drift is None:
+        (derived,) = execute()
+        assert derived.pattern.mechanism == MECHANISM
+        saved = json.loads(
+            (__import__("pathlib").Path(derived.root) / "references/provenance.json").read_text()
+        )
+        assert saved["mechanism_review"] == packet
+    else:
+        with pytest.raises(ValueError, match="reviewed mechanism limitations"):
+            execute()
+        assert not list((tmp_path / "output").rglob("SKILL.md"))
+    request = json.loads((tmp_path / "audit/authoring-request-attempt-1.json").read_text())
+    assert request["user"] == transport.calls[0]["user"]
+    payload, _ = json.JSONDecoder().raw_decode(request["user"])
+    assert payload["mechanism_review"] == packet
+
+
+def test_mechanism_review_cannot_change_selected_parent_before_model_call(tmp_path):
+    package, _name, _files = source_and_response(tmp_path)
+    packet = mechanism_review_packet(package)
+    packet["support_package_ids"].append("workflow:unprovided")
+    transport = Transport([])
+    with pytest.raises(ValueError, match="authoritative support"):
+        extract_native_pattern(
+            transport,
+            [package],
+            TemporalPolicy(CUTOFF),
+            tmp_path / "output",
+            canonical_package_id=package.reference["skill_id"],
+            reviewed_mechanism=MECHANISM,
+            mechanism_review=packet,
+        )
+    assert not transport.calls

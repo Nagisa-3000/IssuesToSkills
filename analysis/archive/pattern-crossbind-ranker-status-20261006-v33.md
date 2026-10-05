@@ -1,14 +1,6 @@
-**尚未全部完成。M0–M3 核心实现已通过工程验证，真实泛化与修复收益仍未验收；M4–M6 未完成，正式 SWE 运行数为 0。**
+**尚未全部完成。M0–M3 已有核心代码；真实泛化、互补组合和有效排序尚未通过验收，M4–M6 未完成，正式 SWE 运行数仍为 0。**
 
-本轮补充完整发现群体的作者前置校验与复审门槛：精确绑定完整语料、生成上下文、来源集合、机制限制和复审摘要；两项独立延迟机制不会进入作者模型。每项作者请求保留完整公开输入，作者包必须保留限制元数据，宿主不补造语义资源。
-
-新工程验证为 **898 passed、20 skipped**；针对性检查 89 passed，修改文件 lint/format 均通过。零模型调用预检通过 98 个包、98 份独立来源资格记录、22 个发现分组和 20 个接受分组。原接受清单的复审摘要已失效；[v2 清单](mechanisms/native-full-corpus-20261006-v1/adjudication/accepted-authoring-groups-v2.json)仅纠正该元数据链接，[纠正记录](mechanisms/native-full-corpus-20261006-v1/adjudication/authoring-review-link-correction-v1.json)保留原清单和失败预检，未改动机制、来源或时间上下文。
-
-20 组的真实串行原生作者任务已启动，[进程与实际请求观察](mechanisms/native-full-corpus-20261006-v1/authoring/live-observation-v1.json)只反映记录时状态。首两组模型明确承认机制支持，但没有交付完整包；这种作者延迟不等于适用性负例，不建立提取成功或修复收益。当前完整生成上下文最晚来源为 2023-06-18T14:43:15Z，不能回填 pre-2021 训练或更早逐题知识库。
-
-[M0–M6 状态与此前实验](archive/pattern-crossbind-ranker-status-20261006-v33.md)仍有效。[本轮作者记录](mechanisms/native-full-corpus-20261006-v1/authoring/README.md)与[机器快照 v34](results/pattern-crossbind-ranker-current-status-20261006-v34.json)可复核。作者任务终止后还需功能验证、原始 query 统一监督、真实绑定与互补组合、Ranker 训练/校准、联合冻结及正式 SWE 实验。
-
-此前完整状态表与实验边界：
+本次依据见[机器快照 v33](results/pattern-crossbind-ranker-current-status-20261006-v33.json)和[执行归因与机制发现审计](results/guidance-attribution-and-mechanism-discovery-audit-20261006-v1.json)。[历史报告 v32](archive/pattern-crossbind-ranker-status-20261006-v32.md)与旧实验、失败收据均保留。
 
 | 阶段 | 已实现 | 尚未验收 |
 | --- | --- | --- |
