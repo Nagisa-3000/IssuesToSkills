@@ -1,6 +1,6 @@
 **Pattern、CrossBind 与 Ranker 的实际完成度（2026-10-05）**
 
-**尚未全部完成。M0–M3 已有实现和工程测试；M0 的完整原生 Skill 包验收、M1 的独立新 Issue 泛化、M2 的真实互补组合和 M3 的排序效果仍待验证。M4 没有合格的训练 Ranker，M5 尚未联合冻结，M6 正式 SWE 运行数为 0。** 本文依据[当前机器快照 v23](results/pattern-crossbind-ranker-current-status-20261005-v23.json)。历史失败、原始回执、旧快照和候选版本均保留；来源资格、来源内 Action 演练、包准入和正式修复分别统计。
+**尚未全部完成。M0–M3 已有实现和工程测试；M0 的完整原生 Skill 包验收、M1 的独立新 Issue 泛化、M2 的真实互补组合和 M3 的排序效果仍待验证。M4 没有合格的训练 Ranker，M5 尚未联合冻结，M6 正式 SWE 运行数为 0。** 本文依据[当前机器快照 v24](results/pattern-crossbind-ranker-current-status-20261005-v24.json)。历史失败、原始回执、旧快照和候选版本均保留；来源资格、来源内 Action 演练、包准入和正式修复分别统计。
 
 | 阶段 | 已实现或已观察到的能力 | 尚缺的验收 |
 | --- | --- | --- |
@@ -12,7 +12,7 @@
 | M5 联合冻结 | 冻结和来源校验工具 | KB、题目、模型、阈值、预算、索引、验收协议联合冻结 |
 | M6 正式实验 | 配对修复、模块消融和冻结候选池排序比较入口 | 正式 SWE 与消融尚未运行 |
 
-最新的[完整工程检查](results/native-rust-qualification-engineering-audit-20261005-v1.json)为 **723 passed、19 skipped**，耗时 92.18 秒；Rust 资格专项为 58 passed，lint、格式和 diff 检查通过。跳过项不计为通过。这证明工程检查通过，不能替代包功能、迁移或 SWE 效果验收。
+最新的[完整工程检查](results/native-authoring-qualification-scope-engineering-audit-20261005-v1.json)为 **728 passed、19 skipped**，耗时 90.82 秒；作者范围专项为 49 passed。此前 Rust 资格专项为 58 passed。lint、格式和 diff 检查通过。跳过项不计为通过。这证明工程检查通过，不能替代包功能、迁移或 SWE 效果验收。
 
 **真实来源内 Action 演练**
 
@@ -40,7 +40,7 @@ v10 使用的[本轮小命令输出保留](results/public-command-working-set-en
 
 [监督合并审计](results/historical-dual-supervision-merge-audit-20261005-v11.json)共有 84 条观察：42 条执行、42 条获独立上下文复核接受的适用性标签；训练 40、开发 44。适用性全部 unrelated；训练 16 对效果偏好全部平局，开发 13 对平局、1 对非平局。未执行候选没有填为失败；没有人为制造偏好或新的合格 Ranker 权重。
 
-候选文件共有 **112 个 SKILL.md，包含历史版本**，其中当前 Pylint observable v2 批次为 44 个。112 不是不同的已验证 Skill 数，正式准入为 **0**。历史 Issue 人口是 Pylint 5273、Pyflakes 501、Ruff 3582，总计 9356；人口存档不表示全部历史经验完成抽取、资格或功能验收。
+当前快照的候选文件共有 **112 个 SKILL.md，包含历史版本**，其中 Pylint observable v2 批次为 45 个。此前 v23 的目录计数合计为 111；早先本文写为 112 的口径已校正，旧机器快照未改写。历史作者后续新增文件另计。文件数不是不同的已验证 Skill 数，正式准入为 **0**。历史 Issue 人口是 Pylint 5273、Pyflakes 501、Ruff 3582，总计 9356；人口存档不表示全部历史经验完成抽取、资格或功能验收。
 
 [Pylint #3666 原始输入溯源](results/historical-query-pylint-3666-opened-input-audit-20261005-v1.json)恢复了公开 opened event；query 保守时间为 2020-06-05T19:22:59Z，候选 #3604 修复可用于 2020-05-14T17:04:40Z，时间顺序符合训练要求。缺陷/复制身份、候选完整功能、相关性及效果标签尚待核验；仅时间合法不能赋予正标签。
 
@@ -51,3 +51,5 @@ v10 使用的[本轮小命令输出保留](results/public-command-working-set-en
 下一步按依赖完成：原生包 activation/applicability/functional 正反案例；从精确 qualified Ruff 来源进行系统原生抽取及验收；独立新 Issue 的重写和互补两父执行；有效时间隔离监督、训练与开发校准；M5 联合冻结；M6 正式 SWE、模块消融及同候选池排序比较。当前整体目标保持 active、未完成。
 
 新增[原生作者资格范围工程审计](results/native-authoring-qualification-scope-engineering-audit-20261005-v1.json)：抽取输入与提示现在保留实际资格范围，Python 的 changed-test-files 限制不变，Rust 限定为一个精确命名库测试及原 expected snapshot；未知 schema/scope 组合拒绝。旧实现真实作者输入的范围回归先失败，修正后专项 49 passed，完整 **728 passed、19 skipped**、90.82 秒，lint、格式及 diff 通过。作者 checkpoint 输入版本更新，原已封存版本与结果不改写；0 次真实模型调用。资格 authority 与三组原控制不变，Ruff 抽取和完整包验收仍待运行。
+
+已核对三个原生功能负例尚无执行轨迹：已有 async hooks、当前 dispatcher 故障、执行不可用。三个原 Task 输入 hash 已核对，统一原 300000 cap、只读执行及独立上下文复核计划已保存。六个包内 activation/applicability 分类定义与精确 qualified Ruff 系统原生抽取已准备；本快照仍等待历史作者的完整请求边界，实际新增模型调用为 0，不计为分类通过或抽取成功。全包验收和 M1–M6 的剩余验收不变。
