@@ -1041,3 +1041,290 @@ def test_solver_frames_deliver_fresh_journal_witness_for_record_and_explicit_fin
         == "Current this-run process witness; no semantic verdict."
     )
     assert result["benchmark_resolved"] is None
+
+
+def test_public_evidence_reader_recovers_omitted_middle_without_executing_or_promoting(tmp_path):
+    import copy
+    import hashlib
+    from dataclasses import replace
+
+    from arex_skill_graph.adaptive_runner import solver_current_view, solver_run_view
+    from arex_skill_graph.public_evidence import read_public_evidence
+    from arex_skill_graph.task_context import EvidenceAnchor
+
+    _, task, _ = make_fixture(tmp_path)
+    output = json.dumps(
+        {
+            "first": "start" * 3000,
+            "cases": [{"status": "FAIL", "detail": "middle"}],
+            "last": "end" * 3000,
+        }
+    )
+    broker = {
+        "operation": "run_public_command",
+        "observation_id": "public:observation:4",
+        "argv": ["python3", "-V"],
+        "output": output,
+        "exit_code": 1,
+        "context_revision": task.revision,
+    }
+    retained = EvidenceAnchor(
+        "retained:probe", "probe", json.dumps(broker), task.base_commit, exit_code=1
+    )
+    task = replace(task, anchors=(*task.anchors, retained))
+    actual = {broker["observation_id"]: broker}
+    before = copy.deepcopy((task.to_dict(), actual))
+    view = solver_current_view(task)
+    assert "middle" not in json.dumps(view["anchors"][-1])
+    page = read_public_evidence(
+        task,
+        actual,
+        {"evidence_id": broker["observation_id"], "field": "output", "json_pointer": "/cases/0"},
+    )
+    assert json.loads(page["content"]) == {"status": "FAIL", "detail": "middle"}
+    assert page["source"] == "current_run_broker_record" and page["next_offset"] is None
+    assert page["field_sha256"] == hashlib.sha256(output.encode()).hexdigest()
+    for offset in (0, 4000, 8000):
+        read = read_public_evidence(
+            task, actual, {"evidence_id": "retained:probe", "field": "output", "offset": offset}
+        )
+        assert read["content"] == output[offset : offset + 4000]
+        assert read["source"] == "retained_task_anchor_representation"
+        assert "not fresh execution" in read["assurance"]
+    assert (task.to_dict(), actual) == before
+    assert solver_run_view(task, actual, [])["recorded_actions"] == []
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        {"evidence_id": "/tmp/hidden-evaluator.json"},
+        {"evidence_id": "current:issue", "field": "host_path"},
+        {"evidence_id": "current:issue", "field": []},
+        {"evidence_id": "current:issue", "limit": True},
+        {"evidence_id": "current:issue", "limit": 4001},
+        {"evidence_id": "current:issue", "offset": -1},
+        {"evidence_id": "current:issue", "offset": False},
+        {"evidence_id": "current:issue", "path": "/etc/passwd"},
+        {"evidence_id": "public:observation:0", "field": "output", "json_pointer": "cases"},
+        {"evidence_id": "public:observation:0", "field": "output", "json_pointer": "/missing"},
+        {"evidence_id": "public:observation:0", "field": "output", "json_pointer": "/bad~2escape"},
+        {"evidence_id": "public:observation:0", "field": "output", "json_pointer": "/cases/01"},
+        {"evidence_id": "public:observation:0", "field": "output", "json_pointer": "/cases/-"},
+    ],
+)
+def test_public_evidence_reader_rejects_host_access_and_invalid_selection(tmp_path, arguments):
+    from arex_skill_graph.public_evidence import read_public_evidence
+
+    _, task, _ = make_fixture(tmp_path)
+    actual = {
+        "public:observation:0": {
+            "observation_id": "public:observation:0",
+            "output": '{"cases":[false],"a/b~c":true}',
+        }
+    }
+    with pytest.raises(ValueError):
+        read_public_evidence(task, actual, arguments)
+    assert (
+        json.loads(
+            read_public_evidence(
+                task,
+                actual,
+                {
+                    "evidence_id": "public:observation:0",
+                    "field": "output",
+                    "json_pointer": "/a~1b~0c",
+                },
+            )["content"]
+        )
+        is True
+    )
+
+
+def test_public_evidence_reader_does_not_treat_excerpt_as_complete_json(tmp_path):
+    from dataclasses import replace
+
+    from arex_skill_graph.public_evidence import read_public_evidence
+    from arex_skill_graph.task_context import EvidenceAnchor
+
+    _, task, _ = make_fixture(tmp_path)
+    task = replace(
+        task,
+        anchors=(
+            *task.anchors,
+            EvidenceAnchor("retained:text", "probe", "incomplete {", task.base_commit),
+        ),
+    )
+    assert (
+        read_public_evidence(task, {}, {"evidence_id": "retained:text", "field": "observation"})[
+            "content"
+        ]
+        == "incomplete {"
+    )
+    with pytest.raises(ValueError, match="anchor contains text"):
+        read_public_evidence(task, {}, {"evidence_id": "retained:text"})
+    with pytest.raises(ValueError, match="complete stored JSON"):
+        read_public_evidence(
+            task, {}, {"evidence_id": "retained:text", "field": "observation", "json_pointer": ""}
+        )
+
+
+def test_solver_reader_keeps_actual_failed_oracle_and_semantic_state_unchanged(tmp_path):
+    from dataclasses import replace
+
+    from arex_skill_graph.task_context import CurrentOracle, EvidenceAnchor
+
+    package, task, policy = make_fixture(tmp_path)
+    action = package.workflows[0].actions[-1]
+    command = ["python3", "-V"]
+    task = replace(
+        task,
+        anchors=(
+            *task.anchors,
+            EvidenceAnchor("retained:note", "probe", "stored public note", task.base_commit),
+        ),
+        oracles=(
+            CurrentOracle(
+                action.id, action.oracle[0].id, "Control", tuple(command), ("current:issue",)
+            ),
+        ),
+    )
+
+    class Tools:
+        isolation = "test-only-evidence-reader"
+        runtime_sha256 = "test-only"
+
+        def __init__(self, *_args):
+            self.executions = 0
+
+        def preflight(self):
+            pass
+
+        def close(self):
+            pass
+
+        def run(self, argv, **_options):
+            self.executions += 1
+            assert self.executions == 1
+            return {"argv": argv, "output": '{"cases":[{"status":"FAIL"}]}', "exit_code": 1}
+
+    class Transport:
+        def __init__(self):
+            self.frames = []
+
+        def complete(self, **kwargs):
+            frame = json.loads(kwargs["user"])
+            self.frames.append(frame)
+            n = len(self.frames)
+            if n == 1:
+                return {
+                    "operation": "run_public_command",
+                    "arguments": {"argv": command},
+                    "rationale": "Control",
+                }
+            oracle = frame["current_run"]["oracle_executions"][0]
+            assert oracle["status"] == "failed_process"
+            witness = oracle["latest_observation_id"]
+            if n == 2:
+                return {
+                    "operation": "read_public_evidence",
+                    "arguments": {
+                        "evidence_id": witness,
+                        "field": "output",
+                        "json_pointer": "/cases/0",
+                    },
+                    "rationale": "Read stored failed domain result",
+                }
+            previous = self.frames[1]["current"]
+            assert frame["current"] == previous
+            assert frame["current_run"]["broker_observation_ids"] == [witness]
+            if n == 3:
+                page = frame["observations"][-1]
+                assert json.loads(page["content"]) == {"status": "FAIL"}
+                assert "not fresh execution" in page["assurance"]
+                return {
+                    "operation": "read_public_evidence",
+                    "arguments": {"evidence_id": "/tmp/hidden-evaluator.json"},
+                    "rationale": "Unknown ID must be denied",
+                }
+            assert frame["observations"][-1]["denied"] == "unknown public evidence ID"
+            return {
+                "operation": "finish",
+                "arguments": {},
+                "rationale": "End control, no success claim",
+            }
+
+    transport = Transport()
+    with CatalogStore(tmp_path / "reader.sqlite") as store:
+        store.initialize()
+        result = AdaptiveSolver(
+            transport,
+            WorkflowRanker(),
+            store,
+            policy,
+            BudgetLedger(),
+            arm="B0",
+            tools_factory=Tools,
+        ).run(task, use_frozen_selection=True, recordable_actions=(action,))
+    assert result["solver_ended"] and not result["failure"]
+    assert len(transport.frames) == 4
+    assert not result["action_observations"]
+    assert result["validated_resolved"] is None
+    assert result["budget"]["tool_calls"] >= 4
+    assert all(
+        f["current"]["facts"] == transport.frames[1]["current"]["facts"]
+        for f in transport.frames[2:]
+    )
+
+
+def test_solver_view_preserves_full_task_obligations_and_rejects_other_base(tmp_path):
+    import hashlib
+    from dataclasses import replace
+
+    from arex_skill_graph.adaptive_runner import solver_current_view
+    from arex_skill_graph.task_context import EvidenceAnchor
+
+    _, task, _ = make_fixture(tmp_path)
+    problem = "begin " * 1000 + "MIDDLE_REQUIRED_OBLIGATION" + " end" * 1000
+    task = replace(
+        task,
+        public_problem=problem,
+        anchors=(
+            *task.anchors,
+            EvidenceAnchor("current:repeat-problem", "public_issue", problem, task.base_commit),
+        ),
+    )
+    view = solver_current_view(task)
+    assert view["public_problem"] == problem
+    assert view["anchors"][-1]["observation"] == "See current.public_problem (identical text)."
+    assert (
+        view["anchors"][-1]["full_observation_sha256"]
+        == hashlib.sha256(problem.encode()).hexdigest()
+    )
+    with pytest.raises(ValueError, match="different base"):
+        replace(
+            task,
+            anchors=(
+                *task.anchors,
+                EvidenceAnchor("invalid:other-base", "probe", "other base", "f" * 40),
+            ),
+        )
+    for field in ("facts", "bindings", "port_values", "goals", "environment", "oracles"):
+        assert view[field] == task.to_dict()[field]
+
+
+def test_public_evidence_reader_rejects_mismatched_broker_identity(tmp_path):
+    from arex_skill_graph.public_evidence import read_public_evidence
+
+    _, task, _ = make_fixture(tmp_path)
+    with pytest.raises(ValueError, match="identity mismatch"):
+        read_public_evidence(
+            task,
+            {
+                "public:observation:0": {
+                    "observation_id": "public:observation:1",
+                    "output": "wrong identity",
+                }
+            },
+            {"evidence_id": "public:observation:0", "field": "output"},
+        )

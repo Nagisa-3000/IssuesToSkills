@@ -32,6 +32,7 @@ from .execution_frontier import (
 from .git_tree_export import exact_git_tar
 from .guidance_renderer import GuidanceRenderer
 from .plan_validation import TaskWorkflowPlan, validate_task_plan
+from .public_evidence import read_public_evidence
 from .public_snapshot import extract_public_archive
 from .skill_packages import _resolve
 from .task_context import EvidenceAnchor, ObservedFact, assert_public
@@ -353,6 +354,11 @@ def solver_observation_view(observation, *, output_limit=5000):
             return _broker_observation_view(
                 observation, include_excerpt=True, output_limit=output_limit
             )
+        if isinstance(observation, dict) and observation.get("operation") in {
+            "read_file",
+            "read_public_evidence",
+        }:
+            return bounded_public_view(observation, text_limit=output_limit)
         return bounded_public_view(observation)
     visible_record = bounded_public_view(
         {key: item for key, item in record.items() if key != "witnesses"}
@@ -374,12 +380,43 @@ def solver_observation_view(observation, *, output_limit=5000):
     return result
 
 
+def _check_model_view(check):
+    """Keep actual check status and references while bounding repeated explanations."""
+    result = dict(check)
+    rationale = result.get("rationale")
+    if isinstance(rationale, str) and len(rationale) > 160:
+        result["rationale"] = rationale[:160]
+        result["rationale_excerpted"] = True
+        result["full_rationale_sha256"] = hashlib.sha256(rationale.encode()).hexdigest()
+    return result
+
+
+def solver_frontier_view(action, task):
+    frontier = action_execution_checks(action, task)
+    return {**frontier, "checks": [_check_model_view(check) for check in frontier["checks"]]}
+
+
 def solver_current_view(task):
     """Expose obligations and index old broker evidence without replaying its bodies."""
     raw = task.to_dict()
     result = bounded_public_view(raw, text_limit=2000)
     result.pop("root")
+    for key in (
+        "public_problem",
+        "facts",
+        "bindings",
+        "port_values",
+        "goals",
+        "environment",
+        "oracles",
+    ):
+        result[key] = raw[key]
     for anchor, visible in zip(raw["anchors"], result["anchors"]):
+        if anchor["observation"] == raw["public_problem"]:
+            visible["observation"] = "See current.public_problem (identical text)."
+            visible["full_observation_sha256"] = hashlib.sha256(
+                anchor["observation"].encode()
+            ).hexdigest()
         if anchor["kind"] != "probe":
             continue
         try:
@@ -391,18 +428,28 @@ def solver_current_view(task):
             or observed.get("operation") in {"read_file", "write_file", "run_public_command"}
         ):
             continue
+        for key in ("base_commit", "path", "sha256", "available_at", "exit_code"):
+            if (key == "base_commit" and visible.get(key) == raw["base_commit"]) or visible.get(
+                key
+            ) in ("", None):
+                visible.pop(key, None)
         visible["observation"] = "Public broker evidence index."
-        visible["broker_summary"] = _broker_observation_view(observed, text_limit=400)
+        summary = _broker_observation_view(observed, text_limit=160)
+        visible["broker_summary"] = {
+            key: value
+            for key, value in summary.items()
+            if key not in {"isolation", "runtime_sha256", "model_view"}
+        }
         visible["full_observation_sha256"] = hashlib.sha256(
             anchor["observation"].encode()
         ).hexdigest()
-        visible["broker_summary"].pop("model_view")
     result["model_view"] = (
-        "Old broker probes are evidence indexes; complete evidence remains sealed. "
-        "Current facts and checks retain their own assurance."
+        "Anchor metadata shares current.base_commit. Old broker probes are stored evidence indexes. "
+        "Use read_public_evidence with the exact anchor or this-run broker ID for omitted text. "
+        "Retained representations may already contain excerpts; reads are not fresh execution. "
+        "Current obligations, facts and check status retain their own assurance."
     )
-    for check in result["checks"]:
-        check["rationale"] = bounded_public_view(check["rationale"], text_limit=600)
+    result["checks"] = [_check_model_view(check) for check in raw["checks"]]
     return result
 
 
@@ -468,6 +515,7 @@ def solver_run_view(task, broker_observations, action_observations):
             "Actual this-run process evidence only; no semantic acceptance, "
             "prerequisite satisfaction, fact promotion or edit authorization."
         ),
+        "broker_observation_ids": list(broker_observations),
         "oracle_executions": oracle_executions,
         "recorded_actions": [
             {
@@ -492,7 +540,7 @@ class AdaptiveSolver:
         "Solve the current public software issue using current repository observations. Historical guidance is conditional, not a patch to copy. "
         "Use the broker tools. Unknown plan prerequisites require public probes. Refresh observations after edits and failed oracles. "
         "No hidden evaluator, future history, host filesystem, network or credentials are accessible to tools. Return one request JSON: "
-        "operation = list_files | read_file | write_file | run_public_command | read_skill_resource | refresh_guidance | drop_guidance | record_action_observation | finish; arguments is an object; rationale is text. "
+        "operation = list_files | read_file | write_file | run_public_command | read_skill_resource | read_public_evidence | refresh_guidance | drop_guidance | record_action_observation | finish; arguments is an object; rationale is text. "
         "list_files arguments: prefix (optional repository directory), offset (default 0), limit (1..200). "
         "read_file requires path, with optional start_line (1-based) and limit (1..400; default 200); "
         "write_file requires path and complete content (both strings). "
@@ -504,6 +552,12 @@ class AdaptiveSolver:
         "Rerun after workspace changes, process failure or a remaining validation obligation. "
         "A passed_process is not semantic validation or authorization. Shell or subprocess wrappers and printed subcommand results "
         "may supplement these checks, but do not witness a bound validation Oracle. "
+        "read_public_evidence requires evidence_id from current anchors or current_run.broker_observation_ids, "
+        "optional field=record|output|content|observation (default record), offset (0-based) and limit (1..4000). "
+        "An optional json_pointer selects an existing value from a complete stored JSON field before pagination. "
+        "It reads only stored public evidence, without rerunning commands, advancing revision, proving facts or establishing "
+        "a new Oracle witness. Retained anchor representations may already be excerpts; do not invent omitted evidence. "
+        "Use it to inspect omitted command output instead of repeating a completed Oracle. "
         "read_skill_resource requires package_id and resource strings. refresh_guidance accepts code_paths, a string array. "
         "record_action_observation requires action_id, current context_revision, summary and outputs. "
         "Each declared output has port_name, observation_ids and artifact_paths; cite actual broker results or current files. "
@@ -792,7 +846,7 @@ class AdaptiveSolver:
                                 "public_workspace_read_only": read_only_workspace,
                                 "strict_functional_action_catalog": enforce_catalog_prerequisites,
                                 "functional_execution_frontier": [
-                                    action_execution_checks(a, current)
+                                    solver_frontier_view(a, current)
                                     for a in action_catalog.values()
                                 ]
                                 if enforce_catalog_prerequisites
@@ -810,7 +864,7 @@ class AdaptiveSolver:
                                 },
                                 "observations": [
                                     solver_observation_view(
-                                        o, output_limit=5000 if i == len(observations) - 1 else 1600
+                                        o, output_limit=5000 if i == len(observations) - 1 else 600
                                     )
                                     for i, o in enumerate(
                                         observations[-8:], max(0, len(observations) - 8)
@@ -830,6 +884,7 @@ class AdaptiveSolver:
                         raise ValueError("invalid solver request")  # noqa: TRY004 -- JSON contract errors consistently use ValueError.
                     requests.append(request)
                     fields = {
+                        "read_public_evidence": {"evidence_id": str},
                         "read_file": {"path": str},
                         "write_file": {"path": str, "content": str},
                         "run_public_command": {"argv": list},
@@ -887,6 +942,12 @@ class AdaptiveSolver:
                             "total": len(files),
                             "next_offset": offset + limit if offset + limit < len(files) else None,
                         }
+                    elif operation == "read_public_evidence":
+                        self.ledger.charge("tool_calls", 1, "bounded stored public evidence read")
+                        try:
+                            result = read_public_evidence(current, broker_observations, args)
+                        except ValueError as exc:
+                            result = {"operation": operation, "denied": str(exc)}
                     elif operation in {"read_file", "write_file"}:
                         relative = args["path"]
                         if relative.startswith(".git/"):

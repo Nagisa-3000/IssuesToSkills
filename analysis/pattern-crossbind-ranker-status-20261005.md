@@ -1,6 +1,6 @@
 **Pattern、CrossBind 与 Ranker 的实际完成度（2026-10-05）**
 
-**尚未全部完成。M0–M3 有代码、接口和工程测试；真实功能与跨项目效果的验收仍不完整。M4 没有合格的训练 Ranker，M5 尚未联合冻结，M6 的正式 SWE 运行数为 0。** 本文依据[当前机器快照 v19](results/pattern-crossbind-ranker-current-status-20261005-v19.json)。旧快照、失败实验和未审阅候选继续保留，源内演练、包准入和正式修复结果分别统计。
+**尚未全部完成。M0–M3 有代码、接口和工程测试；真实功能与跨项目效果的验收仍不完整。M4 没有合格的训练 Ranker，M5 尚未联合冻结，M6 的正式 SWE 运行数为 0。** 本文依据[当前机器快照 v20](results/pattern-crossbind-ranker-current-status-20261005-v20.json)。旧快照、失败实验和未审阅候选继续保留，源内演练、包准入和正式修复结果分别统计。
 
 | 阶段 | 已有实现或已验证能力 | 尚缺的验收 |
 | --- | --- | --- |
@@ -32,7 +32,9 @@ Pylint #8120 的来源已通过有限范围的历史因果资格；原生包是�
 
 第七版使用新输入明确要求独立只读资源审计，不能当作同输入压缩对照：[v7 审计](results/native-async-lifecycle-validation-terminal-audit-20261005-v7.json)。代码为 196ae46、原上限 300000；8 次执行调用、1 次独立复核，206254 token。九例行为、实际回归、资源哈希、sentinel 缺席及 warning 配置均获确认；下一次模型请求在预算预检被拒绝，0 条 Action、未 finish。独立 policy 为 UNKNOWN/unresolved/CONFIRMED，来源验收仍不接受，不能从领域确认自动生成记录或结束任务。两次 supervisor/watchdog 都已 terminal，历史作者已核对原 PID/start ticks 并恢复。
 
-[本轮进程见证日志工程审计](results/solver-run-process-journal-engineering-audit-20261005-v1.json)记录 current_run 视图：仅本轮实际 broker 结果、精确 argv、最新执行、失败覆盖旧成功、工作区变化后见证 stale。passed_process 只证明进程执行结果；完整 Task 与轨迹、原 300000 上限和独立 Oracle guard 保留。相同合成输入、145000 cap 的协议对照从一次请求后拒绝变为三次请求后记录并显式 finish，129076 用量；实际 LLM 调用和实际命令执行都是 0，记录仍 unreviewed。v7 的真实负结果仍需通过实际请求几何分析与更有针对性的模型投影解决，尚未实现新的分页证据 reader。
+[本轮进程见证日志工程审计](results/solver-run-process-journal-engineering-audit-20261005-v1.json)记录 current_run 视图：仅本轮实际 broker 结果、精确 argv、最新执行、失败覆盖旧成功、工作区变化后见证 stale。passed_process 只证明进程执行结果；完整 Task 与轨迹、原 300000 上限和独立 Oracle guard 保留。相同合成输入、145000 cap 的协议对照从一次请求后拒绝变为三次请求后记录并显式 finish，129076 用量；实际 LLM 调用和实际命令执行都是 0，记录仍 unreviewed。v7 的真实负结果仍需通过实际请求几何分析与更有针对性的模型投影解决，新的分页证据 reader 随后通过工程验证，真实完整来源验收尚未完成。
+
+新增[只读公共证据 reader 工程审计](results/public-evidence-reader-engineering-audit-20261005-v1.json)：read_public_evidence 仅按现有 Task anchor 或本轮实际 broker ID 读取；分页上限 4000 字符，可从完整存储的 JSON 字段选择子值。未知 ID、主机路径、非法分页/JSON pointer 和不完整 JSON 选择会被拒绝。读操作不执行命令、不推进 Task revision、不建立新 Oracle 见证、不提升事实或 Action；保留的 anchor 表示也可能已经是摘录。当前 public_problem、事实、绑定、端口和 Oracle 保留完整值；仅重复 broker 元数据、旧输出和解释投影压缩，普通 Probe 元数据保留原兼容性。使用完全相同的 v7 最终 Task/轨迹测量，原保守预留 99261 超过剩余 93746；新值 84388 可以发出该次请求。0 次真实 LLM/命令调用，未推断后续记录、finish 或来源验收。首次工程 lint、错误测试路径、新测试控制错误以及完整检查发现的普通 Probe 兼容性失败都保留；修复后专项和完整检查通过。下一步为相同 v7 输入的真实串行复验。
 
 Ruff #5124 的依赖准备取得实质进展。[精确 Git 依赖恢复](results/ruff-5124-pinned-dependency-recovery-audit-20261005-v3-complete.json)获得原锁定的三个提交；LibCST 从上游取得相同提交，未替换 revision。[离线 vendor 审计](results/ruff-5124-offline-vendor-preparation-audit-20261005-v1.json)核对 310 个原始 registry 包、319 个 vendor 包和 16438 个文件哈希，使用官方 Cargo vendor 归一化，未手工改依赖 manifest。Cargo.lock 与历史 base 源码保持精确一致。
 
@@ -40,7 +42,7 @@ Ruff #5124 的依赖准备取得实质进展。[精确 Git 依赖恢复](results
 
 本次源码还修复了公共 Git archive 的链接身份：保留 data_filter 的安全检查，重新检查原始目标的包含关系，并保留 contained symlink 的原始 target 文本及末尾分隔符。四项回归覆盖真实 Git tree 身份；此前错误导出和失败准备没有删除。
 
-当前完整工程检查 **660 passed、19 skipped**；对应检查批次耗时 97.34 秒。专项 **82 passed、5 skipped**；修改文件的 Ruff E4/E7/E9/F 与 git diff --check 通过。跳过项不计为通过，工程检查不替代原生功能、迁移或正式 SWE 验收。
+当前完整工程检查 **678 passed、19 skipped**，测试耗时 120.79 秒。专项 **93 passed、5 skipped**；修改文件的 Ruff E4/E7/E9/F 与 git diff --check 通过。跳过项不计为通过，工程检查不替代原生功能、迁移或正式 SWE 验收。
 
 历史人口保持 Pylint 5273、Pyflakes 501、Ruff 3582，共 9356 个 Issue。主截止 T=2024-01-01T00:00:00Z，训练截止 τ=2021-01-01T00:00:00Z，均严格排除截止时刻及以后信息；Pylint #10034 继续排除正式评价。已知时间线缺口恢复到独立版本，旧输入与旧结果不改写；仍保留三项权限受限元数据。Pylint 的 78 个合格来源是 changed-test-only 范围。完整人口存档并不等于三项目所有历史经验完成资格复验或功能准入。
 
