@@ -1,0 +1,50 @@
+{
+  "accepted_limited_replay": true,
+  "actual_model_calls": 1,
+  "cohort_sha256": "5e988090a0b256a084684fc130fb45a7740b88de8b629ec928e77e1ebfd9df57",
+  "control_completion_sha256": "a16d444772378e7da182d2946f5f70bda14584f962686fc50632d3e6117dfc96",
+  "evidence_refs": [
+    "public_problem",
+    "original_source_excerpt",
+    "native_regression_diff",
+    "evaluator_known_production_diff",
+    "task_identity",
+    "native_qualified_identity",
+    "native_qualified_scope",
+    "frozen_current_cohort.regression_assertion_changes",
+    "frozen_current_cohort.expected_collected_tests",
+    "frozen_current_cohort.missing_native_fail_to_pass",
+    "frozen_current_cohort.missing_native_pass_to_pass",
+    "mechanical_controls.historical_regression_assertions_unchanged",
+    "mechanical_controls.production_projection",
+    "mechanical_controls.checks",
+    "phase_receipts.original_base",
+    "phase_receipts.base_with_regression",
+    "phase_receipts.known_repair",
+    "scope"
+  ],
+  "formal_SWE_run": false,
+  "limitations": [
+    "Coverage is limited to pyflakes/test/test_type_annotations.py: one fail-to-pass regression and 22 retained pass-to-pass controls.",
+    "The native pass-to-pass test pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typingExtensionsOverload is missing from this original-input replay. No native fail-to-pass tests or original current tests are reported missing.",
+    "No whole-project test execution or independent new-issue validation is supplied.",
+    "The exact public CLI example is not executed; the native regression exercises the same async overload redefinition mechanism using type comments and a different function name.",
+    "The runtime hash is identical across phases, but the concrete Python version and cross-version behavior are not supplied and remain UNKNOWN.",
+    "This is a historical known-repair control, not a solver evaluation, Skill promotion, or formal SWE result. mechanical_controls reports zero actual LLM calls, zero formal SWE runs, and complete_replay_acceptance as false."
+  ],
+  "mechanism_alignment": "PASS",
+  "oracle_fidelity": "PASS",
+  "rationale": "The replay is a trustworthy functional oracle for the focused async typing.overload issue. The original source recognizes only ast.FunctionDef in is_typing_overload, excluding async definitions. The unchanged native regression asserts that two async overload declarations followed by an implementation emit no diagnostics; execution on the original source produces exactly two RedefinedWhileUnused diagnostics, matching the reported fault. The three-phase receipts show 22 baseline passes, then 1 failure and 22 passes with the regression added, then 23 passes with the native known repair. The repair extends recognition to ast.AsyncFunctionDef without changing assertions, the frozen test cohort, or the measured runtime. Task and native repair identities remain separately and consistently recorded; their different base commits are explicit rather than conflated. Acceptance is limited to the selected test file and does not establish complete native coverage or broader validation.",
+  "regression_coverage": "PASS",
+  "review_input_sha256": "85153028a0789424a344f58cf5ba92c5ad37d7b35868bc3edeef4a033ac355c3",
+  "reviewer_context": "independent from source author and solver",
+  "reviewer_model": "openai/gpt-6.1-sol",
+  "schema": "original-query-replay-independent-review-v1",
+  "scope": "focused current replay; not whole-project or SWE",
+  "task_identity": {
+    "base_commit": "fa9812b71e506b5656d604c424224fc005fb3232",
+    "input_available_at": "2019-09-23T09:05:31Z",
+    "public_problem_sha256": "ab73b98c30ac34d6bda04db19a767c3cd3752ddbdd81e7476dac01c16cef19a0",
+    "task_id": "PyCQA/pyflakes:470"
+  }
+}

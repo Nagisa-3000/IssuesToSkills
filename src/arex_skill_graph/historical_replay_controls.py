@@ -10,9 +10,10 @@ import ast
 import hashlib
 import json
 import re
+import shlex
 import tempfile
 from datetime import UTC, datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from .adaptive_budget import BudgetCaps, BudgetLedger
 from .adaptive_runner import make_namespace_tools, snapshot_base
@@ -315,7 +316,77 @@ def verify_replay_controls(cohort, phases, *, source_files_unchanged, task_input
     }
 
 
-def run_original_query_controls(task, verification_path, dependency_root, output_dir):
+def project_replay_production_diff(patch, policy="native"):
+    """Keep native code hunks byte-for-byte; optionally omit only explicit release metadata."""
+    if policy not in {"native", "omit-release-metadata"}:
+        raise ValueError("unsupported evaluator production projection policy")
+    excluded, retained, pieces = [], [], []
+    if policy == "native":
+        projected = patch
+    else:
+        for section in re.split(r"(?=^diff --git )", patch, flags=re.MULTILINE):
+            if not section:
+                continue
+            header = shlex.split(section.splitlines()[0])
+            if len(header) != 4 or header[:2] != ["diff", "--git"]:
+                raise ValueError("production projection needs complete Git diff sections")
+            if not header[2].startswith("a/") or not header[3].startswith("b/"):
+                raise ValueError("production projection has unsupported path prefixes")
+            paths = [value[2:] for value in header[2:]]
+            if any(
+                PurePosixPath(value).is_absolute()
+                or ".." in PurePosixPath(value).parts
+                or ".git" in PurePosixPath(value).parts
+                or "\\" in value
+                for value in paths
+            ):
+                raise ValueError("production projection path escapes public source")
+            informational = all(
+                value in {"ChangeLog", "CONTRIBUTORS.txt"}
+                or (value.startswith("doc/whatsnew/") and value.endswith((".rst", ".md")))
+                for value in paths
+            )
+            modes = re.findall(
+                r"^(?:old mode|new mode|new file mode|deleted file mode) ([0-7]{6})$",
+                section,
+                flags=re.MULTILINE,
+            ) + re.findall(
+                r"^index [0-9a-f]+\.\.[0-9a-f]+ ([0-7]{6})$", section, flags=re.MULTILINE
+            )
+            special_file = any(mode != "100644" for mode in modes) or (
+                "GIT binary patch" in section or "Binary files " in section
+            )
+            record = {
+                "before_path": paths[0],
+                "after_path": paths[1],
+                "section_sha256": hashlib.sha256(section.encode()).hexdigest(),
+            }
+            if informational and not special_file:
+                excluded.append({**record, "reason": "explicit non-executable release metadata"})
+            else:
+                retained.append(record)
+                pieces.append(section)
+        projected = "".join(pieces)
+        if not projected.strip():
+            raise ValueError("release metadata projection leaves no production repair")
+    return projected, {
+        "schema": "evaluator-production-projection-v1",
+        "policy": policy,
+        "native_production_sha256": hashlib.sha256(patch.encode()).hexdigest(),
+        "controlled_production_sha256": hashlib.sha256(projected.encode()).hexdigest(),
+        "excluded_sections": excluded,
+        "retained_sections": retained,
+        "retained_section_bytes_unchanged": True,
+        "regression_assertions_modified": False,
+        "native_source_records_replaced": False,
+        "actor_may_read_known_repair": False,
+        "functional_control_scope_only": policy != "native",
+    }
+
+
+def run_original_query_controls(
+    task, verification_path, dependency_root, output_dir, *, production_projection="native"
+):
     """Execute unchanged historical tests and production diff in separate current snapshots."""
     output = Path(output_dir)
     if output.exists():
@@ -335,11 +406,15 @@ def run_original_query_controls(task, verification_path, dependency_root, output
     ):
         raise ValueError("credential-like historical patch cannot enter replay controls")
     task.verify()
+    production, projection = project_replay_production_diff(
+        diff["production_diff"], production_projection
+    )
+    write_json(output / "production-projection.json", projection)
     phases, cohort = {}, None
     phase_inputs = (
         ("original_base", ()),
         ("base_with_regression", (diff["regression_diff"],)),
-        ("known_repair", (diff["production_diff"], diff["regression_diff"])),
+        ("known_repair", (production, diff["regression_diff"])),
     )
     for name, patches in phase_inputs:
         if (
@@ -428,7 +503,9 @@ def run_original_query_controls(task, verification_path, dependency_root, output
         historical_diff_file_sha256=hashlib.sha256(diff_raw).hexdigest(),
         raw_known_repair_file_sha256=hashlib.sha256(diff["production_diff"].encode()).hexdigest(),
         historical_regression_assertions_unchanged=True,
-        known_repair_adapted=False,
+        known_repair_adapted=production != diff["production_diff"],
+        production_projection=projection,
+        controlled_known_repair_file_sha256=hashlib.sha256(production.encode()).hexdigest(),
     )
     write_json(output / "completion.json", result)
     return result

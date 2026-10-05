@@ -14,10 +14,32 @@ from arex_skill_graph.history_census import fingerprint, redact_history, write_j
 from arex_skill_graph.task_context import TaskContext
 
 
+def unavailable_registered_query(row):
+    registration_status = row.get("status", "unreported")
+    status = (
+        registration_status
+        if registration_status
+        in {"original_input_unrecovered", "public_branch_source_or_input_gap"}
+        else "registered_query_unavailable"
+    )
+    return {
+        "query_id": row["query_id"],
+        "status": status,
+        "registration_status": registration_status,
+        "failure_class": row.get("failure_class"),
+        "failure_reason": redact_history(str(row.get("reason", "registered query unavailable"))),
+        "mechanical_controls_passed": False,
+        "utility_labels_created": 0,
+    }
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("queries", "query-register", "verifications", "runtime-map", "output-dir"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument(
+        "--production-projection", choices=("native", "omit-release-metadata"), default="native"
+    )
     args = parser.parse_args(argv)
     if args.output_dir.exists():
         raise ValueError("preserve existing replay controls; use a new output version")
@@ -65,7 +87,7 @@ def main(argv=None):
         ),
         "selected_targets": register["selected_targets"],
         "registered_queries": len(queries),
-        "known_repair_policy": "unchanged native production diff",
+        "known_repair_policy": args.production_projection,
         "replay_cohort_frozen_before_known_repair": True,
         "all_model_calls": 0,
         "solver_branches": 0,
@@ -73,12 +95,7 @@ def main(argv=None):
     }
     write_json(args.output_dir / "study-identity.json", identity)
     rows = [
-        {
-            "query_id": row["query_id"],
-            "status": "original_input_unrecovered",
-            "mechanical_controls_passed": False,
-            "utility_labels_created": 0,
-        }
+        unavailable_registered_query(row)
         for row in register["audits"]
         if row["query_id"] not in query_ids
     ]
@@ -97,8 +114,17 @@ def main(argv=None):
             os.environ["GIT_CONFIG_COUNT"] = "1"
             os.environ["GIT_CONFIG_KEY_0"] = "safe.directory"
             os.environ["GIT_CONFIG_VALUE_0"] = task.root
+            projection_options = (
+                {}
+                if args.production_projection == "native"
+                else {"production_projection": args.production_projection}
+            )
             result = run_original_query_controls(
-                task, verification, runtime, args.output_dir / "cases" / case
+                task,
+                verification,
+                runtime,
+                args.output_dir / "cases" / case,
+                **projection_options,
             )
             row = {
                 "query_id": task.task_id,

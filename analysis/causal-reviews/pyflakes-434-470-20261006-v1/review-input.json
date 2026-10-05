@@ -1,0 +1,169 @@
+{
+  "cutoff_exclusive": "2024-01-01T00:00:00Z",
+  "historical_records": [
+    {
+      "entries": [
+        {
+          "available_at": "2019-02-22T13:51:33Z",
+          "content": "F811 (redefinition of unused variable) incorrectly triggered with @overload decorator\n\nThis bug was fixed for functions in #320. It still occurs if the function is inside a class and/or has multiple decorators (e.g. @staticmethod, @classmethod):\r\n```\r\nfrom typing import overload\r\n\r\n\r\nclass test:\r\n    @overload\r\n    def utf8(value: None) -> None:\r\n        pass\r\n\r\n    @overload\r\n    def utf8(value: bytes) -> bytes:\r\n        pass\r\n\r\n    @overload\r\n    def utf8(value: str) -> bytes:\r\n        pass\r\n\r\n    def utf8(value):\r\n        pass  # actual implementation\r\n```\r\n\r\n```\r\ntest.py:9:5: F811 redefinition of unused 'utf8' from line 5\r\ntest.py:13:5: F811 redefinition of unused 'utf8' from line 9\r\ntest.py:17:5: F811 redefinition of unused 'utf8' from line 13\r\n```\r\n\r\n```\r\nfrom typing import overload\r\n\r\n\r\ndef do_nothing(func):\r\n    return func\r\n\r\n\r\n@overload\r\n@do_nothing\r\ndef utf8(value: None) -> None:\r\n    pass\r\n\r\n\r\n@overload\r\n@do_nothing\r\ndef utf8(value: bytes) -> bytes:\r\n    pass\r\n\r\n\r\n@overload\r\n@do_nothing\r\ndef utf8(value: str) -> bytes:\r\n    pass\r\n\r\n\r\ndef utf8(value):\r\n    pass  # actual implementation\r\n```\r\n\r\n```\r\ntest.py:14:1: F811 redefinition of unused 'utf8' from line 8\r\ntest.py:20:1: F811 redefinition of unused 'utf8' from line 14\r\ntest.py:26:1: F811 redefinition of unused 'utf8' from line 20\r\n```",
+          "id": "PyCQA/pyflakes:434:original-issue"
+        },
+        {
+          "available_at": "2019-03-01T12:37:21Z",
+          "content": {
+            "base_commit": "6ba3f8e0b59b8fe880345be7ae594ccd76661f6d",
+            "cutoff_exclusive": "2024-01-01T00:00:00Z",
+            "fix_id": "PyCQA/pyflakes:pr:435",
+            "issue_id": "PyCQA/pyflakes:434",
+            "merge_commit": "232cb1d27ee134bf96adc8f37e53589dc259b159",
+            "pull_number": 435,
+            "repair_available_at": "2019-03-01T12:37:21Z",
+            "resolution_relationship": "direct_closure",
+            "resolution_relationship_evidence_refs": [
+              "PyCQA/pyflakes:434:event:MDExOkNsb3NlZEV2ZW50MjE3MzkwMTQ2NA=="
+            ],
+            "sandbox_backend": "namespace-copy"
+          },
+          "id": "PyCQA/pyflakes:434:repair-identity"
+        },
+        {
+          "available_at": "2019-03-01T12:37:21Z",
+          "content": "diff --git a/pyflakes/checker.py b/pyflakes/checker.py\nindex 4c88af2..0e636c1 100644\n--- a/pyflakes/checker.py\n+++ b/pyflakes/checker.py\n@@ -530,14 +530,21 @@ def getNodeName(node):\n         return node.name\n \n \n-def is_typing_overload(value, scope):\n+def is_typing_overload(value, scope_stack):\n+    def name_is_typing_overload(name):  # type: (str) -> bool\n+        for scope in reversed(scope_stack):\n+            if name in scope:\n+                return (\n+                    isinstance(scope[name], ImportationFrom) and\n+                    scope[name].fullName == 'typing.overload'\n+                )\n+        else:\n+            return False\n+\n     def is_typing_overload_decorator(node):\n         return (\n             (\n-                isinstance(node, ast.Name) and\n-                node.id in scope and\n-                isinstance(scope[node.id], ImportationFrom) and\n-                scope[node.id].fullName == 'typing.overload'\n+                isinstance(node, ast.Name) and name_is_typing_overload(node.id)\n             ) or (\n                 isinstance(node, ast.Attribute) and\n                 isinstance(node.value, ast.Name) and\n@@ -548,8 +555,10 @@ def is_typing_overload(value, scope):\n \n     return (\n         isinstance(value.source, ast.FunctionDef) and\n-        len(value.source.decorator_list) == 1 and\n-        is_typing_overload_decorator(value.source.decorator_list[0])\n+        any(\n+            is_typing_overload_decorator(dec)\n+            for dec in value.source.decorator_list\n+        )\n     )\n \n \n@@ -888,7 +897,7 @@ class Checker(object):\n                                 node, value.name, existing.source)\n                 elif not existing.used and value.redefines(existing):\n                     if value.name != '_' or isinstance(existing, Importation):\n-                        if not is_typing_overload(existing, self.scope):\n+                        if not is_typing_overload(existing, self.scopeStack):\n                             self.report(messages.RedefinedWhileUnused,\n                                         node, value.name, existing.source)\n \n",
+          "id": "PyCQA/pyflakes:434:production-diff"
+        },
+        {
+          "available_at": "2019-03-01T12:37:21Z",
+          "content": "diff --git a/pyflakes/test/test_type_annotations.py b/pyflakes/test/test_type_annotations.py\nindex 48635bb..b8876cb 100644\n--- a/pyflakes/test/test_type_annotations.py\n+++ b/pyflakes/test/test_type_annotations.py\n@@ -39,6 +39,41 @@ class TestTypeAnnotations(TestCase):\n             return s\n         \"\"\")\n \n+    def test_overload_with_multiple_decorators(self):\n+        self.flakes(\"\"\"\n+            from typing import overload\n+            dec = lambda f: f\n+\n+            @dec\n+            @overload\n+            def f(x):  # type: (int) -> int\n+                pass\n+\n+            @dec\n+            @overload\n+            def f(x):  # type: (str) -> str\n+                pass\n+\n+            @dec\n+            def f(x): return x\n+       \"\"\")\n+\n+    def test_overload_in_class(self):\n+        self.flakes(\"\"\"\n+        from typing import overload\n+\n+        class C:\n+            @overload\n+            def f(self, x):  # type: (int) -> int\n+                pass\n+\n+            @overload\n+            def f(self, x):  # type: (str) -> str\n+                pass\n+\n+            def f(self, x): return x\n+        \"\"\")\n+\n     def test_not_a_typing_overload(self):\n         \"\"\"regression test for @typing.overload detection bug in 2.1.0\"\"\"\n         self.flakes(\"\"\"\n",
+          "id": "PyCQA/pyflakes:434:regression-diff"
+        }
+      ],
+      "fix_id": "PyCQA/pyflakes:pr:435",
+      "issue_id": "PyCQA/pyflakes:434",
+      "revision": "232cb1d27ee134bf96adc8f37e53589dc259b159",
+      "source_id": "PyCQA/pyflakes:434:repair:232cb1d27ee1",
+      "source_sha256": "fc3525ab47a41bc94f54d0d087bd3821a606abd2885cc0f33544f5c5479ddd18"
+    },
+    {
+      "entries": [
+        {
+          "available_at": "2019-09-23T09:05:31Z",
+          "content": "@overload of async functions\n\nSince #435, pyflakes git tip copes with synchronous @overload'ed functions, but not with async ones:\r\n\r\n```python\r\nfrom typing import overload\r\n\r\n@overload\r\ndef f(x: int) -> int:\r\n    ...\r\n\r\n@overload\r\ndef f(x: float) -> float:\r\n    ...\r\n\r\ndef f(x):\r\n    return x\r\n\r\n@overload\r\nasync def g(x: int) -> int:\r\n    ...\r\n\r\n@overload\r\nasync def g(x: float) -> float:\r\n    ...\r\n\r\nasync def g(x):\r\n    return x\r\n```\r\n```bash\r\n$ python -m pyflakes .\r\n\r\n18:1 redefinition of unused 'g' from line 14\r\n22:1 redefinition of unused 'g' from line 18\r\n```",
+          "id": "PyCQA/pyflakes:470:original-issue"
+        },
+        {
+          "available_at": "2019-09-30T22:27:58Z",
+          "content": {
+            "base_commit": "5ed30a6b9e4b9c1bb4042e5c5b3b506e52133da4",
+            "cutoff_exclusive": "2024-01-01T00:00:00Z",
+            "fix_id": "PyCQA/pyflakes:pr:472",
+            "issue_id": "PyCQA/pyflakes:470",
+            "merge_commit": "ee1eb0670a473a30f32208b7bd811282834486a6",
+            "pull_number": 472,
+            "repair_available_at": "2019-09-30T22:27:58Z",
+            "resolution_relationship": "direct_closure",
+            "resolution_relationship_evidence_refs": [
+              "PyCQA/pyflakes:470:event:MDExOkNsb3NlZEV2ZW50MjY3NTAwNzQ1NA=="
+            ],
+            "sandbox_backend": "namespace-copy"
+          },
+          "id": "PyCQA/pyflakes:470:repair-identity"
+        },
+        {
+          "available_at": "2019-09-30T22:27:58Z",
+          "content": "diff --git a/pyflakes/checker.py b/pyflakes/checker.py\nindex 44c6b25..eca2002 100644\n--- a/pyflakes/checker.py\n+++ b/pyflakes/checker.py\n@@ -72,9 +72,11 @@ else:\n if PY35_PLUS:\n     FOR_TYPES = (ast.For, ast.AsyncFor)\n     LOOP_TYPES = (ast.While, ast.For, ast.AsyncFor)\n+    FUNCTION_TYPES = (ast.FunctionDef, ast.AsyncFunctionDef)\n else:\n     FOR_TYPES = (ast.For,)\n     LOOP_TYPES = (ast.While, ast.For)\n+    FUNCTION_TYPES = (ast.FunctionDef,)\n \n # https://github.com/python/typed_ast/blob/1.4.0/ast27/Parser/tokenizer.c#L102-L104\n TYPE_COMMENT_RE = re.compile(r'^#\\s*type:\\s*')\n@@ -642,7 +644,7 @@ def is_typing_overload(value, scope_stack):\n         )\n \n     return (\n-        isinstance(value.source, ast.FunctionDef) and\n+        isinstance(value.source, FUNCTION_TYPES) and\n         any(\n             is_typing_overload_decorator(dec)\n             for dec in value.source.decorator_list\n",
+          "id": "PyCQA/pyflakes:470:production-diff"
+        },
+        {
+          "available_at": "2019-09-30T22:27:58Z",
+          "content": "diff --git a/pyflakes/test/test_type_annotations.py b/pyflakes/test/test_type_annotations.py\nindex 676a4a5..045c57a 100644\n--- a/pyflakes/test/test_type_annotations.py\n+++ b/pyflakes/test/test_type_annotations.py\n@@ -56,6 +56,24 @@ class TestTypeAnnotations(TestCase):\n             return s\n         \"\"\")\n \n+    @skipIf(version_info < (3, 5), 'new in Python 3.5')\n+    def test_typingOverloadAsync(self):\n+        \"\"\"Allow intentional redefinitions via @typing.overload (async)\"\"\"\n+        self.flakes(\"\"\"\n+        from typing import overload\n+\n+        @overload\n+        async def f(s):  # type: (None) -> None\n+            pass\n+\n+        @overload\n+        async def f(s):  # type: (int) -> int\n+            pass\n+\n+        async def f(s):\n+            return s\n+        \"\"\")\n+\n     def test_overload_with_multiple_decorators(self):\n         self.flakes(\"\"\"\n             from typing import overload\n",
+          "id": "PyCQA/pyflakes:470:regression-diff"
+        }
+      ],
+      "fix_id": "PyCQA/pyflakes:pr:472",
+      "issue_id": "PyCQA/pyflakes:470",
+      "revision": "ee1eb0670a473a30f32208b7bd811282834486a6",
+      "source_id": "PyCQA/pyflakes:470:repair:ee1eb0670a47",
+      "source_sha256": "a571de127bfc56dc56819c7c8abe674ef8a80098de1fe9f345307c713d3d3374"
+    }
+  ],
+  "queries": [
+    {
+      "aliases": [
+        "PyCQA/pyflakes:434",
+        "https://github.com/PyCQA/pyflakes/issues/434"
+      ],
+      "bug_cluster_id": "PyCQA/pyflakes:434",
+      "copied_from": [],
+      "exposed": false,
+      "fix_id": "PyCQA/pyflakes:pr:435",
+      "task": {
+        "anchors": [
+          {
+            "available_at": "2019-02-22T13:51:33Z",
+            "base_commit": "6ba3f8e0b59b8fe880345be7ae594ccd76661f6d",
+            "exit_code": null,
+            "id": "current:issue",
+            "kind": "public_issue",
+            "observation": "F811 (redefinition of unused variable) incorrectly triggered with @overload decorator\n\nThis bug was fixed for functions in #320. It still occurs if the function is inside a class and/or has multiple decorators (e.g. @staticmethod, @classmethod):\r\n```\r\nfrom typing import overload\r\n\r\n\r\nclass test:\r\n    @overload\r\n    def utf8(value: None) -> None:\r\n        pass\r\n\r\n    @overload\r\n    def utf8(value: bytes) -> bytes:\r\n        pass\r\n\r\n    @overload\r\n    def utf8(value: str) -> bytes:\r\n        pass\r\n\r\n    def utf8(value):\r\n        pass  # actual implementation\r\n```\r\n\r\n```\r\ntest.py:9:5: F811 redefinition of unused 'utf8' from line 5\r\ntest.py:13:5: F811 redefinition of unused 'utf8' from line 9\r\ntest.py:17:5: F811 redefinition of unused 'utf8' from line 13\r\n```\r\n\r\n```\r\nfrom typing import overload\r\n\r\n\r\ndef do_nothing(func):\r\n    return func\r\n\r\n\r\n@overload\r\n@do_nothing\r\ndef utf8(value: None) -> None:\r\n    pass\r\n\r\n\r\n@overload\r\n@do_nothing\r\ndef utf8(value: bytes) -> bytes:\r\n    pass\r\n\r\n\r\n@overload\r\n@do_nothing\r\ndef utf8(value: str) -> bytes:\r\n    pass\r\n\r\n\r\ndef utf8(value):\r\n    pass  # actual implementation\r\n```\r\n\r\n```\r\ntest.py:14:1: F811 redefinition of unused 'utf8' from line 8\r\ntest.py:20:1: F811 redefinition of unused 'utf8' from line 14\r\ntest.py:26:1: F811 redefinition of unused 'utf8' from line 20\r\n```",
+            "path": "",
+            "sha256": ""
+          }
+        ],
+        "base_commit": "6ba3f8e0b59b8fe880345be7ae594ccd76661f6d",
+        "bindings": [],
+        "checks": [],
+        "environment": [],
+        "facts": [],
+        "goals": [],
+        "input_available_at": "2019-02-22T13:51:33Z",
+        "oracles": [],
+        "port_values": [],
+        "public_problem": "F811 (redefinition of unused variable) incorrectly triggered with @overload decorator\n\nThis bug was fixed for functions in #320. It still occurs if the function is inside a class and/or has multiple decorators (e.g. @staticmethod, @classmethod):\r\n```\r\nfrom typing import overload\r\n\r\n\r\nclass test:\r\n    @overload\r\n    def utf8(value: None) -> None:\r\n        pass\r\n\r\n    @overload\r\n    def utf8(value: bytes) -> bytes:\r\n        pass\r\n\r\n    @overload\r\n    def utf8(value: str) -> bytes:\r\n        pass\r\n\r\n    def utf8(value):\r\n        pass  # actual implementation\r\n```\r\n\r\n```\r\ntest.py:9:5: F811 redefinition of unused 'utf8' from line 5\r\ntest.py:13:5: F811 redefinition of unused 'utf8' from line 9\r\ntest.py:17:5: F811 redefinition of unused 'utf8' from line 13\r\n```\r\n\r\n```\r\nfrom typing import overload\r\n\r\n\r\ndef do_nothing(func):\r\n    return func\r\n\r\n\r\n@overload\r\n@do_nothing\r\ndef utf8(value: None) -> None:\r\n    pass\r\n\r\n\r\n@overload\r\n@do_nothing\r\ndef utf8(value: bytes) -> bytes:\r\n    pass\r\n\r\n\r\n@overload\r\n@do_nothing\r\ndef utf8(value: str) -> bytes:\r\n    pass\r\n\r\n\r\ndef utf8(value):\r\n    pass  # actual implementation\r\n```\r\n\r\n```\r\ntest.py:14:1: F811 redefinition of unused 'utf8' from line 8\r\ntest.py:20:1: F811 redefinition of unused 'utf8' from line 14\r\ntest.py:26:1: F811 redefinition of unused 'utf8' from line 20\r\n```",
+        "repository": "PyCQA/pyflakes",
+        "revision": 0,
+        "root": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/pre2021-public-branch-source-recovery-preparation-v3-20261006/results/cases/PyCQA__pyflakes-434/public-base",
+        "task_id": "PyCQA/pyflakes:434"
+      }
+    },
+    {
+      "aliases": [
+        "PyCQA/pyflakes:470",
+        "https://github.com/PyCQA/pyflakes/issues/470"
+      ],
+      "bug_cluster_id": "PyCQA/pyflakes:470",
+      "copied_from": [],
+      "exposed": false,
+      "fix_id": "PyCQA/pyflakes:pr:472",
+      "task": {
+        "anchors": [
+          {
+            "available_at": "2019-09-23T09:05:31Z",
+            "base_commit": "fa9812b71e506b5656d604c424224fc005fb3232",
+            "exit_code": null,
+            "id": "current:issue",
+            "kind": "public_issue",
+            "observation": "@overload of async functions\n\nSince #435, pyflakes git tip copes with synchronous @overload'ed functions, but not with async ones:\r\n\r\n```python\r\nfrom typing import overload\r\n\r\n@overload\r\ndef f(x: int) -> int:\r\n    ...\r\n\r\n@overload\r\ndef f(x: float) -> float:\r\n    ...\r\n\r\ndef f(x):\r\n    return x\r\n\r\n@overload\r\nasync def g(x: int) -> int:\r\n    ...\r\n\r\n@overload\r\nasync def g(x: float) -> float:\r\n    ...\r\n\r\nasync def g(x):\r\n    return x\r\n```\r\n```bash\r\n$ python -m pyflakes .\r\n\r\n18:1 redefinition of unused 'g' from line 14\r\n22:1 redefinition of unused 'g' from line 18\r\n```",
+            "path": "",
+            "sha256": ""
+          }
+        ],
+        "base_commit": "fa9812b71e506b5656d604c424224fc005fb3232",
+        "bindings": [],
+        "checks": [],
+        "environment": [],
+        "facts": [],
+        "goals": [],
+        "input_available_at": "2019-09-23T09:05:31Z",
+        "oracles": [],
+        "port_values": [],
+        "public_problem": "@overload of async functions\n\nSince #435, pyflakes git tip copes with synchronous @overload'ed functions, but not with async ones:\r\n\r\n```python\r\nfrom typing import overload\r\n\r\n@overload\r\ndef f(x: int) -> int:\r\n    ...\r\n\r\n@overload\r\ndef f(x: float) -> float:\r\n    ...\r\n\r\ndef f(x):\r\n    return x\r\n\r\n@overload\r\nasync def g(x: int) -> int:\r\n    ...\r\n\r\n@overload\r\nasync def g(x: float) -> float:\r\n    ...\r\n\r\nasync def g(x):\r\n    return x\r\n```\r\n```bash\r\n$ python -m pyflakes .\r\n\r\n18:1 redefinition of unused 'g' from line 14\r\n22:1 redefinition of unused 'g' from line 18\r\n```",
+        "repository": "PyCQA/pyflakes",
+        "revision": 0,
+        "root": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/pre2021-public-branch-source-gap-recovery-preparation-v1-20261006/results/cases/PyCQA__pyflakes-470/public-base",
+        "task_id": "PyCQA/pyflakes:470"
+      }
+    }
+  ],
+  "review_text_must_not_enter_serving_guidance": true,
+  "validation_only": true
+}

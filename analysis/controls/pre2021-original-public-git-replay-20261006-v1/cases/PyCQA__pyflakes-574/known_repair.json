@@ -1,0 +1,96 @@
+{
+  "focused_test_run": {
+    "argv": [
+      "python3",
+      "-m",
+      "pytest",
+      "pyflakes/test/test_type_annotations.py",
+      "-q",
+      "--junitxml=/workspace/replay-controls.xml"
+    ],
+    "exit_code": 1,
+    "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+    "output": "..FFF.............s........................                              [100%]\n=================================== FAILURES ===================================\n_ TestTypeAnnotations.test_annotated_type_typing_missing_forward_type_multiple_args _\n\nself = <pyflakes.test.test_type_annotations.TestTypeAnnotations testMethod=test_annotated_type_typing_missing_forward_type_multiple_args>\n\n    @skipIf(version_info < (3,), 'new in Python 3')\n    def test_annotated_type_typing_missing_forward_type_multiple_args(self):\n        self.flakes(\"\"\"\n        from typing import Annotated\n    \n        def f(x: Annotated['integer', 1]) -> None:\n            return None\n>       \"\"\", m.UndefinedName)\n\npyflakes/test/test_type_annotations.py:526: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \npyflakes/test/harness.py:24: in flakes\n    tree, file_tokens=file_tokens, withDoctest=self.withDoctest, **kw\npyflakes/checker.py:869: in __init__\n    self.handleChildren(tree)\npyflakes/checker.py:1306: in handleChildren\n    self.handleNode(node, tree)\npyflakes/checker.py:1353: in handleNode\n    handler(node)\npyflakes/checker.py:1984: in FUNCTIONDEF\n    self.LAMBDA(node)\npyflakes/checker.py:2042: in LAMBDA\n    self.handleAnnotation(annotation, node)\npyflakes/checker.py:746: in in_annotation_func\n    return func(self, *args, **kwargs)\npyflakes/checker.py:1449: in handleAnnotation\n    self.handleNode(annotation, node)\npyflakes/checker.py:1353: in handleNode\n    handler(node)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <pyflakes.checker.Checker object at 0x790815e2fa90>\nnode = <_ast.Subscript object at 0x790815e2fc10>\n\n    def SUBSCRIPT(self, node):\n        if _is_name_or_attr(node.value, 'Literal'):\n            orig, self._in_typing_literal = self._in_typing_literal, True\n            try:\n                self.handleChildren(node)\n            finally:\n                self._in_typing_literal = orig\n        elif _is_name_or_attr(node.value, 'Annotated'):\n            self.handleNode(node.value, node)\n    \n            # py39+\n            if isinstance(node.slice, ast.Tuple):\n                slice_tuple = node.slice\n            # <py39\n            elif (\n                    isinstance(node.slice, ast.Index) and\n                    isinstance(node.slice.value, ast.Tuple)\n            ):\n                slice_tuple = node.slice.value\n            else:\n                slice_tuple = None\n    \n            # not a multi-arg `Annotated`\n            if slice_tuple is None or len(slice_tuple.elts) < 2:\n                self.handleNode(node.slice, node)\n            else:\n                # the first argument is the type\n                self.handleNode(slice_tuple.elts[0], node)\n                # the rest of the arguments are not\n>               with self._enter_annotation(AnnotationState.NONE):\nE               NameError: name 'AnnotationState' is not defined\n\npyflakes/checker.py:1495: NameError\n_______ TestTypeAnnotations.test_annotated_type_typing_with_string_args ________\n\nself = <pyflakes.test.test_type_annotations.TestTypeAnnotations testMethod=test_annotated_type_typing_with_string_args>\n\n    @skipIf(version_info < (3,), 'new in Python 3')\n    def test_annotated_type_typing_with_string_args(self):\n        self.flakes(\"\"\"\n        from typing import Annotated\n    \n        def f(x: Annotated[int, '> 0']) -> None:\n            return None\n>       \"\"\")\n\npyflakes/test/test_type_annotations.py:535: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \npyflakes/test/harness.py:24: in flakes\n    tree, file_tokens=file_tokens, withDoctest=self.withDoctest, **kw\npyflakes/checker.py:869: in __init__\n    self.handleChildren(tree)\npyflakes/checker.py:1306: in handleChildren\n    self.handleNode(node, tree)\npyflakes/checker.py:1353: in handleNode\n    handler(node)\npyflakes/checker.py:1984: in FUNCTIONDEF\n    self.LAMBDA(node)\npyflakes/checker.py:2042: in LAMBDA\n    self.handleAnnotation(annotation, node)\npyflakes/checker.py:746: in in_annotation_func\n    return func(self, *args, **kwargs)\npyflakes/checker.py:1449: in handleAnnotation\n    self.handleNode(annotation, node)\npyflakes/checker.py:1353: in handleNode\n    handler(node)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <pyflakes.checker.Checker object at 0x790815ff8f50>\nnode = <_ast.Subscript object at 0x790815ff87d0>\n\n    def SUBSCRIPT(self, node):\n        if _is_name_or_attr(node.value, 'Literal'):\n            orig, self._in_typing_literal = self._in_typing_literal, True\n            try:\n                self.handleChildren(node)\n            finally:\n                self._in_typing_literal = orig\n        elif _is_name_or_attr(node.value, 'Annotated'):\n            self.handleNode(node.value, node)\n    \n            # py39+\n            if isinstance(node.slice, ast.Tuple):\n                slice_tuple = node.slice\n            # <py39\n            elif (\n                    isinstance(node.slice, ast.Index) and\n                    isinstance(node.slice.value, ast.Tuple)\n            ):\n                slice_tuple = node.slice.value\n            else:\n                slice_tuple = None\n    \n            # not a multi-arg `Annotated`\n            if slice_tuple is None or len(slice_tuple.elts) < 2:\n                self.handleNode(node.slice, node)\n            else:\n                # the first argument is the type\n                self.handleNode(slice_tuple.elts[0], node)\n                # the rest of the arguments are not\n>               with self._enter_annotation(AnnotationState.NONE):\nE               NameError: name 'AnnotationState' is not defined\n\npyflakes/checker.py:1495: NameError\n___ TestTypeAnnotations.test_annotated_type_typing_with_string_args_in_union ___\n\nself = <pyflakes.test.test_type_annotations.TestTypeAnnotations testMethod=test_annotated_type_typing_with_string_args_in_union>\n\n    @skipIf(version_info < (3,), 'new in Python 3')\n    def test_annotated_type_typing_with_string_args_in_union(self):\n        self.flakes(\"\"\"\n        from typing import Annotated, Union\n    \n        def f(x: Union[Annotated['int', '>0'], 'integer']) -> None:\n            return None\n>       \"\"\", m.UndefinedName)\n\npyflakes/test/test_type_annotations.py:544: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \npyflakes/test/harness.py:24: in flakes\n    tree, file_tokens=file_tokens, withDoctest=self.withDoctest, **kw\npyflakes/checker.py:869: in __init__\n    self.handleChildren(tree)\npyflakes/checker.py:1306: in handleChildren\n    self.handleNode(node, tree)\npyflakes/checker.py:1353: in handleNode\n    handler(node)\npyflakes/checker.py:1984: in FUNCTIONDEF\n    self.LAMBDA(node)\npyflakes/checker.py:2042: in LAMBDA\n    self.handleAnnotation(annotation, node)\npyflakes/checker.py:746: in in_annotation_func\n    return func(self, *args, **kwargs)\npyflakes/checker.py:1449: in handleAnnotation\n    self.handleNode(annotation, node)\npyflakes/checker.py:1353: in handleNode\n    handler(node)\npyflakes/checker.py:1503: in SUBSCRIPT\n    self.handleChildren(node)\npyflakes/checker.py:1306: in handleChildren\n    self.handleNode(node, tree)\npyflakes/checker.py:1353: in handleNode\n    handler(node)\npyflakes/checker.py:1306: in handleChildren\n    self.handleNode(node, tree)\npyflakes/checker.py:1353: in handleNode\n    handler(node)\npyflakes/checker.py:2138: in TUPLE\n    self.handleChildren(node)\npyflakes/checker.py:1306: in handleChildren\n    self.handleNode(node, tree)\npyflakes/checker.py:1353: in handleNode\n    handler(node)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <pyflakes.checker.Checker object at 0x790815f30a90>\nnode = <_ast.Subscript object at 0x790815f30890>\n\n    def SUBSCRIPT(self, node):\n        if _is_name_or_attr(node.value, 'Literal'):\n            orig, self._in_typing_literal = self._in_typing_literal, True\n            try:\n                self.handleChildren(node)\n            finally:\n                self._in_typing_literal = orig\n        elif _is_name_or_attr(node.value, 'Annotated'):\n            self.handleNode(node.value, node)\n    \n            # py39+\n            if isinstance(node.slice, ast.Tuple):\n                slice_tuple = node.slice\n            # <py39\n            elif (\n                    isinstance(node.slice, ast.Index) and\n                    isinstance(node.slice.value, ast.Tuple)\n            ):\n                slice_tuple = node.slice.value\n            else:\n                slice_tuple = None\n    \n            # not a multi-arg `Annotated`\n            if slice_tuple is None or len(slice_tuple.elts) < 2:\n                self.handleNode(node.slice, node)\n            else:\n                # the first argument is the type\n                self.handleNode(slice_tuple.elts[0], node)\n                # the rest of the arguments are not\n>               with self._enter_annotation(AnnotationState.NONE):\nE               NameError: name 'AnnotationState' is not defined\n\npyflakes/checker.py:1495: NameError\n-------------- generated xml file: /workspace/replay-controls.xml --------------\n=========================== short test summary info ============================\nFAILED pyflakes/test/test_type_annotations.py::TestTypeAnnotations::test_annotated_type_typing_missing_forward_type_multiple_args\nFAILED pyflakes/test/test_type_annotations.py::TestTypeAnnotations::test_annotated_type_typing_with_string_args\nFAILED pyflakes/test/test_type_annotations.py::TestTypeAnnotations::test_annotated_type_typing_with_string_args_in_union\n3 failed, 39 passed, 1 skipped in 1.34s\n",
+    "runtime_sha256": "bb4bad085254aec69e4eff08d70d16659378fa161ec52150b0d4806d6a85914f",
+    "timed_out": false,
+    "workspace_adopted": true
+  },
+  "observations": {
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_annotated_async_def": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_annotated_type_typing_missing_forward_type": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_annotated_type_typing_missing_forward_type_multiple_args": "failed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_annotated_type_typing_with_string_args": "failed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_annotated_type_typing_with_string_args_in_union": "failed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_deferred_twice_annotation": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_idomiatic_typing_guards": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_literal_type_some_other_module": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_literal_type_typing": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_literal_type_typing_extensions": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_literal_union_type_typing": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_nested_partially_quoted_type_assignment": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_not_a_typing_overload": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_overload_in_class": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_overload_with_multiple_decorators": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_partial_string_annotations_with_future_annotations": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_partially_quoted_type_annotation": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_partially_quoted_type_assignment": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_positional_only_argument_annotations": "skipped",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_postponed_annotations": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_quoted_type_cast": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_quoted_type_cast_renamed_import": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_return_annotation_is_class_scope_variable": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_return_annotation_is_function_body_variable": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsAdditionalComment": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsAssignedToPreviousNode": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsFullSignature": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsFullSignatureWithDocstring": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsInvalidDoesNotMarkAsUsed": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsMarkImportsAsUsed": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsNoWhitespaceAnnotation": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsStarArgs": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsSyntaxError": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsSyntaxErrorCorrectLine": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeIgnore": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeIgnoreBogus": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeIgnoreBogusUnicode": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_type_cast_literal_str_to_str": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typingExtensionsOverload": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typingOverload": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typingOverloadAsync": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typing_guard_for_protocol": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_variable_annotations": "passed"
+  },
+  "patch_application": [
+    {
+      "argv": [
+        "git",
+        "apply",
+        "--whitespace=nowarn",
+        "-"
+      ],
+      "exit_code": 0,
+      "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+      "output": "",
+      "runtime_sha256": "bb4bad085254aec69e4eff08d70d16659378fa161ec52150b0d4806d6a85914f",
+      "timed_out": false,
+      "workspace_adopted": true
+    },
+    {
+      "argv": [
+        "git",
+        "apply",
+        "--whitespace=nowarn",
+        "-"
+      ],
+      "exit_code": 0,
+      "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+      "output": "",
+      "runtime_sha256": "bb4bad085254aec69e4eff08d70d16659378fa161ec52150b0d4806d6a85914f",
+      "timed_out": false,
+      "workspace_adopted": true
+    }
+  ],
+  "phase": "known_repair",
+  "runtime_sha256": "bb4bad085254aec69e4eff08d70d16659378fa161ec52150b0d4806d6a85914f",
+  "setup_complete": true
+}

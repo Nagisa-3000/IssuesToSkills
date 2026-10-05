@@ -1,0 +1,28 @@
+{
+  "duplicate_groups": [],
+  "reviews": [
+    {
+      "evidence_refs": [
+        "PyCQA/pyflakes:434:original-issue",
+        "PyCQA/pyflakes:434:production-diff",
+        "PyCQA/pyflakes:434:regression-diff",
+        "PyCQA/pyflakes:434:repair-identity"
+      ],
+      "issue_id": "PyCQA/pyflakes:434",
+      "mechanism": "The overload exemption had two overly restrictive recognition conditions: imported decorator names were resolved only in the current scope, and a function had to have exactly one decorator. Consequently, methods using a module-level import of typing.overload and functions combining overload with another decorator were treated as ordinary unused redefinitions, producing F811 on subsequent overload declarations and implementations.",
+      "reason": "PR #435 changes name resolution to search the scope stack from innermost outward, stopping at the first binding, and recognizes overload among any of the function's decorators. Separate regression tests verify class methods and multiply decorated synchronous functions without diagnostics. These are scope-resolution and decorator-list defects, distinct from the async AST-node exclusion in #470; this repair leaves the FunctionDef-only condition unchanged."
+    },
+    {
+      "evidence_refs": [
+        "PyCQA/pyflakes:470:original-issue",
+        "PyCQA/pyflakes:470:production-diff",
+        "PyCQA/pyflakes:470:regression-diff",
+        "PyCQA/pyflakes:470:repair-identity"
+      ],
+      "issue_id": "PyCQA/pyflakes:470",
+      "mechanism": "The overload exemption required the previous binding's source to be ast.FunctionDef, excluding ast.AsyncFunctionDef before decorator recognition could succeed. Repeated async overload declarations and their implementation therefore produced unused-redefinition diagnostics even with a single, directly imported overload decorator at module scope; the report's synchronous comparison succeeded.",
+      "reason": "PR #472 replaces the FunctionDef-only check with a version-dependent FUNCTION_TYPES tuple including AsyncFunctionDef on Python 3.5 and later. Its regression test verifies an async overload sequence without diagnostics. Although the report references #435 and the repair modifies the same helper, it addresses a separate AST-type condition, not either scope lookup or decorator multiplicity repaired for #434. The supplied diffs distinguish the causal omissions and do not establish a duplicate or continued repair of the same omission."
+    }
+  ],
+  "uncertain_groups": []
+}
