@@ -1,6 +1,6 @@
 **Pattern、CrossBind 与 Ranker 的实际完成度（2026-10-05）**
 
-**尚未全部完成。M0–M3 有代码、接口和工程测试；真实功能与跨项目效果的验收仍不完整。M4 没有合格的训练 Ranker，M5 尚未联合冻结，M6 的正式 SWE 运行数为 0。** 本文依据[当前机器快照 v17](results/pattern-crossbind-ranker-current-status-20261005-v17.json)。旧快照、失败实验和未审阅候选继续保留，源内演练、包准入和正式修复结果分别统计。
+**尚未全部完成。M0–M3 有代码、接口和工程测试；真实功能与跨项目效果的验收仍不完整。M4 没有合格的训练 Ranker，M5 尚未联合冻结，M6 的正式 SWE 运行数为 0。** 本文依据[当前机器快照 v18](results/pattern-crossbind-ranker-current-status-20261005-v18.json)。旧快照、失败实验和未审阅候选继续保留，源内演练、包准入和正式修复结果分别统计。
 
 | 阶段 | 已有实现或已验证能力 | 尚缺的验收 |
 | --- | --- | --- |
@@ -24,7 +24,9 @@ Pylint #8120 的来源已通过有限范围的历史因果资格；原生包是�
 
 第四版已实际结束：[终止审计](results/native-async-lifecycle-validation-terminal-audit-20261005-v4.json)。6 次执行调用、2 次独立复核，保持原 300000 token 执行预算。两个直接 Oracle 退出码均为 0；新记录为 action-result:1，两个直接见证为 public:observation:8 和 public:observation:9，未覆盖旧证据。五项记录检查全部 PASS，独立 policy 为 PASS/correct_confirmation/CONFIRMED，0 字节新增 patch。记录之后的下一次请求被预算预检拒绝，实际用量为 174458；solver_ended=false、source_validation_case_accepted=false。记录的复核通过没有被改写成正常 finish 或完整来源验收。下一步需限制重复观测进入模型上下文，保留完整封存轨迹和原预算。它仍是来源内定义演练；activation/applicability 全案例、新 Issue 泛化及跨项目组合未完成。历史作者已恢复，并以原 PID/start ticks 核实为运行状态。
 
-第五版真实验证正在运行，沿用原 300000 token 执行上限和与第四版相同的来源内保留输入。新增[模型上下文紧凑视图审计](results/compact-solver-context-engineering-audit-20261005-v1.json)：完整 broker 结果、原 TaskContext 和独立审查输入继续封存；Solver 只接收旧 Probe 与 Action 内重复见证的身份、哈希、命令结果及必要摘录。没有自动 finish、事实晋升或 Oracle 门槛放宽。相同 145000 token 的模拟协议对照中，父提交在记录后被预算预检阻止，新实现正常 finish，原失败见证仍 unreviewed。第四版末尾数据帧的共同协议测量中，请求的 UTF-8 保守 token 预留估计从 129653 降到 115328，低于当时原剩余预算 125542；这个测量不构成第五版真实通过。第五版尚未取得独立最终验收，包准入与泛化结果继续为未完成。首次监督启动在模型请求之前遇到缩进错误，失败回执已保留，修正并语法检查后重启。历史抽取仅在成功响应边界暂停，并由监督器和 watchdog 负责恢复。
+第五版真实验证已经结束：[终止审计](results/native-async-lifecycle-validation-terminal-audit-20261005-v5.json)。使用与第四版完全相同的验证输入，保留原 300000 token 执行上限；实际 7 次执行调用、1 次独立复核，206843 token，0 字节新增 patch。两条直接 Oracle 均退出 0，scope Oracle 又被重复执行一次；Solver 在记录 Action 前被预算预检阻止，native_action_records=0、solver_ended=false。独立 policy 为 UNKNOWN/unresolved/CONFIRMED：实际九例行为和保留控制得到确认，完成记录仍未建立。没有将领域确认、命令成功或 CLI 退出 0 当作完整验收。首次监督启动在模型请求之前遇到缩进错误，失败回执已保留，修正并语法检查后重启；最终历史作者以原 PID/start ticks 核对为运行状态，监督 lease 已结束。
+
+新增[模型上下文紧凑视图审计](results/compact-solver-context-engineering-audit-20261005-v1.json)对应修复已发布：完整 broker 结果、原 TaskContext 和独立审查输入继续封存；Solver 接收旧 Probe 与 Action 重复见证的身份、哈希、命令结果及必要摘录，没有自动 finish、事实晋升或 Oracle 放宽。相同 145000 token 的模拟协议对照中，父提交在记录后被预算预检阻止，新实现正常 finish，原失败见证仍 unreviewed。第四版末尾数据帧的共同协议测量中，请求的 UTF-8 保守 token 预留估计从 129653 降到 115328，低于当时原剩余预算 125542。第五版真实负结果说明此压缩仍不足以确保整个运行完成；需要进一步减少保留上下文重放，并向 Solver 明确区分本次已经取得的直接 Oracle 见证与此前尝试。后续保留原预算、完整证据和独立门槛，包准入、泛化与正式 SWE 仍未完成。
 
 Ruff #5124 的依赖准备取得实质进展。[精确 Git 依赖恢复](results/ruff-5124-pinned-dependency-recovery-audit-20261005-v3-complete.json)获得原锁定的三个提交；LibCST 从上游取得相同提交，未替换 revision。[离线 vendor 审计](results/ruff-5124-offline-vendor-preparation-audit-20261005-v1.json)核对 310 个原始 registry 包、319 个 vendor 包和 16438 个文件哈希，使用官方 Cargo vendor 归一化，未手工改依赖 manifest。Cargo.lock 与历史 base 源码保持精确一致。
 
