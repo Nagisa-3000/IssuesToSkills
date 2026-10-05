@@ -2,7 +2,7 @@
 
 **目标尚未全部完成。M0–M3 已有实现和契约测试，真实功能、跨项目重写与组合验收仍不完整；M4 尚无合格的训练 Ranker；M5 尚未正式冻结；M6 的正式 SWE 运行仍为 0。**
 
-最新机器快照为 [v12](results/pattern-crossbind-ranker-current-status-20261005-v12.json)。[v11](results/pattern-crossbind-ranker-current-status-20261005-v11.json) 保留资格复验与时间线缺口发现时的状态。[v10](results/pattern-crossbind-ranker-current-status-20261005-v10.json) 保留端口拒绝控制完成时的状态。[v9](results/pattern-crossbind-ranker-current-status-20261005-v9.json) 保留原生验证第二版完成时的状态。[v8](results/pattern-crossbind-ranker-current-status-20261005-v8.json) 保留验证第二版运行前的状态。[v7](results/pattern-crossbind-ranker-current-status-20261005-v7.json) 及更早版本保留当时的状态，不随新结果改写。代码、真实 Action 验收、泛化效果分别统计。
+最新机器快照为 [v13](results/pattern-crossbind-ranker-current-status-20261005-v13.json)。[v12](results/pattern-crossbind-ranker-current-status-20261005-v12.json) 保留时间线恢复完成时的状态。[v11](results/pattern-crossbind-ranker-current-status-20261005-v11.json) 保留资格复验与时间线缺口发现时的状态。[v10](results/pattern-crossbind-ranker-current-status-20261005-v10.json) 保留端口拒绝控制完成时的状态。[v9](results/pattern-crossbind-ranker-current-status-20261005-v9.json) 保留原生验证第二版完成时的状态。[v8](results/pattern-crossbind-ranker-current-status-20261005-v8.json) 保留验证第二版运行前的状态。[v7](results/pattern-crossbind-ranker-current-status-20261005-v7.json) 及更早版本保留当时的状态，不随新结果改写。代码、真实 Action 验收、泛化效果分别统计。
 
 | 阶段 | 已实现或实际完成 | 尚缺的验收 |
 | --- | --- | --- |
@@ -107,3 +107,15 @@ Pylint #8120 的原生抽取第二版完成：2 次模型调用、1 个结构及
 Ruff #5124 从正确的历史 base c811213302f76c255da89d374bd8ab42f3b223e5 开始准备，而非使用旧的 2023 年底通用 build source。base 和 fixed 的 Cargo.lock 完全相同，SHA 为 1ca9ffb06f2bc561a5e009a62c52f9c72f6120b02d718f299d8107dc4fa3f6b7。首次 vendor 下载因历史 LibCST Git 依赖的 GitHub HTTPS 连接超时退出 101，锁文件未改动、0 个 vendor 包。见[失败与准备审计](results/ruff-5124-runtime-preparation-audit-20261005-v1.json)。隔离 Rust harness 与三组因果对照仍未完成，不将这次准备计为历史来源资格或 Skill 验收。
 
 本轮最终代码完整测试为 **583 passed、19 skipped，127.26 秒**；相关定向测试 **36 passed**，Ruff E4/E7/E9/F 与 git diff --check 通过。原有各版本的工程、失败和实验证据保留。工程检查及元数据恢复不建立 Skill 修复收益：M0–M3 仍缺完整真实功能、重写和两父组合验收；M4 没有合格训练 Ranker；M5 未联合冻结；M6 正式 SWE 运行仍为 0。
+
+## 无 artifact 端口的真实执行见证及新的 Pylint 验收准备
+
+独立检查发现一个 M0 的真实接口缺口：#8120 原生候选的四个 Action 使用 evidence predicates，均未声明 artifact 输出端口，但旧记录器与复核器都强制至少一个 PortValue。这使合法的诊断、编辑与验证动作无法留下可复核执行记录。仅生成 ActionContract 或通过包结构检查不能发现这一运行时缺口。
+
+现在有 artifact 端口的记录继续使用 `arex-action-observation-v3`。没有声明 artifact 端口的 Action 使用 v4，显式提交 `outputs=[]`、`observation_ids` 和 `artifact_paths`，至少一个见证必须来自真实 broker 结果或当前文件。v4 保存闭合的 `execution_evidence_refs`，继续核查 Action／包／契约身份、当前工作区内容及权限封印。声明了必需端口的 Action 不得使用该入口绕过输出契约。记录阶段仍不建立语义事实，独立复核才可记录 PASS／FAIL／UNKNOWN；validate 的 PASS 仍要求绑定命令实际在当前封存工作区通过。没有修改候选包来添加虚构端口。
+
+新准备器为 #8120 构建九个公开作用域例子：独立 async 函数／方法及同步对应物、独立类、同一 async／sync 作用域，以及类／模块中的真实类型变更。四类控制分别是历史缺失 hooks、已修好 hooks、hooks 存在但 dispatcher 被控制性破坏，以及执行不可用。初版因拒绝合法封闭符号链接而失败；第二版独立 Git 树核查发现遗漏 `tests/.pylint_primer_tests/.gitkeep`，已保留并拒绝使用。第三版强制保留全部公开文件、比较源码与导出快照封印，并进行真实 namespace-copy 行为校准，审计时仍在运行。
+
+串行模型作业等待实际校准成功，再在历史作者新响应的完成检查点暂停它，核查无 socket／子进程后运行原生诊断及独立上下文复核；watchdog 与 finally 负责恢复历史作者。审计时该作业尚未执行模型请求，不能计入 Action 功能成功。第三版准备成功也只会建立公开测试控制，不能替代模型真实执行和独立效果验收。
+
+新增核心接口与校准测试后，完整工程测试为 **616 passed，19 skipped，105.04 秒**。详见 [协议审计](results/native-effect-only-action-protocol-audit-20261005-v1.json)。没有新增已确认 Pattern、双父组合执行、合格训练 Ranker、KB 晋升或正式 SWE 运行。M0–M6 的整体目标仍未完成。

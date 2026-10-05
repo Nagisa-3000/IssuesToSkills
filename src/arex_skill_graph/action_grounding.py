@@ -22,6 +22,7 @@ from .workspace_state import public_workspace_execution_sha256, public_workspace
 def observation_evidence(action, record, task, broker_observations):
     """Recheck identity, closure, broker authority and workspace freshness."""
     assert_public(record)
+    portless = not action.outputs
     expected = {
         "action_id": action.id,
         "package_id": action.package_id,
@@ -30,14 +31,14 @@ def observation_evidence(action, record, task, broker_observations):
         "action_resource": action.resource,
         "task_id": task.task_id,
         "base_commit": task.base_commit,
-        "schema": "arex-action-observation-v3",
+        "schema": "arex-action-observation-v4" if portless else "arex-action-observation-v3",
         "semantic_validation": "unreviewed",
         "current_facts_promoted": False,
         "current_ports_promoted": False,
         "repair_success_established": False,
     }
     if any(record.get(k) != v for k, v in expected.items()):
-        raise ValueError("Action observation is not an authoritative witnessed v3 record")
+        raise ValueError("Action observation is not an authoritative witnessed v3/v4 record")
     if (
         type(record.get("context_revision")) is not int
         or not 0 <= record["context_revision"] <= task.revision
@@ -48,7 +49,8 @@ def observation_evidence(action, record, task, broker_observations):
     ports = {p.name: p for p in action.outputs}
     emitted = tuple(PortValue.from_dict(v) for v in record.get("outputs", []))
     if (
-        not emitted
+        (not portless and not emitted)
+        or (portless and record.get("outputs") != [])
         or len({v.port.name for v in emitted}) != len(emitted)
         or any(ports.get(v.port.name) != v.port for v in emitted)
         or {p.name for p in action.outputs if not p.optional} - {v.port.name for v in emitted}
@@ -58,7 +60,20 @@ def observation_evidence(action, record, task, broker_observations):
     if not isinstance(witnesses, list) or not all(isinstance(w, dict) for w in witnesses):
         raise ValueError("Action observation requires explicit witness records")
     by_id = {w.get("id"): w for w in witnesses}
-    referenced = {ref for value in emitted for ref in value.evidence_refs}
+    if portless:
+        refs = record.get("execution_evidence_refs")
+        if (
+            not isinstance(refs, list)
+            or not refs
+            or any(not isinstance(ref, str) or not ref for ref in refs)
+            or len(set(refs)) != len(refs)
+        ):
+            raise ValueError("Action execution needs unique witnessed evidence references")
+        referenced = set(refs)
+    else:
+        if "execution_evidence_refs" in record:
+            raise ValueError("Port-based v3 records cannot add undeclared execution evidence")
+        referenced = {ref for value in emitted for ref in value.evidence_refs}
     if (
         len(by_id) != len(witnesses)
         or set(by_id) != referenced
