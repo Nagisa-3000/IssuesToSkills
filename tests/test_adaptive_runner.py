@@ -699,7 +699,8 @@ def test_solver_receipt_views_preserve_failed_witnesses_and_original_hashes(tmp_
     assert json.dumps(context["oracles"]) == json.dumps(before["oracles"])
     probe = context["anchors"][-1]["broker_summary"]
     assert probe["argv"] == broker["argv"] and probe["exit_code"] == 1
-    assert probe["output_excerpt"].startswith("BEGIN") and probe["output_excerpt"].endswith("END")
+    assert "output_excerpt" not in probe
+    assert probe["output_characters"] == len(broker["output"])
     assert (
         context["anchors"][-1]["full_observation_sha256"]
         == hashlib.sha256(json.dumps(broker).encode()).hexdigest()
@@ -725,3 +726,318 @@ def test_solver_context_handles_non_broker_probe_evidence_without_changing_it(
     viewed = solver_current_view(task)
     assert viewed["anchors"][-1]["observation"] == observation
     assert "full_observation_sha256" not in viewed["anchors"][-1]
+
+
+def _journal_fixture(tmp_path):
+    from dataclasses import replace
+    from arex_skill_graph.task_context import CurrentOracle
+    from arex_skill_graph.workspace_state import public_workspace_execution_sha256
+
+    _, task, _ = make_fixture(tmp_path)
+    command = ["python3", "-V"]
+    task = replace(
+        task,
+        oracles=(
+            CurrentOracle(
+                "validate:a",
+                "oracle:a",
+                "Observe Python version",
+                tuple(command),
+                ("current:issue",),
+            ),
+        ),
+    )
+    broker = {
+        "operation": "run_public_command",
+        "argv": command,
+        "observation_id": "public:observation:0",
+        "context_revision": task.revision,
+        "exit_code": 0,
+        "execution_available": True,
+        "workspace_execution_sha256": public_workspace_execution_sha256(task.root),
+        "output": "An actual process exit is not a semantic repair verdict.",
+    }
+    return task, broker
+
+
+@pytest.mark.parametrize(
+    "updates,expected",
+    [
+        ({}, "passed_process"),
+        ({"workspace_adopted": False}, "passed_process"),  # A read-only sandbox need not adopt.
+        ({"exit_code": 1}, "failed_process"),
+        ({"exit_code": 124}, "timed_out"),
+        ({"timed_out": True}, "timed_out"),
+        ({"execution_available": False}, "execution_unavailable"),
+        ({"exit_code": None}, "execution_unavailable"),
+        ({"context_revision": True}, "execution_unavailable"),
+        ({"context_revision": 1000000}, "execution_unavailable"),
+        ({"workspace_execution_sha256": "0" * 64}, "stale_workspace"),
+        ({"write_scope_accepted": False}, "failed_process"),
+        ({"denied": "Out of scope result rejected"}, "failed_process"),
+        ({"observation_id": "public:observation:other"}, "execution_unavailable"),
+    ],
+)
+def test_current_run_journal_does_not_turn_invalid_process_evidence_into_success(
+    tmp_path, updates, expected
+):
+    import copy
+    from arex_skill_graph.action_contracts import digest
+    from arex_skill_graph.adaptive_runner import solver_run_view
+
+    task, broker = _journal_fixture(tmp_path)
+    broker.update(updates)
+    observations = {"public:observation:0": broker}
+    before = copy.deepcopy((task.to_dict(), observations))
+    view = solver_run_view(task, observations, [])
+    row = view["oracle_executions"][0]
+    assert row["status"] == expected
+    assert row["command"] == broker["argv"]
+    assert row["full_broker_record_sha256"] == digest(broker)
+    assert row["current_passing_process_witness_id"] == (
+        "public:observation:0" if expected == "passed_process" else None
+    )
+    assert (task.to_dict(), observations) == before
+    assert "PASS" not in row.values()
+    assert "no semantic acceptance" in view["assurance"]
+
+
+def test_current_run_journal_matches_exact_argv_and_ignores_retained_evidence(tmp_path):
+    from dataclasses import replace
+    from arex_skill_graph.adaptive_runner import solver_run_view
+    from arex_skill_graph.task_context import EvidenceAnchor
+
+    task, broker = _journal_fixture(tmp_path)
+    task = replace(
+        task,
+        anchors=(
+            *task.anchors,
+            EvidenceAnchor(
+                "current:probe:old", "probe", json.dumps(broker), task.base_commit, exit_code=0
+            ),
+        ),
+    )
+    wrapped = {
+        **broker,
+        "argv": ["bash", "-c", "python3 -V"],
+    }
+    for actual in ({}, {"public:observation:0": wrapped}):
+        row = solver_run_view(task, actual, [])["oracle_executions"][0]
+        assert row["status"] == "not_executed_in_this_run"
+        assert row["current_passing_process_witness_id"] is None
+
+
+def test_current_run_latest_failure_supersedes_a_passing_process(tmp_path):
+    from arex_skill_graph.adaptive_runner import solver_run_view
+
+    task, broker = _journal_fixture(tmp_path)
+    failed = {**broker, "observation_id": "public:observation:1", "exit_code": 1}
+    observations = {"public:observation:0": broker, "public:observation:1": failed}
+    row = solver_run_view(task, observations, [])["oracle_executions"][0]
+    assert row["latest_observation_id"] == "public:observation:1"
+    assert row["status"] == "failed_process"
+    assert row["current_passing_process_witness_id"] is None
+    malformed = {**failed, "observation_id": "public:observation:2", "context_revision": None}
+    observations["public:observation:2"] = malformed
+    assert (
+        solver_run_view(task, observations, [])["oracle_executions"][0]["status"]
+        == "execution_unavailable"
+    )
+
+
+def test_current_run_old_workspace_witness_is_stale_after_edit(tmp_path):
+    from arex_skill_graph.adaptive_runner import solver_run_view
+
+    task, broker = _journal_fixture(tmp_path)
+    observations = {"public:observation:0": broker}
+    assert (
+        solver_run_view(task, observations, [])["oracle_executions"][0]["status"]
+        == "passed_process"
+    )
+    Path(task.root, "checker.py").write_text(
+        "Changed public state invalidates old command evidence.\n"
+    )
+    view = solver_run_view(task, observations, [])
+    assert view["oracle_executions"][0]["status"] == "stale_workspace"
+    assert view["oracle_executions"][0]["current_passing_process_witness_id"] is None
+
+
+def test_solver_context_indexes_long_broker_scripts_and_keeps_full_safety_records(tmp_path):
+    import copy
+    import hashlib
+    from dataclasses import replace
+    from arex_skill_graph.action_contracts import digest
+    from arex_skill_graph.adaptive_runner import solver_current_view, solver_observation_view
+    from arex_skill_graph.task_context import EvidenceAnchor, SemanticCheck
+
+    _, task, _ = make_fixture(tmp_path)
+    broker = {
+        "operation": "run_public_command",
+        "argv": ["python3", "-c", "print('probe')\n" * 2000],
+        "exit_code": 125,
+        "output": "FULL PUBLIC OUTPUT\n" * 3000,
+        "workspace_adopted": False,
+        "workspace_rollback": True,
+        "write_scope_accepted": False,
+        "out_of_scope_paths": ["forbidden.py"],
+        "denied": "Rejected scope",
+        "incidental_duplicate_body": "body" * 20000,
+    }
+    read = {"operation": "read_file", "path": "checker.py", "output": "READ\n" * 2000}
+    anchors = tuple(
+        EvidenceAnchor("current:probe:" + str(i), "probe", json.dumps(item), task.base_commit)
+        for i, item in enumerate([broker, read])
+    )
+    check = SemanticCheck("probe-note", "UNKNOWN", "Reason " * 2000, (), "fixture")
+    task = replace(task, anchors=(*task.anchors, *anchors), checks=(*task.checks, check))
+    original = copy.deepcopy((task.to_dict(), broker))
+    view = solver_current_view(task)
+    indexed = view["anchors"][-2]["broker_summary"]
+    assert indexed["argv_sha256"] == digest(broker["argv"])
+    assert indexed["full_broker_record_sha256"] == digest(broker)
+    assert "output_excerpt" not in indexed and "incidental_duplicate_body" not in indexed
+    assert indexed["workspace_rollback"] and not indexed["write_scope_accepted"]
+    assert indexed["out_of_scope_paths"] == broker["out_of_scope_paths"]
+    assert view["anchors"][-1]["broker_summary"]["path"] == "checker.py"
+    assert (
+        view["anchors"][-1]["full_observation_sha256"]
+        == hashlib.sha256(json.dumps(read).encode()).hexdigest()
+    )
+    assert view["checks"][-1]["status"] == "UNKNOWN"
+    assert len(view["checks"][-1]["rationale"]) < 1000
+    recent = solver_observation_view(broker, output_limit=600)
+    assert recent["output_sha256"] == hashlib.sha256(broker["output"].encode()).hexdigest()
+    assert "FULL PUBLIC OUTPUT" in recent["output_excerpt"]
+    assert len(json.dumps(recent)) < 2500
+    assert (task.to_dict(), broker) == original
+
+
+def test_solver_frames_deliver_fresh_journal_witness_for_record_and_explicit_finish(tmp_path):
+    from dataclasses import replace
+    from arex_skill_graph.task_context import CurrentOracle, EvidenceAnchor
+
+    package, task, policy = make_fixture(tmp_path)
+    action = package.workflows[0].actions[-1]
+    command = ["python3", "-V"]
+    prior = {
+        "operation": "run_public_command",
+        "argv": ["python3", "-c", "print('retained old command')\n" * 1000],
+        "output": "Old public evidence\n" * 2000,
+        "exit_code": 0,
+    }
+    task = replace(
+        task,
+        anchors=(
+            *task.anchors,
+            *(
+                EvidenceAnchor(
+                    "current:probe:" + str(i),
+                    "probe",
+                    json.dumps(prior),
+                    task.base_commit,
+                    exit_code=0,
+                )
+                for i in range(40)
+            ),
+        ),
+        oracles=(
+            CurrentOracle(
+                action.id,
+                action.oracle[0].id,
+                "Process protocol control",
+                tuple(command),
+                ("current:issue",),
+            ),
+        ),
+    )
+
+    class JournalTools:
+        isolation = "test-only-journal-protocol"
+        runtime_sha256 = "test-only"
+
+        def __init__(self, *_args):
+            pass
+
+        def preflight(self):
+            pass
+
+        def close(self):
+            pass
+
+        def run(self, argv, **_options):
+            return {
+                "argv": argv,
+                "output": "Current this-run process witness; no semantic verdict.",
+                "exit_code": 0,
+                "workspace_adopted": False,
+            }
+
+    class JournalTransport:
+        def __init__(self):
+            self.frames = []
+
+        def complete(self, **kwargs):
+            frame = json.loads(kwargs["user"])
+            self.frames.append(frame)
+            journal = frame["current_run"]
+            assert "no semantic acceptance" in journal["assurance"]
+            row = journal["oracle_executions"][0]
+            if len(self.frames) == 1:
+                assert row["status"] == "not_executed_in_this_run"
+                return {
+                    "operation": "run_public_command",
+                    "arguments": {"argv": command},
+                    "rationale": "Execute an exact public protocol control",
+                }
+            if len(self.frames) == 2:
+                assert row["status"] == "passed_process"
+                assert row["current_passing_process_witness_id"] == "public:observation:40"
+                return {
+                    "operation": "record_action_observation",
+                    "arguments": {
+                        "action_id": action.id,
+                        "context_revision": frame["current"]["revision"],
+                        "summary": "Actual protocol control recorded, not a semantic repair claim.",
+                        "outputs": [],
+                        "observation_ids": [row["current_passing_process_witness_id"]],
+                        "artifact_paths": [],
+                    },
+                    "rationale": "Reuse the current exact process witness without rerunning it",
+                }
+            assert len(journal["recorded_actions"]) == 1
+            assert journal["recorded_actions"][0]["semantic_validation"] == "unreviewed"
+            assert journal["recorded_actions"][0]["repair_success_established"] is False
+            return {
+                "operation": "finish",
+                "arguments": {},
+                "rationale": "Explicitly finish the recording protocol control",
+            }
+
+    transport = JournalTransport()
+    with CatalogStore(tmp_path / "journal.sqlite") as store:
+        store.initialize()
+        result = AdaptiveSolver(
+            transport,
+            WorkflowRanker(),
+            store,
+            policy,
+            BudgetLedger(BudgetCaps(model_tokens=145000, history_tokens=200000)),
+            arm="B0",
+            tools_factory=JournalTools,
+        ).run(task, use_frozen_selection=True, recordable_actions=(action,))
+    assert result["solver_ended"] and not result["failure"], {
+        "failure": result["failure"],
+        "budget": result["budget"]["model_tokens"],
+        "frame_sizes": [
+            {k: len(json.dumps(v).encode()) for k, v in f.items()} for f in transport.frames
+        ],
+    }
+    assert len(transport.frames) == 3 and result["budget"]["model_tokens"] <= 145000
+    assert len(result["action_observations"]) == 1
+    assert result["action_observations"][0]["semantic_validation"] == "unreviewed"
+    assert result["public_observations"][0]["observation_id"] == "public:observation:40"
+    assert (
+        result["public_observations"][0]["output"]
+        == "Current this-run process witness; no semantic verdict."
+    )
+    assert result["benchmark_resolved"] is None

@@ -267,8 +267,25 @@ def bounded_public_view(value, *, text_limit=5000):
     return value
 
 
+def _command_view(argv, *, text_limit=800):
+    """Index long inline scripts without changing the actual command evidence."""
+    if not isinstance(argv, (list, tuple)):
+        return {}
+    if (
+        all(isinstance(arg, str) and len(arg) <= text_limit for arg in argv)
+        and sum(len(arg) for arg in argv) <= 3000
+    ):
+        return {"argv": list(argv)}
+    return {
+        "argv_sha256": digest(argv),
+        "argv_characters": sum(len(arg) for arg in argv if isinstance(arg, str)),
+        "argv_prefix": [arg for arg in argv[:2] if isinstance(arg, str) and len(arg) <= 100],
+        "argv_argument_count": len(argv),
+    }
+
+
 def request_history_view(requests):
-    """Avoid replaying complete file writes in every subsequent model request."""
+    """Avoid replaying full writes, scripts and rationales in every request."""
     result = []
     for request in requests[-8:]:
         item = {**request, "arguments": dict(request["arguments"])}
@@ -279,15 +296,42 @@ def request_history_view(requests):
                 content_characters=len(content),
                 content_sha256=hashlib.sha256(content.encode()).hexdigest(),
             )
-        result.append(bounded_public_view(item, text_limit=2000))
+        if "argv" in item["arguments"]:
+            argv = item["arguments"].pop("argv")
+            item["arguments"].update(_command_view(argv))
+        result.append(bounded_public_view(item, text_limit=800))
     return result
 
 
-def _broker_observation_view(record, *, include_excerpt=False, text_limit=1000, output_limit=500):
-    """Keep broker identities and outcomes without replaying complete output bodies."""
-    result = bounded_public_view(
-        {key: item for key, item in record.items() if key != "output"}, text_limit=text_limit
+def _broker_observation_view(record, *, include_excerpt=False, text_limit=600, output_limit=500):
+    """Keep evidence identities and safety outcomes, omitting repeated bodies."""
+    keys = (
+        "operation",
+        "observation_id",
+        "context_revision",
+        "path",
+        "written",
+        "exit_code",
+        "process_exit_code",
+        "execution_available",
+        "timed_out",
+        "isolation",
+        "runtime_sha256",
+        "workspace_execution_sha256",
+        "workspace_adopted",
+        "workspace_rollback",
+        "write_scope_accepted",
+        "out_of_scope_paths",
+        "bound_write_paths",
+        "workspace_changed_paths",
+        "denied",
+        "protocol_error",
     )
+    result = bounded_public_view(
+        {key: record[key] for key in keys if key in record}, text_limit=text_limit
+    )
+    if "argv" in record:
+        result.update(_command_view(record["argv"], text_limit=text_limit))
     result["full_broker_record_sha256"] = digest(record)
     if isinstance(record.get("output"), str):
         output = record["output"]
@@ -301,10 +345,14 @@ def _broker_observation_view(record, *, include_excerpt=False, text_limit=1000, 
     return result
 
 
-def solver_observation_view(observation):
-    """Summarize embedded Action witnesses without mutating the sealed record."""
+def solver_observation_view(observation, *, output_limit=5000):
+    """Summarize duplicated witnesses without changing sealed broker or Action records."""
     record = observation.get("record") if isinstance(observation, dict) else None
     if not isinstance(record, dict) or not isinstance(record.get("witnesses"), list):
+        if isinstance(observation, dict) and observation.get("operation") == "run_public_command":
+            return _broker_observation_view(
+                observation, include_excerpt=True, output_limit=output_limit
+            )
         return bounded_public_view(observation)
     visible_record = bounded_public_view(
         {key: item for key, item in record.items() if key != "witnesses"}
@@ -327,7 +375,7 @@ def solver_observation_view(observation):
 
 
 def solver_current_view(task):
-    """Expose current obligations and compact repeated probe bodies for the solver."""
+    """Expose obligations and index old broker evidence without replaying its bodies."""
     raw = task.to_dict()
     result = bounded_public_view(raw, text_limit=2000)
     result.pop("root")
@@ -338,19 +386,105 @@ def solver_current_view(task):
             observed = json.loads(anchor["observation"])
         except (ValueError, TypeError):
             continue
-        if not isinstance(observed, dict) or not isinstance(observed.get("argv"), list):
+        if not isinstance(observed, dict) or not (
+            isinstance(observed.get("argv"), list)
+            or observed.get("operation") in {"read_file", "write_file", "run_public_command"}
+        ):
             continue
-        visible["observation"] = (
-            "Public broker probe; full evidence retained for independent review."
-        )
-        visible["broker_summary"] = _broker_observation_view(
-            observed, include_excerpt=True, text_limit=400, output_limit=300
-        )
+        visible["observation"] = "Public broker evidence index."
+        visible["broker_summary"] = _broker_observation_view(observed, text_limit=400)
         visible["full_observation_sha256"] = hashlib.sha256(
             anchor["observation"].encode()
         ).hexdigest()
-        visible["model_view"] = "probe excerpt; current facts and checks retain their own assurance"
+        visible["broker_summary"].pop("model_view")
+    result["model_view"] = (
+        "Old broker probes are evidence indexes; complete evidence remains sealed. "
+        "Current facts and checks retain their own assurance."
+    )
+    for check in result["checks"]:
+        check["rationale"] = bounded_public_view(check["rationale"], text_limit=600)
     return result
+
+
+def solver_run_view(task, broker_observations, action_observations):
+    """Describe this run's actual process evidence; never promote semantic facts."""
+    workspace = public_workspace_execution_sha256(task.root)
+    oracle_executions = []
+    for oracle in task.oracles:
+        matches = [
+            (record.get("context_revision"), index, identity, record)
+            for index, (identity, record) in enumerate(broker_observations.items())
+            if record.get("operation") == "run_public_command"
+            and record.get("argv") == list(oracle.command)
+        ]
+        row = {
+            "action_id": oracle.action_id,
+            "source_oracle_id": oracle.source_oracle_id,
+            "command": list(oracle.command),
+            "status": "not_executed_in_this_run",
+            "latest_observation_id": None,
+            "current_passing_process_witness_id": None,
+        }
+        if matches:
+            # A malformed revision is not a usable witness, even if its process exited zero.
+            revision, _, identity, record = max(
+                matches,
+                key=lambda item: (item[0] if type(item[0]) is int else task.revision + 1, item[1]),
+            )
+            row.update(
+                latest_observation_id=identity,
+                exit_code=record.get("exit_code"),
+                context_revision=revision,
+                workspace_execution_sha256=record.get("workspace_execution_sha256"),
+                full_broker_record_sha256=digest(record),
+            )
+            if (
+                record.get("observation_id") != identity
+                or type(revision) is not int
+                or not 0 <= revision <= task.revision
+                or record.get("execution_available", True) is not True
+                or type(record.get("exit_code")) is not int
+            ):
+                row["status"] = "execution_unavailable"
+            elif record.get("workspace_execution_sha256") != workspace:
+                row["status"] = "stale_workspace"
+            elif record.get("timed_out") or record.get("exit_code") == 124:
+                row["status"] = "timed_out"
+            elif (
+                record.get("exit_code") != 0
+                or record.get("denied")
+                or (record.get("write_scope_accepted") is False)
+            ):
+                row["status"] = "failed_process"
+            else:
+                row["status"] = "passed_process"
+                row["current_passing_process_witness_id"] = identity
+        oracle_executions.append(row)
+    return {
+        "schema": "solver-current-run-process-journal-v1",
+        "context_revision": task.revision,
+        "workspace_execution_sha256": workspace,
+        "assurance": (
+            "Actual this-run process evidence only; no semantic acceptance, "
+            "prerequisite satisfaction, fact promotion or edit authorization."
+        ),
+        "oracle_executions": oracle_executions,
+        "recorded_actions": [
+            {
+                key: record[key]
+                for key in (
+                    "id",
+                    "action_id",
+                    "context_revision",
+                    "workspace_execution_sha256",
+                    "semantic_validation",
+                    "repair_success_established",
+                )
+                if key in record
+            }
+            for record in action_observations
+        ],
+    }
 
 
 class AdaptiveSolver:
@@ -365,7 +499,10 @@ class AdaptiveSolver:
         "run_public_command requires argv, an array of command/argument strings, and optional timeout seconds; "
         "for shell syntax use argv=['bash','-c','the public shell command']. A command string alone is invalid. "
         "Execute each validation CurrentOracle.command as its own run_public_command request with the exact argv, "
-        "and cite that request's observation ID. Shell or subprocess wrappers and printed subcommand results "
+        "and cite that request's observation ID. current_run indexes only actual commands in this run; "
+        "reuse an exact current passing process witness when recording instead of repeating a completed check. "
+        "Rerun after workspace changes, process failure or a remaining validation obligation. "
+        "A passed_process is not semantic validation or authorization. Shell or subprocess wrappers and printed subcommand results "
         "may supplement these checks, but do not witness a bound validation Oracle. "
         "read_skill_resource requires package_id and resource strings. refresh_guidance accepts code_paths, a string array. "
         "record_action_observation requires action_id, current context_revision, summary and outputs. "
@@ -381,7 +518,7 @@ class AdaptiveSolver:
         "drop_guidance and finish take empty arguments. "
         "Use public commands to search source and run tests. Read current files before changing them. "
         "Long output is presented as excerpts; use focused commands and paginated file reads to inspect omitted parts. "
-        "Only recent observations are replayed. Probe and Action receipt views may summarize duplicated broker bodies; full evidence stays sealed for independent review. These views do not confirm effects or promote facts. Finish once the repair and focused public checks are complete."
+        "Only recent observations are replayed. Probe and Action receipt views may summarize duplicated broker bodies; full evidence stays sealed for independent review. These views do not confirm effects or promote facts. After actual checks and required Action recording, explicitly finish; recording alone does not end the run."
     )
     SCHEMA: ClassVar[dict] = {"type": "object", "required": ["operation", "arguments", "rationale"]}
 
@@ -648,6 +785,9 @@ class AdaptiveSolver:
                         user=json.dumps(
                             {
                                 "current": public_context,
+                                "current_run": solver_run_view(
+                                    current, broker_observations, action_observations
+                                ),
                                 "guidance": guidance,
                                 "public_workspace_read_only": read_only_workspace,
                                 "strict_functional_action_catalog": enforce_catalog_prerequisites,
@@ -669,7 +809,12 @@ class AdaptiveSolver:
                                     "listing_tool": "list_files",
                                 },
                                 "observations": [
-                                    solver_observation_view(o) for o in observations[-8:]
+                                    solver_observation_view(
+                                        o, output_limit=5000 if i == len(observations) - 1 else 1600
+                                    )
+                                    for i, o in enumerate(
+                                        observations[-8:], max(0, len(observations) - 8)
+                                    )
                                 ],
                                 "earlier_observations_count": max(0, len(observations) - 8),
                                 "previous_requests": request_history_view(requests),
