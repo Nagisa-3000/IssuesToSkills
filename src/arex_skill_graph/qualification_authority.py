@@ -13,6 +13,11 @@ from pathlib import Path
 
 from .action_contracts import TemporalPolicy, utc
 from .history_census import fingerprint
+from .native_rust_qualification import (
+    SCHEMA as RUST_SCHEMA,
+    SCOPE as RUST_SCOPE,
+    validate_native_rust_controls,
+)
 
 PHASES = ("original_base", "base_with_regression", "historical_fixed")
 
@@ -24,10 +29,11 @@ def validate_historical_qualification(report, source, policy, *, fix_aliases=())
     content. NativePackage.admit additionally checks the full generation context.
     """
     policy.check(source)
+    is_rust = report.get("schema") == RUST_SCHEMA
     identity = report["identity"]
     qid = identity["issue_id"]
     if (
-        report.get("schema") != "historical-causal-verification-v1"
+        report.get("schema") not in {"historical-causal-verification-v1", RUST_SCHEMA}
         or not source.verified_resolution
         or qid != source.bug_cluster_id
         or qid.rsplit(":", 1)[0] != source.repository
@@ -46,7 +52,8 @@ def validate_historical_qualification(report, source, policy, *, fix_aliases=())
         or report.get("issue_relationship_verified") is not True
         or identity.get("resolution_relationship") not in {"direct_closure", "closing_reference"}
         or not identity.get("resolution_relationship_evidence_refs")
-        or report.get("qualification_scope") != "changed-test-files-with-original-base-control"
+        or report.get("qualification_scope")
+        != (RUST_SCOPE if is_rust else "changed-test-files-with-original-base-control")
         or report.get("formal_SWE_run") is not False
         or report.get("verification_does_not_backdate_new_information") is not True
     ):
@@ -73,7 +80,7 @@ def validate_historical_qualification(report, source, policy, *, fix_aliases=())
     f2p = sorted(k for k, v in before.items() if v == "failed" and after.get(k) == "passed")
     p2p = sorted(k for k, v in original.items() if v == "passed")
     if (
-        [runs[p]["exit_code"] for p in PHASES] != [0, 1, 0]
+        [runs[p]["exit_code"] for p in PHASES] != ([0, 101, 0] if is_rust else [0, 1, 0])
         or not f2p
         or not p2p
         or report["fail_to_pass"] != f2p
@@ -84,6 +91,8 @@ def validate_historical_qualification(report, source, policy, *, fix_aliases=())
         or any(v not in {"passed", "skipped"} for v in after.values())
     ):
         raise ValueError("historical qualification causal outcomes do not recompute")
+    if is_rust:
+        validate_native_rust_controls(report)
 
 
 @dataclass(frozen=True)
