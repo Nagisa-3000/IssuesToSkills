@@ -2,13 +2,14 @@
 """Build audited historical supervision; never turn unrun candidates into failures."""
 
 import argparse
+import sys
 from dataclasses import asdict
 from pathlib import Path
-import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from arex_skill_graph.action_contracts import digest
 from arex_skill_graph.adaptive_cli import read_json, read_references, write_json
+from arex_skill_graph.historical_isolation import HistoricalIsolation
 from arex_skill_graph.plan_validation import ResourcePolicy, TaskWorkflowPlan
 from arex_skill_graph.task_context import TaskContext
 from arex_skill_graph.temporal_ranker_data import (
@@ -22,7 +23,7 @@ from arex_skill_graph.workflow_ranker import workflow_capsule
 
 
 def source_input_hashes(args):
-    names = ("queries", "references", "labels", "plans", "excluded_query_ids")
+    names = ("queries", "references", "labels", "plans", "excluded_query_ids", "causal_isolation")
     return {
         name: digest(read_json(path))
         for name in names
@@ -38,11 +39,15 @@ def main(argv=None):
     parser.add_argument("--main-cutoff", required=True)
     parser.add_argument("--excluded-query-ids", type=Path)
     parser.add_argument(
+        "--causal-isolation", type=Path, help="Accepted host-only causal identity index"
+    )
+    parser.add_argument(
         "--plans",
         type=Path,
         help="Current public Task Plans by query ID, including hard-negative contracts",
     )
     args = parser.parse_args(argv)
+    isolation = HistoricalIsolation.load(args.causal_isolation) if args.causal_isolation else None
     queries = [
         HistoricalQuery(
             task=TaskContext.from_dict(r["task"]),
@@ -76,6 +81,7 @@ def main(argv=None):
         training_cutoff=args.training_cutoff,
         main_cutoff=args.main_cutoff,
         excluded_query_ids=read_json(args.excluded_query_ids) if args.excluded_query_ids else (),
+        isolation=isolation,
     )
     result = {
         "schema": "temporal-workflow-ranker-data-v1",

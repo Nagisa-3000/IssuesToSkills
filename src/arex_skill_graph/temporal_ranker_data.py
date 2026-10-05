@@ -100,22 +100,30 @@ class TrainingExample:
     catalog_cutoff: str
 
 
-def eligible_catalog(query: HistoricalQuery, references, *, training_cutoff, main_cutoff):
+def eligible_catalog(
+    query: HistoricalQuery, references, *, training_cutoff, main_cutoff, isolation=None
+):
     tq = utc(query.task.input_available_at)
     tau = utc(training_cutoff)
     if not tau < utc(main_cutoff) or tq >= utc(main_cutoff) or query.exposed:
         raise ValueError("formal/exposed queries cannot supervise the ranker")
     cutoff = query.task.input_available_at if tq < tau else training_cutoff
-    policy = TemporalPolicy(
-        cutoff,
-        (query.task.task_id, *query.aliases, *query.copied_from),
-        (query.bug_cluster_id,),
-        (query.fix_id,),
+    exclusions = (
+        isolation.query_exclusions(query)
+        if isolation
+        else (
+            (query.task.task_id, *query.aliases, *query.copied_from),
+            (query.bug_cluster_id,),
+            (query.fix_id,),
+        )
     )
+    policy = TemporalPolicy(cutoff, *exclusions)
     eligible, rejected = [], []
     for ref in references:
         try:
             package = load_native_package(ref, policy)
+            if isolation is not None:
+                isolation.verify_sources(package.sources)
         except (ValueError, OSError) as exc:
             rejected.append({"package_id": ref.get("skill_id"), "reason": str(exc)})
             continue
@@ -133,6 +141,7 @@ def build_examples(
     training_cutoff,
     main_cutoff,
     excluded_query_ids=(),
+    isolation=None,
 ):
     identities = {}
     clusters = {}
@@ -142,7 +151,8 @@ def build_examples(
         if qid in excluded_query_ids:
             raise ValueError("excluded target query in ranker population")
         names = {qid, *query.aliases, *query.copied_from}
-        if names & set(excluded_query_ids):
+        exclusion_names = set(isolation.query_exclusions(query)[0]) if isolation else names
+        if exclusion_names & set(excluded_query_ids):
             raise ValueError("excluded alias/copied query in ranker population")
         if names & set(identities):
             raise ValueError("duplicate/aliased/copied ranker query")
@@ -150,9 +160,11 @@ def build_examples(
         split = (
             "train" if utc(query.task.input_available_at) < utc(training_cutoff) else "development"
         )
-        if query.bug_cluster_id in clusters and clusters[query.bug_cluster_id] != split:
-            raise ValueError("bug cluster crosses training/development boundary")
-        clusters[query.bug_cluster_id] = split
+        cluster_keys = isolation.cluster_keys(query) if isolation else (query.bug_cluster_id,)
+        for key in cluster_keys:
+            if key in clusters and clusters[key] != split:
+                raise ValueError("bug cluster crosses training/development boundary")
+            clusters[key] = split
         if query.fix_id in fixes and fixes[query.fix_id] != split:
             raise ValueError("fix crosses training/development boundary")
         fixes[query.fix_id] = split
@@ -166,7 +178,11 @@ def build_examples(
     used_labels = set()
     for query in queries:
         policy, eligible, snapshot, rejected = eligible_catalog(
-            query, references, training_cutoff=training_cutoff, main_cutoff=main_cutoff
+            query,
+            references,
+            training_cutoff=training_cutoff,
+            main_cutoff=main_cutoff,
+            isolation=isolation,
         )
         resource_policy = ResourcePolicy(policy, eligible)
         native_workflows = {w.id: w for p in resource_policy.load() for w in p.workflows}
@@ -192,6 +208,7 @@ def build_examples(
         if len({c.id for c in capsules}) != len(capsules):
             raise ValueError("duplicate training candidate")
         split = clusters[query.bug_cluster_id]
+        effective_cluster = isolation.query_cluster_id(query) if isolation else query.bug_cluster_id
         task_input = query.task.to_dict()
         task_input.pop("root")
         assert_public(task_input)
@@ -207,7 +224,7 @@ def build_examples(
                 examples.append(
                     TrainingExample(
                         query.task.task_id,
-                        query.bug_cluster_id,
+                        effective_cluster,
                         split,
                         task_input,
                         c.to_dict(),
@@ -221,6 +238,12 @@ def build_examples(
             {
                 "query_id": query.task.task_id,
                 "split": split,
+                "declared_bug_cluster_id": query.bug_cluster_id,
+                "effective_bug_cluster_id": effective_cluster,
+                "causal_isolation_sha256": isolation.sha256 if isolation else None,
+                "full_corpus_causal_review_complete": isolation.full_corpus_causal_review_complete
+                if isolation
+                else False,
                 "catalog_sha256": snapshot,
                 "catalog_cutoff": policy.cutoff,
                 "eligible_packages": len(eligible),

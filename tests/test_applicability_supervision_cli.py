@@ -153,3 +153,65 @@ def test_reuse_rejects_subset_duplicate_or_detached_frozen_evidence(tmp_path, mo
         manifest['training_cutoff'] = '2022-01-01T00:00:00Z'
     with pytest.raises(ValueError, match='omitted|duplicate|detached|oracle changed|temporal identity'):
         _cli.validate_population(seal_population(manifest), args, args.output_dir / 'packets')
+
+
+def attach_isolation(args, tmp_path, *, same_cause=False):
+    from test_historical_isolation import review_directory, source
+
+    from arex_skill_graph.historical_isolation import reconcile_cluster_reviews
+    from arex_skill_graph.pattern_contracts import load_native_package
+
+    package = load_native_package(json.loads(args.references.read_text())[0])
+    sources = package.sources
+    if same_cause:
+        target = source(3, json.loads(args.queries.read_text())[0]['task']['task_id'])
+        directory = review_directory(
+            tmp_path, (*sources, target),
+            duplicates=((sources[0].bug_cluster_id, target.bug_cluster_id),),
+        )
+    else:
+        directory = review_directory(tmp_path, sources)
+    index = reconcile_cluster_reviews((directory,), sources)
+    args.causal_isolation = tmp_path / 'isolation.json'
+    args.causal_isolation.write_text(json.dumps(index.to_dict()))
+    dataset = json.loads(args.dataset.read_text())
+    dataset['source_input_hashes']['causal_isolation'] = digest(index.to_dict())
+    for audit in dataset['audits']:
+        audit['causal_isolation_sha256'] = index.sha256
+    dataset['dataset_sha256'] = digest({k: v for k, v in dataset.items()
+                                        if k != 'dataset_sha256'})
+    args.dataset.write_text(json.dumps(dataset))
+    args.output_dir = tmp_path / 'new-prepared'
+    return index
+
+
+def test_review_requires_exact_frozen_causal_isolation(tmp_path, monkeypatch):
+    args, _ = prepared_fixture(tmp_path, monkeypatch)
+    index = attach_isolation(args, tmp_path)
+    manifest = _cli.prepare(args)
+    _cli.validate_population(manifest, args, args.output_dir / 'packets')
+    assert manifest['input_file_hashes']['causal_isolation'] == digest(index.to_dict())
+    args.causal_isolation = None
+    with pytest.raises(ValueError, match='causal isolation differs'):
+        _cli.prepare(args)
+    with pytest.raises(ValueError, match='input coverage changed'):
+        _cli.validate_population(manifest, args, args.output_dir / 'packets')
+
+
+def test_review_rejects_causally_related_stale_dataset_candidates(tmp_path, monkeypatch):
+    args, _ = prepared_fixture(tmp_path, monkeypatch)
+    attach_isolation(args, tmp_path, same_cause=True)
+    with pytest.raises(ValueError, match='excluded identity/bug cluster/fix'):
+        _cli.prepare(args)
+    assert not (args.output_dir / 'prepared-population.json').exists()
+
+
+def test_review_refuses_new_isolation_for_archived_dataset(tmp_path, monkeypatch):
+    args, manifest = prepared_fixture(tmp_path, monkeypatch)
+    archived = args.dataset.read_bytes()
+    attach_isolation(args, tmp_path)
+    args.dataset.write_bytes(archived)
+    with pytest.raises(ValueError, match='causal isolation differs'):
+        _cli.prepare(args)
+    with pytest.raises(ValueError, match='input coverage changed'):
+        _cli.validate_population(manifest, args, args.output_dir / 'packets')

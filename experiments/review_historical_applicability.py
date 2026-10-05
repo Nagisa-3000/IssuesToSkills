@@ -2,21 +2,24 @@
 """Prepare isolated historical evidence; independently review applicability without utility claims."""
 
 import argparse
+import ast
 import json
+import subprocess
 import sys
 from dataclasses import asdict, replace
-import ast
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
-import subprocess
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 from arex_skill_graph.action_contracts import SourceRecord, TemporalPolicy, digest, utc
 from arex_skill_graph.adaptive_budget import BudgetCaps, BudgetLedger
 from arex_skill_graph.adaptive_cli import read_json, read_references, transport_from_args
 from arex_skill_graph.applicability_supervision import (
-    review_applicability, seal_packet, validate_packet,
+    review_applicability,
+    seal_packet,
+    validate_packet,
 )
+from arex_skill_graph.historical_isolation import HistoricalIsolation
 from arex_skill_graph.history_census import write_json
 from arex_skill_graph.llm_http import safe_text
 from arex_skill_graph.pattern_contracts import load_native_package
@@ -24,7 +27,7 @@ from arex_skill_graph.plan_validation import ResourcePolicy, TaskWorkflowPlan
 from arex_skill_graph.qualification_authority import validate_historical_qualification
 from arex_skill_graph.task_context import TaskContext
 from arex_skill_graph.temporal_ranker_data import HistoricalQuery, validate_training_snapshot
-from arex_skill_graph.workflow_ranker import workflow_capsule, plan_capsule
+from arex_skill_graph.workflow_ranker import plan_capsule, workflow_capsule
 
 
 def entry(ident, role, text, **metadata):
@@ -115,8 +118,30 @@ def historical_oracle(query, verification_row, controls_dir, main_cutoff):
     return current
 
 
+def causal_isolation_for_dataset(dataset, args):
+    """Keep reviewed identities host-only and attached to the exact dataset input."""
+    path = getattr(args, 'causal_isolation', None)
+    raw = read_json(path) if path else None
+    expected = dataset.get('source_input_hashes', {}).get('causal_isolation')
+    if (digest(raw) if raw is not None else None) != expected:
+        raise ValueError('historical review causal isolation differs from frozen dataset')
+    isolation = HistoricalIsolation.from_dict(raw) if raw is not None else None
+    if any(a.get('causal_isolation_sha256') != (isolation.sha256 if isolation else None)
+           for a in dataset.get('audits', [])):
+        raise ValueError('historical dataset causal isolation audit changed')
+    return isolation
+
+
+def candidate_policy(query, cutoff, isolation):
+    exclusions = (isolation.query_exclusions(query) if isolation else
+                  ((query.task.task_id, *query.aliases, *query.copied_from),
+                   (query.bug_cluster_id,), (query.fix_id,)))
+    return TemporalPolicy(cutoff, *exclusions)
+
+
 def prepare(args):
     dataset = validate_training_snapshot(read_json(args.dataset))
+    isolation = causal_isolation_for_dataset(dataset, args)
     queries_raw, plans = read_json(args.queries), read_json(args.plans)
     if dataset['source_input_hashes'].get('queries') != digest(queries_raw) or \
             dataset['source_input_hashes'].get('references') != digest(read_json(args.references)) or \
@@ -154,14 +179,14 @@ def prepare(args):
         hashes = candidate['package_hashes']
         if not hashes or len(set(hashes)) != len(hashes) or len(hashes) > 2:
             raise ValueError('historical review candidate has invalid/excessive resource roots')
-        policy = TemporalPolicy(example['catalog_cutoff'],
-                                (qid, *query.aliases, *query.copied_from),
-                                (query.bug_cluster_id,), (query.fix_id,))
+        policy = candidate_policy(query, example['catalog_cutoff'], isolation)
         packages = []
         for sha in hashes:
             if sha not in native_cache:
                 native_cache[sha] = load_native_package(reference_by_hash[sha])
             package = native_cache[sha]
+            if isolation is not None:
+                isolation.verify_sources(package.sources)
             package.admit(policy)
             packages.append(package)
         resources = ResourcePolicy(policy, tuple(p.reference for p in packages))
@@ -209,9 +234,11 @@ def prepare(args):
                                      ('dataset', 'queries', 'references', 'plans', 'verifications')},
                 'main_cutoff': dataset['main_cutoff'], 'training_cutoff': dataset['training_cutoff'],
                 'oracle_input_hashes': oracle_hashes,
-                'packets': packets, 'prepared_at': datetime.now(timezone.utc).isoformat(),
+                'packets': packets, 'prepared_at': datetime.now(UTC).isoformat(),
                 'model_calls': 0, 'labels_created': 0, 'formal_SWE_runs': 0,
                 'privileged_artifacts_are_label_evaluator_only': True}
+    if getattr(args, 'causal_isolation', None):
+        manifest['input_file_hashes']['causal_isolation'] = digest(read_json(args.causal_isolation))
     manifest['population_sha256'] = digest(manifest)
     write_json(args.output_dir / 'prepared-population.json', manifest)
     return manifest
@@ -226,12 +253,15 @@ def validate_population(manifest, args, packet_root):
             any(manifest.get(k) != 0 for k in ('model_calls', 'labels_created', 'formal_SWE_runs'))):
         raise ValueError('invalid or changed prepared historical population')
     required = {'dataset', 'queries', 'references', 'plans', 'verifications'}
+    if getattr(args, 'causal_isolation', None):
+        required.add('causal_isolation')
     if set(manifest['input_file_hashes']) != required:
         raise ValueError('prepared historical review input coverage changed')
     for key, sha in manifest['input_file_hashes'].items():
         if digest(read_json(getattr(args, key))) != sha:
             raise ValueError('prepared historical review input changed: ' + key)
     dataset = validate_training_snapshot(read_json(args.dataset))
+    isolation = causal_isolation_for_dataset(dataset, args)
     if (dataset['dataset_sha256'] != manifest['dataset_sha256'] or
             dataset['main_cutoff'] != manifest['main_cutoff'] or
             dataset['training_cutoff'] != manifest['training_cutoff']):
@@ -266,6 +296,12 @@ def validate_population(manifest, args, packet_root):
         packet = validate_packet(read_json(path))
         example = expected[key]
         query = queries[key[0]]
+        sources = tuple(SourceRecord.from_dict(row['source']) for row in packet['candidate_sources'])
+        policy = candidate_policy(query, example['catalog_cutoff'], isolation)
+        if isolation is not None:
+            isolation.verify_sources(sources)
+        for source in sources:
+            policy.check(source)
         expected_identity = {'bug_cluster_id': query.bug_cluster_id, 'fix_id': query.fix_id,
                              'aliases': list(query.aliases), 'copied_from': list(query.copied_from),
                              'exposed': query.exposed}
@@ -289,6 +325,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     for key in ('dataset', 'queries', 'references', 'plans', 'verifications', 'controls-dir', 'output-dir'):
         parser.add_argument('--' + key, type=Path, required=True)
+    parser.add_argument('--causal-isolation', type=Path,
+                        help='Accepted host-only causal index required by the frozen dataset')
     parser.add_argument('--prepare-only', action='store_true')
     parser.add_argument('--prepared-population', type=Path)
     parser.add_argument('--model')
@@ -307,7 +345,7 @@ def main(argv=None):
         else:
             manifest = prepare(args)
             validate_population(manifest, args, args.output_dir / 'packets')
-    except Exception as error:
+    except (ValueError, RuntimeError, OSError, KeyError, TypeError) as error:
         write_json(args.output_dir / 'preparation-failure.json', {
             'failure_type': type(error).__name__, 'failure_reason': safe_text(str(error)),
             'prepared_population_validated': False, 'model_calls': 0,
@@ -336,7 +374,7 @@ def main(argv=None):
                                           reviewer='fresh-context-evidence-review:' + args.model)
             if result['label'] is not None:
                 accepted.append(result['label'])
-        except Exception as error:
+        except (ValueError, RuntimeError, OSError, KeyError, TypeError) as error:
             result = {'status': 'review_protocol_or_infrastructure_failure',
                       'failure_type': type(error).__name__,
                       'failure_reason': safe_text(str(error), [transport.config.api_key] if transport else []),

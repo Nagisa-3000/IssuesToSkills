@@ -174,6 +174,7 @@ def load_prepared_plan_study(directory, expected_identity):
     for key in (
         "queries_sha256",
         "references_sha256",
+        "causal_isolation_sha256",
         "training_cutoff",
         "main_cutoff",
         "seed",

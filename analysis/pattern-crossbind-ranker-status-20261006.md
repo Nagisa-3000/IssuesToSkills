@@ -1,10 +1,10 @@
 **Pattern、CrossBind 与 Ranker 的实际完成度（2026-10-06）**
 
-**尚未全部完成。M0–M3 有主要实现和工程测试；M4 没有合格的训练 Ranker，M5 未联合冻结，M6 正式 SWE 运行数为 0。** 依据[机器快照 v27](results/pattern-crossbind-ranker-current-status-20261006-v27.json)。旧快照和失败记录保留，不以源码演练替代新 Issue 泛化或 SWE 验收。
+**尚未全部完成。M0–M3 有主要实现和工程测试；M4 没有合格的训练 Ranker，M5 未联合冻结，M6 正式 SWE 运行数为 0。** 依据[机器快照 v28](results/pattern-crossbind-ranker-current-status-20261006-v28.json)。旧快照和失败记录保留，不以源码演练替代新 Issue 泛化或 SWE 验收。
 
 | 阶段 | 已实现或已验收 | 尚缺的验收 |
 | --- | --- | --- |
-| M0 契约 | Action/Pattern/Task/Plan；输入输出、前提效果、不变量、API 与责任绑定、读写冲突、Oracle、来源和包 hash、时间与输入隔离；四项来源内 Action 正例、六个分类定义、三个拒用反例接受 | 完整包独立适配与正式 KB 准入；已接受因果簇与逐题隔离表的协调 |
+| M0 契约 | Action/Pattern/Task/Plan；输入输出、前提效果、不变量、API 与责任绑定、读写冲突、Oracle、来源和包 hash、时间与输入隔离；四项来源内 Action 正例、六个分类定义、三个拒用反例接受 | 完整包独立适配与正式 KB 准入；完整语料的因果复核；已有审查现已接入逐题排除 |
 | M1 重写 | 依据角色、必要效果、不变量和偏序形成当前 DAG；历史 Workflow 不变；删除、替换、重排保留来源和理由 | 独立新 Issue 的执行适配、必要效果和修复收益 |
 | M2 CrossBind | Bind/Cut/Match/Bridge/Compose/Validate；PASS/FAIL/UNKNOWN；前提、状态、冲突、循环、清理和验证闭包；最多两父、四组合 | 独立来源互补动作的真实两父组合及效果 |
 | M3 prompted Ranker | Workflow/Plan 两处排序；硬门槛、拒绝全部、先探查；受限 Action 补召回和共享预算 | 有用开发校准、同冻结候选池的排序效果 |
@@ -26,13 +26,13 @@ Pylint #8120 原生 Skill 由本系统直接抽取。inspect、repair、regressi
 
 [Pylint 原生人口终态](results/pylint-native-population-terminal-structural-audit-20261006-v1.json)：1160 条完整修复登记，78 条获来源因果资格；47 个原生候选包均通过生产加载器，31 条已获资格的来源仍延迟抽取。实际请求 288 次：105 成功、27 超时、1 次 HTTP502、155 次 HTTP429；记录到 2825269 tokens，缺 usage 的费用未知。原作者已结束，未重启。31 个延迟来源的修复都晚于训练截止，需要按真实 v7→v8 协议迁移建立新版本，不能忽略协议变化复用旧 checkpoint。
 
-[全部已供给且获资格的跨项目包](results/qualified-native-cross-project-corpus-preparation-audit-20261006-v3.json)为 75 个：Pyflakes 26、Pylint 人口 47、#8120 1、Ruff 1，75 个唯一来源 ID 均通过资格加载。合并保留原 1205 条人口记录并追加一条 Ruff 来源，共 1206 条，没有任意 top-N 或预设问题族。这不代表全历史完成抽取或正式 KB 已冻结。当前目录有 115 个 SKILL.md，包含历史版本；文件数不代表不同的已验收 Skill。
+[全部已供给且获资格的跨项目包](results/qualified-native-cross-project-corpus-preparation-audit-20261006-v3.json)为 75 个：Pyflakes 26、Pylint 人口 47、#8120 1、Ruff 1，75 个唯一来源 ID 均通过资格加载。合并保留原 1205 条人口记录并追加一条 Ruff 来源，共 1206 条，没有任意 top-N 或预设问题族。这不代表全历史完成抽取或正式 KB 已冻结。上次 v27 目录统计为 115 个 SKILL.md，包含历史版本；文件数不代表不同的已验收 Skill。
 
 **Ruff 与独立新 Issue**
 
 Ruff #5124 的来源资格限于一个精确命名 Rust 库测试、原 expected snapshot 和三组因果控制，退出码 0/101/0 保留。修复公开时间 2023-06-15T19:00:20Z，不能用于 pre-2021 训练。首次抽取六次实际请求全部超时，0 包；第一次流式重试因快照漏协议文件，在任何模型调用前失败。[失败审计](results/serial-native-causal-review-and-Ruff-failure-audit-20261006-v1.json)保留这些事实。[新版本终态](results/qualified-Ruff-native-package-authoring-terminal-audit-20261006-v3.json)已补入并校验协议 hash，保持相同来源输入、流式 900 秒和 24000 输出上限；实际 1 次模型调用生成 1 个原生 Workflow 包，生产加载器和来源资格均通过。功能 evals 仍未执行，不代表 Agent、跨项目或 SWE 修复效果。
 
-[Pylint #3604/#3666 的第二次因果审查](results/historical-pylint-3604-3666-causal-cluster-terminal-audit-20261006-v2.json)已经通过校验器，并将两者归为同一不完整 MESSAGE_STRING 字符类的连续修复。它们不是文字复制，但不能作为两个独立缺陷支持，#3604 不能作为 #3666 的独立泛化 donor。原精确 opened 输入、已公开 Pylint 2.5.0 源码和八项机械控制保持；机械控制不是 solver 或效果标签。后续监督必须先协调该审查与身份隔离表，不能强行写成独立正例。
+[Pylint #3604/#3666 的第二次因果审查](results/historical-pylint-3604-3666-causal-cluster-terminal-audit-20261006-v2.json)已经通过校验器，并将两者归为同一不完整 MESSAGE_STRING 字符类的连续修复。它们不是文字复制，但不能作为两个独立缺陷支持，#3604 不能作为 #3666 的独立泛化 donor。原精确 opened 输入、已公开 Pylint 2.5.0 源码和八项机械控制保持；机械控制不是 solver 或效果标签。该审查现已接入验证专用隔离索引；#3604 不能作为 #3666 的独立正例或候选来源。
 
 既有历史开发 27/27 分支：基础 Agent 7/9、指导分支合计 14/18，九题各分支逐题结果一致。84 条监督中适用性全部 unrelated；训练 16 对效果偏好全部 tie，开发 13 tie、1 非 tie。没有制造缺失候选的失败、正例或非平局偏好，因此不能将现有 checkpoint 重载当作 M4 有效训练完成。
 
@@ -41,3 +41,13 @@ Ruff #5124 的来源资格限于一个精确命名 Rust 库测试、原 expected
 [全部 31 个延迟来源的恢复准备](results/pylint-qualified-deferred-protocol-recovery-preparation-audit-20261006-v3.json)已逐项核对 Issue 与 fix 双重身份、历史来源和证据指纹不变，保留真实 v7→v8 协议变化并使用新输出版本。批次已串行启动，遇重复 HTTP429 停止后续调用；31 个来源均晚于训练截止，不能用作 pre-2021 训练正例。恢复启动不计抽取成功。
 
 代码与此前审计已非强制发布：[1426c19](https://github.com/Nagisa-3000/IssuesToSkills/commit/1426c19d5b4747c24dbdf6ee34c07ec1dea0fba4)，795 个范围内 blob SHA 与 mode 已独立核对。
+
+**已完成的因果隔离接入**
+
+[本次审计](results/historical-causal-isolation-integration-audit-20261006-v1.json)保存真实 #3666 查询的排除证据：原输入时间保持 2020-06-05T19:22:59Z，候选由 15 减为 14，#3604 被明确拒绝，32 个历史包文件字节未变。历史包及 SourceRecord 保持不可变；验证专用索引只包含身份关系、来源指纹与审查 hash，不包含 reviewer 的机制或修复正文。
+
+隔离规则覆盖历史候选准入、训练/开发簇切分、适用性评审准备和复用、冻结 Plan 池身份以及 Pattern 独立来源计数。新实验须显式提供 --causal-isolation；变更隔离输入会拒绝复用旧池或旧评审人口，不能悄悄改写已完成的标签。既有无索引记录保留其原始协议。
+
+本次修改后的完整工程检查为 **765 passed、20 skipped（112.10 秒）**；相关专项 **95 passed（44.80 秒）**，lint 与 diff 检查通过。此前失败和路径错误记录保留。检查没有调用模型，没有新增效果标签，也没有正式 SWE 运行。
+
+[当前隔离索引](isolation/historical-causal-isolation-20261006-v1.json)覆盖 75 条来源记录，形成 71 个保守身份组件，只有 #3604/#3666 两个 Issue 经过语义因果审查。共享 fix、原生别名和复制来源的机械合并不等于全语料独立审查，full_corpus_causal_review_complete 仍为 false。M1 独立适配、M2 两父互补执行、M3 有效校准、M4 合格训练 Ranker、M5 联合冻结与 M6 正式 SWE 仍未验收。整体目标保持 active。

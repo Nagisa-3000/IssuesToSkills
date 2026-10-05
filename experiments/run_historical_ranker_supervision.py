@@ -19,12 +19,13 @@ from arex_skill_graph.adaptive_cli import new_ledger, read_references, transport
 from arex_skill_graph.adaptive_guidance import index_native_package
 from arex_skill_graph.adaptive_runner import TOOL_BACKENDS, AdaptiveSolver
 from arex_skill_graph.embeddings import TransformerEncoder
-from arex_skill_graph.historical_solver_evaluator import historical_evaluator
+from arex_skill_graph.historical_isolation import HistoricalIsolation
 from arex_skill_graph.historical_plan_pool import (
     freeze_plan_candidates,
     load_prepared_plan_study,
     verify_frozen_plan_pool,
 )
+from arex_skill_graph.historical_solver_evaluator import historical_evaluator
 from arex_skill_graph.history_census import fingerprint, write_json
 from arex_skill_graph.plan_validation import ResourcePolicy, TaskWorkflowPlan, validate_task_plan
 from arex_skill_graph.store import CatalogStore
@@ -50,6 +51,7 @@ def main(argv=None):
         "output-dir",
     ):
         parser.add_argument("--" + option, type=Path, required=True)
+    parser.add_argument("--causal-isolation", type=Path)
     parser.add_argument("--model", required=True)
     parser.add_argument("--base-url", required=True)
     parser.add_argument("--http-backend", choices=["native", "windows_pipe"], default="native")
@@ -69,6 +71,7 @@ def main(argv=None):
         help="Execute existing frozen Plan pools without regenerating candidates",
     )
     args = parser.parse_args(argv)
+    isolation = HistoricalIsolation.load(args.causal_isolation) if args.causal_isolation else None
     if args.prepared_dir and (args.prepare_only or args.candidate_kind != "plan"):
         parser.error("--prepared-dir requires --candidate-kind plan and excludes --prepare-only")
     import torch
@@ -98,6 +101,7 @@ def main(argv=None):
     ]
     identity = {
         "queries_sha256": fingerprint(raw_queries),
+        "causal_isolation_sha256": isolation.sha256 if isolation else None,
         "references_sha256": fingerprint(references),
         "model": args.model,
         "endpoint": args.base_url,
@@ -117,6 +121,7 @@ def main(argv=None):
                     "src/arex_skill_graph/copied_sandbox_worker.py",
                     "src/arex_skill_graph/historical_solver_evaluator.py",
                     "src/arex_skill_graph/temporal_ranker_data.py",
+                    "src/arex_skill_graph/historical_isolation.py",
                     "src/arex_skill_graph/historical_plan_pool.py",
                     "src/arex_skill_graph/workflow_rewriter.py",
                     "src/arex_skill_graph/crossbind.py",
@@ -146,6 +151,7 @@ def main(argv=None):
             references,
             training_cutoff=register["training_cutoff"],
             main_cutoff=register["main_cutoff"],
+            isolation=isolation,
         )
         resources = ResourcePolicy(policy, eligible)
         if prepared is not None:
