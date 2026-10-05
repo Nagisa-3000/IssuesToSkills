@@ -1,6 +1,6 @@
 **Pattern、CrossBind 与 Ranker 的实际完成度（2026-10-05）**
 
-**尚未全部完成。M0–M3 有代码、接口和工程测试；真实功能与跨项目效果的验收仍不完整。M4 没有合格的训练 Ranker，M5 尚未联合冻结，M6 的正式 SWE 运行数为 0。** 本文依据[当前机器快照 v21](results/pattern-crossbind-ranker-current-status-20261005-v21.json)。旧快照、失败实验和未审阅候选继续保留，源内演练、包准入和正式修复结果分别统计。
+**尚未全部完成。M0–M3 有代码、接口和工程测试；真实功能与跨项目效果的验收仍不完整。M4 没有合格的训练 Ranker，M5 尚未联合冻结，M6 的正式 SWE 运行数为 0。** 本文依据[当前机器快照 v22](results/pattern-crossbind-ranker-current-status-20261005-v22.json)。旧快照、失败实验和未审阅候选继续保留，源内演练、包准入和正式修复结果分别统计。
 
 | 阶段 | 已有实现或已验证能力 | 尚缺的验收 |
 | --- | --- | --- |
@@ -46,10 +46,14 @@ Ruff 的原生抽取接入仍有明确缺口：现有资格 authority 仅接受�
 
 本次源码还修复了公共 Git archive 的链接身份：保留 data_filter 的安全检查，重新检查原始目标的包含关系，并保留 contained symlink 的原始 target 文本及末尾分隔符。四项回归覆盖真实 Git tree 身份；此前错误导出和失败准备没有删除。
 
-当前完整工程检查 **678 passed、19 skipped**，测试耗时 120.79 秒。专项 **93 passed、5 skipped**；修改文件的 Ruff E4/E7/E9/F 与 git diff --check 通过。跳过项不计为通过，工程检查不替代原生功能、迁移或正式 SWE 验收。
+上一轮完整工程检查 **678 passed、19 skipped**，测试耗时 120.79 秒。专项 **93 passed、5 skipped**；修改文件的 Ruff E4/E7/E9/F 与 git diff --check 通过。跳过项不计为通过，工程检查不替代原生功能、迁移或正式 SWE 验收。
 
 历史人口保持 Pylint 5273、Pyflakes 501、Ruff 3582，共 9356 个 Issue。主截止 T=2024-01-01T00:00:00Z，训练截止 τ=2021-01-01T00:00:00Z，均严格排除截止时刻及以后信息；Pylint #10034 继续排除正式评价。已知时间线缺口恢复到独立版本，旧输入与旧结果不改写；仍保留三项权限受限元数据。Pylint 的 78 个合格来源是 changed-test-only 范围。完整人口存档并不等于三项目所有历史经验完成资格复验或功能准入。
 
 后续仍按依赖推进：完成原生包正反例和当前验证；由已限定资格的 Ruff 来源通过系统抽取和验收原生包；由独立真实来源归纳机制并执行单 Workflow 重写、互补两父组合；获得有效适用性及效果监督后训练和校准；联合冻结 M5；最后执行正式 SWE、模块消融与同候选池排序比较。整体目标保持未完成。
 
 新增[有界已读证据窗口与预算可见性工程审计](results/public-evidence-working-set-engineering-audit-20261005-v1.json)。实际 v8 轨迹显示：4000 字符的读取页在后续请求中被压为带标记的 761 字符摘录，关键中段再次不可见。新实现最多保留 8 页、12000 字符的本轮实际读取结果，内容保持完整；过期来源明确标记，不自动提升事实或建立 Oracle 见证。成组 JSON pointer 一次最多选择 16 个字段，合计仍受原 4000 字符分页上限；预算投影显示实际累计用量和剩余额度，原预算预检与精确 Oracle guard 不变。先在旧实现复现 3 failed/8 passed，再通过专项 62 passed/5 skipped；补充分页边界用例后完整工程检查 690 passed/19 skipped，129.83 秒，lint 和 diff 检查通过。同一真实 v8 数据的只读投影保留全部四页、11547 字符；0 次实际模型和命令调用。此结果只证明工程行为，尚未进行新代码的真实来源验证，不建立包准入或新 Issue 泛化。
+
+第九版真实验证已结束：[v9 终止审计](results/native-async-lifecycle-validation-terminal-audit-20261005-v9.json)。使用已发布 b9fd70e 的不可变代码快照，输入 SHA 与 v8 完全相同，原 300000 cap、预算预检方法与 Oracle guard 保持一致。实际 10 次执行模型调用、2 次独立复核，235946 token，0 字节新增 patch。Scope 结果用一次成组 JSON 读取取得；两个小命令结果在后续视图中再次被摘录，Solver 又分别读取完整 627 字符测试输出和 1201 字符审计输出。此次生成 1 条真实 Action 记录，五项记录检查全部 PASS，独立 policy 为 PASS/correct_confirmation/CONFIRMED；但该结论限定于已经记录的验证 Action。剩余 64054 token 时，记录后的下一次请求被原预算预检拒绝，solver_ended=false、source_validation_case_accepted=false。未补写 finish，未晋升完整包、正式 KB 或泛化结果；原 PID/start ticks 的历史作者已恢复，lease 已 terminal。下一步应分析并有界保留已经完整显示的小型本轮命令结果，减少再次读取；尚未准备或启动 v10。
+
+训练输入溯源取得独立进展：[Pylint #3666 原始打开事件审计](results/historical-query-pylint-3666-opened-input-audit-20261005-v1.json)和[原始输入](historical-queries/pylint-3666-opened-input-20200605-v1.json)恢复 2020-06-05 的公开 GitHub opened 事件。不可变仓库 ID 为 47671127，当时名称 PyCQA/pylint；正文版本 created_at=updated_at=19:22:58Z，公开事件时间为 19:22:59Z，因此后续 query 使用更保守的 19:22:59Z 作为输入可用边界。第一次 256 MiB 扫描边界失败、第二次恢复但时间不完全相等的回执均保留；重新核对原始事件 hash 及 public=true 后，仅发布原始正文与输入溯源，不供应后来评论、修复或测试。#3604 候选修复仍在 2020-05-14，时间顺序合法；独立 bug/copy 关系、候选功能验收、适用性与执行效果标签仍未完成。0 次模型调用，不增加 84 条监督观察或赋予正标签。
