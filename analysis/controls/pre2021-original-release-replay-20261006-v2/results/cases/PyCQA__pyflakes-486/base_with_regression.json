@@ -1,0 +1,55 @@
+{
+  "focused_test_run": {
+    "argv": [
+      "python3",
+      "-m",
+      "pytest",
+      "pyflakes/test/test_type_annotations.py",
+      "-q",
+      "--junitxml=/workspace/replay-controls.xml"
+    ],
+    "exit_code": 1,
+    "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+    "output": "Cannot read termcap database;\nusing dumb terminal settings.\n..F............F                                                         [100%]\n=================================== FAILURES ===================================\n________________ TestTypeAnnotations.test_postponed_annotations ________________\n\nself = <pyflakes.test.test_type_annotations.TestTypeAnnotations testMethod=test_postponed_annotations>\n\n    @skipIf(version_info < (3, 7), 'new in Python 3.7')\n    def test_postponed_annotations(self):\n        self.flakes('''\n        from __future__ import annotations\n        def f(a: A) -> A: pass\n        class A:\n            b: B\n        class B: pass\n        ''')\n    \n        self.flakes('''\n        from __future__ import annotations\n        def f(a: A) -> A: pass\n        class A:\n            b: Undefined\n        class B: pass\n        ''', m.UndefinedName)\n    \n>       self.flakes('''\n        from __future__ import annotations\n        T: object\n        def f(t: T): pass\n        def g(t: 'T'): pass\n        ''')\n\npyflakes/test/test_type_annotations.py:257: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \npyflakes/test/harness.py:30: in flakes\n    self.assertEqual(outputs, expectedOutputs, '''\\\nE   AssertionError: Lists differ: [<class 'pyflakes.messages.UndefinedName'>[39 chars]me'>] != []\nE   \nE   First list contains 2 additional elements.\nE   First extra element 0:\nE   <class 'pyflakes.messages.UndefinedName'>\nE   \nE   + []\nE   - [<class 'pyflakes.messages.UndefinedName'>,\nE   -  <class 'pyflakes.messages.UndefinedName'>] : for input:\nE   \nE           from __future__ import annotations\nE           T: object\nE           def f(t: T): pass\nE           def g(t: 'T'): pass\nE           \nE   expected outputs:\nE   []\nE   but got:\nE   (none):4: undefined name 'T'\nE   (none):5: undefined name 'T'\n________________ TestTypeAnnotations.test_variable_annotations _________________\n\nself = <pyflakes.test.test_type_annotations.TestTypeAnnotations testMethod=test_variable_annotations>\n\n    @skipIf(version_info < (3, 6), 'new in Python 3.6')\n    def test_variable_annotations(self):\n        self.flakes('''\n        name: str\n        age: int\n        ''')\n        self.flakes('''\n        name: str = 'Bob'\n        age: int = 18\n        ''')\n        self.flakes('''\n        class C:\n            name: str\n            age: int\n        ''')\n        self.flakes('''\n        class C:\n            name: str = 'Bob'\n            age: int = 18\n        ''')\n        self.flakes('''\n        def f():\n            name: str\n            age: int\n        ''')\n        self.flakes('''\n        def f():\n            name: str = 'Bob'\n            age: int = 18\n            foo: not_a_real_type = None\n        ''', m.UnusedVariable, m.UnusedVariable, m.UnusedVariable, m.UndefinedName)\n        self.flakes('''\n        def f():\n            name: str\n            print(name)\n        ''', m.UndefinedName)\n        self.flakes('''\n        from typing import Any\n        def f():\n            a: Any\n        ''')\n        self.flakes('''\n        foo: not_a_real_type\n        ''', m.UndefinedName)\n        self.flakes('''\n        foo: not_a_real_type = None\n        ''', m.UndefinedName)\n        self.flakes('''\n        class C:\n            foo: not_a_real_type\n        ''', m.UndefinedName)\n        self.flakes('''\n        class C:\n            foo: not_a_real_type = None\n        ''', m.UndefinedName)\n        self.flakes('''\n        def f():\n            class C:\n                foo: not_a_real_type\n        ''', m.UndefinedName)\n        self.flakes('''\n        def f():\n            class C:\n                foo: not_a_real_type = None\n        ''', m.UndefinedName)\n        self.flakes('''\n        from foo import Bar\n        bar: Bar\n        ''')\n        self.flakes('''\n        from foo import Bar\n        bar: 'Bar'\n        ''')\n        self.flakes('''\n        import foo\n        bar: foo.Bar\n        ''')\n        self.flakes('''\n        import foo\n        bar: 'foo.Bar'\n        ''')\n        self.flakes('''\n        from foo import Bar\n        def f(bar: Bar): pass\n        ''')\n        self.flakes('''\n        from foo import Bar\n        def f(bar: 'Bar'): pass\n        ''')\n        self.flakes('''\n        from foo import Bar\n        def f(bar) -> Bar: return bar\n        ''')\n        self.flakes('''\n        from foo import Bar\n        def f(bar) -> 'Bar': return bar\n        ''')\n        self.flakes('''\n        bar: 'Bar'\n        ''', m.UndefinedName)\n        self.flakes('''\n        bar: 'foo.Bar'\n        ''', m.UndefinedName)\n        self.flakes('''\n        from foo import Bar\n        bar: str\n        ''', m.UnusedImport)\n        self.flakes('''\n        from foo import Bar\n        def f(bar: str): pass\n        ''', m.UnusedImport)\n        self.flakes('''\n        def f(a: A) -> A: pass\n        class A: pass\n        ''', m.UndefinedName, m.UndefinedName)\n        self.flakes('''\n        def f(a: 'A') -> 'A': return a\n        class A: pass\n        ''')\n        self.flakes('''\n        a: A\n        class A: pass\n        ''', m.UndefinedName)\n        self.flakes('''\n        a: 'A'\n        class A: pass\n        ''')\n        self.flakes('''\n        T: object\n        def f(t: T): pass\n        ''', m.UndefinedName)\n>       self.flakes('''\n        T: object\n        def g(t: 'T'): pass\n        ''')\n\npyflakes/test/test_type_annotations.py:195: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \npyflakes/test/harness.py:30: in flakes\n    self.assertEqual(outputs, expectedOutputs, '''\\\nE   AssertionError: Lists differ: [<class 'pyflakes.messages.UndefinedName'>] != []\nE   \nE   First list contains 1 additional elements.\nE   First extra element 0:\nE   <class 'pyflakes.messages.UndefinedName'>\nE   \nE   - [<class 'pyflakes.messages.UndefinedName'>]\nE   + [] : for input:\nE   \nE           T: object\nE           def g(t: 'T'): pass\nE           \nE   expected outputs:\nE   []\nE   but got:\nE   (none):3: undefined name 'T'\n=============================== warnings summary ===============================\npyflakes/test/test_type_annotations.py: 35 warnings\n  /workspace/pyflakes/checker.py:1087: DeprecationWarning: ast.Str is deprecated and will be removed in Python 3.14; use ast.Constant instead\n    return isinstance(node, ast.Str) or (isinstance(node, ast.Expr) and\n\npyflakes/test/test_type_annotations.py: 108 warnings\n  /workspace/pyflakes/checker.py:1199: DeprecationWarning: ast.Str is deprecated and will be removed in Python 3.14; use ast.Constant instead\n    if isinstance(annotation, ast.Str):\n\npyflakes/test/test_type_annotations.py: 11 warnings\n  /workspace/pyflakes/checker.py:1203: DeprecationWarning: Attribute s is deprecated and will be removed in Python 3.14; use value instead\n    annotation.s,\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ============================\nFAILED pyflakes/test/test_type_annotations.py::TestTypeAnnotations::test_postponed_annotations\nFAILED pyflakes/test/test_type_annotations.py::TestTypeAnnotations::test_variable_annotations\n2 failed, 14 passed, 154 warnings in 0.23s\n",
+    "runtime_sha256": "ba60ddb915306198ae9aa9ae29b790dc43726245fa0eacf57f3e6e33e01b8ae5",
+    "timed_out": false,
+    "workspace_adopted": true
+  },
+  "observations": {
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_annotated_async_def": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_not_a_typing_overload": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_postponed_annotations": "failed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsAdditionalComemnt": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsAssignedToPreviousNode": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsFullSignature": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsFullSignatureWithDocstring": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsInvalidDoesNotMarkAsUsed": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsMarkImportsAsUsed": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsNoWhitespaceAnnotation": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsStarArgs": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsSyntaxError": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsSyntaxErrorCorrectLine": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typingOverload": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_unused_annotation": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_variable_annotations": "failed"
+  },
+  "patch_application": [
+    {
+      "argv": [
+        "git",
+        "apply",
+        "--whitespace=nowarn",
+        "-"
+      ],
+      "exit_code": 0,
+      "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+      "output": "",
+      "runtime_sha256": "ba60ddb915306198ae9aa9ae29b790dc43726245fa0eacf57f3e6e33e01b8ae5",
+      "timed_out": false,
+      "workspace_adopted": true
+    }
+  ],
+  "phase": "base_with_regression",
+  "runtime_sha256": "ba60ddb915306198ae9aa9ae29b790dc43726245fa0eacf57f3e6e33e01b8ae5",
+  "setup_complete": true
+}

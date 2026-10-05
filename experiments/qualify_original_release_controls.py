@@ -90,7 +90,8 @@ def main(argv=None):
             verification = Path(authority["verification_path"])
             if not verification.is_absolute():
                 verification = Path(__file__).resolve().parents[1] / verification
-            runtime = Path(runtimes[task.task_id.rsplit(":", 1)[0]])
+            runtime_key = task.task_id if task.task_id in runtimes else task.repository
+            runtime = Path(runtimes[runtime_key])
             # The temporary process configuration permits the root-owned control
             # executor to verify this user-owned source Git identity.
             os.environ["GIT_CONFIG_COUNT"] = "1"

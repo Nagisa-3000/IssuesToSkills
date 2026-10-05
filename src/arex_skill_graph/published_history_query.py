@@ -16,20 +16,11 @@ from .public_snapshot import extract_public_archive
 from .task_context import EvidenceAnchor, TaskContext, assert_public
 
 
-def prepare_published_query(
-    input_path, qualification_path, metadata_path, archive_path, destination, *, environment=()
-):
-    """Import an exact pre-input PyPI sdist and original opened-event text.
-
-    Input and registry receipts are current validation attestations. No discussion,
-    repair or current Git-tag content enters this checkout. The new synthetic Git
-    commit is created now and is never presented as historical publication.
-    """
-    paths = [Path(x) for x in (input_path, qualification_path, metadata_path, archive_path)]
-    raw_input, raw_qualification, raw_metadata, archive = [x.read_bytes() for x in paths]
-    opened, qualified, metadata = [
-        json.loads(x) for x in (raw_input, raw_qualification, raw_metadata)
-    ]
+def verified_original_query_input(raw_input, raw_qualification):
+    """Validate exact original opened-input bytes and their existing attestation."""
+    if not isinstance(raw_input, bytes) or not isinstance(raw_qualification, bytes):
+        raise TypeError("original query validation requires exact bytes")
+    opened, qualified = json.loads(raw_input), json.loads(raw_qualification)
     if (
         qualified.get("schema") != "historical-query-original-opened-input-qualification-v1"
         or qualified.get("public_event_verified") is not True
@@ -65,6 +56,24 @@ def prepare_published_query(
         raise ValueError("original query needs its title and nonempty body")
     problem = issue["title"] + "\n\n" + issue["body"]
     assert_public(problem)
+    return opened, qualified, problem
+
+
+def prepare_published_query(
+    input_path, qualification_path, metadata_path, archive_path, destination, *, environment=()
+):
+    """Import an exact pre-input PyPI sdist and original opened-event text.
+
+    Input and registry receipts are current validation attestations. No discussion,
+    repair or current Git-tag content enters this checkout. The new synthetic Git
+    commit is created now and is never presented as historical publication.
+    """
+    paths = [Path(x) for x in (input_path, qualification_path, metadata_path, archive_path)]
+    raw_input, raw_qualification, raw_metadata, archive = [x.read_bytes() for x in paths]
+    opened, qualified, problem = verified_original_query_input(raw_input, raw_qualification)
+    metadata = json.loads(raw_metadata)
+    at = qualified["input_available_at"]
+    repository = qualified["canonical_repository"]
     selected = [x for x in metadata["urls"] if x["filename"] == paths[3].name]
     if len(selected) != 1:
         raise ValueError("published archive identity is ambiguous or missing")

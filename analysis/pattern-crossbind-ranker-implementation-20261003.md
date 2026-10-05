@@ -5,6 +5,8 @@
 本次交付原生 v4 包、当前绑定与重写、受约束 CrossBind、两阶段排序、时间隔离训练工具和独立修复 runner。
 **完成实现和合成验证；未完成完整历史采集、真实监督训练和正式 SWE 效果实验。**
 
+最新事实见[2026-10-06 验收状态](pattern-crossbind-ranker-status-20261006.md)与[机器快照 v31](results/pattern-crossbind-ranker-current-status-20261006-v31.json)：M0–M3 有实现，跨项目迁移/组合/排序收益未完整验收；M4–M6 未通过，正式 SWE 运行数为 0。
+
 ## Action 的输入输出和复用边界
 
 这里的 ActionContract 是本项目的内部契约，不是所有 Agent Skills 的统一标准。

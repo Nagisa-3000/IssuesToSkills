@@ -1,6 +1,6 @@
 **Pattern、CrossBind 与 Ranker 的实际完成度（2026-10-06）**
 
-**尚未全部完成。M0–M3 有主要实现和工程测试；M4 没有合格的训练 Ranker，M5 未联合冻结，M6 正式 SWE 运行数为 0。** 依据[机器快照 v30](results/pattern-crossbind-ranker-current-status-20261006-v30.json)。旧快照和失败记录保留，不以源码演练替代新 Issue 泛化或 SWE 验收。
+**尚未全部完成。M0–M3 有主要实现和工程测试；M4 没有合格的训练 Ranker，M5 未联合冻结，M6 正式 SWE 运行数为 0。** 依据[机器快照 v31](results/pattern-crossbind-ranker-current-status-20261006-v31.json)。旧快照和失败记录保留，不以源码演练替代新 Issue 泛化或 SWE 验收。
 
 | 阶段 | 已实现或已验收 | 尚缺的验收 |
 | --- | --- | --- |
@@ -83,3 +83,18 @@ Pyflakes #574 使用 2020-08-16 原始问题与更早发布的 2.2.0 sdist。原
 [Python 3.7 实际沙箱预检](controls/historical-python37-runtime-20261006-v2/README.md)通过，保留非特权执行器和 uv venv 配置格式的两次失败。#507 的公开复现需要 Python 3.8 语法，另已开始对应兼容解释器构建。解释器补丁版本与执行时间均按当前真实时间记录；不能据此回填历史发布证明。部分发行包缺少 master 上的代码或测试，仍需恢复有公开时间证据的 pre-input Git 源码。
 
 控制和目录准备没有调用模型、运行 solver 或生成效用标签。既有 31 条 Pylint 原生包作者任务继续串行运行，进度单独记录；全部来源晚于训练截点，不作为 pre-2021 Ranker 正例。M1 独立迁移、M2 互补组合、M3 有效校准、M4 训练 Ranker、M5 联合冻结和 M6 正式 SWE 仍未验收，整体目标未完成。
+
+
+**公开 Git 基线恢复与修正控制终态（v31）**
+
+[本次实际审计](results/public-branch-source-and-corrected-replay-preparation-audit-20261006-v1.json)将修正协议的发行版控制更新为终态：21/21 保留，19 条原始查询，2 项机械 PASS、17 项未合格、2 项原始输入缺口；完整独立重放接受仍为 0。结果见[修正协议控制](controls/pre2021-original-release-replay-20261006-v2/README.md)。已知修复仍仅供 evaluator，任何来源、补丁或环境缺口不产生候选失败标签。
+
+已补充共享原始输入校验和公开 Git 源恢复模块：以稳定仓库数字 ID、明确分支、严格 pre-input 时间和官方 GH Archive 原始 PushEvent 证明公开 head；核对 commit/blob 字节与 mode 后只复制该 head，depth-1 checkout 不包含后来对象。公开索引只定位小时，不能代替原事件证明，也不宣称完整 push 历史。[冻结定位工件](history-query-recovery/pre2021-public-branch-locator-20261006-v1/README.md)保存全部 1819 条相关仓库定位行及 18 个小时，不使用任意 top-N。
+
+第一版在扫描前遇到 str/Path 错误，第二版 18/18 归档请求被 HTTP403 拒绝，均保留。限长诊断证实既有审计 User-Agent 可访问相同 publisher 地址，现已修正请求标识并补充完整压缩流 hash/计数测试；[旧失败和诊断](history-query-recovery/pre2021-public-branch-source-failure-20261006-v2/README.md)不覆盖。v31 只保存带时间戳的新版真实进度，不能把 live 扫描或已验证 Push 投影算成已接受修复。
+
+[Python 3.8 copied namespace 预检](controls/historical-python38-runtime-20261006-v1/README.md)已通过。另按原始 Pylint 输入的 astroid/Python 报告准备兼容 runtime，并记录实际依赖约束与失败。原始版本报告仍是未观察的声明，#3468 的兼容 runtime 使用支持的 3.7 而报告为 3.6，#3798 的 astroid 为待源 requirements 核实的推断，不能宣称精确复现原用户环境。公开 Git query 与对应运行时尚需独立 replay 控制与验收。
+
+最新完整工程检查为 **832 passed、20 skipped（149.09 秒）**；专项 **71 passed（3.85 秒）**，五个改动文件 lint、格式和 diff 检查通过。代码字节与工程 receipt 的 SHA256 一致。本次源码恢复、runtime 准备和工程检查新增模型请求、solver 分支、效用标签、正式 SWE runs 均为 0；已有原生作者仍串行运行，其进度单独保存，全部 31 个来源晚于训练截止。
+
+M1 独立迁移、M2 真正互补的两父组合、M3 有效排序校准、M4 合格训练 Ranker、M5 联合冻结和 M6 正式 SWE 与消融仍未验收。整体目标保持 active，没有因工程测试或准备工作改成完成。
