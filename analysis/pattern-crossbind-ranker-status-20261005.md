@@ -1,6 +1,6 @@
 **Pattern、CrossBind 与 Ranker 的实际完成度（2026-10-05）**
 
-**尚未全部完成。M0–M3 有代码、接口和工程测试；真实功能与跨项目效果的验收仍不完整。M4 没有合格的训练 Ranker，M5 尚未联合冻结，M6 的正式 SWE 运行数为 0。** 本文依据[当前机器快照 v18](results/pattern-crossbind-ranker-current-status-20261005-v18.json)。旧快照、失败实验和未审阅候选继续保留，源内演练、包准入和正式修复结果分别统计。
+**尚未全部完成。M0–M3 有代码、接口和工程测试；真实功能与跨项目效果的验收仍不完整。M4 没有合格的训练 Ranker，M5 尚未联合冻结，M6 的正式 SWE 运行数为 0。** 本文依据[当前机器快照 v19](results/pattern-crossbind-ranker-current-status-20261005-v19.json)。旧快照、失败实验和未审阅候选继续保留，源内演练、包准入和正式修复结果分别统计。
 
 | 阶段 | 已有实现或已验证能力 | 尚缺的验收 |
 | --- | --- | --- |
@@ -28,14 +28,20 @@ Pylint #8120 的来源已通过有限范围的历史因果资格；原生包是�
 
 新增[模型上下文紧凑视图审计](results/compact-solver-context-engineering-audit-20261005-v1.json)对应修复已发布：完整 broker 结果、原 TaskContext 和独立审查输入继续封存；Solver 接收旧 Probe 与 Action 重复见证的身份、哈希、命令结果及必要摘录，没有自动 finish、事实晋升或 Oracle 放宽。相同 145000 token 的模拟协议对照中，父提交在记录后被预算预检阻止，新实现正常 finish，原失败见证仍 unreviewed。第四版末尾数据帧的共同协议测量中，请求的 UTF-8 保守 token 预留估计从 129653 降到 115328，低于当时原剩余预算 125542。第五版真实负结果说明此压缩仍不足以确保整个运行完成；需要进一步减少保留上下文重放，并向 Solver 明确区分本次已经取得的直接 Oracle 见证与此前尝试。后续保留原预算、完整证据和独立门槛，包准入、泛化与正式 SWE 仍未完成。
 
+第六版真实验证已结束：[v6 审计](results/native-async-lifecycle-validation-terminal-audit-20261005-v6.json)。与 v5 相同输入、原 300000 token 上限；8 次执行调用、2 次独立复核，204803 token，1 条 Action，正常 finish，0 字节新增 patch。但补充命令使用 runpy.run_path(..., run_name='__main__')，被探查脚本的 SystemExit 提前结束，后续资源哈希、sentinel 和 warning 检查未执行，stdout 为空。Solver 仍声称它们已完成；独立 policy 为 FAIL/unsupported_confirmation/UNKNOWN。两个直接 Oracle 退出 0 不足以补齐这些义务，来源验收不接受。
+
+第七版使用新输入明确要求独立只读资源审计，不能当作同输入压缩对照：[v7 审计](results/native-async-lifecycle-validation-terminal-audit-20261005-v7.json)。代码为 196ae46、原上限 300000；8 次执行调用、1 次独立复核，206254 token。九例行为、实际回归、资源哈希、sentinel 缺席及 warning 配置均获确认；下一次模型请求在预算预检被拒绝，0 条 Action、未 finish。独立 policy 为 UNKNOWN/unresolved/CONFIRMED，来源验收仍不接受，不能从领域确认自动生成记录或结束任务。两次 supervisor/watchdog 都已 terminal，历史作者已核对原 PID/start ticks 并恢复。
+
+[本轮进程见证日志工程审计](results/solver-run-process-journal-engineering-audit-20261005-v1.json)记录 current_run 视图：仅本轮实际 broker 结果、精确 argv、最新执行、失败覆盖旧成功、工作区变化后见证 stale。passed_process 只证明进程执行结果；完整 Task 与轨迹、原 300000 上限和独立 Oracle guard 保留。相同合成输入、145000 cap 的协议对照从一次请求后拒绝变为三次请求后记录并显式 finish，129076 用量；实际 LLM 调用和实际命令执行都是 0，记录仍 unreviewed。v7 的真实负结果仍需通过实际请求几何分析与更有针对性的模型投影解决，尚未实现新的分页证据 reader。
+
 Ruff #5124 的依赖准备取得实质进展。[精确 Git 依赖恢复](results/ruff-5124-pinned-dependency-recovery-audit-20261005-v3-complete.json)获得原锁定的三个提交；LibCST 从上游取得相同提交，未替换 revision。[离线 vendor 审计](results/ruff-5124-offline-vendor-preparation-audit-20261005-v1.json)核对 310 个原始 registry 包、319 个 vendor 包和 16438 个文件哈希，使用官方 Cargo vendor 归一化，未手工改依赖 manifest。Cargo.lock 与历史 base 源码保持精确一致。
 
-[测试构建预检](results/ruff-5124-host-build-preflight-audit-20261005-v1.json)通过 cargo test --lib --no-run，0 次模型调用、0 个已执行测试。Rust 隔离 harness 及 base／base+regression／fixed 三阶段因果验证仍未完成，尚未抽取或准入新的 Ruff Skill，未确认跨项目 Pattern 或运行两父组合。
+[测试构建预检](results/ruff-5124-host-build-preflight-audit-20261005-v1.json)原先仅证明编译。本轮[隔离历史因果资格](results/ruff-5124-isolated-causal-qualification-audit-20261005-v1.json)进一步完成三组精确控制：base 执行 1 项命名 Rust 测试并通过；base+新 fixture 保留原 expected snapshot，执行 1 项测试、退出 101，实际触发原始 “not a With, For, or AsyncFor” panic；精确 fixed tree 执行同一项测试并通过。原 Cargo.lock、Rust 1.74.1、319 个 vendor 包和工作区/保护资源封存保持一致，未重新生成 snapshot；INSTA_UPDATE=no、INSTA_FORCE_PASS=0、INSTA_WORKSPACE_ROOT=/workspace。四版准备/基础设施尝试及失败全部保留。此资格限定于一个历史库回归测试，0 次 LLM 调用；尚未由系统抽取或准入新的 Ruff Skill，未确认跨项目 Pattern 或接受两父组合。两个来源修复均在 2023 年，不符合 pre-2021 Ranker 训练截止。
 
 本次源码还修复了公共 Git archive 的链接身份：保留 data_filter 的安全检查，重新检查原始目标的包含关系，并保留 contained symlink 的原始 target 文本及末尾分隔符。四项回归覆盖真实 Git tree 身份；此前错误导出和失败准备没有删除。
 
-当前完整工程检查 **642 passed、19 skipped**，耗时 86.42 秒。专项 **62 passed、5 skipped**；修改文件的 Ruff E4/E7/E9/F 与 git diff --check 通过。跳过项不计为通过，工程检查不替代原生功能、迁移或正式 SWE 验收。
+当前完整工程检查 **660 passed、19 skipped**；对应检查批次耗时 97.34 秒。专项 **82 passed、5 skipped**；修改文件的 Ruff E4/E7/E9/F 与 git diff --check 通过。跳过项不计为通过，工程检查不替代原生功能、迁移或正式 SWE 验收。
 
 历史人口保持 Pylint 5273、Pyflakes 501、Ruff 3582，共 9356 个 Issue。主截止 T=2024-01-01T00:00:00Z，训练截止 τ=2021-01-01T00:00:00Z，均严格排除截止时刻及以后信息；Pylint #10034 继续排除正式评价。已知时间线缺口恢复到独立版本，旧输入与旧结果不改写；仍保留三项权限受限元数据。Pylint 的 78 个合格来源是 changed-test-only 范围。完整人口存档并不等于三项目所有历史经验完成资格复验或功能准入。
 
-后续仍按依赖推进：完成原生包正反例和当前验证；完成 Ruff 的隔离因果对照；由独立真实来源归纳机制并执行单 Workflow 重写、互补两父组合；获得有效适用性及效果监督后训练和校准；联合冻结 M5；最后执行正式 SWE、模块消融与同候选池排序比较。整体目标保持未完成。
+后续仍按依赖推进：完成原生包正反例和当前验证；由已限定资格的 Ruff 来源通过系统抽取和验收原生包；由独立真实来源归纳机制并执行单 Workflow 重写、互补两父组合；获得有效适用性及效果监督后训练和校准；联合冻结 M5；最后执行正式 SWE、模块消融与同候选池排序比较。整体目标保持未完成。
