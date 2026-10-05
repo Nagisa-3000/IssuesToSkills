@@ -184,7 +184,7 @@ def author_case(record, verification, diff, policy, output, audit, config):
     result_path = audit / "extraction-result.json"
     if result_path.exists():
         result = json.loads(result_path.read_text())
-        if result["input_identity"] != identity:
+        if fingerprint(result["input_identity"]) != fingerprint(identity):
             raise ValueError("native authoring checkpoint identity changed")
         return result
     audit.mkdir(parents=True, exist_ok=True)

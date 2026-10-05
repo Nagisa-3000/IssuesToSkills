@@ -1,0 +1,58 @@
+{
+  "status": "not_executed",
+  "cases": [
+    {
+      "id": "compatible-special-form",
+      "setup": "Current safe inference exposes a function-like Optional operand decorated with typing._SpecialForm; the owner counts bare callables and emits when exactly one is counted. Current owners and public Oracles are bound.",
+      "expected": "applicable",
+      "checks": [
+        "Use the qualified decorator exclusion.",
+        "Preserve safe inference and exactly-one eligible counting."
+      ]
+    },
+    {
+      "id": "compatible-direct-raise",
+      "setup": "A public false positive exposes a supported bare-callable node with an immediate body Raise and compatible decorator/body APIs. Current owners and public Oracles are bound.",
+      "expected": "applicable",
+      "checks": [
+        "Use only a shallow body scan.",
+        "Keep ordinary callable controls in validation."
+      ]
+    },
+    {
+      "id": "ambiguous-inference",
+      "setup": "Current inference cannot determine the operand node and neither supported exclusion is observed.",
+      "expected": "insufficient",
+      "checks": [
+        "Authorize probes only.",
+        "Do not mark supported-mechanism-compatible PASS."
+      ]
+    },
+    {
+      "id": "incompatible-language",
+      "setup": "The implementation exposes non-Python objects with no supported function body or qualified decorator representation.",
+      "expected": "not_applicable",
+      "checks": [
+        "Reject binding to the Python realization.",
+        "Do not invent a bridge."
+      ]
+    },
+    {
+      "id": "transitive-raise-only",
+      "setup": "The function calls another raising function but has no immediate Raise and no typing._SpecialForm decoration.",
+      "expected": "not_applicable",
+      "checks": [
+        "Reject unsupported transitive raise analysis."
+      ]
+    },
+    {
+      "id": "already-correct",
+      "setup": "Both exclusions already exist and relevant public reproductions and controls show correct behavior.",
+      "expected": "not_applicable",
+      "checks": [
+        "Do not make an unnecessary repair.",
+        "Record already-satisfied current behavior."
+      ]
+    }
+  ]
+}

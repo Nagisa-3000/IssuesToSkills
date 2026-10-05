@@ -1,0 +1,23 @@
+{
+  "status": "not_executed",
+  "cases": [
+    {
+      "id": "same-name-nonlocal-try-read",
+      "input": "A nested Python function explicitly declares nonlocal count, reads initialized enclosing count in try, increments it in except, and receives used-before-assignment.",
+      "expected": "activate",
+      "reason": "The public symptom and same-name scope conditions match."
+    },
+    {
+      "id": "scope-unspecified",
+      "input": "A try-block read reports used-before-assignment and the function has a nonlocal declaration, but neither its name nor its frame is known.",
+      "expected": "clarify",
+      "reason": "Probe the queried name and declaration frame before recommending an edit."
+    },
+    {
+      "id": "unrelated-nonlocal",
+      "input": "Only unrelated is declared nonlocal; count is read in try and assigned in except in the same function.",
+      "expected": "do_not_activate",
+      "reason": "The queried count is local; the diagnostic must not be exempted."
+    }
+  ]
+}

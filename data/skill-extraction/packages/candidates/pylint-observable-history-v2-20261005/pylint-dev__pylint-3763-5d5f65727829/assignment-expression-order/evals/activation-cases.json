@@ -1,0 +1,29 @@
+{
+  "status": "not_executed",
+  "cases": [
+    {
+      "id": "conditional-test-assignment",
+      "input": "A Python checker emits used-before-assignment on `foo if (foo := 3 - 2) > 0 else 0`.",
+      "expected": "activate",
+      "reason": "The reported expression matches the supported assignment-before-branch-read mechanism; current probes still precede edits."
+    },
+    {
+      "id": "missing-expression",
+      "input": "A user reports E0601 involving a walrus expression but supplies no expression or scope facts.",
+      "expected": "clarify",
+      "reason": "Execution order and containing statement are unknown."
+    },
+    {
+      "id": "genuine-early-read",
+      "input": "E0601 occurs on `print(err_b and (err_b := 2))` without a prior definition.",
+      "expected": "do_not_activate",
+      "reason": "The left operand reads before the assignment and must retain the diagnostic."
+    },
+    {
+      "id": "independent-warning-only",
+      "input": "The standalone valid conditional expression has only a pointless-statement warning.",
+      "expected": "do_not_activate",
+      "reason": "This Workflow preserves that independent warning."
+    }
+  ]
+}

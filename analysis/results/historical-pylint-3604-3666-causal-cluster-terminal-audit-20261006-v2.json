@@ -1,0 +1,64 @@
+{
+  "schema": "historical-pylint-3604-3666-causal-cluster-terminal-audit-v2",
+  "audited_at_utc": "2026-10-05T16:35:18.066373+00:00",
+  "status": "canonical_review_accepted",
+  "review": {
+    "duplicate_groups": [
+      {
+        "evidence_refs": [
+          "pylint-dev/pylint:3604:body",
+          "pylint-dev/pylint:3604:fix",
+          "pylint-dev/pylint:3666:body",
+          "pylint-dev/pylint:3666:fix"
+        ],
+        "members": [
+          "pylint-dev/pylint:3604",
+          "pylint-dev/pylint:3666"
+        ],
+        "reason": "These are distinct reports of a shared causal defect, not literal copies: the Pylint 2.5 pragma tokenizer used an overly restrictive MESSAGE_STRING character class for previously accepted symbolic disable targets. The initial class [A-Za-z\\-]{2,} excluded both underscores and digits. The first repair adds underscores; the second repair directly modifies that resulting class to add digits. Thus underscore-containing and digit-containing names trigger different manifestations of the same incomplete identifier-token definition. Grouping is supported by the concrete shared tokenizer rule and successive repairs, rather than merely by similar symptoms or related features."
+      }
+    ],
+    "reviews": [
+      {
+        "evidence_refs": [
+          "pylint-dev/pylint:3604:body",
+          "pylint-dev/pylint:3604:fix",
+          "pylint-dev/pylint:3604:regression"
+        ],
+        "issue_id": "pylint-dev/pylint:3604",
+        "mechanism": "The pragma parser's MESSAGE_STRING character class excluded underscores, splitting the plugin message name found-_-in-module-class into invalid fragments instead of recognizing a complete disable target.",
+        "reason": "The report identifies a regression from Pylint 2.4.4 to 2.5.0: the symbolic name produces bad-option-value errors and fails to suppress the warning, whereas W9902 works. The implementation adds underscores to MESSAGE_STRING. Despite the changelog and test naming referring to dashes, the regression assertion uses raw_input-builtin, which concretely exercises an underscore."
+      },
+      {
+        "evidence_refs": [
+          "pylint-dev/pylint:3666:body",
+          "pylint-dev/pylint:3666:fix",
+          "pylint-dev/pylint:3666:regression"
+        ],
+        "issue_id": "pylint-dev/pylint:3666",
+        "mechanism": "The pragma parser's MESSAGE_STRING character class excluded digits, preventing a checker name such as j3-no-jfly from being recognized as a complete disable target.",
+        "reason": "The report traces the 2.4.4-to-2.5.0 regression to the MESSAGE_STRING regex and describes an error reporting only the suffix -no-jfly. The implementation adds digits to the character class, and the regression assertion requires j3-custom-checker to remain a single parsed message name."
+      }
+    ],
+    "uncertain_groups": []
+  },
+  "input_sha256": "434b38ff554cb349126ed577747c239d27d9da5621d16b0abb96f3da9041af22",
+  "response_sha256": "34ddb836a3143a570c12e09c45fe685e5b1c8ac2aba6c55e5a9286e45993932c",
+  "receipt": {
+    "path": "tmp/serial-identity-review-and-Ruff-recovery-v2-20261006/causal-review/review/cluster-review.json",
+    "sha256": "6bbe319ae34dbf8c4107faf6aa222f8175f670afebc3c7c92dc915a971643d99"
+  },
+  "review_system_supplement_manifest": {
+    "path": "tmp/serial-identity-review-and-Ruff-recovery-v2-20261006/causal-review/dispatch-manifest.json",
+    "sha256": "38819524ac5e529a49dbbcc3ded700716315bd2802d6aaf346bb5be931bc6b49"
+  },
+  "actual_LLM_calls": 1,
+  "prior_failed_response_preserved": true,
+  "citation_retry_did_not_force_independence": true,
+  "same_model_family_limit": true,
+  "source_3604_as_independent_donor_for_query_3666_allowed": false,
+  "identity_mapping_reconciliation_still_required": true,
+  "actor_input_unchanged": true,
+  "repair_utility_labels_created": false,
+  "formal_SWE_runs": 0
+}
