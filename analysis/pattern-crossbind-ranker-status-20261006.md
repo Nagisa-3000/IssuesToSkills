@@ -1,6 +1,6 @@
 **Pattern、CrossBind 与 Ranker 的实际完成度（2026-10-06）**
 
-**尚未全部完成。M0–M3 有主要实现和工程测试；M4 没有合格的训练 Ranker，M5 未联合冻结，M6 正式 SWE 运行数为 0。** 依据[机器快照 v29](results/pattern-crossbind-ranker-current-status-20261006-v29.json)。旧快照和失败记录保留，不以源码演练替代新 Issue 泛化或 SWE 验收。
+**尚未全部完成。M0–M3 有主要实现和工程测试；M4 没有合格的训练 Ranker，M5 未联合冻结，M6 正式 SWE 运行数为 0。** 依据[机器快照 v30](results/pattern-crossbind-ranker-current-status-20261006-v30.json)。旧快照和失败记录保留，不以源码演练替代新 Issue 泛化或 SWE 验收。
 
 | 阶段 | 已实现或已验收 | 尚缺的验收 |
 | --- | --- | --- |
@@ -68,3 +68,18 @@ Pyflakes #574 使用 2020-08-16 原始问题与更早发布的 2.2.0 sdist。原
 这个结果仅是**版本专用机械控制通过**，独立复核仍未完成；适配后的已知修复属于 evaluator，不能提供给 planner、Ranker 或 solver。#486 的后续 AnnotationState 修复晚于 #574 输入，不能作为该问题的历史 donor/Bridge。控制脚本首次保存 diff 时假设快照含 .git 而失败；新版本改为比较源码字节，旧尝试保留。
 
 本次新增实际模型调用、solver 分支、效用标签和正式 SWE 运行均为 **0**。M1 独立新 Issue 适配、M2 两父互补执行、M3 有用排序校准、M4 合格训练 Ranker、M5 联合冻结与 M6 正式 SWE 仍未通过验收。
+
+
+**原始重放控制与逐题时间目录的补齐**
+
+[本次审计](results/original-replay-controls-and-temporal-catalog-preparation-audit-20261006-v1.json)新增版本化 evaluator 重放控制实现。控制在原始公开源码上先冻结测试集合，再执行已知修复，验证相同运行时、F2P、PTP、原有测试保留和来源字节未变；这些控制不替换原生 SourceRecord，不向 planner、Ranker 或 solver 提供已知答案。
+
+原生 F2P/PTP 的测试名称可以重叠：同一个既有测试可能扩展断言后成为回归 F2P。因此当前实现保存交集，并要求匹配测试体 AST 或精确参数化 fixture 的变化见证；无见证的原有 passing→failed 仍拒绝。修正后完整工程测试为 **808 passed、20 skipped（109.14 秒）**，专项 53 passed，lint 和格式通过。这些是工程检查，不代表独立迁移或 SWE 成功。
+
+[旧协议全部控制](controls/pre2021-original-release-replay-20261006-v1/README.md)保留 21/21 注册目标，其中 19 条有恢复输入：2 个机械 PASS、13 个控制未合格、4 个旧交集检查导致的执行缺口、2 个原始输入缺口。不得把资格缺口写成候选失败标签；两项 PASS 也尚未独立验收。修正协议已启动新的 21 条控制，机器快照只记录有时间戳的进度，不将其写成终态。
+
+[19 份逐输入时间目录](history-query-recovery/pre2021-temporal-catalogs-20261006-v1/README.md)已完整生成：统一校验全部 75 个已供应原生包后，按每个问题输入时间和因果排除规则重建候选。最早 #395 无合格历史；#574 有 16 个时间合格包。仅证明准入，不代表相关性、绑定、排序或修复效果。75 个供应包仍不是完整历史普查。
+
+[Python 3.7 实际沙箱预检](controls/historical-python37-runtime-20261006-v2/README.md)通过，保留非特权执行器和 uv venv 配置格式的两次失败。#507 的公开复现需要 Python 3.8 语法，另已开始对应兼容解释器构建。解释器补丁版本与执行时间均按当前真实时间记录；不能据此回填历史发布证明。部分发行包缺少 master 上的代码或测试，仍需恢复有公开时间证据的 pre-input Git 源码。
+
+控制和目录准备没有调用模型、运行 solver 或生成效用标签。既有 31 条 Pylint 原生包作者任务继续串行运行，进度单独记录；全部来源晚于训练截点，不作为 pre-2021 Ranker 正例。M1 独立迁移、M2 互补组合、M3 有效校准、M4 训练 Ranker、M5 联合冻结和 M6 正式 SWE 仍未验收，整体目标未完成。
