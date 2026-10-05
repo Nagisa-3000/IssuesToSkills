@@ -77,3 +77,49 @@ def test_archive_rejects_symlink_escape(tmp_path, target):
         archive.addfile(member)
     with pytest.raises(ValueError, match="escapes"):
         extract_public_archive(stream.getvalue(), tmp_path / "contained")
+
+
+@pytest.mark.parametrize("target", ["target/", "./target/", "nested/../target/"])
+def test_contained_directory_link_keeps_exact_historical_target(tmp_path, target):
+    stream = io.BytesIO()
+    with tarfile.open(fileobj=stream, mode="w") as archive:
+        for directory in ("target", "nested"):
+            member = tarfile.TarInfo(directory)
+            member.type = tarfile.DIRTYPE
+            archive.addfile(member)
+        member = tarfile.TarInfo("alias")
+        member.type, member.linkname = tarfile.SYMTYPE, target
+        archive.addfile(member)
+    root = tmp_path / "public"
+    extract_public_archive(stream.getvalue(), root)
+    assert os.readlink(root / "alias") == target
+    assert (root / "alias").resolve() == root / "target"
+
+
+def test_historical_git_tree_identity_survives_directory_link_extraction(tmp_path):
+    source = tmp_path / "source"
+    source.mkdir()
+    subprocess.run(["git", "init", "-q", str(source)], check=True)
+    (source / "fixtures").mkdir()
+    (source / "fixtures/input.py").write_text("print(1)\n")
+    (source / "corpus").symlink_to("fixtures/")
+    git(source, "add", "--force", "--all")
+    git(
+        source,
+        "-c",
+        "user.name=Fixture",
+        "-c",
+        "user.email=fixture@example.invalid",
+        "commit",
+        "-qm",
+        "Pinned directory link",
+    )
+    base = git(source, "rev-parse", "HEAD", text=True).strip()
+    raw_commit = git(source, "cat-file", "commit", base)
+    tree = git(source, "rev-parse", base + "^{tree}", text=True).strip()
+    root = tmp_path / "public"
+    root.mkdir()
+    extract_public_archive(exact_git_tar(["git", "-C", str(source)], base), root)
+    initialize_public_base(root, base, raw_commit, tree)
+    assert os.readlink(root / "corpus") == "fixtures/"
+    assert git(root, "rev-parse", "HEAD^{tree}", text=True).strip() == tree

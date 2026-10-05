@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -42,6 +43,30 @@ from .workspace_state import (
 )
 from .workspace_transactions import run_scoped_command
 from .workflow_rewriter import rebind_frozen_plan
+
+
+def _next_trace_sequence(task, prefixes, observations=()):
+    """Continue witness identities without replacing evidence retained by a Task."""
+    pattern = re.compile(
+        r"(?<![A-Za-z0-9_-])(?:" + "|".join(re.escape(p) for p in prefixes) + r")([0-9]+)(?=$|:)"
+    )
+    identities = [anchor.id for anchor in task.anchors]
+    for observation in observations:
+        if not isinstance(observation, dict):
+            continue
+        identity = observation.get("observation_id")
+        if isinstance(identity, str):
+            identities.append(identity)
+        record = observation.get("record")
+        if isinstance(record, dict) and isinstance(record.get("id"), str):
+            identities.append(record["id"])
+    return (
+        max(
+            (int(match[1]) for identity in identities for match in pattern.finditer(identity)),
+            default=-1,
+        )
+        + 1
+    )
 
 
 class IsolationUnavailable(RuntimeError):
@@ -269,6 +294,9 @@ class AdaptiveSolver:
         "write_file requires path and complete content (both strings). "
         "run_public_command requires argv, an array of command/argument strings, and optional timeout seconds; "
         "for shell syntax use argv=['bash','-c','the public shell command']. A command string alone is invalid. "
+        "Execute each validation CurrentOracle.command as its own run_public_command request with the exact argv, "
+        "and cite that request's observation ID. Shell or subprocess wrappers and printed subcommand results "
+        "may supplement these checks, but do not witness a bound validation Oracle. "
         "read_skill_resource requires package_id and resource strings. refresh_guidance accepts code_paths, a string array. "
         "record_action_observation requires action_id, current context_revision, summary and outputs. "
         "Each declared output has port_name, observation_ids and artifact_paths; cite actual broker results or current files. "
@@ -345,6 +373,14 @@ class AdaptiveSolver:
         ended, failed = False, ""
         action_catalog, action_observations, broker_observations = {}, [], {}
         action_output_reviews, reviewed_records = [], set()
+        observation_offset = max(
+            0,
+            _next_trace_sequence(
+                task, ("current:probe:", "public:observation:"), initial_observations
+            )
+            - len(observations),
+        )
+        action_result_offset = _next_trace_sequence(task, ("action-result:",), initial_observations)
 
         def register_actions(actions):
             for action in actions:
@@ -783,7 +819,7 @@ class AdaptiveSolver:
                         result["workspace_execution_sha256"] = public_workspace_execution_sha256(
                             current.root
                         )
-                        anchor_id = "current:probe:" + str(len(observations))
+                        anchor_id = "current:probe:" + str(observation_offset + len(observations))
                         anchor = EvidenceAnchor(
                             anchor_id,
                             "probe",
@@ -822,7 +858,8 @@ class AdaptiveSolver:
                                 args,
                                 current,
                                 broker_observations,
-                                record_id="action-result:" + str(len(action_observations)),
+                                record_id="action-result:"
+                                + str(action_result_offset + len(action_observations)),
                             )
                         except ValueError as exc:
                             result = {
@@ -907,7 +944,9 @@ class AdaptiveSolver:
                         selected = None
                         guidance = "Public tool changed current code; re-observe prerequisites and refresh guidance."
                     result["operation"] = operation
-                    result["observation_id"] = "public:observation:" + str(len(observations))
+                    result["observation_id"] = "public:observation:" + str(
+                        observation_offset + len(observations)
+                    )
                     result["context_revision"] = current.revision
                     if operation in {"read_file", "write_file", "run_public_command"}:
                         broker_observations[result["observation_id"]] = dict(result)

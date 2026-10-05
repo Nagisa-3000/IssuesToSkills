@@ -11,6 +11,20 @@ from pathlib import Path
 from .skill_packages import _resolve
 
 
+def _public_member_filter(member, destination):
+    filtered = tarfile.data_filter(member, destination)
+    if filtered is not None and member.issym():
+        root = Path(destination).resolve()
+        path = _resolve(root, member.name)
+        target = Path(member.linkname)
+        if target.is_absolute() or not (path.parent / target).resolve().is_relative_to(root):
+            raise ValueError("public archive symlink escapes its repository")
+        # data_filter normalizes linkname on recent Python versions. Git stores
+        # the original target bytes, including meaningful trailing separators.
+        return filtered.replace(linkname=member.linkname)
+    return filtered
+
+
 def extract_public_archive(raw, destination):
     destination = Path(destination).resolve()
     with tarfile.open(fileobj=io.BytesIO(raw)) as archive:
@@ -27,7 +41,7 @@ def extract_public_archive(raw, destination):
                     destination
                 ):
                     raise ValueError("public archive symlink escapes its repository")
-        archive.extractall(destination, filter="data")
+        archive.extractall(destination, filter=_public_member_filter)
     # Recheck resolved chains after extraction, including links through links.
     for path in destination.rglob("*"):
         if path.is_symlink() and not path.resolve().is_relative_to(destination):

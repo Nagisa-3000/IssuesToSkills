@@ -2,6 +2,9 @@
 
 import json
 import subprocess
+from dataclasses import asdict, replace
+
+import pytest
 from pathlib import Path
 
 from adaptive_fixture import make_fixture
@@ -197,3 +200,113 @@ def test_invalid_approved_witness_is_rejected_and_can_be_corrected(tmp_path):
     assert len(result["action_observations"]) == 1
     assert result["action_observations"][0]["witnesses"][0]["record"]["exit_code"] != 0
     assert not result["action_observations"][0]["current_ports_promoted"]
+
+
+@pytest.mark.parametrize("retained_public_id", [None, 12])
+def test_resumed_observation_ids_preserve_old_bindings_and_oracles(tmp_path, retained_public_id):
+    from arex_skill_graph.task_context import (
+        CurrentOracle,
+        EvidenceAnchor,
+        ObservedFact,
+        SemanticCheck,
+    )
+
+    package, task, policy = make_fixture(tmp_path)
+    action = package.actions[0]
+    old_probe = EvidenceAnchor(
+        "current:probe:0", "probe", "Retained reviewed fixture probe", task.base_commit, exit_code=0
+    )
+    old_record = EvidenceAnchor(
+        "action-result:4:tool:public:observation:8",
+        "probe",
+        "Retained fixture Action witness",
+        task.base_commit,
+        exit_code=0,
+    )
+    binding = replace(
+        task.bindings[0], evidence_refs=(*task.bindings[0].evidence_refs, old_probe.id)
+    )
+    oracle = CurrentOracle(
+        action.id,
+        action.oracle[0].id,
+        "Retained fixture Oracle, not a historical repair success claim",
+        ("python3", "checker.py"),
+        (old_probe.id,),
+    )
+    task = task.update(
+        anchors=(old_probe, old_record),
+        facts=(ObservedFact("retained_review", True, (old_probe.id,)),),
+        checks=(
+            SemanticCheck("retained_review", "PASS", "Fixture review", (old_probe.id,), "fixture"),
+        ),
+        bindings=(binding,),
+        oracles=(oracle,),
+    )
+    initial = (
+        ()
+        if retained_public_id is None
+        else ({"observation_id": f"public:observation:{retained_public_id}"},)
+    )
+    next_public = 9 if retained_public_id is None else 13
+    steps = [
+        {
+            "operation": "run_public_command",
+            "arguments": {"argv": ["python3", "checker.py"]},
+            "rationale": "Obtain a new actual failed probe without replacing the retained witness.",
+        },
+        {
+            "operation": "record_action_observation",
+            "arguments": {
+                "action_id": action.id,
+                "context_revision": task.revision + 1,
+                "summary": "Record this actual fixture failure without promoting it.",
+                "outputs": [
+                    {
+                        "port_name": port.name,
+                        "observation_ids": [f"public:observation:{next_public}"],
+                        "artifact_paths": ["checker.py"],
+                    }
+                    for port in action.outputs
+                ],
+            },
+            "rationale": "Keep the new Action record in a distinct namespace.",
+        },
+        {"operation": "finish", "arguments": {}, "rationale": "End resumed protocol fixture."},
+    ]
+
+    class RetentionReplay(ReplayTransport):
+        def complete(self, **kwargs):
+            current = json.loads(kwargs["user"])["current"]
+            assert next(a for a in current["anchors"] if a["id"] == old_probe.id) == asdict(
+                old_probe
+            )
+            assert next(a for a in current["anchors"] if a["id"] == old_record.id) == asdict(
+                old_record
+            )
+            assert binding.role in {v["role"] for v in current["bindings"]}
+            assert oracle.source_oracle_id in {v["source_oracle_id"] for v in current["oracles"]}
+            assert any(v["key"] == "retained_review" for v in current["facts"])
+            assert any(v["key"] == "retained_review" for v in current["checks"])
+            return super().complete(**kwargs)
+
+    with CatalogStore(tmp_path / "resumed.sqlite") as store:
+        store.initialize()
+        result = AdaptiveSolver(
+            RetentionReplay(steps),
+            WorkflowRanker(),
+            store,
+            policy,
+            BudgetLedger(BudgetCaps(history_tokens=200000)),
+            tools_factory=FixtureTools,
+        ).run(
+            task,
+            use_frozen_selection=True,
+            recordable_actions=(action,),
+            initial_observations=initial,
+        )
+    assert result["solver_ended"] and not result["failure"], result
+    (record,) = result["action_observations"]
+    assert record["id"] == "action-result:5"
+    assert record["witnesses"][0]["id"] == f"action-result:5:tool:public:observation:{next_public}"
+    assert record["witnesses"][0]["record"]["exit_code"] != 0
+    assert record["semantic_validation"] == "unreviewed" and not record["current_ports_promoted"]
