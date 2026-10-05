@@ -320,7 +320,12 @@ class AdaptiveSolver:
         read_only_workspace=False,
         resume_reviewed_state=False,
         enforce_catalog_prerequisites=False,
+        retain_public_state_dir=None,
     ):
+        if retain_public_state_dir is not None:
+            from .public_task_state import public_state_destination
+
+            public_state_destination(retain_public_state_dir, task.root)
         self.ledger.check_time()
         if type(read_only_workspace) is not bool:
             raise ValueError("public workspace mode must be explicitly boolean")
@@ -944,6 +949,14 @@ class AdaptiveSolver:
                 "benchmark_resolved": None,
                 "validated_resolved": None,
             }
+            if retain_public_state_dir is not None:
+                from .public_task_state import retain_public_task_state
+
+                retained, retention = retain_public_task_state(
+                    current, task, retain_public_state_dir
+                )
+                result["final_public_task"] = retained.to_dict()
+                result["public_state_retention"] = retention
             # The callback is invoked only after the last possible model/tool/guidance call.
             if evaluator is not None:
                 result["evaluation"] = evaluator(task, patch)

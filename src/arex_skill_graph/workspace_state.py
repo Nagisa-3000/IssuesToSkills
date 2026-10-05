@@ -4,13 +4,29 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
+
+
+def _public_paths(root):
+    """Visit public entries without reading excluded Git object databases."""
+    pending = [root]
+    while pending:
+        directory = pending.pop()
+        with os.scandir(directory) as entries:
+            for entry in entries:
+                if entry.name == ".git":
+                    continue
+                path = Path(entry.path)
+                yield path
+                if entry.is_dir(follow_symlinks=False):
+                    pending.append(path)
 
 
 def public_workspace_entries(root):
     root = Path(root).resolve()
     entries, size = {".": {"kind": "directory", "mode": root.stat().st_mode & 0o7777}}, 0
-    for path in sorted(root.rglob("*")):
+    for path in sorted(_public_paths(root)):
         relative = path.relative_to(root).as_posix()
         if ".git" in Path(relative).parts:
             continue
@@ -99,5 +115,8 @@ def copy_sealed_public_workspace(source, destination, expected_execution_sha256)
     for name in sorted(before, key=lambda n: (n != ".", n.count("/")), reverse=True):
         if "mode" in before[name]:
             (destination / name).chmod(before[name]["mode"])
-    if public_workspace_entries(source) != before or public_workspace_entries(destination) != before:
+    if (
+        public_workspace_entries(source) != before
+        or public_workspace_entries(destination) != before
+    ):
         raise ValueError("sealed public state changed while transferring execution input")

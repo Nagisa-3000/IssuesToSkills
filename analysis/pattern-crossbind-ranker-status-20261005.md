@@ -2,7 +2,7 @@
 
 **目标尚未全部完成。M0–M3 已有实现和契约测试，真实功能、跨项目重写与组合验收仍不完整；M4 尚无合格的训练 Ranker；M5 尚未正式冻结；M6 的正式 SWE 运行仍为 0。**
 
-最新机器快照为 [v13](results/pattern-crossbind-ranker-current-status-20261005-v13.json)。[v12](results/pattern-crossbind-ranker-current-status-20261005-v12.json) 保留时间线恢复完成时的状态。[v11](results/pattern-crossbind-ranker-current-status-20261005-v11.json) 保留资格复验与时间线缺口发现时的状态。[v10](results/pattern-crossbind-ranker-current-status-20261005-v10.json) 保留端口拒绝控制完成时的状态。[v9](results/pattern-crossbind-ranker-current-status-20261005-v9.json) 保留原生验证第二版完成时的状态。[v8](results/pattern-crossbind-ranker-current-status-20261005-v8.json) 保留验证第二版运行前的状态。[v7](results/pattern-crossbind-ranker-current-status-20261005-v7.json) 及更早版本保留当时的状态，不随新结果改写。代码、真实 Action 验收、泛化效果分别统计。
+最新机器快照为 [v14](results/pattern-crossbind-ranker-current-status-20261005-v14.json)。[v13](results/pattern-crossbind-ranker-current-status-20261005-v13.json) 保留无 artifact 端口协议发布时的状态。[v12](results/pattern-crossbind-ranker-current-status-20261005-v12.json) 保留时间线恢复完成时的状态。[v11](results/pattern-crossbind-ranker-current-status-20261005-v11.json) 保留资格复验与时间线缺口发现时的状态。[v10](results/pattern-crossbind-ranker-current-status-20261005-v10.json) 保留端口拒绝控制完成时的状态。[v9](results/pattern-crossbind-ranker-current-status-20261005-v9.json) 保留原生验证第二版完成时的状态。[v8](results/pattern-crossbind-ranker-current-status-20261005-v8.json) 保留验证第二版运行前的状态。[v7](results/pattern-crossbind-ranker-current-status-20261005-v7.json) 及更早版本保留当时的状态，不随新结果改写。代码、真实 Action 验收、泛化效果分别统计。
 
 | 阶段 | 已实现或实际完成 | 尚缺的验收 |
 | --- | --- | --- |
@@ -119,3 +119,20 @@ Ruff #5124 从正确的历史 base c811213302f76c255da89d374bd8ab42f3b223e5 开�
 串行模型作业等待实际校准成功，再在历史作者新响应的完成检查点暂停它，核查无 socket／子进程后运行原生诊断及独立上下文复核；watchdog 与 finally 负责恢复历史作者。审计时该作业尚未执行模型请求，不能计入 Action 功能成功。第三版准备成功也只会建立公开测试控制，不能替代模型真实执行和独立效果验收。
 
 新增核心接口与校准测试后，完整工程测试为 **616 passed，19 skipped，105.04 秒**。详见 [协议审计](results/native-effect-only-action-protocol-audit-20261005-v1.json)。没有新增已确认 Pattern、双父组合执行、合格训练 Ranker、KB 晋升或正式 SWE 运行。M0–M6 的整体目标仍未完成。
+
+
+## 实际 Pylint 诊断验收与原生修改现场保留（v14）
+
+Pylint #8120 的九场景公开探针已完成实际行为校准。原始 q0 的探针退出 1、定向套件退出 0；已有历史钩子的 q1 两者退出 0；刻意破坏 dispatcher 的 q2 两者退出 1。共执行 6 个隔离公开命令，正向诊断控制保留，无模型调用。q3 为受控的不可执行边界，尚未执行对应原生 Action 验收。各次准备版本、失败原因和公开输入保持可追踪。
+
+[诊断验收审计](results/native-async-lifecycle-diagnostic-acceptance-audit-20261005-v1.json)核验真实 inspect 的 9 次模型调用、1 个 v4 执行记录和 0 字节 patch。随后独立上下文复核实际用 2 次调用，全部 authored checks PASS，policy 为 PASS/correct_confirmation/CONFIRMED。它确认当前缺陷诊断及有限正常行为保留，尚不证明修复、新 Issue 迁移、Pattern 收益或 SWE 成功。该 2023 年来源不能进入 2021 年之前的训练查询。
+
+先前执行器退出时会删除临时工作区，native CLI 仅保存执行前 grounded Task。这会令下一阶段和独立复核失去实际修改现场。现在 AdaptiveSolver.run 的可选 retain_public_state_dir 参数，以及 native CLI 的 --retain-public-state，保留真实最终文件、权限、封印和 final-task.json；仅导入一个精确 shallow 公共基准提交，HEAD 保持输入基准，工作文件保留 Agent 实际修改。源 Git 历史、未来对象和远端配置不被复制。目标已存在、与源重叠、锚点陈旧或封印不一致时拒绝。保留操作本身不产生语义 PASS 或修复成功，失败尝试也继续属于未验收证据。默认正式 solver 行为保持原样。
+
+公共封印遍历现在在进入 .git 之前剪枝，目录软链接不被递归访问；内容和权限封印定义保持一致，公开扫描错误继续传播。变更前的 POSIX 固定向量和额外边界测试通过。最终完整工程测试为 **630 passed、19 skipped，93.58 秒**；对应定向测试 **27 passed**，Ruff E4/E7/E9/F 和 git diff --check 通过。工程结果不能代替真实修复和泛化结果。
+
+在历史作者完成一次成功请求且没有活动 socket/子进程的边界，串行调度器安全暂停它，再开始 #8120 的 repair → regressions → validate；每阶段保留实际现场，使用单独认证、命名空间隔离的执行输入，并独立复核后才允许继续。该 v14 快照时 repair 尚在执行，未计为通过。当前诊断 Task 的 checker-regression-suite 曾绑定到独立探查脚本，回归阶段须重新 grounding 到项目真实功能夹具，并保护探查脚本及既有诊断期望。
+
+[Ruff 精确依赖恢复审计](results/ruff-5124-pinned-dependency-recovery-audit-20261005-v2.json)取回并在服务器验证 RustPython-Parser 和 unicode_names2 的锁定历史 commit，pack 校验通过，仅保留各自单提交 shallow 镜像。LibCST 锁定仓库的 upload-pack 返回 401，已授权 REST 仓库查询返回 404，全局该 commit 搜索返回 0，已检查的缓存也没有该对象。没有更换 Cargo.lock 或历史 revision；其隔离 Rust harness、因果对照和来源资格仍未完成。
+
+M0–M3 仍缺完整真实功能、新 Issue Pattern 重写和互补两父组合效果验收；M4 尚无合格训练权重及校准；M5 未联合冻结；M6 正式 SWE 运行仍为 **0**。目标保持未完成。
