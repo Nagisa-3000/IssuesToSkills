@@ -32,7 +32,7 @@ from .execution_frontier import (
 from .git_tree_export import exact_git_tar
 from .guidance_renderer import GuidanceRenderer
 from .plan_validation import TaskWorkflowPlan, validate_task_plan
-from .public_evidence import read_public_evidence
+from .public_evidence import read_public_evidence, solver_evidence_working_set
 from .public_snapshot import extract_public_archive
 from .skill_packages import _resolve
 from .task_context import EvidenceAnchor, ObservedFact, assert_public
@@ -340,14 +340,35 @@ def _broker_observation_view(record, *, include_excerpt=False, text_limit=600, o
             output_characters=len(output),
             output_sha256=hashlib.sha256(output.encode()).hexdigest(),
         )
+        try:
+            parsed_output = json.loads(output)
+        except (ValueError, TypeError):
+            parsed_output = None
+        if isinstance(parsed_output, dict):
+            keys = [key for key in parsed_output if len(key) <= 80][:32]
+            result["output_json_index"] = {
+                "kind": "object",
+                "keys": keys,
+                "omitted_key_count": len(parsed_output) - len(keys),
+            }
+        elif isinstance(parsed_output, list):
+            result["output_json_index"] = {"kind": "array", "length": len(parsed_output)}
         if include_excerpt:
             result["output_excerpt"] = bounded_public_view(output, text_limit=output_limit)
     result["model_view"] = "broker summary; complete evidence retained for independent review"
     return result
 
 
-def solver_observation_view(observation, *, output_limit=5000):
+def solver_observation_view(observation, *, output_limit=5000, working_set_ids=()):
     """Summarize duplicated witnesses without changing sealed broker or Action records."""
+    if (
+        isinstance(observation, dict)
+        and observation.get("operation") == "read_public_evidence"
+        and observation.get("observation_id") in working_set_ids
+    ):
+        result = {key: value for key, value in observation.items() if key != "content"}
+        result["content_location"] = "evidence_working_set.pages; exact bounded page retained"
+        return result
     record = observation.get("record") if isinstance(observation, dict) else None
     if not isinstance(record, dict) or not isinstance(record.get("witnesses"), list):
         if isinstance(observation, dict) and observation.get("operation") == "run_public_command":
@@ -554,7 +575,9 @@ class AdaptiveSolver:
         "may supplement these checks, but do not witness a bound validation Oracle. "
         "read_public_evidence requires evidence_id from current anchors or current_run.broker_observation_ids, "
         "optional field=record|output|content|observation (default record), offset (0-based) and limit (1..4000). "
-        "An optional json_pointer selects an existing value from a complete stored JSON field before pagination. "
+        "Use optional json_pointer or json_pointers (1..16 distinct pointers) to select existing values from one complete stored JSON field before pagination. "
+        "For grouped selection content is one JSON object keyed by the requested pointers; the same total 4000-character page limit applies. "
+        "Command summaries expose output_json_index for complete JSON; select required diagnostic/state fields together instead of rereading unrelated source text. "
         "It reads only stored public evidence, without rerunning commands, advancing revision, proving facts or establishing "
         "a new Oracle witness. Retained anchor representations may already be excerpts; do not invent omitted evidence. "
         "Use it to inspect omitted command output instead of repeating a completed Oracle. "
@@ -572,6 +595,9 @@ class AdaptiveSolver:
         "drop_guidance and finish take empty arguments. "
         "Use public commands to search source and run tests. Read current files before changing them. "
         "Long output is presented as excerpts; use focused commands and paginated file reads to inspect omitted parts. "
+        "budget reports the actual shared remaining balance before this request; every model/tool call is still metered. "
+        "evidence_working_set retains bounded exact pages actually read in this run through later requests; consult source freshness and omission counts. "
+        "Do not omit required checks or infer completion from budget pressure. "
         "Only recent observations are replayed. Probe and Action receipt views may summarize duplicated broker bodies; full evidence stays sealed for independent review. These views do not confirm effects or promote facts. After actual checks and required Action recording, explicitly finish; recording alone does not end the run."
     )
     SCHEMA: ClassVar[dict] = {"type": "object", "required": ["operation", "arguments", "rationale"]}
@@ -633,6 +659,7 @@ class AdaptiveSolver:
         )
         ended, failed = False, ""
         action_catalog, action_observations, broker_observations = {}, [], {}
+        public_evidence_reads = {}
         action_output_reviews, reviewed_records = [], set()
         observation_offset = max(
             0,
@@ -834,14 +861,24 @@ class AdaptiveSolver:
                 while not ended:
                     self.ledger.check_time()
                     public_context = solver_current_view(current)
+                    current_run = solver_run_view(current, broker_observations, action_observations)
+                    evidence_working_set = solver_evidence_working_set(
+                        current,
+                        broker_observations,
+                        public_evidence_reads,
+                        workspace_execution_sha256=current_run["workspace_execution_sha256"],
+                    )
+                    working_set_ids = {
+                        page["observation_id"] for page in evidence_working_set["pages"]
+                    }
                     request = BudgetedTransport(self.transport, self.ledger).complete(
                         system=self.SYSTEM,
                         user=json.dumps(
                             {
                                 "current": public_context,
-                                "current_run": solver_run_view(
-                                    current, broker_observations, action_observations
-                                ),
+                                "current_run": current_run,
+                                "budget": self.ledger.solver_view(),
+                                "evidence_working_set": evidence_working_set,
                                 "guidance": guidance,
                                 "public_workspace_read_only": read_only_workspace,
                                 "strict_functional_action_catalog": enforce_catalog_prerequisites,
@@ -864,7 +901,9 @@ class AdaptiveSolver:
                                 },
                                 "observations": [
                                     solver_observation_view(
-                                        o, output_limit=5000 if i == len(observations) - 1 else 600
+                                        o,
+                                        output_limit=5000 if i == len(observations) - 1 else 600,
+                                        working_set_ids=working_set_ids,
                                     )
                                     for i, o in enumerate(
                                         observations[-8:], max(0, len(observations) - 8)
@@ -1227,6 +1266,8 @@ class AdaptiveSolver:
                     result["context_revision"] = current.revision
                     if operation in {"read_file", "write_file", "run_public_command"}:
                         broker_observations[result["observation_id"]] = dict(result)
+                    elif operation == "read_public_evidence" and not result.get("denied"):
+                        public_evidence_reads[result["observation_id"]] = dict(result)
                     observations.append(result)
             except BudgetExceeded as exc:
                 failed = str(exc)

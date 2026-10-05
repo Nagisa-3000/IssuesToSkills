@@ -1239,7 +1239,7 @@ def test_solver_reader_keeps_actual_failed_oracle_and_semantic_state_unchanged(t
             assert frame["current"] == previous
             assert frame["current_run"]["broker_observation_ids"] == [witness]
             if n == 3:
-                page = frame["observations"][-1]
+                page = frame["evidence_working_set"]["pages"][-1]
                 assert json.loads(page["content"]) == {"status": "FAIL"}
                 assert "not fresh execution" in page["assurance"]
                 return {

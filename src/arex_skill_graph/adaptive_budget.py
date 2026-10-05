@@ -85,6 +85,27 @@ class BudgetLedger:
         if self.rounds > self.caps.review_rounds:
             raise BudgetExceeded("retrieval/review rounds exhausted")
 
+    def solver_view(self):
+        """Report actual balance before the next request without replaying events."""
+        used = {
+            kind: getattr(self, kind)
+            for kind in ("model_tokens", "model_calls", "tool_calls", "history_tokens")
+        }
+        used.update(
+            approved_root_packages=len(self.approved_roots),
+            review_rounds=self.rounds,
+            seconds=self.clock() - self.started,
+        )
+        return {
+            "caps": {kind: getattr(self.caps, kind) for kind in used},
+            "used": used,
+            "remaining": {
+                kind: max(0, getattr(self.caps, kind) - amount) for kind, amount in used.items()
+            },
+            "accounting": "Balance before current request; shared cap and conservative request preflight remain enforced. "
+            "Provider usage is charged when available, UTF-8 upper bound otherwise.",
+        }
+
     def snapshot(self):
         return {
             "caps": asdict(self.caps),
