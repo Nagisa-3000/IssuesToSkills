@@ -33,7 +33,7 @@ AUTHOR_INSTRUCTIONS = (
     "Every authored evidence card copies an entry ID/source/date and describes the corresponding real historical observation. "
     "Quote implementation/test facts accurately. Contemporary qualification is a provenance attestation, not an event to backdate. "
     "Record historical tests as assertions available at the historical commit; do not invent historical execution. "
-    "The Skill's functional eval definitions remain not_executed. Be explicit about the changed-test-only qualification limits. "
+    "The Skill's functional eval definitions remain not_executed. Preserve the exact supplied qualification scope and limits. "
     "Return the complete native FILE bundle. Delimiters are exactly: AREX-SKILL-BUNDLE 1, "
     "<<<FILE package-name/relative-path>>>, file content, <<<END FILE>>>, then AREX-SKILL-BUNDLE-END. "
     "No surrounding code fence, no candidate JSON wrapper."
@@ -48,6 +48,24 @@ AUTHOR_INSTRUCTIONS = (
     "preserves contains behavior assurances applying across the composed plan; do not use checkout-unchanged as a global invariant of a workflow that edits code. "
     "Describe read/probe operations' lack of side effects in their operation/oracle instead. "
 )
+
+
+def qualification_scope_limits(report):
+    scope = (report.get("schema"), report.get("qualification_scope"))
+    if scope == (
+        "historical-causal-verification-v1",
+        "changed-test-files-with-original-base-control",
+    ):
+        return "Changed test files only; whole-project regression and cross-project transfer are untested."
+    if scope == (
+        "historical-rust-test-causal-verification-v1",
+        "exact-rust-libtest-with-original-base-control-v1",
+    ):
+        return (
+            "Qualification covers one exact named Rust library test with the original expected snapshot; "
+            "whole-project regression and cross-project transfer are untested."
+        )
+    raise ValueError("unsupported native authoring qualification scope")
 
 
 def author_case(record, verification, diff, policy, output, audit, config):
@@ -128,7 +146,7 @@ def author_case(record, verification, diff, policy, output, audit, config):
             "fail_to_pass_count": len(verification["fail_to_pass"]),
             "pass_to_pass_count": len(verification["pass_to_pass"]),
             "runtime_sha256": verification["runtime_sha256"],
-            "scope_limits": "Changed test files only; whole-project regression and cross-project transfer are untested.",
+            "scope_limits": qualification_scope_limits(verification),
             "attestation_is_not_pre_cutoff_learned_content": True,
         },
     }
@@ -161,7 +179,7 @@ def author_case(record, verification, diff, policy, output, audit, config):
         "system_sha256": fingerprint(AUTHOR_SYSTEM),
         "prompt_sha256": fingerprint(prompt),
         "max_output_tokens": config.max_output_tokens,
-        "authoring_protocol_version": "native-history-authoring-v7-with-independent-reports",
+        "authoring_protocol_version": "native-history-authoring-v8-with-scope-specific-independent-reports",
     }
     result_path = audit / "extraction-result.json"
     if result_path.exists():

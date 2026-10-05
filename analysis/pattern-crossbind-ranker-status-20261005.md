@@ -49,3 +49,5 @@ v10 使用的[本轮小命令输出保留](results/public-command-working-set-en
 主截止严格早于 2024-01-01T00:00:00Z，训练截止严格早于 2021-01-01T00:00:00Z。每条训练 query 再使用其自身输入时间，排除自身答案、同修复、重复及复制来源和后来可用的材料。Pylint #10034 排除正式评价。原历史作者保持已有进程，真实模型调用串行；不另启作者或并行模型。
 
 下一步按依赖完成：原生包 activation/applicability/functional 正反案例；从精确 qualified Ruff 来源进行系统原生抽取及验收；独立新 Issue 的重写和互补两父执行；有效时间隔离监督、训练与开发校准；M5 联合冻结；M6 正式 SWE、模块消融及同候选池排序比较。当前整体目标保持 active、未完成。
+
+新增[原生作者资格范围工程审计](results/native-authoring-qualification-scope-engineering-audit-20261005-v1.json)：抽取输入与提示现在保留实际资格范围，Python 的 changed-test-files 限制不变，Rust 限定为一个精确命名库测试及原 expected snapshot；未知 schema/scope 组合拒绝。旧实现真实作者输入的范围回归先失败，修正后专项 49 passed，完整 **728 passed、19 skipped**、90.82 秒，lint、格式及 diff 通过。作者 checkpoint 输入版本更新，原已封存版本与结果不改写；0 次真实模型调用。资格 authority 与三组原控制不变，Ruff 抽取和完整包验收仍待运行。
