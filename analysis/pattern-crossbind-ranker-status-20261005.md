@@ -2,7 +2,7 @@
 
 **目标尚未全部完成。M0–M3 已有实现和契约测试，真实功能、跨项目重写与组合验收仍不完整；M4 尚无合格的训练 Ranker；M5 尚未正式冻结；M6 的正式 SWE 运行仍为 0。**
 
-最新机器快照为 [v11](results/pattern-crossbind-ranker-current-status-20261005-v11.json)。[v10](results/pattern-crossbind-ranker-current-status-20261005-v10.json) 保留端口拒绝控制完成时的状态。[v9](results/pattern-crossbind-ranker-current-status-20261005-v9.json) 保留原生验证第二版完成时的状态。[v8](results/pattern-crossbind-ranker-current-status-20261005-v8.json) 保留验证第二版运行前的状态。[v7](results/pattern-crossbind-ranker-current-status-20261005-v7.json) 及更早版本保留当时的状态，不随新结果改写。代码、真实 Action 验收、泛化效果分别统计。
+最新机器快照为 [v12](results/pattern-crossbind-ranker-current-status-20261005-v12.json)。[v11](results/pattern-crossbind-ranker-current-status-20261005-v11.json) 保留资格复验与时间线缺口发现时的状态。[v10](results/pattern-crossbind-ranker-current-status-20261005-v10.json) 保留端口拒绝控制完成时的状态。[v9](results/pattern-crossbind-ranker-current-status-20261005-v9.json) 保留原生验证第二版完成时的状态。[v8](results/pattern-crossbind-ranker-current-status-20261005-v8.json) 保留验证第二版运行前的状态。[v7](results/pattern-crossbind-ranker-current-status-20261005-v7.json) 及更早版本保留当时的状态，不随新结果改写。代码、真实 Action 验收、泛化效果分别统计。
 
 | 阶段 | 已实现或实际完成 | 尚缺的验收 |
 | --- | --- | --- |
@@ -81,3 +81,29 @@ v11 的[独立定义快照](results/pylint-native-definition-snapshot-20261005-v
 Pylint 资格流程已处理 1160 个规范化候选，得到 78 个 verified 来源，资格范围是修改测试，不能描述为整项目完整验证。针对全体合格来源的抽取不设预定族或任意 top-N。结构合法的包继续属于 definition_only_not_executed。未审阅的 pyflakes-mechanism-history-v5、Pylint authoring 输出与全部失败版本保留，未批量提交或自动纳入正式 KB。
 
 剩余工作是：完成原生编辑/验证的真实正反例；核验 Pyflakes/Pylint/Ruff 的共同机制与互补 Action，并执行真实两父组合；获得有效适用性和效果监督后训练、校准；最后联合冻结 KB、模型、题目、预算和验收协议，执行正式 SWE 配对及模块/Ranker 消融。目标仍未完成。
+
+
+## 全量已知时间线缺口恢复与实际定义验收（后续 v12）
+
+[独立恢复审计](results/historical-timeline-coverage-recovery-audit-20261005-v1.json)已完成。原始 824 个文件的哈希封印与原始内容核对通过，三项目 Issue 身份总数仍为 9356。新数据版本没有改写原始普查、旧时间线页或此前冻结模型输入。
+
+| 项目 | 已知缺口目标 Issue | 第一版补采后仍缺 | 显式状态视图补采后仍缺 |
+| --- | --- | --- | --- |
+| Pyflakes | 54 | 39 | 0 |
+| Ruff | 400 | 198 | 0 |
+| Pylint | 2088 | 1143 | 0 |
+| 合计 | 2542 | 1380 | 0 |
+
+第一版确实完成了全部目标，但 unfiltered API 响应仍遗漏部分已知事件，不能因此宣称事件完整。独立小批量探针能观察到真实事件 ID，第二版针对残留缺口加入显式 CLOSED_EVENT／REOPENED_EVENT／RENAMED_TITLE_EVENT 视图，并保持完整分页。两版结果都保留；第一版 53 次 API 请求，第二版 102 次，独立视图探针 2 次。全部为 GitHub 元数据请求，0 次恢复模型调用、0 次正式 SWE 运行。
+
+独立审计逐条核对人口身份、原始文件、保留的旧事件 ID、新事件及严格截止时间。Pylint #8120 的实际关闭事件与合格修复 PR #8123 再次吻合。仍有 3 个 Pylint Issue 带权限受限事件元数据，不能宣称所有历史字段完整。另有 43 个未补采旧记录中的 PR resolution 字段发生在截止之后；恢复版本的默认读取现在强制严格投影，学习输入中这些未来字段全部隐藏。此修复没有回写旧冻结输入或模型结果。
+
+新 corpus 路径为 tmp/temporal-history-census-v3-explicit-state-20261005。它需要新的、可追踪的 evidence review 才能服务新的学习输入，尚未自动纳入正式 KB，也不改写原有 78 个来源的有限资格范围。
+
+Pylint #8120 的原生抽取第二版完成：2 次模型调用、1 个结构及来源验证通过的 Package、4 个 Action，第一次格式协议失败保留。其输入公开时间仍为 2023-01-28，不能进入 2021 年之前的训练查询。该包没有功能执行或正式 KB 准入。
+
+[固定定义快照 v13](results/pylint-native-definition-snapshot-20261005-v13.json)独立核验 17 个完成来源、17 个包、55 个 Action，完成来源的实际 authoring 调用为 36；全部为 definition_only_not_executed。#3763 和 #4238 共享同一修复，未算独立 Pattern 支持。该快照不含随后仍在生成的输出，未批量发布未审阅候选。
+
+Ruff #5124 从正确的历史 base c811213302f76c255da89d374bd8ab42f3b223e5 开始准备，而非使用旧的 2023 年底通用 build source。base 和 fixed 的 Cargo.lock 完全相同，SHA 为 1ca9ffb06f2bc561a5e009a62c52f9c72f6120b02d718f299d8107dc4fa3f6b7。首次 vendor 下载因历史 LibCST Git 依赖的 GitHub HTTPS 连接超时退出 101，锁文件未改动、0 个 vendor 包。见[失败与准备审计](results/ruff-5124-runtime-preparation-audit-20261005-v1.json)。隔离 Rust harness 与三组因果对照仍未完成，不将这次准备计为历史来源资格或 Skill 验收。
+
+本轮最终代码完整测试为 **583 passed、19 skipped，127.26 秒**；相关定向测试 **36 passed**，Ruff E4/E7/E9/F 与 git diff --check 通过。原有各版本的工程、失败和实验证据保留。工程检查及元数据恢复不建立 Skill 修复收益：M0–M3 仍缺完整真实功能、重写和两父组合验收；M4 没有合格训练 Ranker；M5 未联合冻结；M6 正式 SWE 运行仍为 0。

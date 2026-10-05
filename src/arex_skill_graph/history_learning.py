@@ -47,6 +47,16 @@ def observable_evidence(
 ):
     if repair_locator_mode not in {"closing_only", "all_pre_cutoff_mentions"}:
         raise ValueError("unknown historical repair locator mode")
+    recovery_marker = Path(root) / "timeline-recovery-manifest.json"
+    if recovery_marker.exists():
+        recovery = json.loads(recovery_marker.read_text())
+        if (
+            recovery.get("completed") is not True
+            or recovery["config"]["cutoff_exclusive"] != cutoff
+        ):
+            raise ValueError("timeline recovery must finish at the matching cutoff before learning")
+        # Recovery versions always expose the strict temporal/metadata view.
+        strict_metadata = True
     folder = Path(root) / repository.replace("/", "__")
     manifest = json.loads((folder / "manifest.json").read_text())
     if (

@@ -32,3 +32,12 @@ Pylint #8120 已有真实因果尝试，而不是完全没有执行：目标 tes
 [GitHub 关闭证明](results/pylint-8120-authoritative-closure-proof-20261005-v1.json)独立确认 PR #8123 为 #8120 的实际 closer，修复时间为 2023-01-28T09:29:29Z。#1279 继续保守地属于同一 bug cluster，不能额外增加独立支持。#8120 现已通过限定范围的历史来源资格，尚未证明跨项目机制归纳、当前 Action 绑定或 Skill 迁移成功；它仍不可用于 2021 年以前的训练/开发库。Ruff #5124 的 Rust 因果验证仍未完成。
 
 这次核查发现，#8120 的完整时间线存档遗漏了旧状态快照保留的关闭和改标题事件。[全历史覆盖审计](results/historical-timeline-state-coverage-audit-20261005-v1.json)共发现 2542 个有已知状态/标题事件缺口的 Issue。新的严格读取会标记缺口，保留原存档和输入版本；分页完成及存档 hash 只能证明已存内容，不能独立证明时间线完整。尚未补采这些缺口，不据此扩增 source、Pattern 或正式 KB 的统计。
+
+
+## 时间线恢复和原生来源定义的后续状态
+
+全部 2542 个已知状态／标题事件缺口已恢复到独立版本，见[恢复审计](results/historical-timeline-coverage-recovery-audit-20261005-v1.json)。全体 9356 个 Issue 的身份、824 个原始文件封印均通过独立复核；旧存档和此前模型输入保持原版本。剩余 3 个 Pylint Issue 的权限受限元数据仍明确保留，不能等同于所有历史事件字段完整。
+
+Pylint #8120 已产出经过独立结构和来源验证的原生 Workflow 包，含 4 个 Action、2 次真实 authoring 调用，仍为 definition_only_not_executed。它尚未与 Pyflakes 或 Ruff 形成可接受的跨项目 Pattern，也没有组成真实两父计划。17 来源／55 Action 的固定[定义快照](results/pylint-native-definition-snapshot-20261005-v13.json)只统计完成、独立验证的定义，不增加功能准入数。
+
+Ruff #5124 首次锁定依赖准备使用精确历史 base，并确认 base/fixed 的 Cargo.lock 相同；GitHub HTTPS 获取历史 LibCST 依赖超时，cargo 退出 101，0 个 vendor 包，失败版本保留。其[准备审计](results/ruff-5124-runtime-preparation-audit-20261005-v1.json)仍明确 historical_artifact_verified=false；需要继续完成 Rust 隔离 harness 和三阶段复现。

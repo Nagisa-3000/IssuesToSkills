@@ -199,7 +199,7 @@ class TimelineCensus:
         self.schema = json.loads(schema_path.read_text())
         self.selection = timeline_selection(self.schema)
 
-    def collect_issue(self, identity, initial):
+    def collect_issue(self, identity, initial, *, state_title_only=False):
         connection, events, cursors, unavailable = initial, [], set(), []
         while True:
             for event in connection["nodes"]:
@@ -220,7 +220,13 @@ class TimelineCensus:
                 raise ValueError("complete timeline cursor did not advance")
             cursors.add(after)
             query = "query($id:ID!,$after:String){node(id:$id){... on Issue{" + (
-                "timelineItems(first:100,after:$after){nodes{"
+                "timelineItems(first:100,after:$after"
+                + (
+                    ",itemTypes:[CLOSED_EVENT,REOPENED_EVENT,RENAMED_TITLE_EVENT]"
+                    if state_title_only
+                    else ""
+                )
+                + "){nodes{"
                 + self.selection
                 + "} pageInfo{hasNextPage endCursor}}}} rateLimit{cost remaining resetAt}}"
             )
