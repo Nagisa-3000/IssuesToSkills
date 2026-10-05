@@ -1,0 +1,281 @@
+{
+  "boundary_probes": [
+    {
+      "expected_diagnostic": "undefined name 'integer'",
+      "expected_exit_code": 1,
+      "name": "first_forward_name",
+      "passed": true,
+      "result": {
+        "argv": [
+          "python3",
+          "-c",
+          "import sys;from pyflakes.api import check;raise SystemExit(check(sys.stdin.read(),'boundary_probe.py'))"
+        ],
+        "exit_code": 1,
+        "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+        "output": "boundary_probe.py:2:11 undefined name 'integer'\n",
+        "runtime_sha256": "ba60ddb915306198ae9aa9ae29b790dc43726245fa0eacf57f3e6e33e01b8ae5",
+        "timed_out": false,
+        "workspace_adopted": true
+      },
+      "source": "from typing import Annotated\nAnnotated['integer', '>0']\n"
+    },
+    {
+      "expected_diagnostic": "syntax error in forward annotation '?'",
+      "expected_exit_code": 1,
+      "name": "first_invalid_forward_syntax",
+      "passed": true,
+      "result": {
+        "argv": [
+          "python3",
+          "-c",
+          "import sys;from pyflakes.api import check;raise SystemExit(check(sys.stdin.read(),'boundary_probe.py'))"
+        ],
+        "exit_code": 1,
+        "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+        "output": "boundary_probe.py:2:11 syntax error in forward annotation '?'\n",
+        "runtime_sha256": "ba60ddb915306198ae9aa9ae29b790dc43726245fa0eacf57f3e6e33e01b8ae5",
+        "timed_out": false,
+        "workspace_adopted": true
+      },
+      "source": "from typing import Annotated\nAnnotated['?', '>0']\n"
+    },
+    {
+      "expected_diagnostic": "undefined name 'unknown_metadata'",
+      "expected_exit_code": 1,
+      "name": "metadata_name_is_value",
+      "passed": true,
+      "result": {
+        "argv": [
+          "python3",
+          "-c",
+          "import sys;from pyflakes.api import check;raise SystemExit(check(sys.stdin.read(),'boundary_probe.py'))"
+        ],
+        "exit_code": 1,
+        "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+        "output": "boundary_probe.py:2:16 undefined name 'unknown_metadata'\n",
+        "runtime_sha256": "ba60ddb915306198ae9aa9ae29b790dc43726245fa0eacf57f3e6e33e01b8ae5",
+        "timed_out": false,
+        "workspace_adopted": true
+      },
+      "source": "from typing import Annotated\nAnnotated[int, unknown_metadata]\n"
+    },
+    {
+      "expected_diagnostic": null,
+      "expected_exit_code": 0,
+      "name": "module_attribute",
+      "passed": true,
+      "result": {
+        "argv": [
+          "python3",
+          "-c",
+          "import sys;from pyflakes.api import check;raise SystemExit(check(sys.stdin.read(),'boundary_probe.py'))"
+        ],
+        "exit_code": 0,
+        "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+        "output": "",
+        "runtime_sha256": "ba60ddb915306198ae9aa9ae29b790dc43726245fa0eacf57f3e6e33e01b8ae5",
+        "timed_out": false,
+        "workspace_adopted": true
+      },
+      "source": "import typing\ntyping.Annotated[int, '>0']\n"
+    },
+    {
+      "expected_diagnostic": "undefined name 'missing_type'",
+      "expected_exit_code": 1,
+      "name": "state_restored_after_metadata",
+      "passed": true,
+      "result": {
+        "argv": [
+          "python3",
+          "-c",
+          "import sys;from pyflakes.api import check;raise SystemExit(check(sys.stdin.read(),'boundary_probe.py'))"
+        ],
+        "exit_code": 1,
+        "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+        "output": "boundary_probe.py:6:10 undefined name 'missing_type'\n",
+        "runtime_sha256": "ba60ddb915306198ae9aa9ae29b790dc43726245fa0eacf57f3e6e33e01b8ae5",
+        "timed_out": false,
+        "workspace_adopted": true
+      },
+      "source": "from typing import Annotated\n\ndef f(x: Annotated[int, '>0']):\n    pass\n\ndef g(x: 'missing_type'):\n    pass\n"
+    }
+  ],
+  "current_api_adaptation": {
+    "after_sha256": "fc606e9efd56f319dd16906dd8c849a91b602f800b1537ffa6bc6f2f746c5fe8",
+    "before_sha256": "8504a8c9e972b806422bb90c0af49145cc3fee7b2f7cbf2be473de120f6bbd1a",
+    "replacements": [
+      {
+        "new": "def _enter_annotation(self, state=True):",
+        "old": "def _enter_annotation(self):"
+      },
+      {
+        "new": "orig, self._in_annotation = self._in_annotation, state",
+        "old": "orig, self._in_annotation = self._in_annotation, True"
+      },
+      {
+        "new": "self._enter_annotation(False)",
+        "old": "self._enter_annotation(AnnotationState.NONE)"
+      },
+      {
+        "new": "if slice_tuple is None or len(slice_tuple.elts) < 2:\n                with self._enter_annotation():\n                    self.handleNode(node.slice, node)",
+        "old": "if slice_tuple is None or len(slice_tuple.elts) < 2:\n                self.handleNode(node.slice, node)"
+      },
+      {
+        "new": "# the first argument is the type\n                with self._enter_annotation():\n                    self.handleNode(slice_tuple.elts[0], node)",
+        "old": "# the first argument is the type\n                self.handleNode(slice_tuple.elts[0], node)"
+      }
+    ]
+  },
+  "current_pass_to_pass_outcomes": {
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_annotated_async_def": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_annotated_type_typing_missing_forward_type": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_annotated_type_typing_missing_forward_type_multiple_args": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_deferred_twice_annotation": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_literal_type_some_other_module": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_literal_type_typing": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_literal_type_typing_extensions": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_literal_union_type_typing": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_nested_partially_quoted_type_assignment": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_not_a_typing_overload": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_overload_in_class": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_overload_with_multiple_decorators": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_partial_string_annotations_with_future_annotations": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_partially_quoted_type_annotation": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_partially_quoted_type_assignment": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_positional_only_argument_annotations": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_postponed_annotations": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_quoted_type_cast": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_quoted_type_cast_renamed_import": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_return_annotation_is_class_scope_variable": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_return_annotation_is_function_body_variable": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsAdditionalComment": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsAssignedToPreviousNode": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsFullSignature": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsFullSignatureWithDocstring": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsInvalidDoesNotMarkAsUsed": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsMarkImportsAsUsed": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsNoWhitespaceAnnotation": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsStarArgs": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsSyntaxError": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsSyntaxErrorCorrectLine": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeIgnore": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeIgnoreBogus": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeIgnoreBogusUnicode": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_type_cast_literal_str_to_str": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typingExtensionsOverload": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typingOverload": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typingOverloadAsync": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_variable_annotations": "passed"
+  },
+  "exact_current_cohort_collected": true,
+  "fail_to_pass_outcomes": {
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_annotated_type_typing_with_string_args": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_annotated_type_typing_with_string_args_in_union": "passed"
+  },
+  "focused_test_run": {
+    "argv": [
+      "python3",
+      "-m",
+      "pytest",
+      "pyflakes/test/test_type_annotations.py",
+      "-q",
+      "--junitxml=/workspace/control-results.xml"
+    ],
+    "exit_code": 0,
+    "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+    "output": "Cannot read termcap database;\nusing dumb terminal settings.\n.........................................                                [100%]\n=============================== warnings summary ===============================\npyflakes/test/test_type_annotations.py: 38 warnings\n  /workspace/pyflakes/checker.py:1320: DeprecationWarning: ast.Str is deprecated and will be removed in Python 3.14; use ast.Constant instead\n    return isinstance(node, ast.Str) or (isinstance(node, ast.Expr) and\n\npyflakes/test/test_type_annotations.py: 156 warnings\n  /workspace/pyflakes/checker.py:1435: DeprecationWarning: ast.Str is deprecated and will be removed in Python 3.14; use ast.Constant instead\n    if isinstance(annotation, ast.Str):\n\npyflakes/test/test_type_annotations.py: 11 warnings\n  /workspace/pyflakes/checker.py:1762: DeprecationWarning: Attribute s is deprecated and will be removed in Python 3.14; use value instead\n    node.s,\n\npyflakes/test/test_type_annotations.py: 14 warnings\n  /workspace/pyflakes/checker.py:1439: DeprecationWarning: Attribute s is deprecated and will be removed in Python 3.14; use value instead\n    annotation.s,\n\npyflakes/test/test_type_annotations.py::TestTypeAnnotations::test_quoted_type_cast\npyflakes/test/test_type_annotations.py::TestTypeAnnotations::test_quoted_type_cast_renamed_import\npyflakes/test/test_type_annotations.py::TestTypeAnnotations::test_type_cast_literal_str_to_str\n  /workspace/pyflakes/checker.py:1640: DeprecationWarning: ast.Str is deprecated and will be removed in Python 3.14; use ast.Constant instead\n    isinstance(node.args[0], ast.Str)\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n41 passed, 222 warnings in 0.14s\n",
+    "runtime_sha256": "ba60ddb915306198ae9aa9ae29b790dc43726245fa0eacf57f3e6e33e01b8ae5",
+    "timed_out": false,
+    "workspace_adopted": true
+  },
+  "observations": {
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_annotated_async_def": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_annotated_type_typing_missing_forward_type": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_annotated_type_typing_missing_forward_type_multiple_args": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_annotated_type_typing_with_string_args": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_annotated_type_typing_with_string_args_in_union": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_deferred_twice_annotation": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_literal_type_some_other_module": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_literal_type_typing": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_literal_type_typing_extensions": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_literal_union_type_typing": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_nested_partially_quoted_type_assignment": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_not_a_typing_overload": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_overload_in_class": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_overload_with_multiple_decorators": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_partial_string_annotations_with_future_annotations": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_partially_quoted_type_annotation": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_partially_quoted_type_assignment": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_positional_only_argument_annotations": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_postponed_annotations": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_quoted_type_cast": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_quoted_type_cast_renamed_import": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_return_annotation_is_class_scope_variable": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_return_annotation_is_function_body_variable": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsAdditionalComment": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsAssignedToPreviousNode": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsFullSignature": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsFullSignatureWithDocstring": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsInvalidDoesNotMarkAsUsed": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsMarkImportsAsUsed": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsNoWhitespaceAnnotation": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsStarArgs": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsSyntaxError": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeCommentsSyntaxErrorCorrectLine": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeIgnore": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeIgnoreBogus": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typeIgnoreBogusUnicode": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_type_cast_literal_str_to_str": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typingExtensionsOverload": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typingOverload": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_typingOverloadAsync": "passed",
+    "pyflakes.test.test_type_annotations.TestTypeAnnotations::test_variable_annotations": "passed"
+  },
+  "patch_application": [
+    {
+      "argv": [
+        "git",
+        "apply",
+        "--whitespace=nowarn",
+        "-"
+      ],
+      "exit_code": 0,
+      "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+      "output": "",
+      "runtime_sha256": "ba60ddb915306198ae9aa9ae29b790dc43726245fa0eacf57f3e6e33e01b8ae5",
+      "timed_out": false,
+      "workspace_adopted": true
+    },
+    {
+      "argv": [
+        "git",
+        "apply",
+        "--whitespace=nowarn",
+        "-"
+      ],
+      "exit_code": 0,
+      "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+      "output": "",
+      "runtime_sha256": "ba60ddb915306198ae9aa9ae29b790dc43726245fa0eacf57f3e6e33e01b8ae5",
+      "timed_out": false,
+      "workspace_adopted": true
+    }
+  ],
+  "phase": "evaluator_current_api_known_repair",
+  "public_original_mre": {
+    "argv": [
+      "python3",
+      "-c",
+      "import sys;from pyflakes.api import check;raise SystemExit(check(sys.stdin.read(),'original_issue.py'))"
+    ],
+    "exit_code": 0,
+    "isolation": "linux-copied-user-mount-pid-net-chroot-nobody-no-capabilities-v1",
+    "output": "",
+    "runtime_sha256": "ba60ddb915306198ae9aa9ae29b790dc43726245fa0eacf57f3e6e33e01b8ae5",
+    "timed_out": false,
+    "workspace_adopted": true
+  },
+  "runtime_sha256": "ba60ddb915306198ae9aa9ae29b790dc43726245fa0eacf57f3e6e33e01b8ae5",
+  "setup_complete": true
+}

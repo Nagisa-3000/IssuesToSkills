@@ -1,6 +1,6 @@
 **Pattern、CrossBind 与 Ranker 的实际完成度（2026-10-06）**
 
-**尚未全部完成。M0–M3 有主要实现和工程测试；M4 没有合格的训练 Ranker，M5 未联合冻结，M6 正式 SWE 运行数为 0。** 依据[机器快照 v28](results/pattern-crossbind-ranker-current-status-20261006-v28.json)。旧快照和失败记录保留，不以源码演练替代新 Issue 泛化或 SWE 验收。
+**尚未全部完成。M0–M3 有主要实现和工程测试；M4 没有合格的训练 Ranker，M5 未联合冻结，M6 正式 SWE 运行数为 0。** 依据[机器快照 v29](results/pattern-crossbind-ranker-current-status-20261006-v29.json)。旧快照和失败记录保留，不以源码演练替代新 Issue 泛化或 SWE 验收。
 
 | 阶段 | 已实现或已验收 | 尚缺的验收 |
 | --- | --- | --- |
@@ -12,7 +12,7 @@
 | M5 冻结 | 来源核验与冻结工具 | KB、题目并集、索引、模型、阈值、预算和协议联合冻结 |
 | M6 实验 | 配对修复、模块消融和冻结候选池排序比较入口 | 正式 SWE 修复、消融和排序收益 |
 
-[工程检查](results/native-authoring-checkpoint-engineering-audit-20261006-v1.json)实际为 **750 passed、20 skipped**，测试耗时 106.77 秒；专项 13 passed，lint、格式和 diff 检查通过。新增 checkpoint 修复将序列化前的 tuple 与 JSON list 按规范化指纹比较，保留对真实协议、证据、模型、来源版本和别名变化的拒绝。旧源码回归为 1 failed、5 passed。此次工程检查 0 次模型调用，不代表功能或 SWE 效果。
+此前的 [checkpoint 工程检查](results/native-authoring-checkpoint-engineering-audit-20261006-v1.json)实际为 **750 passed、20 skipped**，测试耗时 106.77 秒；专项 13 passed，lint、格式和 diff 检查通过。新增 checkpoint 修复将序列化前的 tuple 与 JSON list 按规范化指纹比较，保留对真实协议、证据、模型、来源版本和别名变化的拒绝。旧源码回归为 1 failed、5 passed。此次工程检查 0 次模型调用，不代表功能或 SWE 效果。
 
 **原生包与限定功能验收**
 
@@ -51,3 +51,20 @@ Ruff #5124 的来源资格限于一个精确命名 Rust 库测试、原 expected
 本次修改后的完整工程检查为 **765 passed、20 skipped（112.10 秒）**；相关专项 **95 passed（44.80 秒）**，lint 与 diff 检查通过。此前失败和路径错误记录保留。检查没有调用模型，没有新增效果标签，也没有正式 SWE 运行。
 
 [当前隔离索引](isolation/historical-causal-isolation-20261006-v1.json)覆盖 75 条来源记录，形成 71 个保守身份组件，只有 #3604/#3666 两个 Issue 经过语义因果审查。共享 fix、原生别名和复制来源的机械合并不等于全语料独立审查，full_corpus_causal_review_complete 仍为 false。M1 独立适配、M2 两父互补执行、M3 有效校准、M4 合格训练 Ranker、M5 联合冻结与 M6 正式 SWE 仍未验收。整体目标保持 active。
+
+
+**本次补齐的原始历史查询与当前源码控制**
+
+[原始输入与版本控制审计](results/original-history-query-recovery-and-current-source-controls-audit-20261006-v1.json)涵盖现有 75 个合格供给包中全部 21 个 pre-2021 来源，没有任意 top-N 或预设问题族。这 21 条只对应 20 个保守身份组件，不代表 20 个经过独立语义审查的缺陷。
+
+已从 GH Archive 原始公开 opened 事件恢复 **19/21** 个输入，并为全部 19 个选定输入前已发布的稳定 sdist，校验包大小、SHA256、Git blob 和 mode。Pyflakes #419/#422 没有找到精确 opened 事件，保留为缺口。完整原始输入、资格及版本记录见[查询工件说明](history-query-recovery/pre2021-original-inputs-20261006-v1/README.md)。合成 Git commit 使用真实创建时间，不回填历史日期；当前 PyPI 观察不能证明已经被删除的历史发行版。
+
+本次五个新增恢复/选择源码及测试文件的完整工程检查为 **786 passed、20 skipped（140.20 秒）**；发布前逐个 SHA256 确认其与测试时字节一致。此前 750/765 的检查分别对应 checkpoint 修复和因果隔离接入，保留各自审计。
+
+Pyflakes #574 使用 2020-08-16 原始问题与更早发布的 2.2.0 sdist。原历史生产补丁虽然可以应用，但调用该版本不存在的 AnnotationState，出现 NameError；原失败控制保留，不能据此赋予候选失败标签。三个历史 PTP 测试在 2.2.0 不存在，明确列为缺口。
+
+单独的 evaluator 控制版本将历史注解状态映射到当前 Boolean API，显式处理首个类型参数并恢复元数据后的状态。未修改历史回归断言、SourceRecord 或公开 TaskContext。控制前冻结当前可收集的 41 项测试：原有 37 项与新增回归 4 项，其中 F2P 2、当前 PTP 39。三阶段公开 MRE 退出码为 1/1/0，测试退出码为 0/1/0；修复后 41 项通过，另五个首参数、元数据名称、属性入口和状态恢复边界探查通过。
+
+这个结果仅是**版本专用机械控制通过**，独立复核仍未完成；适配后的已知修复属于 evaluator，不能提供给 planner、Ranker 或 solver。#486 的后续 AnnotationState 修复晚于 #574 输入，不能作为该问题的历史 donor/Bridge。控制脚本首次保存 diff 时假设快照含 .git 而失败；新版本改为比较源码字节，旧尝试保留。
+
+本次新增实际模型调用、solver 分支、效用标签和正式 SWE 运行均为 **0**。M1 独立新 Issue 适配、M2 两父互补执行、M3 有用排序校准、M4 合格训练 Ranker、M5 联合冻结与 M6 正式 SWE 仍未通过验收。

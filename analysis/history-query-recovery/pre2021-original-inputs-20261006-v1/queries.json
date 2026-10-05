@@ -1,0 +1,724 @@
+[
+  {
+    "aliases": [
+      "PyCQA/pyflakes:395",
+      "https://github.com/PyCQA/pyflakes/issues/395"
+    ],
+    "bug_cluster_id": "PyCQA/pyflakes:395",
+    "copied_from": [],
+    "exposed": false,
+    "fix_id": "PyCQA/pyflakes:pr:396",
+    "task": {
+      "anchors": [
+        {
+          "available_at": "2018-12-29T09:41:19Z",
+          "base_commit": "caa330d5073c5ede9dabf6ff37214b0c0d60b09a",
+          "exit_code": null,
+          "id": "current:issue",
+          "kind": "public_issue",
+          "observation": "undefined name `'__annotations__'` when use `__annotations__` in module level\n\nEnvironment:\r\n- Python==3.7.1\r\n- pyflakes==2.0.0\r\n\r\nWhen using pyflake to check following code:\r\n\r\n```Python3\r\n# t.py\r\na: int = 2\r\nprint(__annotations__)\r\n```\r\n\r\nIt will reported that\r\n\r\n```\r\nt.py:3: undefined name '__annotations__'\r\n```\r\nAbout `__annotations__`, please see [PEP 526 -- Syntax for Variable Annotations](https://www.python.org/dev/peps/pep-0526/)\r\n> In addition, at the module or class level, if the item being annotated is a simple name, then it and the annotation will be stored in the `__annotations__` attribute of that module or class (mangled if private) as an ordered mapping from names to evaluated annotations. \r\n\r\nAnd `__annotations__` is not a [`builtin_vars`](https://github.com/PyCQA/pyflakes/blob/master/pyflakes/checker.py#L21), so it will not found.\r\n\r\nI think this attribute should be added in [`_MAGIC_GLOBALS = ['__file__', '__builtins__', 'WindowsError']`](https://github.com/PyCQA/pyflakes/blob/master/pyflakes/checker.py#L488)\r\n\r\nIf you accept this solution, I will pull request to fix it :)",
+          "path": "",
+          "sha256": ""
+        }
+      ],
+      "base_commit": "caa330d5073c5ede9dabf6ff37214b0c0d60b09a",
+      "bindings": [],
+      "checks": [],
+      "environment": [],
+      "facts": [],
+      "goals": [],
+      "input_available_at": "2018-12-29T09:41:19Z",
+      "oracles": [],
+      "port_values": [],
+      "public_problem": "undefined name `'__annotations__'` when use `__annotations__` in module level\n\nEnvironment:\r\n- Python==3.7.1\r\n- pyflakes==2.0.0\r\n\r\nWhen using pyflake to check following code:\r\n\r\n```Python3\r\n# t.py\r\na: int = 2\r\nprint(__annotations__)\r\n```\r\n\r\nIt will reported that\r\n\r\n```\r\nt.py:3: undefined name '__annotations__'\r\n```\r\nAbout `__annotations__`, please see [PEP 526 -- Syntax for Variable Annotations](https://www.python.org/dev/peps/pep-0526/)\r\n> In addition, at the module or class level, if the item being annotated is a simple name, then it and the annotation will be stored in the `__annotations__` attribute of that module or class (mangled if private) as an ordered mapping from names to evaluated annotations. \r\n\r\nAnd `__annotations__` is not a [`builtin_vars`](https://github.com/PyCQA/pyflakes/blob/master/pyflakes/checker.py#L21), so it will not found.\r\n\r\nI think this attribute should be added in [`_MAGIC_GLOBALS = ['__file__', '__builtins__', 'WindowsError']`](https://github.com/PyCQA/pyflakes/blob/master/pyflakes/checker.py#L488)\r\n\r\nIf you accept this solution, I will pull request to fix it :)",
+      "repository": "PyCQA/pyflakes",
+      "revision": 0,
+      "root": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/pre2021-native-original-query-recovery-preparation-v2-20261006/published-queries/cases/PyCQA__pyflakes-395/public-base/pyflakes-2.0.0",
+      "task_id": "PyCQA/pyflakes:395"
+    }
+  },
+  {
+    "aliases": [
+      "PyCQA/pyflakes:401",
+      "https://github.com/PyCQA/pyflakes/issues/401"
+    ],
+    "bug_cluster_id": "PyCQA/pyflakes:401",
+    "copied_from": [],
+    "exposed": false,
+    "fix_id": "PyCQA/pyflakes:pr:410",
+    "task": {
+      "anchors": [
+        {
+          "available_at": "2019-01-01T20:31:28Z",
+          "base_commit": "153c154634423a739e532086955ddabe5241a4e1",
+          "exit_code": null,
+          "id": "current:issue",
+          "kind": "public_issue",
+          "observation": "crash: AttributeError: 'Module' object has no attribute 'parent'\n\n9dd73ec54411a563410872b47e76f0f89f34ecfe seems to introduce a bug that causes pyflakes to crash on this code:\r\n\r\n```python3\r\nclass foo:\r\n    pass\r\n\r\n\r\nasync def func(foo: foo):\r\n    pass\r\n```\r\n\r\n**backtrace:**\r\n```\r\n$ venv/bin/pyflakes foo.py                  \r\nTraceback (most recent call last):\r\n  File \"venv/bin/pyflakes\", line 11, in <module>\r\n    sys.exit(main())\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/api.py\", line 207, in main\r\n    warnings = checkRecursive(args, reporter)\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/api.py\", line 156, in checkRecursive\r\n    warnings += checkPath(sourcePath, reporter)\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/api.py\", line 99, in checkPath\r\n    return check(codestr, filename, reporter)\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/api.py\", line 74, in check\r\n    w = checker.Checker(tree, filename)\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 579, in __init__\r\n    self.runDeferred(self._deferredFunctions)\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 616, in runDeferred\r\n    handler()\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 1354, in runFunction \r\n    self.handleChildren(node, omit='decorator_list')\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 957, in handleChildren\r\n    self.handleNode(node, tree)\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 1004, in handleNode\r\n    handler(node)\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 1379, in ARGUMENTS\r\n    self.handleChildren(node, omit=('defaults', 'kw_defaults'))\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 957, in handleChildren\r\n    self.handleNode(node, tree)\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 1004, in handleNode\r\n    handler(node)\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 1388, in ARG\r\n    self.addBinding(node, Argument(node.arg, self.getScopeNode(node)))\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 784, in addBinding\r\n    parent_stmt = self.getParent(value.source)\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 722, in getParent\r\n    node = node.parent\r\nAttributeError: 'Module' object has no attribute 'parent'\r\n```\r\n\r\n**version:**\r\n\r\n  * debian/unstable\r\n  * python3.7 (from debian)\r\n  * pyflakes 066ba4a93c1077f9154d6ff3806fe1e3a66843a1",
+          "path": "",
+          "sha256": ""
+        }
+      ],
+      "base_commit": "153c154634423a739e532086955ddabe5241a4e1",
+      "bindings": [],
+      "checks": [],
+      "environment": [],
+      "facts": [],
+      "goals": [],
+      "input_available_at": "2019-01-01T20:31:28Z",
+      "oracles": [],
+      "port_values": [],
+      "public_problem": "crash: AttributeError: 'Module' object has no attribute 'parent'\n\n9dd73ec54411a563410872b47e76f0f89f34ecfe seems to introduce a bug that causes pyflakes to crash on this code:\r\n\r\n```python3\r\nclass foo:\r\n    pass\r\n\r\n\r\nasync def func(foo: foo):\r\n    pass\r\n```\r\n\r\n**backtrace:**\r\n```\r\n$ venv/bin/pyflakes foo.py                  \r\nTraceback (most recent call last):\r\n  File \"venv/bin/pyflakes\", line 11, in <module>\r\n    sys.exit(main())\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/api.py\", line 207, in main\r\n    warnings = checkRecursive(args, reporter)\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/api.py\", line 156, in checkRecursive\r\n    warnings += checkPath(sourcePath, reporter)\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/api.py\", line 99, in checkPath\r\n    return check(codestr, filename, reporter)\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/api.py\", line 74, in check\r\n    w = checker.Checker(tree, filename)\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 579, in __init__\r\n    self.runDeferred(self._deferredFunctions)\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 616, in runDeferred\r\n    handler()\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 1354, in runFunction \r\n    self.handleChildren(node, omit='decorator_list')\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 957, in handleChildren\r\n    self.handleNode(node, tree)\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 1004, in handleNode\r\n    handler(node)\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 1379, in ARGUMENTS\r\n    self.handleChildren(node, omit=('defaults', 'kw_defaults'))\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 957, in handleChildren\r\n    self.handleNode(node, tree)\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 1004, in handleNode\r\n    handler(node)\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 1388, in ARG\r\n    self.addBinding(node, Argument(node.arg, self.getScopeNode(node)))\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 784, in addBinding\r\n    parent_stmt = self.getParent(value.source)\r\n  File \"venv/lib/python3.7/site-packages/pyflakes/checker.py\", line 722, in getParent\r\n    node = node.parent\r\nAttributeError: 'Module' object has no attribute 'parent'\r\n```\r\n\r\n**version:**\r\n\r\n  * debian/unstable\r\n  * python3.7 (from debian)\r\n  * pyflakes 066ba4a93c1077f9154d6ff3806fe1e3a66843a1",
+      "repository": "PyCQA/pyflakes",
+      "revision": 0,
+      "root": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/pre2021-native-original-query-recovery-preparation-v2-20261006/published-queries/cases/PyCQA__pyflakes-401/public-base/pyflakes-2.0.0",
+      "task_id": "PyCQA/pyflakes:401"
+    }
+  },
+  {
+    "aliases": [
+      "PyCQA/pyflakes:421",
+      "https://github.com/PyCQA/pyflakes/issues/421"
+    ],
+    "bug_cluster_id": "PyCQA/pyflakes:421",
+    "copied_from": [],
+    "exposed": false,
+    "fix_id": "PyCQA/pyflakes:pr:452",
+    "task": {
+      "anchors": [
+        {
+          "available_at": "2019-01-30T16:22:37Z",
+          "base_commit": "eab3b4e8cbf10efc88fdadc916f0c47f57870def",
+          "exit_code": null,
+          "id": "current:issue",
+          "kind": "public_issue",
+          "observation": "2.1.0: PYFLAKES_DOCTEST=1 causes stacktrace: AttributeError: 'NoneType' object has no attribute 'parent'\n\nFrom https://gitlab.com/pycqa/flake8/issues/492\r\n\r\n```console\r\n$ pyflakes --version\r\n2.1.0 Python 3.6.7 on Linux\r\n```\r\n\r\n```python\r\nimport foo as _\r\n\r\ndef x():\r\n    \"\"\"doc\r\n\r\n    >>> x()\r\n    >>> x()\r\n    \"\"\"\r\n```\r\n\r\n```console\r\n$ PYFLAKES_DOCTEST=1 pyflakes t.py \r\nTraceback (most recent call last):\r\n  File \"/tmp/t/venv/bin/pyflakes\", line 10, in <module>\r\n    sys.exit(main())\r\n  File \"/tmp/t/venv/lib/python3.6/site-packages/pyflakes/api.py\", line 207, in main\r\n    warnings = checkRecursive(args, reporter)\r\n  File \"/tmp/t/venv/lib/python3.6/site-packages/pyflakes/api.py\", line 156, in checkRecursive\r\n    warnings += checkPath(sourcePath, reporter)\r\n  File \"/tmp/t/venv/lib/python3.6/site-packages/pyflakes/api.py\", line 99, in checkPath\r\n    return check(codestr, filename, reporter)\r\n  File \"/tmp/t/venv/lib/python3.6/site-packages/pyflakes/api.py\", line 74, in check\r\n    w = checker.Checker(tree, file_tokens=file_tokens, filename=filename)\r\n  File \"/tmp/t/venv/lib/python3.6/site-packages/pyflakes/checker.py\", line 665, in __init__\r\n    self.runDeferred(self._deferredFunctions)\r\n  File \"/tmp/t/venv/lib/python3.6/site-packages/pyflakes/checker.py\", line 702, in runDeferred\r\n    handler()\r\n  File \"/tmp/t/venv/lib/python3.6/site-packages/pyflakes/checker.py\", line 1410, in <lambda>\r\n    self.deferFunction(lambda: self.handleDoctests(node))\r\n  File \"/tmp/t/venv/lib/python3.6/site-packages/pyflakes/checker.py\", line 1148, in handleDoctests\r\n    self.addBinding(None, Builtin('_'))\r\n  File \"/tmp/t/venv/lib/python3.6/site-packages/pyflakes/checker.py\", line 870, in addBinding\r\n    parent_stmt = self.getParent(value.source)\r\n  File \"/tmp/t/venv/lib/python3.6/site-packages/pyflakes/checker.py\", line 808, in getParent\r\n    node = node.parent\r\nAttributeError: 'NoneType' object has no attribute 'parent'\r\n\r\n```",
+          "path": "",
+          "sha256": ""
+        }
+      ],
+      "base_commit": "eab3b4e8cbf10efc88fdadc916f0c47f57870def",
+      "bindings": [],
+      "checks": [],
+      "environment": [],
+      "facts": [],
+      "goals": [],
+      "input_available_at": "2019-01-30T16:22:37Z",
+      "oracles": [],
+      "port_values": [],
+      "public_problem": "2.1.0: PYFLAKES_DOCTEST=1 causes stacktrace: AttributeError: 'NoneType' object has no attribute 'parent'\n\nFrom https://gitlab.com/pycqa/flake8/issues/492\r\n\r\n```console\r\n$ pyflakes --version\r\n2.1.0 Python 3.6.7 on Linux\r\n```\r\n\r\n```python\r\nimport foo as _\r\n\r\ndef x():\r\n    \"\"\"doc\r\n\r\n    >>> x()\r\n    >>> x()\r\n    \"\"\"\r\n```\r\n\r\n```console\r\n$ PYFLAKES_DOCTEST=1 pyflakes t.py \r\nTraceback (most recent call last):\r\n  File \"/tmp/t/venv/bin/pyflakes\", line 10, in <module>\r\n    sys.exit(main())\r\n  File \"/tmp/t/venv/lib/python3.6/site-packages/pyflakes/api.py\", line 207, in main\r\n    warnings = checkRecursive(args, reporter)\r\n  File \"/tmp/t/venv/lib/python3.6/site-packages/pyflakes/api.py\", line 156, in checkRecursive\r\n    warnings += checkPath(sourcePath, reporter)\r\n  File \"/tmp/t/venv/lib/python3.6/site-packages/pyflakes/api.py\", line 99, in checkPath\r\n    return check(codestr, filename, reporter)\r\n  File \"/tmp/t/venv/lib/python3.6/site-packages/pyflakes/api.py\", line 74, in check\r\n    w = checker.Checker(tree, file_tokens=file_tokens, filename=filename)\r\n  File \"/tmp/t/venv/lib/python3.6/site-packages/pyflakes/checker.py\", line 665, in __init__\r\n    self.runDeferred(self._deferredFunctions)\r\n  File \"/tmp/t/venv/lib/python3.6/site-packages/pyflakes/checker.py\", line 702, in runDeferred\r\n    handler()\r\n  File \"/tmp/t/venv/lib/python3.6/site-packages/pyflakes/checker.py\", line 1410, in <lambda>\r\n    self.deferFunction(lambda: self.handleDoctests(node))\r\n  File \"/tmp/t/venv/lib/python3.6/site-packages/pyflakes/checker.py\", line 1148, in handleDoctests\r\n    self.addBinding(None, Builtin('_'))\r\n  File \"/tmp/t/venv/lib/python3.6/site-packages/pyflakes/checker.py\", line 870, in addBinding\r\n    parent_stmt = self.getParent(value.source)\r\n  File \"/tmp/t/venv/lib/python3.6/site-packages/pyflakes/checker.py\", line 808, in getParent\r\n    node = node.parent\r\nAttributeError: 'NoneType' object has no attribute 'parent'\r\n\r\n```",
+      "repository": "PyCQA/pyflakes",
+      "revision": 0,
+      "root": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/pre2021-native-original-query-recovery-preparation-v2-20261006/published-queries/cases/PyCQA__pyflakes-421/public-base/pyflakes-2.1.0",
+      "task_id": "PyCQA/pyflakes:421"
+    }
+  },
+  {
+    "aliases": [
+      "pylint-dev/pylint:2729",
+      "https://github.com/pylint-dev/pylint/issues/2729"
+    ],
+    "bug_cluster_id": "pylint-dev/pylint:2729",
+    "copied_from": [],
+    "exposed": false,
+    "fix_id": "pylint-dev/pylint:commit:183dcc4cb134d3dab2696e2d28c51c5a3577e358",
+    "task": {
+      "anchors": [
+        {
+          "available_at": "2019-02-06T23:04:12Z",
+          "base_commit": "6fb080c00afb554d6e85b89a20e197d53eda9842",
+          "exit_code": null,
+          "id": "current:issue",
+          "kind": "public_issue",
+          "observation": "W9006: missing-raises-doc false positive when declaring multiple exceptions in SphinxDocstring\n\n<!--\r\n  Hi there! Thank you for discovering and submitting an issue.\r\n\r\n  Before you submit this, make sure that the issue doesn't already exist\r\n  or if it is not closed.\r\n\r\n  Is your issue fixed on the preview release?: pip install pylint astroid --pre -U\r\n\r\n-->\r\n\r\n### Steps to reproduce\r\nUsing `load-plugins=pylint.extensions.docparams`\r\n1. Create a function which potentially raises multiple Exceptions:\r\n```python\r\ndef function_name(args):\r\n    if isinstance(args, dict):\r\n        raise TypeError\r\n    elif isinstance(args, str):\r\n        raise ValueError\r\n    else:\r\n        raise ValidationError\r\n```\r\n2. Document such functionality as `:raises TypeError, ValueError, ValidationError`\r\n```python\r\n    \"\"\" A function that raises exceptions\r\n\r\n    :param args: The arguments\r\n    :type args: int\r\n\r\n    :raises TypeError, ValueError, ValidationError:\r\n    \"\"\"\r\n```\r\n3. Get [W9006(missing-raises-doc), function_name] \"ValueError\" not documented as being raised, et al.\r\n\r\nFull test file:\r\n```python\r\n#!/usr/bin/env python3\r\n\r\nclass ValidationError(Exception):\r\n    pass\r\n\r\ndef function_name(args):\r\n    \"\"\" A function that raises exceptions\r\n\r\n    :param args: The arguments\r\n    :type args: int\r\n\r\n    :raises TypeError, ValueError, ValidationError:\r\n    \"\"\"\r\n    if isinstance(args, dict):\r\n        raise TypeError\r\n    elif isinstance(args, str):\r\n        raise ValueError\r\n    else:\r\n        raise ValidationError\r\n```\r\n\r\n### Current behavior\r\n```\r\n************* Module test_raises\r\ntest_raises.py:6: [W9006(missing-raises-doc), function_name] \"TypeError\" not documented as being raised\r\ntest_raises.py:6: [W9006(missing-raises-doc), function_name] \"ValueError\" not documented as being raised\r\ntest_raises.py:6: [W9006(missing-raises-doc), function_name] \"ValidationError\" not documented as being raised\r\n```\r\n\r\n### Expected behavior\r\n\r\npylint passes / Your code has been rated at 10.00/10\r\n\r\n### pylint --version output\r\n```shell\r\n$ pylint --version\r\npylint 2.2.2\r\nastroid 2.1.0\r\nPython 3.7.2 (default, Jan 10 2019, 23:51:51)\r\n[GCC 8.2.1 20181127]\r\n```\r\n\r\n### Notes\r\n\r\nSphinx properly parses the Exception types raised and links them individually, so I believe only a small change would be needed in the regex [here](https://github.com/jrobertson98atx/pylint/blob/pylint-2.2.2/pylint/extensions/_check_docs_utils.py#L291) and parsing of such [here](https://github.com/jrobertson98atx/pylint/blob/pylint-2.2.2/pylint/extensions/_check_docs_utils.py#L322) to allow for comma+whitespace `(, ?)` separated types.",
+          "path": "",
+          "sha256": ""
+        }
+      ],
+      "base_commit": "6fb080c00afb554d6e85b89a20e197d53eda9842",
+      "bindings": [],
+      "checks": [],
+      "environment": [],
+      "facts": [],
+      "goals": [],
+      "input_available_at": "2019-02-06T23:04:12Z",
+      "oracles": [],
+      "port_values": [],
+      "public_problem": "W9006: missing-raises-doc false positive when declaring multiple exceptions in SphinxDocstring\n\n<!--\r\n  Hi there! Thank you for discovering and submitting an issue.\r\n\r\n  Before you submit this, make sure that the issue doesn't already exist\r\n  or if it is not closed.\r\n\r\n  Is your issue fixed on the preview release?: pip install pylint astroid --pre -U\r\n\r\n-->\r\n\r\n### Steps to reproduce\r\nUsing `load-plugins=pylint.extensions.docparams`\r\n1. Create a function which potentially raises multiple Exceptions:\r\n```python\r\ndef function_name(args):\r\n    if isinstance(args, dict):\r\n        raise TypeError\r\n    elif isinstance(args, str):\r\n        raise ValueError\r\n    else:\r\n        raise ValidationError\r\n```\r\n2. Document such functionality as `:raises TypeError, ValueError, ValidationError`\r\n```python\r\n    \"\"\" A function that raises exceptions\r\n\r\n    :param args: The arguments\r\n    :type args: int\r\n\r\n    :raises TypeError, ValueError, ValidationError:\r\n    \"\"\"\r\n```\r\n3. Get [W9006(missing-raises-doc), function_name] \"ValueError\" not documented as being raised, et al.\r\n\r\nFull test file:\r\n```python\r\n#!/usr/bin/env python3\r\n\r\nclass ValidationError(Exception):\r\n    pass\r\n\r\ndef function_name(args):\r\n    \"\"\" A function that raises exceptions\r\n\r\n    :param args: The arguments\r\n    :type args: int\r\n\r\n    :raises TypeError, ValueError, ValidationError:\r\n    \"\"\"\r\n    if isinstance(args, dict):\r\n        raise TypeError\r\n    elif isinstance(args, str):\r\n        raise ValueError\r\n    else:\r\n        raise ValidationError\r\n```\r\n\r\n### Current behavior\r\n```\r\n************* Module test_raises\r\ntest_raises.py:6: [W9006(missing-raises-doc), function_name] \"TypeError\" not documented as being raised\r\ntest_raises.py:6: [W9006(missing-raises-doc), function_name] \"ValueError\" not documented as being raised\r\ntest_raises.py:6: [W9006(missing-raises-doc), function_name] \"ValidationError\" not documented as being raised\r\n```\r\n\r\n### Expected behavior\r\n\r\npylint passes / Your code has been rated at 10.00/10\r\n\r\n### pylint --version output\r\n```shell\r\n$ pylint --version\r\npylint 2.2.2\r\nastroid 2.1.0\r\nPython 3.7.2 (default, Jan 10 2019, 23:51:51)\r\n[GCC 8.2.1 20181127]\r\n```\r\n\r\n### Notes\r\n\r\nSphinx properly parses the Exception types raised and links them individually, so I believe only a small change would be needed in the regex [here](https://github.com/jrobertson98atx/pylint/blob/pylint-2.2.2/pylint/extensions/_check_docs_utils.py#L291) and parsing of such [here](https://github.com/jrobertson98atx/pylint/blob/pylint-2.2.2/pylint/extensions/_check_docs_utils.py#L322) to allow for comma+whitespace `(, ?)` separated types.",
+      "repository": "pylint-dev/pylint",
+      "revision": 0,
+      "root": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/pre2021-native-original-query-recovery-preparation-v2-20261006/published-queries/cases/pylint-dev__pylint-2729/public-base/pylint-2.2.2",
+      "task_id": "pylint-dev/pylint:2729"
+    }
+  },
+  {
+    "aliases": [
+      "PyCQA/pyflakes:434",
+      "https://github.com/PyCQA/pyflakes/issues/434"
+    ],
+    "bug_cluster_id": "PyCQA/pyflakes:434",
+    "copied_from": [],
+    "exposed": false,
+    "fix_id": "PyCQA/pyflakes:pr:435",
+    "task": {
+      "anchors": [
+        {
+          "available_at": "2019-02-22T13:51:33Z",
+          "base_commit": "56d87a3464416e89cc3f5550d6308ee11e90efa3",
+          "exit_code": null,
+          "id": "current:issue",
+          "kind": "public_issue",
+          "observation": "F811 (redefinition of unused variable) incorrectly triggered with @overload decorator\n\nThis bug was fixed for functions in #320. It still occurs if the function is inside a class and/or has multiple decorators (e.g. @staticmethod, @classmethod):\r\n```\r\nfrom typing import overload\r\n\r\n\r\nclass test:\r\n    @overload\r\n    def utf8(value: None) -> None:\r\n        pass\r\n\r\n    @overload\r\n    def utf8(value: bytes) -> bytes:\r\n        pass\r\n\r\n    @overload\r\n    def utf8(value: str) -> bytes:\r\n        pass\r\n\r\n    def utf8(value):\r\n        pass  # actual implementation\r\n```\r\n\r\n```\r\ntest.py:9:5: F811 redefinition of unused 'utf8' from line 5\r\ntest.py:13:5: F811 redefinition of unused 'utf8' from line 9\r\ntest.py:17:5: F811 redefinition of unused 'utf8' from line 13\r\n```\r\n\r\n```\r\nfrom typing import overload\r\n\r\n\r\ndef do_nothing(func):\r\n    return func\r\n\r\n\r\n@overload\r\n@do_nothing\r\ndef utf8(value: None) -> None:\r\n    pass\r\n\r\n\r\n@overload\r\n@do_nothing\r\ndef utf8(value: bytes) -> bytes:\r\n    pass\r\n\r\n\r\n@overload\r\n@do_nothing\r\ndef utf8(value: str) -> bytes:\r\n    pass\r\n\r\n\r\ndef utf8(value):\r\n    pass  # actual implementation\r\n```\r\n\r\n```\r\ntest.py:14:1: F811 redefinition of unused 'utf8' from line 8\r\ntest.py:20:1: F811 redefinition of unused 'utf8' from line 14\r\ntest.py:26:1: F811 redefinition of unused 'utf8' from line 20\r\n```",
+          "path": "",
+          "sha256": ""
+        }
+      ],
+      "base_commit": "56d87a3464416e89cc3f5550d6308ee11e90efa3",
+      "bindings": [],
+      "checks": [],
+      "environment": [],
+      "facts": [],
+      "goals": [],
+      "input_available_at": "2019-02-22T13:51:33Z",
+      "oracles": [],
+      "port_values": [],
+      "public_problem": "F811 (redefinition of unused variable) incorrectly triggered with @overload decorator\n\nThis bug was fixed for functions in #320. It still occurs if the function is inside a class and/or has multiple decorators (e.g. @staticmethod, @classmethod):\r\n```\r\nfrom typing import overload\r\n\r\n\r\nclass test:\r\n    @overload\r\n    def utf8(value: None) -> None:\r\n        pass\r\n\r\n    @overload\r\n    def utf8(value: bytes) -> bytes:\r\n        pass\r\n\r\n    @overload\r\n    def utf8(value: str) -> bytes:\r\n        pass\r\n\r\n    def utf8(value):\r\n        pass  # actual implementation\r\n```\r\n\r\n```\r\ntest.py:9:5: F811 redefinition of unused 'utf8' from line 5\r\ntest.py:13:5: F811 redefinition of unused 'utf8' from line 9\r\ntest.py:17:5: F811 redefinition of unused 'utf8' from line 13\r\n```\r\n\r\n```\r\nfrom typing import overload\r\n\r\n\r\ndef do_nothing(func):\r\n    return func\r\n\r\n\r\n@overload\r\n@do_nothing\r\ndef utf8(value: None) -> None:\r\n    pass\r\n\r\n\r\n@overload\r\n@do_nothing\r\ndef utf8(value: bytes) -> bytes:\r\n    pass\r\n\r\n\r\n@overload\r\n@do_nothing\r\ndef utf8(value: str) -> bytes:\r\n    pass\r\n\r\n\r\ndef utf8(value):\r\n    pass  # actual implementation\r\n```\r\n\r\n```\r\ntest.py:14:1: F811 redefinition of unused 'utf8' from line 8\r\ntest.py:20:1: F811 redefinition of unused 'utf8' from line 14\r\ntest.py:26:1: F811 redefinition of unused 'utf8' from line 20\r\n```",
+      "repository": "PyCQA/pyflakes",
+      "revision": 0,
+      "root": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/pre2021-native-original-query-recovery-preparation-v2-20261006/published-queries/cases/PyCQA__pyflakes-434/public-base/pyflakes-2.1.0",
+      "task_id": "PyCQA/pyflakes:434"
+    }
+  },
+  {
+    "aliases": [
+      "PyCQA/pyflakes:441",
+      "https://github.com/PyCQA/pyflakes/issues/441"
+    ],
+    "bug_cluster_id": "PyCQA/pyflakes:441",
+    "copied_from": [],
+    "exposed": false,
+    "fix_id": "PyCQA/pyflakes:pr:448",
+    "task": {
+      "anchors": [
+        {
+          "available_at": "2019-03-19T10:38:28Z",
+          "base_commit": "02022d58de5505a177478d12b34356819bbf824b",
+          "exit_code": null,
+          "id": "current:issue",
+          "kind": "public_issue",
+          "observation": "Class-level `TypeVar` resulting in \"undefined name\" error\n\nMinimal sample:\r\n```\r\nfrom typing import TypeVar\r\n\r\n\r\nclass IdClass:\r\n    Y = TypeVar('Y')\r\n\r\n    def id(self, x: Y) -> Y:\r\n        return x\r\n```\r\nResult:\r\n```\r\n# pyflakes t.py \r\nt.py:7: undefined name 'Y'\r\n```\r\n\r\nMyPy supports such typing annotations and does not complain about this file.\r\nProbably this issue is related to similar ones #427 and #126 ",
+          "path": "",
+          "sha256": ""
+        }
+      ],
+      "base_commit": "02022d58de5505a177478d12b34356819bbf824b",
+      "bindings": [],
+      "checks": [],
+      "environment": [],
+      "facts": [],
+      "goals": [],
+      "input_available_at": "2019-03-19T10:38:28Z",
+      "oracles": [],
+      "port_values": [],
+      "public_problem": "Class-level `TypeVar` resulting in \"undefined name\" error\n\nMinimal sample:\r\n```\r\nfrom typing import TypeVar\r\n\r\n\r\nclass IdClass:\r\n    Y = TypeVar('Y')\r\n\r\n    def id(self, x: Y) -> Y:\r\n        return x\r\n```\r\nResult:\r\n```\r\n# pyflakes t.py \r\nt.py:7: undefined name 'Y'\r\n```\r\n\r\nMyPy supports such typing annotations and does not complain about this file.\r\nProbably this issue is related to similar ones #427 and #126 ",
+      "repository": "PyCQA/pyflakes",
+      "revision": 0,
+      "root": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/pre2021-native-original-query-recovery-preparation-v2-20261006/published-queries/cases/PyCQA__pyflakes-441/public-base/pyflakes-2.1.1",
+      "task_id": "PyCQA/pyflakes:441"
+    }
+  },
+  {
+    "aliases": [
+      "PyCQA/pyflakes:447",
+      "https://github.com/PyCQA/pyflakes/issues/447"
+    ],
+    "bug_cluster_id": "PyCQA/pyflakes:447",
+    "copied_from": [],
+    "exposed": false,
+    "fix_id": "PyCQA/pyflakes:pr:479",
+    "task": {
+      "anchors": [
+        {
+          "available_at": "2019-05-28T11:03:15Z",
+          "base_commit": "763092ab69d72c79609a42cf862d7a78721fb6fd",
+          "exit_code": null,
+          "id": "current:issue",
+          "kind": "public_issue",
+          "observation": "Spurious import warning for type used in nested quoted annotation\n\nThis is similar to #290 and #313, but seems to still be an issue.\r\n\r\nIf you import a type and then use it only within a type annotation which includes a nested quoted part, then `pyflakes` reports the import as unused.\r\n\r\n``` python\r\nfrom queue import Queue  # F401: 'queue.Queue' imported but unused\r\nfrom typing import Optional\r\n\r\ndef foo(queue: Optional['Queue[int]'] = None) -> None:\r\n    print(queue)\r\n\r\n# Revealed type is 'def (queue: Union[queue.Queue[builtins.int], None] =)'\r\nreveal_type(foo)\r\n```\r\n\r\nThis can be worked around by quoting the whole of the type annotation:\r\n``` python\r\ndef foo(queue: 'Optional[Queue[int]]' = None) -> None:\r\n    print(queue)\r\n```\r\n\r\nI'm using pyflakes 2.1.1 on Python 3.5.2 on Linux.",
+          "path": "",
+          "sha256": ""
+        }
+      ],
+      "base_commit": "763092ab69d72c79609a42cf862d7a78721fb6fd",
+      "bindings": [],
+      "checks": [],
+      "environment": [],
+      "facts": [],
+      "goals": [],
+      "input_available_at": "2019-05-28T11:03:15Z",
+      "oracles": [],
+      "port_values": [],
+      "public_problem": "Spurious import warning for type used in nested quoted annotation\n\nThis is similar to #290 and #313, but seems to still be an issue.\r\n\r\nIf you import a type and then use it only within a type annotation which includes a nested quoted part, then `pyflakes` reports the import as unused.\r\n\r\n``` python\r\nfrom queue import Queue  # F401: 'queue.Queue' imported but unused\r\nfrom typing import Optional\r\n\r\ndef foo(queue: Optional['Queue[int]'] = None) -> None:\r\n    print(queue)\r\n\r\n# Revealed type is 'def (queue: Union[queue.Queue[builtins.int], None] =)'\r\nreveal_type(foo)\r\n```\r\n\r\nThis can be worked around by quoting the whole of the type annotation:\r\n``` python\r\ndef foo(queue: 'Optional[Queue[int]]' = None) -> None:\r\n    print(queue)\r\n```\r\n\r\nI'm using pyflakes 2.1.1 on Python 3.5.2 on Linux.",
+      "repository": "PyCQA/pyflakes",
+      "revision": 0,
+      "root": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/pre2021-native-original-query-recovery-preparation-v2-20261006/published-queries/cases/PyCQA__pyflakes-447/public-base/pyflakes-2.1.1",
+      "task_id": "PyCQA/pyflakes:447"
+    }
+  },
+  {
+    "aliases": [
+      "pylint-dev/pylint:3092",
+      "https://github.com/pylint-dev/pylint/issues/3092"
+    ],
+    "bug_cluster_id": "pylint-dev/pylint:3092",
+    "copied_from": [],
+    "exposed": false,
+    "fix_id": "pylint-dev/pylint:commit:ce2af67d0e96e26c1999e1a53e36cf1460d9d647",
+    "task": {
+      "anchors": [
+        {
+          "available_at": "2019-09-05T16:44:15Z",
+          "base_commit": "3273ee4b62daac44376b40e06bef0429c204fc2a",
+          "exit_code": null,
+          "id": "current:issue",
+          "kind": "public_issue",
+          "observation": "* identifier in argument list causes false positive for missing-type-doc.\n\nWhen an * identifier is used in the argument list to require that all following keyword args need to be called explicitly, pylint gives false positives for the remaining keyword args via the missing-type-doc checker.\r\n\r\n### **Steps to reproduce**\r\nExecution on Mac OSX 10.14.6\r\nCreate a file pylint_failure.py. with the following:\r\n\r\n```\r\ndef indentifier_kwarg_method(arg1: int, arg2: int, *, value1: str, value2: str):\r\n    \"\"\"Code to show failure in missing-type-doc\r\n\r\n    Args:\r\n        arg1: First argument.\r\n        arg2: Second argument.\r\n        value1: First kwarg.\r\n        value2: Second kwarg.\r\n    \"\"\"\r\n    print(\"NOTE: It doesn't like anything after the '*'.\")\r\n```\r\nTest the above code for missing-type-doc.\r\n(NOTE: I didn't test this with Python's latest addition of the / in the argument list, which may have a similar issue?)\r\n\r\n### **Current Behaviour**\r\n```\r\npython3 -m pylint --disable=all --enable=missing-type-doc pylint_failure.py \r\n************* Module pylint_failure\r\npylint_failure.py:1:0: W9016: \"value1, value2\" missing in parameter type documentation (missing-type-doc)\r\n```\r\n\r\n\r\n### **Expected Behaviour**\r\nThe documented arguments should not be getting flagged as undocumented.\r\n\r\n\r\n### **python3 -m pylint --version**\r\n__main__.py 2.3.1\r\nastroid 2.2.5\r\nPython 3.7.3 (default, Jun 19 2019, 07:38:49) \r\n[Clang 10.0.1 (clang-1001.0.46.4)]",
+          "path": "",
+          "sha256": ""
+        }
+      ],
+      "base_commit": "3273ee4b62daac44376b40e06bef0429c204fc2a",
+      "bindings": [],
+      "checks": [],
+      "environment": [],
+      "facts": [],
+      "goals": [],
+      "input_available_at": "2019-09-05T16:44:15Z",
+      "oracles": [],
+      "port_values": [],
+      "public_problem": "* identifier in argument list causes false positive for missing-type-doc.\n\nWhen an * identifier is used in the argument list to require that all following keyword args need to be called explicitly, pylint gives false positives for the remaining keyword args via the missing-type-doc checker.\r\n\r\n### **Steps to reproduce**\r\nExecution on Mac OSX 10.14.6\r\nCreate a file pylint_failure.py. with the following:\r\n\r\n```\r\ndef indentifier_kwarg_method(arg1: int, arg2: int, *, value1: str, value2: str):\r\n    \"\"\"Code to show failure in missing-type-doc\r\n\r\n    Args:\r\n        arg1: First argument.\r\n        arg2: Second argument.\r\n        value1: First kwarg.\r\n        value2: Second kwarg.\r\n    \"\"\"\r\n    print(\"NOTE: It doesn't like anything after the '*'.\")\r\n```\r\nTest the above code for missing-type-doc.\r\n(NOTE: I didn't test this with Python's latest addition of the / in the argument list, which may have a similar issue?)\r\n\r\n### **Current Behaviour**\r\n```\r\npython3 -m pylint --disable=all --enable=missing-type-doc pylint_failure.py \r\n************* Module pylint_failure\r\npylint_failure.py:1:0: W9016: \"value1, value2\" missing in parameter type documentation (missing-type-doc)\r\n```\r\n\r\n\r\n### **Expected Behaviour**\r\nThe documented arguments should not be getting flagged as undocumented.\r\n\r\n\r\n### **python3 -m pylint --version**\r\n__main__.py 2.3.1\r\nastroid 2.2.5\r\nPython 3.7.3 (default, Jun 19 2019, 07:38:49) \r\n[Clang 10.0.1 (clang-1001.0.46.4)]",
+      "repository": "pylint-dev/pylint",
+      "revision": 0,
+      "root": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/pre2021-native-original-query-recovery-preparation-v2-20261006/published-queries/cases/pylint-dev__pylint-3092/public-base/pylint-2.3.1",
+      "task_id": "pylint-dev/pylint:3092"
+    }
+  },
+  {
+    "aliases": [
+      "PyCQA/pyflakes:470",
+      "https://github.com/PyCQA/pyflakes/issues/470"
+    ],
+    "bug_cluster_id": "PyCQA/pyflakes:470",
+    "copied_from": [],
+    "exposed": false,
+    "fix_id": "PyCQA/pyflakes:pr:472",
+    "task": {
+      "anchors": [
+        {
+          "available_at": "2019-09-23T09:05:31Z",
+          "base_commit": "d1ce97972b672d2d55d7a47b3a894f2efa599575",
+          "exit_code": null,
+          "id": "current:issue",
+          "kind": "public_issue",
+          "observation": "@overload of async functions\n\nSince #435, pyflakes git tip copes with synchronous @overload'ed functions, but not with async ones:\r\n\r\n```python\r\nfrom typing import overload\r\n\r\n@overload\r\ndef f(x: int) -> int:\r\n    ...\r\n\r\n@overload\r\ndef f(x: float) -> float:\r\n    ...\r\n\r\ndef f(x):\r\n    return x\r\n\r\n@overload\r\nasync def g(x: int) -> int:\r\n    ...\r\n\r\n@overload\r\nasync def g(x: float) -> float:\r\n    ...\r\n\r\nasync def g(x):\r\n    return x\r\n```\r\n```bash\r\n$ python -m pyflakes .\r\n\r\n18:1 redefinition of unused 'g' from line 14\r\n22:1 redefinition of unused 'g' from line 18\r\n```",
+          "path": "",
+          "sha256": ""
+        }
+      ],
+      "base_commit": "d1ce97972b672d2d55d7a47b3a894f2efa599575",
+      "bindings": [],
+      "checks": [],
+      "environment": [],
+      "facts": [],
+      "goals": [],
+      "input_available_at": "2019-09-23T09:05:31Z",
+      "oracles": [],
+      "port_values": [],
+      "public_problem": "@overload of async functions\n\nSince #435, pyflakes git tip copes with synchronous @overload'ed functions, but not with async ones:\r\n\r\n```python\r\nfrom typing import overload\r\n\r\n@overload\r\ndef f(x: int) -> int:\r\n    ...\r\n\r\n@overload\r\ndef f(x: float) -> float:\r\n    ...\r\n\r\ndef f(x):\r\n    return x\r\n\r\n@overload\r\nasync def g(x: int) -> int:\r\n    ...\r\n\r\n@overload\r\nasync def g(x: float) -> float:\r\n    ...\r\n\r\nasync def g(x):\r\n    return x\r\n```\r\n```bash\r\n$ python -m pyflakes .\r\n\r\n18:1 redefinition of unused 'g' from line 14\r\n22:1 redefinition of unused 'g' from line 18\r\n```",
+      "repository": "PyCQA/pyflakes",
+      "revision": 0,
+      "root": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/pre2021-native-original-query-recovery-preparation-v2-20261006/published-queries/cases/PyCQA__pyflakes-470/public-base/pyflakes-2.1.1",
+      "task_id": "PyCQA/pyflakes:470"
+    }
+  },
+  {
+    "aliases": [
+      "PyCQA/pyflakes:483",
+      "https://github.com/PyCQA/pyflakes/issues/483"
+    ],
+    "bug_cluster_id": "PyCQA/pyflakes:483",
+    "copied_from": [],
+    "exposed": false,
+    "fix_id": "PyCQA/pyflakes:pr:484",
+    "task": {
+      "anchors": [
+        {
+          "available_at": "2019-10-24T18:26:15Z",
+          "base_commit": "2a650712ed58344cb69ed7a2680d542b0e58857a",
+          "exit_code": null,
+          "id": "current:issue",
+          "kind": "public_issue",
+          "observation": "python 3.8 SyntaxWarning: \"is\" with a literal. Did you mean \"==\"?\n\nHi there -\r\n\r\nI searched a bit for this but couldn't find it.   This is a warning generated by Python 3.8 and I think it's new.  It's very hard to get pytest to raise for this, so it would be better if it were in pyflakes / flake8.\r\n\r\ndemo:\r\n\r\n```\r\n\"\"\"test a syntax warning.\"\"\"\r\n\r\nx = 5\r\n\r\nif x is ():\r\n    print(\"hi\")\r\n\r\n```\r\n\r\n```\r\n$ /opt/python3.8/bin/python3 -m py_compile test.py\r\ntest.py:5: SyntaxWarning: \"is\" with a literal. Did you mean \"==\"?\r\n  if x is ():\r\n\r\n```\r\n\r\n",
+          "path": "",
+          "sha256": ""
+        }
+      ],
+      "base_commit": "2a650712ed58344cb69ed7a2680d542b0e58857a",
+      "bindings": [],
+      "checks": [],
+      "environment": [],
+      "facts": [],
+      "goals": [],
+      "input_available_at": "2019-10-24T18:26:15Z",
+      "oracles": [],
+      "port_values": [],
+      "public_problem": "python 3.8 SyntaxWarning: \"is\" with a literal. Did you mean \"==\"?\n\nHi there -\r\n\r\nI searched a bit for this but couldn't find it.   This is a warning generated by Python 3.8 and I think it's new.  It's very hard to get pytest to raise for this, so it would be better if it were in pyflakes / flake8.\r\n\r\ndemo:\r\n\r\n```\r\n\"\"\"test a syntax warning.\"\"\"\r\n\r\nx = 5\r\n\r\nif x is ():\r\n    print(\"hi\")\r\n\r\n```\r\n\r\n```\r\n$ /opt/python3.8/bin/python3 -m py_compile test.py\r\ntest.py:5: SyntaxWarning: \"is\" with a literal. Did you mean \"==\"?\r\n  if x is ():\r\n\r\n```\r\n\r\n",
+      "repository": "PyCQA/pyflakes",
+      "revision": 0,
+      "root": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/pre2021-native-original-query-recovery-preparation-v2-20261006/published-queries/cases/PyCQA__pyflakes-483/public-base/pyflakes-2.1.1",
+      "task_id": "PyCQA/pyflakes:483"
+    }
+  },
+  {
+    "aliases": [
+      "PyCQA/pyflakes:486",
+      "https://github.com/PyCQA/pyflakes/issues/486"
+    ],
+    "bug_cluster_id": "PyCQA/pyflakes:486",
+    "copied_from": [],
+    "exposed": false,
+    "fix_id": "PyCQA/pyflakes:pr:535",
+    "task": {
+      "anchors": [
+        {
+          "available_at": "2019-10-27T16:15:47Z",
+          "base_commit": "5f33cb6120457d0e651c26845afac02e06a504ae",
+          "exit_code": null,
+          "id": "current:issue",
+          "kind": "public_issue",
+          "observation": "Undefined name when using variable annotations\n\nPlease consider the following file:\r\n\r\n```python\r\nType: object\r\ndef foo(x: Type) -> None: ...\r\n```\r\n\r\nWhen checking it with '2.1.1 Python 3.8.0 on Linux' (or Python 3.7.3) I get the following error:\r\n\r\n```\r\nfoo.py:2: undefined name 'Type'\r\n```\r\n\r\nThis is problematic when checking python stub files.",
+          "path": "",
+          "sha256": ""
+        }
+      ],
+      "base_commit": "5f33cb6120457d0e651c26845afac02e06a504ae",
+      "bindings": [],
+      "checks": [],
+      "environment": [],
+      "facts": [],
+      "goals": [],
+      "input_available_at": "2019-10-27T16:15:47Z",
+      "oracles": [],
+      "port_values": [],
+      "public_problem": "Undefined name when using variable annotations\n\nPlease consider the following file:\r\n\r\n```python\r\nType: object\r\ndef foo(x: Type) -> None: ...\r\n```\r\n\r\nWhen checking it with '2.1.1 Python 3.8.0 on Linux' (or Python 3.7.3) I get the following error:\r\n\r\n```\r\nfoo.py:2: undefined name 'Type'\r\n```\r\n\r\nThis is problematic when checking python stub files.",
+      "repository": "PyCQA/pyflakes",
+      "revision": 0,
+      "root": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/pre2021-native-original-query-recovery-preparation-v2-20261006/published-queries/cases/PyCQA__pyflakes-486/public-base/pyflakes-2.1.1",
+      "task_id": "PyCQA/pyflakes:486"
+    }
+  },
+  {
+    "aliases": [
+      "PyCQA/pyflakes:507",
+      "https://github.com/PyCQA/pyflakes/issues/507"
+    ],
+    "bug_cluster_id": "PyCQA/pyflakes:507",
+    "copied_from": [],
+    "exposed": false,
+    "fix_id": "PyCQA/pyflakes:pr:508",
+    "task": {
+      "anchors": [
+        {
+          "available_at": "2020-01-17T18:53:10Z",
+          "base_commit": "34a01b7e5ca3390670b86059bac8e24138e7837c",
+          "exit_code": null,
+          "id": "current:issue",
+          "kind": "public_issue",
+          "observation": "F401 (imported but unused) false positive on Bar when using def x(a: Foo, /, *, b: Bar)\n\n```python\r\nfrom datetime import datetime as Foo, time as Bar\r\n\r\n\r\ndef x(a: Foo, /, *, b: Bar):\r\n    pass\r\n```\r\n\r\nRunning this on the file results in:\r\n\r\n```\r\n› flake8 --version  \r\n3.7.9 (mccabe: 0.6.1, pycodestyle: 2.5.0, pyflakes: 2.1.1) CPython 3.8.1 on Linux\r\n› pyflakes --version\r\n2.1.1 Python 3.8.1 on Linux\r\n› flake8 example.py \r\nexample.py:1:1: F401 'datetime.datetime as Foo' imported but unused\r\n› pyflakes example.py\r\nexample.py:1: 'datetime.datetime as Foo' imported but unused\r\n```",
+          "path": "",
+          "sha256": ""
+        }
+      ],
+      "base_commit": "34a01b7e5ca3390670b86059bac8e24138e7837c",
+      "bindings": [],
+      "checks": [],
+      "environment": [],
+      "facts": [],
+      "goals": [],
+      "input_available_at": "2020-01-17T18:53:10Z",
+      "oracles": [],
+      "port_values": [],
+      "public_problem": "F401 (imported but unused) false positive on Bar when using def x(a: Foo, /, *, b: Bar)\n\n```python\r\nfrom datetime import datetime as Foo, time as Bar\r\n\r\n\r\ndef x(a: Foo, /, *, b: Bar):\r\n    pass\r\n```\r\n\r\nRunning this on the file results in:\r\n\r\n```\r\n› flake8 --version  \r\n3.7.9 (mccabe: 0.6.1, pycodestyle: 2.5.0, pyflakes: 2.1.1) CPython 3.8.1 on Linux\r\n› pyflakes --version\r\n2.1.1 Python 3.8.1 on Linux\r\n› flake8 example.py \r\nexample.py:1:1: F401 'datetime.datetime as Foo' imported but unused\r\n› pyflakes example.py\r\nexample.py:1: 'datetime.datetime as Foo' imported but unused\r\n```",
+      "repository": "PyCQA/pyflakes",
+      "revision": 0,
+      "root": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/pre2021-native-original-query-recovery-preparation-v2-20261006/published-queries/cases/PyCQA__pyflakes-507/public-base/pyflakes-2.1.1",
+      "task_id": "PyCQA/pyflakes:507"
+    }
+  },
+  {
+    "aliases": [
+      "PyCQA/pyflakes:510",
+      "https://github.com/PyCQA/pyflakes/issues/510"
+    ],
+    "bug_cluster_id": "PyCQA/pyflakes:510",
+    "copied_from": [],
+    "exposed": false,
+    "fix_id": "PyCQA/pyflakes:pr:516",
+    "task": {
+      "anchors": [
+        {
+          "available_at": "2020-02-03T15:28:17Z",
+          "base_commit": "7239d0216bebe0be38c9abc790ede1e9c94403ac",
+          "exit_code": null,
+          "id": "current:issue",
+          "kind": "public_issue",
+          "observation": "Spurious unsued import warning for type annotation used in quoted cast\n\nGiven\r\n``` python\r\n# demo.py \r\nfrom typing import Union, cast\r\n\r\nx = cast('Union[str, int]', 42)\r\nreveal_type(x)\r\n```\r\nThen I would hope that `pyflakes` would be able to see the usage of `Union` in the quoted cast, but it can't.\r\n``` shell\r\n$ pyflakes demo.py \r\ndemo.py:1: 'typing.Union' imported but unused\r\ndemo.py:4: undefined name 'reveal_type'\r\n```\r\n(`reveal_type` being undefined is correct here).\r\n\r\n`mypy` does seem happy with this usage though.\r\n``` shell\r\n$ mypy demo.py \r\ndemo.py:4: error: Revealed type is 'Union[builtins.str, builtins.int]'\r\n```\r\n\r\nI realise this example is somewhat contrived (why would you quote this), however in the case that one of the union members is a circular import for example, you need to quote at least some part of the type and it's often cleaner to quote the whole name rather than parts of it.",
+          "path": "",
+          "sha256": ""
+        }
+      ],
+      "base_commit": "7239d0216bebe0be38c9abc790ede1e9c94403ac",
+      "bindings": [],
+      "checks": [],
+      "environment": [],
+      "facts": [],
+      "goals": [],
+      "input_available_at": "2020-02-03T15:28:17Z",
+      "oracles": [],
+      "port_values": [],
+      "public_problem": "Spurious unsued import warning for type annotation used in quoted cast\n\nGiven\r\n``` python\r\n# demo.py \r\nfrom typing import Union, cast\r\n\r\nx = cast('Union[str, int]', 42)\r\nreveal_type(x)\r\n```\r\nThen I would hope that `pyflakes` would be able to see the usage of `Union` in the quoted cast, but it can't.\r\n``` shell\r\n$ pyflakes demo.py \r\ndemo.py:1: 'typing.Union' imported but unused\r\ndemo.py:4: undefined name 'reveal_type'\r\n```\r\n(`reveal_type` being undefined is correct here).\r\n\r\n`mypy` does seem happy with this usage though.\r\n``` shell\r\n$ mypy demo.py \r\ndemo.py:4: error: Revealed type is 'Union[builtins.str, builtins.int]'\r\n```\r\n\r\nI realise this example is somewhat contrived (why would you quote this), however in the case that one of the union members is a circular import for example, you need to quote at least some part of the type and it's often cleaner to quote the whole name rather than parts of it.",
+      "repository": "PyCQA/pyflakes",
+      "revision": 0,
+      "root": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/pre2021-native-original-query-recovery-preparation-v2-20261006/published-queries/cases/PyCQA__pyflakes-510/public-base/pyflakes-2.1.1",
+      "task_id": "PyCQA/pyflakes:510"
+    }
+  },
+  {
+    "aliases": [
+      "pylint-dev/pylint:3468",
+      "https://github.com/pylint-dev/pylint/issues/3468"
+    ],
+    "bug_cluster_id": "pylint-dev/pylint:3468",
+    "copied_from": [],
+    "exposed": false,
+    "fix_id": "pylint-dev/pylint:pr:3782",
+    "task": {
+      "anchors": [
+        {
+          "available_at": "2020-04-01T02:15:10Z",
+          "base_commit": "f18274f9c804f3ab38abf5be0c068780ce201209",
+          "exit_code": null,
+          "id": "current:issue",
+          "kind": "public_issue",
+          "observation": "inconsistent-return-statements not working in try branches\n\n<!--\r\n  Hi there! Thank you for discovering and submitting an issue.\r\n\r\n  Before you submit this, make sure that the issue doesn't already exist\r\n  or if it is not closed.\r\n\r\n  Is your issue fixed on the preview release?: pip install pylint astroid --pre -U\r\n\r\n-->\r\n\r\n### Steps to reproduce\r\nAdd a return in the try clause\r\n```\r\ndef foo(bar):\r\n    try:\r\n        return bar.baz\r\n    except AttributeError:\r\n        pass\r\n```\r\n\r\n### Current behavior\r\nPylint emits no warning for `inconsistent-return-statements`. Note that it will emit a warning if the value is returned in the except clause.\r\n\r\n### Expected behavior\r\nPylint should emit a warning for not explicitly returning a value if an exception is hit, be it in the except clause itself or at the end of the call.\r\n\r\n### pylint --version output\r\n```\r\n$ pylint --version output\r\npylint 2.4.4\r\nastroid 2.3.3\r\nPython 3.6.7 (default, Oct 22 2018, 11:32:17) \r\n[GCC 8.2.0]\r\n```",
+          "path": "",
+          "sha256": ""
+        }
+      ],
+      "base_commit": "f18274f9c804f3ab38abf5be0c068780ce201209",
+      "bindings": [],
+      "checks": [],
+      "environment": [],
+      "facts": [],
+      "goals": [],
+      "input_available_at": "2020-04-01T02:15:10Z",
+      "oracles": [],
+      "port_values": [],
+      "public_problem": "inconsistent-return-statements not working in try branches\n\n<!--\r\n  Hi there! Thank you for discovering and submitting an issue.\r\n\r\n  Before you submit this, make sure that the issue doesn't already exist\r\n  or if it is not closed.\r\n\r\n  Is your issue fixed on the preview release?: pip install pylint astroid --pre -U\r\n\r\n-->\r\n\r\n### Steps to reproduce\r\nAdd a return in the try clause\r\n```\r\ndef foo(bar):\r\n    try:\r\n        return bar.baz\r\n    except AttributeError:\r\n        pass\r\n```\r\n\r\n### Current behavior\r\nPylint emits no warning for `inconsistent-return-statements`. Note that it will emit a warning if the value is returned in the except clause.\r\n\r\n### Expected behavior\r\nPylint should emit a warning for not explicitly returning a value if an exception is hit, be it in the except clause itself or at the end of the call.\r\n\r\n### pylint --version output\r\n```\r\n$ pylint --version output\r\npylint 2.4.4\r\nastroid 2.3.3\r\nPython 3.6.7 (default, Oct 22 2018, 11:32:17) \r\n[GCC 8.2.0]\r\n```",
+      "repository": "pylint-dev/pylint",
+      "revision": 0,
+      "root": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/pre2021-native-original-query-recovery-preparation-v2-20261006/published-queries/cases/pylint-dev__pylint-3468/public-base/pylint-2.4.4",
+      "task_id": "pylint-dev/pylint:3468"
+    }
+  },
+  {
+    "aliases": [
+      "pylint-dev/pylint:3604",
+      "https://github.com/pylint-dev/pylint/issues/3604"
+    ],
+    "bug_cluster_id": "pylint-dev/pylint:3604",
+    "copied_from": [],
+    "exposed": false,
+    "fix_id": "pylint-dev/pylint:commit:ffb354aea057c25d9e48fa22da2840a450d99f3e",
+    "task": {
+      "anchors": [
+        {
+          "available_at": "2020-05-07T18:17:10Z",
+          "base_commit": "0ce5e391ed4e993a80def679addae35574da00c1",
+          "exit_code": null,
+          "id": "current:issue",
+          "kind": "public_issue",
+          "observation": "Warning with underscore _ breaks pragma parsing\n\nFor a particular warning in disable pragma, pylint fails to parse the identifier string. The warning comes from a plugin (pocketlint) and is called `found-_-in-module-class` (note underscore). Instead of disabling, E0012 is emitted and the disable does not happen (obviously). Once the disable is changed to use the numeric identifier `W9902`, the issue goes away.\r\n\r\nThis regression appeared after updating pylint from 2.4.4. to 2.5.0.\r\n\r\n### Steps to reproduce\r\n1. pip3 install --user pocketlint\r\n2. pip3 install --user pylint==2.5.0\r\n3. git clone git@github.com:rhinstaller/anaconda.git\r\n4. cd anaconda\r\n5. PYTHONPATH=`pwd` python3 -m pylint --rcfile tests/pylint/pylintrc anaconda.py\r\n6. Replace `found-_-in-module-class` in the indicated line with `W9902`\r\n7. PYTHONPATH=`pwd` python3 -m pylint --rcfile tests/pylint/pylintrc anaconda.py\r\n\r\n### Current behavior\r\nBuggy behavior:\r\n```\r\nE0012(bad-option-value):anaconda.py:379,0: : Bad option value 'found-'\r\nE0012(bad-option-value):anaconda.py:379,0: : Bad option value '-in-module-class'\r\nW9902(found-_-in-module-class):anaconda.py:381,57: : Found _ call at module/class level\r\nW9902(found-_-in-module-class):anaconda.py:382,35: : Found _ call at module/class level\r\n```\r\nAfter replacing:\r\n(no output)\r\n\r\nSee relevant files:\r\n* Reported error location: https://github.com/rhinstaller/anaconda/blob/master/anaconda.py#L379\r\n* Definition of the message: https://github.com/rhinstaller/pocketlint/blob/master/pocketlint/checkers/intl.py#L66\r\n\r\n### Expected behavior\r\n\r\nNo output \r\n\r\n### pylint --version output\r\n\r\n```\r\n$ python3 -m pylint --version\r\npylint 2.5.0\r\nastroid 2.4.1\r\nPython 3.7.7 (default, Mar 13 2020, 21:39:43) \r\n[GCC 9.2.1 20190827 (Red Hat 9.2.1-1)]\r\n```\r\n",
+          "path": "",
+          "sha256": ""
+        }
+      ],
+      "base_commit": "0ce5e391ed4e993a80def679addae35574da00c1",
+      "bindings": [],
+      "checks": [],
+      "environment": [],
+      "facts": [],
+      "goals": [],
+      "input_available_at": "2020-05-07T18:17:10Z",
+      "oracles": [],
+      "port_values": [],
+      "public_problem": "Warning with underscore _ breaks pragma parsing\n\nFor a particular warning in disable pragma, pylint fails to parse the identifier string. The warning comes from a plugin (pocketlint) and is called `found-_-in-module-class` (note underscore). Instead of disabling, E0012 is emitted and the disable does not happen (obviously). Once the disable is changed to use the numeric identifier `W9902`, the issue goes away.\r\n\r\nThis regression appeared after updating pylint from 2.4.4. to 2.5.0.\r\n\r\n### Steps to reproduce\r\n1. pip3 install --user pocketlint\r\n2. pip3 install --user pylint==2.5.0\r\n3. git clone git@github.com:rhinstaller/anaconda.git\r\n4. cd anaconda\r\n5. PYTHONPATH=`pwd` python3 -m pylint --rcfile tests/pylint/pylintrc anaconda.py\r\n6. Replace `found-_-in-module-class` in the indicated line with `W9902`\r\n7. PYTHONPATH=`pwd` python3 -m pylint --rcfile tests/pylint/pylintrc anaconda.py\r\n\r\n### Current behavior\r\nBuggy behavior:\r\n```\r\nE0012(bad-option-value):anaconda.py:379,0: : Bad option value 'found-'\r\nE0012(bad-option-value):anaconda.py:379,0: : Bad option value '-in-module-class'\r\nW9902(found-_-in-module-class):anaconda.py:381,57: : Found _ call at module/class level\r\nW9902(found-_-in-module-class):anaconda.py:382,35: : Found _ call at module/class level\r\n```\r\nAfter replacing:\r\n(no output)\r\n\r\nSee relevant files:\r\n* Reported error location: https://github.com/rhinstaller/anaconda/blob/master/anaconda.py#L379\r\n* Definition of the message: https://github.com/rhinstaller/pocketlint/blob/master/pocketlint/checkers/intl.py#L66\r\n\r\n### Expected behavior\r\n\r\nNo output \r\n\r\n### pylint --version output\r\n\r\n```\r\n$ python3 -m pylint --version\r\npylint 2.5.0\r\nastroid 2.4.1\r\nPython 3.7.7 (default, Mar 13 2020, 21:39:43) \r\n[GCC 9.2.1 20190827 (Red Hat 9.2.1-1)]\r\n```\r\n",
+      "repository": "pylint-dev/pylint",
+      "revision": 0,
+      "root": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/pre2021-native-original-query-recovery-preparation-v2-20261006/published-queries/cases/pylint-dev__pylint-3604/public-base/pylint-2.5.2",
+      "task_id": "pylint-dev/pylint:3604"
+    }
+  },
+  {
+    "aliases": [
+      "pylint-dev/pylint:3666",
+      "https://github.com/pylint-dev/pylint/issues/3666"
+    ],
+    "bug_cluster_id": "pylint-dev/pylint:3666",
+    "copied_from": [],
+    "exposed": false,
+    "fix_id": "pylint-dev/pylint:pr:3667",
+    "task": {
+      "anchors": [
+        {
+          "available_at": "2020-06-05T19:22:59Z",
+          "base_commit": "8dafda7d895733a39f57f3fea546a870d948fd44",
+          "exit_code": null,
+          "id": "current:issue",
+          "kind": "public_issue",
+          "observation": "Pylint 2.5 does not allow ignoring checkers whose names have numbers in them\n\n### Steps to reproduce\r\nUsing a version of Pylint 2.5, it's impossible to ignore warnings about checkers whose names contain numbers.\r\n\r\nReproducing this requires writing custom checker, which is a bit complicated to describe in a single issue. I've put together a simple reproduction here: https://github.com/jfly/pylint-demo#pylint-checker-naming-issue\r\n\r\n### Current behavior\r\n\r\nIn the demo above, a line like this should pass pylint, but instead I get a `Bad option value '-no-jfly' (bad-option-value)` message. Note that the option value is actually `j3-no-jfly`, *not* `-no-jfly`:\r\n\r\n```python\r\npylint: disable=j3-no-jfly\r\n```\r\n\r\n### Expected behavior\r\n\r\nI suppose it's possible that Pylint intentionally does not want to support checkers with numbers in their names. That used to be supported, though, so I'd prefer that Pylint support this (as it did in 2.4 and before).\r\n\r\nIf it *is* intentional to not support numbers in checker names, then I think it would be nice for this to be explicitly called out in a release note, and I also think the error could be clearer about what's going on.\r\n\r\n### pylint --version output\r\n\r\n(see [readme](https://github.com/jfly/pylint-demo#to-reproduce-the-issue-using-pylint-250) for more information)\r\n\r\n```\r\n$ pylint --version\r\npylint 2.5.0\r\nastroid 2.4.1\r\nPython 3.8.3 (default, May 17 2020, 18:15:42)\r\n[GCC 10.1.0]\r\n```\r\n\r\n### Some digging into how this broke between pylint 2.4.4 and 2.5\r\n\r\nAs demonstrated [here](https://github.com/jfly/pylint-demo), this worked on Pylint 2.4.4, and started breaking with Pylint 2.5.0. I did some code spelunking, and it looks like this commit https://github.com/PyCQA/pylint/commit/9bdae8b82fcc5b0592135cbf6bead7df360a6672 broke support for checkers with numbers in the name. Specifically, it defines `MESSAGE_STRING`'s regex in a way such that numbers are not allowed. One fix may be to just tweak that regex so it allows numbers.",
+          "path": "",
+          "sha256": ""
+        }
+      ],
+      "base_commit": "8dafda7d895733a39f57f3fea546a870d948fd44",
+      "bindings": [],
+      "checks": [],
+      "environment": [],
+      "facts": [],
+      "goals": [],
+      "input_available_at": "2020-06-05T19:22:59Z",
+      "oracles": [],
+      "port_values": [],
+      "public_problem": "Pylint 2.5 does not allow ignoring checkers whose names have numbers in them\n\n### Steps to reproduce\r\nUsing a version of Pylint 2.5, it's impossible to ignore warnings about checkers whose names contain numbers.\r\n\r\nReproducing this requires writing custom checker, which is a bit complicated to describe in a single issue. I've put together a simple reproduction here: https://github.com/jfly/pylint-demo#pylint-checker-naming-issue\r\n\r\n### Current behavior\r\n\r\nIn the demo above, a line like this should pass pylint, but instead I get a `Bad option value '-no-jfly' (bad-option-value)` message. Note that the option value is actually `j3-no-jfly`, *not* `-no-jfly`:\r\n\r\n```python\r\npylint: disable=j3-no-jfly\r\n```\r\n\r\n### Expected behavior\r\n\r\nI suppose it's possible that Pylint intentionally does not want to support checkers with numbers in their names. That used to be supported, though, so I'd prefer that Pylint support this (as it did in 2.4 and before).\r\n\r\nIf it *is* intentional to not support numbers in checker names, then I think it would be nice for this to be explicitly called out in a release note, and I also think the error could be clearer about what's going on.\r\n\r\n### pylint --version output\r\n\r\n(see [readme](https://github.com/jfly/pylint-demo#to-reproduce-the-issue-using-pylint-250) for more information)\r\n\r\n```\r\n$ pylint --version\r\npylint 2.5.0\r\nastroid 2.4.1\r\nPython 3.8.3 (default, May 17 2020, 18:15:42)\r\n[GCC 10.1.0]\r\n```\r\n\r\n### Some digging into how this broke between pylint 2.4.4 and 2.5\r\n\r\nAs demonstrated [here](https://github.com/jfly/pylint-demo), this worked on Pylint 2.4.4, and started breaking with Pylint 2.5.0. I did some code spelunking, and it looks like this commit https://github.com/PyCQA/pylint/commit/9bdae8b82fcc5b0592135cbf6bead7df360a6672 broke support for checkers with numbers in the name. Specifically, it defines `MESSAGE_STRING`'s regex in a way such that numbers are not allowed. One fix may be to just tweak that regex so it allows numbers.",
+      "repository": "pylint-dev/pylint",
+      "revision": 0,
+      "root": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/pre2021-native-original-query-recovery-preparation-v2-20261006/published-queries/cases/pylint-dev__pylint-3666/public-base/pylint-2.5.2",
+      "task_id": "pylint-dev/pylint:3666"
+    }
+  },
+  {
+    "aliases": [
+      "pylint-dev/pylint:3737",
+      "https://github.com/pylint-dev/pylint/issues/3737"
+    ],
+    "bug_cluster_id": "pylint-dev/pylint:3737",
+    "copied_from": [],
+    "exposed": false,
+    "fix_id": "pylint-dev/pylint:pr:3988",
+    "task": {
+      "anchors": [
+        {
+          "available_at": "2020-07-12T18:25:08Z",
+          "base_commit": "118415b89d739e0b8e51d00737c1984524d3bf01",
+          "exit_code": null,
+          "id": "current:issue",
+          "kind": "public_issue",
+          "observation": "False positive for `signature-differs` when collecting all arguments\n\nThis is a very similar bug to #1553. The main difference is that in this case we set a default value to one of the parameters in the function that we override in the subclass (see ``elit=None``).\r\n\r\n### Steps to reproduce\r\nCreate a file ``lorem.py`` as follows:\r\n\r\n```\r\nclass Ipsum:\r\n    def dolor(self, elit=None):\r\n        pass\r\n\r\n\r\nclass LoremIpsum(Ipsum):\r\n    def dolor(self, *args, **kwargs):\r\n        super().dolor(*args, **kwargs)\r\n```\r\n\r\nNote that this is a particularly common pattern in Django, for example when overriding the ``save`` method of models (see an [example in the official documentation](https://docs.djangoproject.com/en/3.0/topics/db/models/#overriding-model-methods)).\r\n\r\n### Current behavior\r\nRun pylint on the file (``pylint lorem.py``):\r\n\r\n```\r\n...\r\nlorem.py:7:4: W0222: Signature differs from overridden 'dolor' method (signature-differs)\r\n```\r\n\r\n### Expected behavior\r\nThere is no error reported.\r\n\r\n### pylint --version output\r\n```\r\npylint 2.5.3\r\nastroid 2.4.2\r\nPython 3.8.2 (default, Apr 27 2020, 15:53:34) \r\n[GCC 9.3.0]\r\n```",
+          "path": "",
+          "sha256": ""
+        }
+      ],
+      "base_commit": "118415b89d739e0b8e51d00737c1984524d3bf01",
+      "bindings": [],
+      "checks": [],
+      "environment": [],
+      "facts": [],
+      "goals": [],
+      "input_available_at": "2020-07-12T18:25:08Z",
+      "oracles": [],
+      "port_values": [],
+      "public_problem": "False positive for `signature-differs` when collecting all arguments\n\nThis is a very similar bug to #1553. The main difference is that in this case we set a default value to one of the parameters in the function that we override in the subclass (see ``elit=None``).\r\n\r\n### Steps to reproduce\r\nCreate a file ``lorem.py`` as follows:\r\n\r\n```\r\nclass Ipsum:\r\n    def dolor(self, elit=None):\r\n        pass\r\n\r\n\r\nclass LoremIpsum(Ipsum):\r\n    def dolor(self, *args, **kwargs):\r\n        super().dolor(*args, **kwargs)\r\n```\r\n\r\nNote that this is a particularly common pattern in Django, for example when overriding the ``save`` method of models (see an [example in the official documentation](https://docs.djangoproject.com/en/3.0/topics/db/models/#overriding-model-methods)).\r\n\r\n### Current behavior\r\nRun pylint on the file (``pylint lorem.py``):\r\n\r\n```\r\n...\r\nlorem.py:7:4: W0222: Signature differs from overridden 'dolor' method (signature-differs)\r\n```\r\n\r\n### Expected behavior\r\nThere is no error reported.\r\n\r\n### pylint --version output\r\n```\r\npylint 2.5.3\r\nastroid 2.4.2\r\nPython 3.8.2 (default, Apr 27 2020, 15:53:34) \r\n[GCC 9.3.0]\r\n```",
+      "repository": "pylint-dev/pylint",
+      "revision": 0,
+      "root": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/pre2021-native-original-query-recovery-preparation-v2-20261006/published-queries/cases/pylint-dev__pylint-3737/public-base/pylint-2.5.3",
+      "task_id": "pylint-dev/pylint:3737"
+    }
+  },
+  {
+    "aliases": [
+      "PyCQA/pyflakes:574",
+      "https://github.com/PyCQA/pyflakes/issues/574"
+    ],
+    "bug_cluster_id": "PyCQA/pyflakes:574",
+    "copied_from": [],
+    "exposed": false,
+    "fix_id": "PyCQA/pyflakes:pr:580",
+    "task": {
+      "anchors": [
+        {
+          "available_at": "2020-08-16T18:20:15Z",
+          "base_commit": "e516f65dcd90e91a9a5aeeeeadf1df85417cbd26",
+          "exit_code": null,
+          "id": "current:issue",
+          "kind": "public_issue",
+          "observation": "syntax error in forward annotation when using Annotated\n\nWhen using [`Annotated`](https://www.python.org/dev/peps/pep-0593/) with string annotations the following error is raised:\r\n\r\n```\r\n./pyflakes.py:3:16 syntax error in forward annotation '>1'\r\n```\r\n\r\nTriggering code:\r\n\r\n```\r\nfrom typing import Annotated\r\n\r\nAnnotated[int, '>1']\r\n```",
+          "path": "",
+          "sha256": ""
+        }
+      ],
+      "base_commit": "e516f65dcd90e91a9a5aeeeeadf1df85417cbd26",
+      "bindings": [],
+      "checks": [],
+      "environment": [],
+      "facts": [],
+      "goals": [],
+      "input_available_at": "2020-08-16T18:20:15Z",
+      "oracles": [],
+      "port_values": [],
+      "public_problem": "syntax error in forward annotation when using Annotated\n\nWhen using [`Annotated`](https://www.python.org/dev/peps/pep-0593/) with string annotations the following error is raised:\r\n\r\n```\r\n./pyflakes.py:3:16 syntax error in forward annotation '>1'\r\n```\r\n\r\nTriggering code:\r\n\r\n```\r\nfrom typing import Annotated\r\n\r\nAnnotated[int, '>1']\r\n```",
+      "repository": "PyCQA/pyflakes",
+      "revision": 0,
+      "root": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/pre2021-native-original-query-recovery-preparation-v2-20261006/published-queries/cases/PyCQA__pyflakes-574/public-base/pyflakes-2.2.0",
+      "task_id": "PyCQA/pyflakes:574"
+    }
+  },
+  {
+    "aliases": [
+      "pylint-dev/pylint:3798",
+      "https://github.com/pylint-dev/pylint/issues/3798"
+    ],
+    "bug_cluster_id": "pylint-dev/pylint:3798",
+    "copied_from": [],
+    "exposed": false,
+    "fix_id": "pylint-dev/pylint:pr:3868",
+    "task": {
+      "anchors": [
+        {
+          "available_at": "2020-08-26T19:44:50Z",
+          "base_commit": "01afee912d09d755b6b53bdc5fb28df4687f9bda",
+          "exit_code": null,
+          "id": "current:issue",
+          "kind": "public_issue",
+          "observation": "from __future__ import annotations as <identifier> not supported\n\nIn pylint 2.6.0 (and earlier) under python 3.7, the following produces an incorrect warning for\r\nthe '-> C:' return value.\r\n\r\n```python\r\nfrom __future__ import annotations as __annotations__\r\n\r\nclass C:\r\n    @classmethod\r\n    def create(cls) -> C: # bogus warning: Undefined variable 'C'\r\n        return cls()\r\n\r\n```\r\n\r\nThere is no warning when the `as` clause is not there.\r\n\r\nThis clause is required in some spaces in order to avoid having the `annotations` symbol pollute the\r\nnamespace and is not supposed to affect the processing future clause.\r\n\r\nSee https://docs.python.org/3/reference/simple_stmts.html#future",
+          "path": "",
+          "sha256": ""
+        }
+      ],
+      "base_commit": "01afee912d09d755b6b53bdc5fb28df4687f9bda",
+      "bindings": [],
+      "checks": [],
+      "environment": [],
+      "facts": [],
+      "goals": [],
+      "input_available_at": "2020-08-26T19:44:50Z",
+      "oracles": [],
+      "port_values": [],
+      "public_problem": "from __future__ import annotations as <identifier> not supported\n\nIn pylint 2.6.0 (and earlier) under python 3.7, the following produces an incorrect warning for\r\nthe '-> C:' return value.\r\n\r\n```python\r\nfrom __future__ import annotations as __annotations__\r\n\r\nclass C:\r\n    @classmethod\r\n    def create(cls) -> C: # bogus warning: Undefined variable 'C'\r\n        return cls()\r\n\r\n```\r\n\r\nThere is no warning when the `as` clause is not there.\r\n\r\nThis clause is required in some spaces in order to avoid having the `annotations` symbol pollute the\r\nnamespace and is not supposed to affect the processing future clause.\r\n\r\nSee https://docs.python.org/3/reference/simple_stmts.html#future",
+      "repository": "pylint-dev/pylint",
+      "revision": 0,
+      "root": "/home/chenyujia/tritonToLlvm/arex-skill-graph/tmp/pre2021-native-original-query-recovery-preparation-v2-20261006/published-queries/cases/pylint-dev__pylint-3798/public-base/pylint-2.6.0",
+      "task_id": "pylint-dev/pylint:3798"
+    }
+  }
+]
