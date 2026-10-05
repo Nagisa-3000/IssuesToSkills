@@ -1,38 +1,31 @@
-**尚未全部完成。M0–M3 的核心实现和工程检查已经到位；M1–M3 的真实迁移、互补组合与有效校准未验收，M4–M6 未完成。正式 SWE 运行数为 0。**
+**尚未全部完成。M0–M3 已有核心代码；真实泛化、互补组合和有效排序尚未通过验收，M4–M6 未完成，正式 SWE 运行数仍为 0。**
 
-最新依据是[机器快照 v32](results/pattern-crossbind-ranker-current-status-20261006-v32.json)和[本次审计](results/original-query-evaluator-and-native-recovery-audit-20261006-v1.json)。既有详细记录保存在[历史报告 v31](archive/pattern-crossbind-ranker-status-20261006-v31.md)，旧失败和旧协议均保留。
+本次依据见[机器快照 v33](results/pattern-crossbind-ranker-current-status-20261006-v33.json)和[执行归因与机制发现审计](results/guidance-attribution-and-mechanism-discovery-audit-20261006-v1.json)。[历史报告 v32](archive/pattern-crossbind-ranker-status-20261006-v32.md)与旧实验、失败收据均保留。
 
-| 阶段 | 核心实现 | 仍缺的验收 |
+| 阶段 | 已实现 | 尚未验收 |
 | --- | --- | --- |
-| M0 | Action/Pattern/Task/Plan 契约、来源与包 hash、当前绑定、输入输出、前提效果、不变量、时间与输入隔离 | 全包功能验收、完整语料因果审查、正式 KB 准入 |
-| M1 | 根据角色、必要效果与偏序重写 DAG；历史 Workflow 不变；变更保留来源和理由 | 独立新 Issue 中可执行适配及修复收益 |
-| M2 | 六阶段 CrossBind、PASS/FAIL/UNKNOWN、闭包与冲突/循环检查；最多两父、四组合 | 真正互补的两父组合执行及效果 |
-| M3 | Workflow/Plan 两处 prompted 排序、硬门槛、拒绝与探查、补召回、共享预算 | 有用开发校准与同冻结候选池的排序效果 |
-| M4 | 逐题时间排除、双监督和训练/checkpoint 入口 | 有用适用性标签、非平局效果偏好、合格训练 Ranker 与开发校准 |
-| M5 | 验证和冻结工具 | KB、题目并集、索引、模型、阈值、预算、协议联合冻结 |
-| M6 | 配对修复、消融和排序比较入口 | 正式 SWE 运行、修复效果、回归损害、成本及模块收益 |
+| M0 | Action/Pattern/Task/Plan 契约、包 hash、来源、时间和输入隔离 | 全包功能验证、全语料因果复核、正式 KB 准入 |
+| M1 | 按角色、必要效果与偏序生成当前 DAG；历史 Workflow 不变；变更有来源和理由 | 新 Issue 上的可执行 Pattern 重写与修复收益 |
+| M2 | 六阶段 CrossBind、PASS/FAIL/UNKNOWN、前提与验证闭包、冲突/循环检查；最多两父、四组合 | 真正互补的两父 Workflow 组合执行及增量效果 |
+| M3 | Workflow/Plan 两处 prompted 排序、硬门槛、拒绝/探查、角色补召回、共同预算 | 有用开发校准及同冻结候选池的排序效果 |
+| M4 | 时间隔离、监督/训练/checkpoint 入口；新增执行归因与历史分支真实状态保留 | 有用适用性标签、非平局效用偏好、合格训练 Ranker、开发校准 |
+| M5 | 冻结与验证工具 | KB、任务并集、索引、模型、阈值、预算与协议联合冻结 |
+| M6 | 配对修复与消融入口 | 正式 SWE 修复、回归损害、成本、模块消融及排序配对比较 |
 
-本次修复了两个实验问题。缺失的公开 Git 来源不再被错误标为“原始输入未恢复”；21 条注册目标始终保留，来源缺口与输入缺口分别记录。已知修复新增显式 evaluator 投影政策：仅允许省略普通文件形式的发布元数据，代码、配置、测试、可执行/符号链接/二进制部分保留，历史回归断言不变；每项省略和原始/投影 hash 都保存。该政策不向 Actor 提供答案，也不覆盖原生 SourceRecord 或来源资格。
+本次纠正了 #470 小实验的归因。B0 与引导分支均通过限定范围的 23 项独立测试；引导分支在修改代码之前执行了 `drop_guidance`，原因是当前历史计划仅允许探查，且本轮前提探查次数已用完。它随后使用当前公开代码正常求解，tokens 比 B0 多 20.54%。因此，这条结果是“候选曝光后回退的整套分配策略结果”，没有证明历史 Workflow 执行成功、正向适用性或 Skill 修复收益。旧原始结果及旧标签未覆盖，[更正记录](pilots/pyflakes-470-guidance-attribution-20261006-v2/attribution-correction.json)给出新标签的限定范围。
 
-新增 [original_query_evaluator.py](../src/arex_skill_graph/original_query_evaluator.py) 从原始 Issue 时间点的公开源码和冻结当前 cohort 验收提交。它重算三阶段控制，绑定来源/测试/运行时及独立评审完整输入与实际调用记录，恢复 evaluator 所有的测试路径，拒绝测试删除、收集变化和运行时漂移。缺口不生成候选失败标签；独立复核缺失时保留机械观测，拒绝效果监督。现有使用修复父版本的 evaluator 保持其原协议。
+[guidance_attribution.py](../src/arex_skill_graph/guidance_attribution.py)与 [adaptive_runner.py](../src/arex_skill_graph/adaptive_runner.py)现在记录每次请求的真实引导状态、显式回退和 Action 记录所处状态；这些记录本身不建立计划执行。执行标签明确使用 `assigned_candidate_policy`。未带这种归因的旧执行标签保留供审计，但不能进入新的合格效用训练和校准。独立适用性监督仍与执行效用分开。历史监督入口现在保留真实最终公开字节、权限和 TaskContext，并将相关实现纳入实验身份。
 
-31 条延迟抽取任务已经终态：71 次串行实际模型请求，23 个新原生包通过生产加载器和来源资格核验，8 条仍延迟。原 75 个加新 23 个，共 **98 个已供给原生包**，并非 98 个已验收或 promoted Skill。新 23 个的修复全部晚于训练截止，不能作为 pre-2021 训练正例。[供给目录](native-corpus/qualified-supplied-cross-project-20261006-v4/references.json)和[新包审计](native-corpus/qualified-deferred-pylint-20261006-v1/completion.json)可直接复核。
+#470 的事后输出复核仍未合格。恢复出的内容 hash 和两份被引用文件的 hash 都相同，但执行权限 hash 与原记录不同；原始完整 TaskContext 也没有保留。[预检](pilots/pyflakes-470-guidance-attribution-20261006-v2/mechanical-output-preflight.json)记录了这项缺口。没有启动语义输出复核，没有补造权限、绑定、前提或 CurrentOracle，也没有提升事实、端口或 Workflow 成功状态。
 
-当前因果隔离索引覆盖 98 条来源、94 个保守组件，仅 4 条来源完成语义因果复核，full_corpus_causal_review_complete 仍为 false。#3604/#3666 保持同一连续修复簇；新增 #434/#470 复核认定为不同遗漏：前者是作用域查找/装饰器列表识别，后者是 AsyncFunctionDef 排除。[复核原文](causal-reviews/pyflakes-434-470-20261006-v1/review-response.json)只供验证身份，机制和修复正文不进入 Actor 特征。
+[发现入口](../experiments/discover_native_history_patterns.py)增加了 `--stage discover`：先分析完整语料并检查分组，不自动作者全部包；作者阶段可复用完全相同的发现输入。本次真实发现覆盖全部 98 个已供给原生包，提出 6 个跨项目分组、16 个项目内分组。[发现记录](mechanisms/native-full-corpus-20261006-v1/discovery/discovery-inventory.json)保留完整输入与来源。98 是已供给包数，仍不是 98 个已完成功能验收的 Skill。
 
-21 条历史注册目标中，19 条精确 opened 输入、18 条输入前公开 Git 源已恢复；#419/#422 仍是输入缺口，#3604 仍是 archive 读取失败造成的源码缺口。[98 包的逐题目录](history-query-recovery/pre2021-public-query-temporal-catalogs-20261006-v2/completion.json)保留全部注册分母。#395 无时间合格历史 Skill，不能制造正例。
+独立审阅使用原始生产 diff 与回归断言，核对全部 22 组。最终接受 20 组：5 个跨项目机制、15 个项目内模板；2 组延迟。遗漏不同参数集合的三个修复没有建立统一的语义状态；Boolean 建议的两次修复对未知推断采取了不同回退策略，不能被统一成一条“保留歧义”规则。[合并评审](mechanisms/native-full-corpus-20261006-v1/adjudication/merged-review.json)和[待作者组](mechanisms/native-full-corpus-20261006-v1/adjudication/accepted-authoring-groups.json)均可复核。**本次新生成的 Pattern/Template Skill 包为 0，功能 eval 为 0，正式 KB 准入为 0。**
 
-原生公开 Git 控制有 **8 项机械 PASS、10 项未合格、1 项源码缺口、2 项输入缺口**。另一个显式政策下，#3737 仅排除 ChangeLog/CONTRIBUTORS 发布元数据后机械通过；该结果单独计数，不能改写原生控制。新增 #3798 原生控制仍未合格。[三个目标的控制](controls/pre2021-targeted-public-git-replay-20261006-v1/completion.json)保留实际失败。
+复审准备曾按 Issue 而非精确 source/fix 查询，混用了 #5406 的两次修复；第一轮也未取到非相邻目录中的 Ruff diff。旧输入、旧评审和失败保留。纠正后逐一验证了 57 个参与来源的 fix、revision 和 available_at，并重新评审受影响的两组。同一 #5406 的两次修复仍只算一个因果来源。补充评审引用了已提供的精确 source packet ID，以区分同 Issue 的重复 evidence ID；闭合引用策略更正单独记录，未增加来源或修改模型的语义判定。
 
-#470 的原始查询回放已由独立上下文接受其限定测试范围：1 个 F2P、22 个 PTP，仍缺一个后来原生 PTP。新评估器的真实私有控制为：空提交失败，已知修复通过，均收集 23 项测试。这是 evaluator 校验，solver 分支与效果标签均为 0，不是 Skill 迁移成功。[独立评审](controls/pyflakes-470-original-replay-independent-review-20261006-v1/review.json)和[实际控制](controls/pyflakes-470-original-query-evaluator-20261006-v1/completion.json)均已保存。
+发现加两次评审共 3 次实际串行模型请求，643600 tokens。这三个请求用于发现和复审；本次新机制尚未作者为包，也未执行修复实验。发现的完整生成上下文最晚来源为 2023-06-18T14:43:15Z，不能把它的机制选择或作者包回填到 pre-2021 训练/开发库；训练期和逐题早期 Pattern 需要在对应时间前的完整可用语料上独立发现。
 
-原始输入配对小实验已经终态：B0 与 E1 都修复 #470，独立 evaluator 的 23 项冻结测试全部通过。B0 消耗 130735 tokens、13 次模型请求；E1 消耗 157592 tokens、16 次请求，tokens 增加 **20.54%**。两者预算相同，均使用输入前公开 Git、相同 runtime 和模型，29 次实际请求全部串行。指导分支保留一项 validation Action 输出记录；语义仍为 unreviewed，没有自动提升为已验证 Action 或上下文事实。[完整终态审计](pilots/pyflakes-470-original-input-20261006-v1/terminal-audit.json)、[基础分支](pilots/pyflakes-470-original-input-20261006-v1/B0/run.json)、[指导分支](pilots/pyflakes-470-original-input-20261006-v1/E1/run.json)、[冻结协议](pilots/pyflakes-470-original-input-20261006-v1/study-identity.json)可复核。
+最终工程验证为 **882 passed、20 skipped**；针对性归因/发现/运行器检查为 89 passed、5 skipped，公开状态保留检查为 8 passed；本次修改文件的 lint 与 format 均通过。这些属于工程验证。
 
-这个单题试验产生 1 条限于新 evaluator 协议的效果观测，模式为 probe_only；适用性标签与排序偏好新增均为 0。它证明指导输入、独立修复与验收能跑通，没有证明修复收益。guidance_runs 为 0、review rounds 为 0，本次不验收 Pattern 重写、CrossBind、检索/Ranker 排序或 M1 的完整适配。当前生产改动由 Agent 按 async AST 问题形成，未照搬 #434 的作用域查找/装饰器列表修复；该归因仍需独立 Action 复核。
-
-
-最新完整工程回归为 **872 passed、20 skipped，106.68 秒**；专项 **62 passed**，lint 和格式通过，六个代码/测试文件的测试时 hash 均保存。[完整 receipt](results/original-query-evaluator-full-20261006-v1/result.json)不代表泛化或 SWE 效果。
-
-此前 84 条适用性监督全部 unrelated、16 对训练效果偏好全部 tie；旧九题的三个分支逐题结果一致。因此合格训练 Ranker、M5 联合冻结和 M6 正式实验仍未完成。主截止严格早于 2024-01-01T00:00:00Z，训练截止严格早于 2021-01-01T00:00:00Z，且逐题限制在原始输入时间以前；#10034、自身答案、同一修复/缺陷簇、重复与复制来源保持排除。
-
-目标保持 active。后续验收依次需要实际 Action 迁移/拒绝复核、跨项目 Pattern 与互补组合、有用时间隔离监督与 Ranker、联合冻结以及正式 SWE/消融。
+下一步先将通过审阅的机制作者为原生候选包并验证来源/功能，再在独立当前任务上建立真实绑定、Pattern DAG 和互补 CrossBind。同时将原始 query evaluator、逐题运行时及控制/评审映射接入统一监督入口，采集有用标签，再完成 Ranker、联合冻结和正式 SWE 实验。现有 84 条旧历史观察、其全部 unrelated 适用性标签和 16 对平局保留；它们未完成 M4。

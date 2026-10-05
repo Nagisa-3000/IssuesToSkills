@@ -1,0 +1,65 @@
+{
+  "group_reviews": [
+    {
+      "evidence_refs": [
+        "PyCQA/pyflakes:401:fix",
+        "PyCQA/pyflakes:401:regression",
+        "PyCQA/pyflakes:470:fix",
+        "PyCQA/pyflakes:470:regression",
+        "pylint-dev/pylint:8120:fix",
+        "pylint-dev/pylint:8120:regression",
+        "astral-sh/ruff:5124:fix",
+        "astral-sh/ruff:5124:regression"
+      ],
+      "group_id": "pattern:verified-history:71b0c191a0cccc30c2c6ef4b",
+      "limitations": [
+        "The Pyflakes 401 assignment literally ends in a comma, assigning a one-element tuple containing FunctionScope. The supplied diff supports registration and its regression outcome, not a claim that the mapping directly stores or instantiates the FunctionScope class.",
+        "The Pyflakes changes explicitly guard older-runtime AST availability; that compatibility behavior must not be generalized to the other implementations.",
+        "Ruff retains a fallback panic for other unsupported statement variants. The supplied diff does not expose every caller or establish exhaustive dispatch coverage.",
+        "Preservation evidence is limited to the supplied native assertions, unchanged predicates, and snapshot context. No whole-project acceptance, historical CI execution, functional Skill execution, transfer utility, or full-corpus causal completeness is inferred."
+      ],
+      "rationale": "Four separate supplied causal components have native production changes and matching regression assertions. Pyflakes 401 adds AsyncFunctionDef to _ast_node_scope under PY35_PLUS; its regression requires an annotated async function referencing class c to produce no diagnostics. Pyflakes 470 expands the function-type predicate used by is_typing_overload while leaving decorator recognition required; its new assertion covers intentional async overload redefinitions. Pylint 8120 aliases both async entry and exit hooks to the existing lifecycle handlers; separate async functions and methods using identically named locals with different types must not generate cross-function type-change warnings, while the fixture retains a genuine within-function warning. Ruff 5124 adds AsyncWith to the existing With handler, retaining target extraction and body traversal; the snapshot requires a warning for reused i and none for distinct j, while existing synchronous diagnostics remain. These are concrete omissions at variant-routing boundaries, not merely shared async keywords. Their distinct state implementations are not claimed interchangeable. The additional async-for fixture and the previously added annotated-async test appearing in later validation metadata do not supply extra causal counts.",
+      "reviewed_mechanism": "At an AST-to-semantic-handler boundary, an asynchronous counterpart is omitted from an explicit variant registration, predicate, or handler match despite requiring the already-established synchronous behavior for that particular operation. Extend that boundary to include the asynchronous variant while retaining the existing scope lifecycle, decorator eligibility, or binding-target analysis. The necessary effect is correct routing, not blanket diagnostic suppression or equivalence of all synchronous and asynchronous semantics.",
+      "status": "ACCEPT",
+      "supported_package_ids": [
+        "workflow:verified-history:76dfcbfcb074afe10f1cb891",
+        "workflow:verified-history:a571de127bfc56dc56819c7c",
+        "workflow:verified-history:9a2315892fecfccf9d5c6c14",
+        "workflow:verified-history:fa7c382943159e4d620bbbba"
+      ],
+      "suspected_duplicate_source_groups": [],
+      "unsupported_package_ids": []
+    },
+    {
+      "evidence_refs": [
+        "pylint-dev/pylint:2729:fix",
+        "pylint-dev/pylint:2729:regression",
+        "pylint-dev/pylint:5406:fix",
+        "pylint-dev/pylint:5406:regression",
+        "pylint-dev/pylint:2729:repair:183dcc4cb134",
+        "pylint-dev/pylint:5406:repair:608ed329aaee",
+        "pylint-dev/pylint:5406:repair:3b744d180e5e"
+      ],
+      "group_id": "local_template:verified-history:bf934739616f985c8f809ca4",
+      "limitations": [
+        "Support is confined to one repository and qualifies only as a local_template.",
+        "The exception splitter uses a capturing delimiter group, so its output can include delimiter tokens. The evidence does not establish a clean names-only set or complete normalization.",
+        "The 2729 regressions directly check NameError only; the other fixture raises are not independently visited by the shown tests.",
+        "The two 5406 revisions have different supported-spelling policies. The earlier revision does not establish bare-name equivalence, and the later revision must not be read as accepting every possible unescaped Sphinx spelling.",
+        "The shared 5406 fix/regression evidence IDs are disambiguated by the supplied repair source IDs. Qualification metadata is retrospective validation only; this review does not establish whole-project acceptance, functional Skill execution, cross-project utility, or exhaustive causal coverage."
+      ],
+      "rationale": "Two independent causal components support this local template, not three. In 2729, the native diff expands Sphinx and Google raises recognition and changes collectors from adding one captured declaration to updating from a splitter. Both new tests directly visit the marked NameError raise and assert no messages for a comma-separated declaration. Recognition alone would leave the declaration unsuitable for constituent-name membership checks. In the earlier 5406 repair, Sphinx recognizes escaped starred names and removes backslashes before storing names; expected outputs distinguish accepted escaped forms from newly rejected unescaped starred forms. The later 5406 repair additionally handles escaped Google names and makes documented bare names satisfy starred expected names in both missing and differing comparisons. Added fixtures have no missing/differing warnings for those supported forms, while expected outputs retain genuine missing variadic and wrong-name diagnostics. The responsibility boundary is documentation parsing/extraction into the name sets consumed by semantic comparisons. Exception-list expansion and variadic spelling equivalence are distinct transformations implementing that bounded boundary contract, not a universal normalization rule. Both 5406 revisions belong to the same supplied causal component and are counted once.",
+      "reviewed_mechanism": "Local to Pylint docparams, supported documentation spellings must be recognized and converted into comparison-compatible names rather than compared as raw declaration text. For multiple exception declarations, coordinate list grammar with extraction of constituent exception names. For variadic parameter declarations, coordinate escaped-name recognition with escape removal and, in the later repair, bare-name equivalence in both missing and differing comparisons. Preserve diagnostics for genuinely absent or unrelated names and retain each revision's syntax policy.",
+      "status": "ACCEPT",
+      "supported_package_ids": [
+        "workflow:verified-history:659f8bc8e03e7014a22a5caa",
+        "workflow:verified-history:f2490b7f20db2a942170750b",
+        "workflow:verified-history:8f01015f3fde403e97d30645"
+      ],
+      "suspected_duplicate_source_groups": [
+        "causal-isolation:ed68c1fc4e6d9699ce50b6a1"
+      ],
+      "unsupported_package_ids": []
+    }
+  ]
+}

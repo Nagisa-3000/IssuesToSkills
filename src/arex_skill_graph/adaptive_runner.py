@@ -30,12 +30,14 @@ from .execution_frontier import (
     ready_modifying_action,
 )
 from .git_tree_export import exact_git_tar
+from .guidance_attribution import controlled_guidance_attribution
 from .guidance_renderer import GuidanceRenderer
 from .plan_validation import TaskWorkflowPlan, validate_task_plan
 from .public_evidence import read_public_evidence, solver_evidence_working_set
 from .public_snapshot import extract_public_archive
 from .skill_packages import _resolve
 from .task_context import EvidenceAnchor, ObservedFact, assert_public
+from .workflow_rewriter import rebind_frozen_plan
 from .workspace_state import (
     copy_sealed_public_workspace,
     copy_verified_workspace_modes,
@@ -43,7 +45,6 @@ from .workspace_state import (
     public_workspace_sha256,
 )
 from .workspace_transactions import run_scoped_command
-from .workflow_rewriter import rebind_frozen_plan
 
 
 def _next_trace_sequence(task, prefixes, observations=()):
@@ -663,6 +664,7 @@ class AdaptiveSolver:
             [],
             [],
         )
+        guidance_request_contexts = []
         ended, failed = False, ""
         action_catalog, action_observations, broker_observations = {}, [], {}
         public_evidence_reads = {}
@@ -928,6 +930,20 @@ class AdaptiveSolver:
                     if not isinstance(args, dict) or not isinstance(request["rationale"], str):
                         raise ValueError("invalid solver request")  # noqa: TRY004 -- JSON contract errors consistently use ValueError.
                     requests.append(request)
+                    guidance_request_contexts.append(
+                        {
+                            "request_index": len(requests) - 1,
+                            "plan_id": selected.id if selected else None,
+                            "parent_workflow_ids": list(selected.parent_workflow_ids)
+                            if selected
+                            else [],
+                            "context_revision": current.revision,
+                            "pending_guidance_refresh": pending_guidance_refresh,
+                            "authorization_mode": validate_task_plan(selected, current, policy).mode
+                            if selected
+                            else None,
+                        }
+                    )
                     fields = {
                         "read_public_evidence": {"evidence_id": str},
                         "read_file": {"path": str},
@@ -1118,11 +1134,11 @@ class AdaptiveSolver:
                             or (enforce_catalog_prerequisites and catalog_modifying is None)
                         )
 
-                        def invoke():
+                        def invoke(command_args=args, workspace_readonly=readonly):
                             return tools.run(
-                                args["argv"],
-                                timeout=args.get("timeout", 60),
-                                readonly_workspace=readonly,
+                                command_args["argv"],
+                                timeout=command_args.get("timeout", 60),
+                                readonly_workspace=workspace_readonly,
                             )
 
                         allowed = None
@@ -1201,7 +1217,11 @@ class AdaptiveSolver:
                         selected = None
                         pending_guidance_refresh = False
                         guidance = "Continue normal public issue solving from current observations."
-                        result = {"operation": operation, "fallback_reason": request["rationale"]}
+                        result = {
+                            "operation": operation,
+                            "fallback_reason": request["rationale"],
+                            "request_index": len(requests) - 1,
+                        }
                     elif operation == "refresh_guidance":
                         for relative in args.get("code_paths", []):
                             path = _resolve(Path(current.root), relative)
@@ -1266,6 +1286,7 @@ class AdaptiveSolver:
                         selected = None
                         guidance = "Public tool changed current code; re-observe prerequisites and refresh guidance."
                     result["operation"] = operation
+                    result["request_index"] = len(requests) - 1
                     result["observation_id"] = "public:observation:" + str(
                         observation_offset + len(observations)
                     )
@@ -1304,6 +1325,7 @@ class AdaptiveSolver:
                 "public_workspace_read_only": read_only_workspace,
                 "resumed_reviewed_public_state": resume_reviewed_state,
                 "guidance_usage": guidance_usage,
+                "guidance_request_contexts": guidance_request_contexts,
                 "candidate_generation_frozen": use_frozen_selection,
                 "nominated_plan_id": initial_plan.id if initial_plan else None,
                 "budget": self.ledger.snapshot(),
@@ -1312,6 +1334,7 @@ class AdaptiveSolver:
                 "benchmark_resolved": None,
                 "validated_resolved": None,
             }
+            result["guidance_attribution"] = controlled_guidance_attribution(result)
             if retain_public_state_dir is not None:
                 from .public_task_state import retain_public_task_state
 

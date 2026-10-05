@@ -40,6 +40,12 @@ def main(argv=None):
         help="Completed canonical historical verification inventory; report coverage is checked before API calls",
     )
     parser.add_argument("--causal-isolation", type=Path)
+    parser.add_argument(
+        "--stage",
+        choices=["discover", "author"],
+        default="author",
+        help="Discover and validate groups without authoring, or author from an exact discovery audit",
+    )
     parser.add_argument("--model", required=True)
     parser.add_argument("--base-url", required=True)
     parser.add_argument("--api-key-env", default="AREX_LLM_API_KEY")
@@ -107,7 +113,9 @@ def main(argv=None):
         discovery = json.loads((args.discovery_audit / "discovery-response.json").read_text())
     else:
         discovery = transport.complete(
-            system=SYSTEM, user=json.dumps(corpus), response_schema=SCHEMA
+            system=SYSTEM,
+            user=json.dumps(corpus, ensure_ascii=False, separators=(",", ":")),
+            response_schema=SCHEMA,
         )
     write_json(
         args.audit_dir / "discovery-provenance.json",
@@ -126,6 +134,8 @@ def main(argv=None):
             "system_sha256": fingerprint(SYSTEM),
             "discovery_response_sha256": fingerprint(discovery),
             "model": args.model,
+            "stage": args.stage,
+            "request_encoding": "utf8-compact-json-v1",
             "endpoint": args.base_url,
             "reused_discovery_audit": str(args.discovery_audit) if args.discovery_audit else None,
             "authoring_timeout_seconds": args.authoring_timeout,
@@ -177,6 +187,19 @@ def main(argv=None):
             "pattern" if len({source.repository for source in sources}) >= 2 else "local_template"
         )
         canonical = kind + ":verified-history:" + key[:24]
+        if args.stage == "discover":
+            results.append(
+                {
+                    "group": group,
+                    "canonical_package_id": canonical,
+                    "expected_kind": kind,
+                    "references": [],
+                    "status": "discovered-unreviewed",
+                    "authoring_pending": True,
+                    "formal_KB_admitted": False,
+                }
+            )
+            continue
         try:
             authored = extract_native_pattern(
                 transport,
@@ -220,9 +243,16 @@ def main(argv=None):
             )
         write_json(args.audit_dir / "progress.json", {"results": results, "calls": transport.calls})
     write_json(
-        args.output_dir / "extraction-inventory-v4.json",
+        args.output_dir
+        / (
+            "discovery-inventory.json"
+            if args.stage == "discover"
+            else "extraction-inventory-v4.json"
+        ),
         {
             "schema": "native-corpus-mechanism-development-v1",
+            "stage": args.stage,
+            "groups_semantically_accepted": False,
             "references": [ref for row in results for ref in row["references"]],
             "results": results,
             "source_package_count": len(packages),

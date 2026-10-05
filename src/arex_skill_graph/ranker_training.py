@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .action_contracts import digest
 from .embeddings import TransformerEncoder
+from .guidance_attribution import ASSIGNED_POLICY, attributed_execution_label
 from .temporal_ranker_data import TrainingExample, pair_preferences, validate_training_snapshot
 from .workflow_ranker import CRITERIA
 
@@ -49,13 +50,18 @@ def scoring_text(task_input, candidate):
 
 
 def calibration_utility(labels):
-    """Aggregate controlled replicates; probe permission is separate from repair utility."""
-    executions = [label for label in labels if label["label_source"] == "execution"]
+    """Aggregate assigned-policy utility, including fallback; never infer plan execution."""
+    executions = [label for label in labels if attributed_execution_label(label)]
     if executions:
         return sum(
             bool(label["outcome"] and label["regression_pass"]) for label in executions
         ) / len(executions)
-    return sum(label["applicability"] == "adaptively_usable" for label in labels) / len(labels)
+    reviews = [label for label in labels if label["label_source"] == "evidence_review"]
+    if not reviews:
+        raise ValueError(
+            "calibration requires attributed execution or independent applicability reviews"
+        )
+    return sum(label["applicability"] == "adaptively_usable" for label in reviews) / len(reviews)
 
 
 def reviewed_applicability_targets(examples, keys):
@@ -297,7 +303,9 @@ def train_ranker(
             "temperature_calibrated": bool(reviewed_indices and dev_reviewed_indices),
             "execution_only_labels_used": 0,
         },
-        "rejection_calibration": "aggregate independent execution utility; reviewed full applicability only when execution is absent",
+        "rejection_calibration": "aggregate independently evaluated assignment-policy utility including fallback; independent applicability reviews when execution is absent",
+        "execution_utility_target": ASSIGNED_POLICY,
+        "candidate_plan_execution_proven": False,
         "development_execution_candidates": sum(
             any(
                 row.label["label_source"] == "execution"

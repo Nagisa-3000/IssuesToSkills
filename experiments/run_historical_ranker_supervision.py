@@ -110,6 +110,7 @@ def main(argv=None):
         "seed": args.seed,
         "candidate_kind": args.candidate_kind,
         "candidate_generation_frozen": True,
+        "public_state_retention": "exact-final-bytes-modes-and-actual-TaskContext-v1",
         "sandbox_backend": args.sandbox_backend,
         "execution_policy_sha256": fingerprint(
             {
@@ -121,6 +122,8 @@ def main(argv=None):
                     "src/arex_skill_graph/copied_sandbox_worker.py",
                     "src/arex_skill_graph/historical_solver_evaluator.py",
                     "src/arex_skill_graph/temporal_ranker_data.py",
+                    "src/arex_skill_graph/guidance_attribution.py",
+                    "src/arex_skill_graph/public_task_state.py",
                     "src/arex_skill_graph/historical_isolation.py",
                     "src/arex_skill_graph/historical_plan_pool.py",
                     "src/arex_skill_graph/workflow_rewriter.py",
@@ -385,6 +388,7 @@ def main(argv=None):
                     ),
                     use_frozen_selection=True,
                     initial_plan=initial,
+                    retain_public_state_dir=directory / "public-state",
                 )
                 row = {
                     "query_id": query.task.task_id,

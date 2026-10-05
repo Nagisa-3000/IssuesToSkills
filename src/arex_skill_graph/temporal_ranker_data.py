@@ -8,6 +8,12 @@ from dataclasses import asdict, dataclass
 from itertools import combinations
 
 from .action_contracts import TemporalPolicy, digest, utc
+from .guidance_attribution import (
+    ASSIGNED_POLICY,
+    DISPOSITIONS,
+    attributed_execution_label,
+    controlled_guidance_attribution,
+)
 from .pattern_contracts import load_native_package
 from .plan_validation import ResourcePolicy, TaskWorkflowPlan
 from .task_context import TaskContext, assert_public
@@ -42,6 +48,9 @@ class SupervisionLabel:
     sampling_probability: float = 1.0
     replicate: int = 0
     operational_mode: str | None = None
+    execution_scope: str | None = None
+    guidance_disposition: str | None = None
+    guidance_attribution_sha256: str = ""
 
     def __post_init__(self):
         if self.applicability is not None and self.applicability not in {
@@ -71,6 +80,18 @@ class SupervisionLabel:
             value is not None for value in (self.outcome, self.regression_pass, self.measured_cost)
         ):
             raise ValueError("evidence review cannot claim an independently executed outcome")
+        attribution = (
+            self.execution_scope,
+            self.guidance_disposition,
+            self.guidance_attribution_sha256,
+        )
+        if any(attribution) and (
+            self.label_source != "execution"
+            or self.execution_scope != ASSIGNED_POLICY
+            or self.guidance_disposition not in DISPOSITIONS
+            or not re.fullmatch(r"[0-9a-f]{64}", self.guidance_attribution_sha256)
+        ):
+            raise ValueError("utility attribution must describe an assigned candidate policy")
         if self.measured_cost is not None and (
             type(self.measured_cost) not in (int, float) or not math.isfinite(self.measured_cost)
         ):
@@ -270,7 +291,12 @@ def pair_preferences(examples):
             candidates.setdefault(e.candidate["id"], []).append(e)
 
         def selected(entries, source):
-            return [e for e in entries if e.label["label_source"] == source]
+            return [
+                e
+                for e in entries
+                if e.label["label_source"] == source
+                and (source != "execution" or attributed_execution_label(e.label))
+            ]
 
         def score(entries, execution=False):
             labels = [e.label for e in entries]
@@ -299,6 +325,7 @@ def pair_preferences(examples):
                     "right": right,
                     "target": 1.0 if a > b else 0.0 if a < b else 0.5,
                     "supervision": "execution" if both_executed else "reviewed_applicability",
+                    "execution_scope": ASSIGNED_POLICY if both_executed else None,
                     "tie": a == b,
                     "observations": [len(entries) for entries in observations],
                     "sampling_probabilities": [
@@ -344,6 +371,8 @@ def validate_training_snapshot(payload):
             }
         )
         SupervisionLabel(**{**label, "evidence_refs": tuple(label["evidence_refs"])})
+        if label["label_source"] == "execution" and not attributed_execution_label(label):
+            raise ValueError("legacy unattributed execution cannot enter qualified Ranker training")
         tq = utc(task["input_available_at"])
         if tq >= utc(payload["main_cutoff"]) or utc(row["catalog_cutoff"]) > tq:
             raise ValueError("future supervision/candidate catalog")
@@ -400,6 +429,9 @@ def execution_label_from_run(
         raise ValueError("trajectory switched away from the nominated controlled candidate")
     if not run.get("requests") or run["budget"].get("model_tokens", 0) <= 0:
         raise ValueError("controlled guidance did not reach a real solver request")
+    attribution = controlled_guidance_attribution(run)
+    if run.get("guidance_attribution") not in (None, attribution):
+        raise ValueError("stored guidance attribution differs from the public trajectory")
     return SupervisionLabel(
         query.task.task_id,
         candidate_id,
@@ -419,4 +451,7 @@ def execution_label_from_run(
         trajectory_sha256=digest(run),
         sampling_probability=sampling_probability,
         replicate=replicate,
+        execution_scope=ASSIGNED_POLICY,
+        guidance_disposition=attribution["guidance_disposition"],
+        guidance_attribution_sha256=digest(attribution),
     )

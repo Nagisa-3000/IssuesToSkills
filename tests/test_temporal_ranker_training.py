@@ -121,6 +121,9 @@ def test_utility_calibration_separates_probe_permission_and_execution_outcome():
         "applicability": "probe_only",
         "outcome": True,
         "regression_pass": True,
+        "execution_scope": "assigned_candidate_policy",
+        "guidance_disposition": "no_explicit_fallback",
+        "guidance_attribution_sha256": "a" * 64,
     }
     failed = {**passed, "outcome": False}
     regression = {**passed, "regression_pass": False}
@@ -438,6 +441,9 @@ def executed_label(reviewed, *, outcome=True, applicability=None):
         evaluator_version="synthetic-independent-controls",
         trajectory_sha256="a" * 64,
         operational_mode="probe_only",
+        execution_scope="assigned_candidate_policy",
+        guidance_disposition="no_explicit_fallback",
+        guidance_attribution_sha256="a" * 64,
     )
 
 

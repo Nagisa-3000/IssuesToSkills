@@ -186,6 +186,15 @@ def test_guided_edit_requires_fresh_review_or_explicit_fallback_after_code_chang
     assert any(o["operation"] == "drop_guidance" for o in result["public_observations"])
     assert "fallback = True" in result["patch"]
     assert "unreviewed = True" not in result["patch"]
+    attribution = result["guidance_attribution"]
+    assert attribution["per_request_contexts_complete"]
+    assert attribution["guidance_disposition"] == "explicit_fallback"
+    assert attribution["explicit_drop_request_indices"] == [2]
+    assert not attribution["plan_execution_established"]
+    contexts = result["guidance_request_contexts"]
+    assert contexts[0]["plan_id"] == plan.id
+    assert contexts[1]["pending_guidance_refresh"]
+    assert contexts[3]["plan_id"] is None and not contexts[3]["pending_guidance_refresh"]
     assert Path(task.root, "checker.py").read_text() == original
 
 
