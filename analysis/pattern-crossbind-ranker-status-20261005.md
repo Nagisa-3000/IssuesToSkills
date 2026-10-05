@@ -1,6 +1,6 @@
 **Pattern、CrossBind 与 Ranker 的实际完成度（2026-10-05）**
 
-**尚未全部完成。M0–M3 有代码、接口和工程测试；真实功能与跨项目效果的验收仍不完整。M4 没有合格的训练 Ranker，M5 尚未联合冻结，M6 的正式 SWE 运行数为 0。** 本文依据[当前机器快照 v20](results/pattern-crossbind-ranker-current-status-20261005-v20.json)。旧快照、失败实验和未审阅候选继续保留，源内演练、包准入和正式修复结果分别统计。
+**尚未全部完成。M0–M3 有代码、接口和工程测试；真实功能与跨项目效果的验收仍不完整。M4 没有合格的训练 Ranker，M5 尚未联合冻结，M6 的正式 SWE 运行数为 0。** 本文依据[当前机器快照 v21](results/pattern-crossbind-ranker-current-status-20261005-v21.json)。旧快照、失败实验和未审阅候选继续保留，源内演练、包准入和正式修复结果分别统计。
 
 | 阶段 | 已有实现或已验证能力 | 尚缺的验收 |
 | --- | --- | --- |
@@ -34,11 +34,15 @@ Pylint #8120 的来源已通过有限范围的历史因果资格；原生包是�
 
 [本轮进程见证日志工程审计](results/solver-run-process-journal-engineering-audit-20261005-v1.json)记录 current_run 视图：仅本轮实际 broker 结果、精确 argv、最新执行、失败覆盖旧成功、工作区变化后见证 stale。passed_process 只证明进程执行结果；完整 Task 与轨迹、原 300000 上限和独立 Oracle guard 保留。相同合成输入、145000 cap 的协议对照从一次请求后拒绝变为三次请求后记录并显式 finish，129076 用量；实际 LLM 调用和实际命令执行都是 0，记录仍 unreviewed。v7 的真实负结果仍需通过实际请求几何分析与更有针对性的模型投影解决，新的分页证据 reader 随后通过工程验证，真实完整来源验收尚未完成。
 
-新增[只读公共证据 reader 工程审计](results/public-evidence-reader-engineering-audit-20261005-v1.json)：read_public_evidence 仅按现有 Task anchor 或本轮实际 broker ID 读取；分页上限 4000 字符，可从完整存储的 JSON 字段选择子值。未知 ID、主机路径、非法分页/JSON pointer 和不完整 JSON 选择会被拒绝。读操作不执行命令、不推进 Task revision、不建立新 Oracle 见证、不提升事实或 Action；保留的 anchor 表示也可能已经是摘录。当前 public_problem、事实、绑定、端口和 Oracle 保留完整值；仅重复 broker 元数据、旧输出和解释投影压缩，普通 Probe 元数据保留原兼容性。使用完全相同的 v7 最终 Task/轨迹测量，原保守预留 99261 超过剩余 93746；新值 84388 可以发出该次请求。0 次真实 LLM/命令调用，未推断后续记录、finish 或来源验收。首次工程 lint、错误测试路径、新测试控制错误以及完整检查发现的普通 Probe 兼容性失败都保留；修复后专项和完整检查通过。下一步为相同 v7 输入的真实串行复验。
+新增[只读公共证据 reader 工程审计](results/public-evidence-reader-engineering-audit-20261005-v1.json)：read_public_evidence 仅按现有 Task anchor 或本轮实际 broker ID 读取；分页上限 4000 字符，可从完整存储的 JSON 字段选择子值。未知 ID、主机路径、非法分页/JSON pointer 和不完整 JSON 选择会被拒绝。读操作不执行命令、不推进 Task revision、不建立新 Oracle 见证、不提升事实或 Action；保留的 anchor 表示也可能已经是摘录。当前 public_problem、事实、绑定、端口和 Oracle 保留完整值；仅重复 broker 元数据、旧输出和解释投影压缩，普通 Probe 元数据保留原兼容性。使用完全相同的 v7 最终 Task/轨迹测量，原保守预留 99261 超过剩余 93746；新值 84388 可以发出该次请求。0 次真实 LLM/命令调用，未推断后续记录、finish 或来源验收。首次工程 lint、错误测试路径、新测试控制错误以及完整检查发现的普通 Probe 兼容性失败都保留；修复后专项和完整检查通过。相同 v7 输入的真实串行复验 v8 随后完成，但仍不接受。
 
 Ruff #5124 的依赖准备取得实质进展。[精确 Git 依赖恢复](results/ruff-5124-pinned-dependency-recovery-audit-20261005-v3-complete.json)获得原锁定的三个提交；LibCST 从上游取得相同提交，未替换 revision。[离线 vendor 审计](results/ruff-5124-offline-vendor-preparation-audit-20261005-v1.json)核对 310 个原始 registry 包、319 个 vendor 包和 16438 个文件哈希，使用官方 Cargo vendor 归一化，未手工改依赖 manifest。Cargo.lock 与历史 base 源码保持精确一致。
 
 [测试构建预检](results/ruff-5124-host-build-preflight-audit-20261005-v1.json)原先仅证明编译。本轮[隔离历史因果资格](results/ruff-5124-isolated-causal-qualification-audit-20261005-v1.json)进一步完成三组精确控制：base 执行 1 项命名 Rust 测试并通过；base+新 fixture 保留原 expected snapshot，执行 1 项测试、退出 101，实际触发原始 “not a With, For, or AsyncFor” panic；精确 fixed tree 执行同一项测试并通过。原 Cargo.lock、Rust 1.74.1、319 个 vendor 包和工作区/保护资源封存保持一致，未重新生成 snapshot；INSTA_UPDATE=no、INSTA_FORCE_PASS=0、INSTA_WORKSPACE_ROOT=/workspace。四版准备/基础设施尝试及失败全部保留。此资格限定于一个历史库回归测试，0 次 LLM 调用；尚未由系统抽取或准入新的 Ruff Skill，未确认跨项目 Pattern 或接受两父组合。两个来源修复均在 2023 年，不符合 pre-2021 Ranker 训练截止。
+
+第八版真实复验已结束：[v8 审计](results/native-async-lifecycle-validation-terminal-audit-20261005-v8.json)。代码 d3af0ac；输入 SHA 与 v7 完全相同，仍为 eeda01d039e04921fab33e0b0b4b11fdb9641175055d6ac560bd282a54029c7a；原 300000 token 上限。10 次执行模型调用、1 次独立复核，228747 token，0 字节新增 patch。两条直接 Oracle 各执行一次，四次 read_public_evidence 读取了现有完整结果中的遗漏部分；九例行为、实际回归、资源哈希、sentinel 缺席和 warning 配置获独立领域 CONFIRMED。下一次请求仍在预算预检被拒绝，0 条 Action、未 finish，policy UNKNOWN/unresolved，来源验收不接受。reader 改善了单次请求几何和证据读取，但尚未解决整个循环的上下文及调用成本；新的预算可见性、成组只读选择或进一步索引投影尚未实现。所有原始见证保留，原 PID/start ticks 的历史作者已经恢复，lease 已结束。
+
+Ruff 的原生抽取接入仍有明确缺口：现有资格 authority 仅接受历史报告 v1 的 changed-test-files 范围及 0/1/0 退出码；本轮精确 Rust 对照实际为 0/101/0。需要严格、版本化的原生测试资格支持，保留原始退出码、唯一精确测试、缺陷 panic、资源封存和三组真实控制，再启动系统抽取；不能把 101 改写成 1 或宣布原生包已经产出。
 
 本次源码还修复了公共 Git archive 的链接身份：保留 data_filter 的安全检查，重新检查原始目标的包含关系，并保留 contained symlink 的原始 target 文本及末尾分隔符。四项回归覆盖真实 Git tree 身份；此前错误导出和失败准备没有删除。
 

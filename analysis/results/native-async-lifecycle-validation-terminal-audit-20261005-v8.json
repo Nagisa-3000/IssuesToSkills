@@ -1,0 +1,162 @@
+{
+  "schema": "native-async-validation-terminal-audit-v8",
+  "audited_at_utc": "2026-10-05T05:44:48.072612+00:00",
+  "source_local_issue": "pylint-dev/pylint:8120",
+  "fixed_code_head": "d3af0ac1cfaa6274bba8e13252ef8c418c7d50d0",
+  "original_model_token_cap": 300000,
+  "actual_execution_model_calls": 10,
+  "actual_independent_review_model_calls": 1,
+  "model_tokens_used": 228747,
+  "solver_ended": false,
+  "failure": "model request cannot fit remaining token budget",
+  "native_action_records": 0,
+  "patch_bytes": 0,
+  "exact_direct_oracles": [
+    {
+      "observation_id": "public:observation:9",
+      "argv": [
+        "python",
+        "public-async-lifecycle-probe.py"
+      ],
+      "exit_code": 0,
+      "timed_out": false,
+      "workspace_execution_sha256": "09e85a1e161660317f7c6e4d270fe84741a02b5d1902e930b7cf4de78adca09d",
+      "context_revision": 99
+    },
+    {
+      "observation_id": "public:observation:10",
+      "argv": [
+        "python",
+        "-m",
+        "pytest",
+        "-p",
+        "no:cacheprovider",
+        "-vv",
+        "tests/test_functional.py::test_functional[redefined_variable_type]"
+      ],
+      "exit_code": 0,
+      "timed_out": false,
+      "workspace_execution_sha256": "09e85a1e161660317f7c6e4d270fe84741a02b5d1902e930b7cf4de78adca09d",
+      "context_revision": 100
+    }
+  ],
+  "independent_policy_review": {
+    "behavior": "unresolved",
+    "checks": [
+      {
+        "evidence_refs": [
+          "native-execution-input:9d99ea0957c5f7cfbd30312544b5ec81cd1b144736297d67dbac9dbcac6dff47",
+          "execution-input:action-result:0:tool:public:observation:4",
+          "execution-input:action-result:0:tool:public:observation:3",
+          "public:observation:7",
+          "public:observation:8"
+        ],
+        "key": "applicability_reasoning",
+        "rationale": "Authorization is grounded in authenticated execution-entry state native-execution-input:9d99ea0957c5f7cfbd30312544b5ec81cd1b144736297d67dbac9dbcac6dff47. Retained checker observations establish async lifecycle parity, the fixture audit establishes independent async assertions with preserved positive expectations, and both exact public Oracle commands were bound before execution. The current suite and probe were independently read before either command ran.",
+        "status": "PASS"
+      },
+      {
+        "evidence_refs": [
+          "public:observation:9",
+          "public:observation:10",
+          "public:observation:14",
+          "native-run:728af06592ccc2e0d1ab02ab2df24fd1ec5f2830bdd6781a6d0a5a0dde7f2a88"
+        ],
+        "key": "output_authorization",
+        "rationale": "Both directly executed Oracles and the separate supplemental audit supply successful current witnesses. However, the trajectory contains no native Action record with outputs=[] and no explicit finish; execution stopped because the remaining token budget could not accommodate another model request. Completed output authorization therefore remains unresolved, rather than an unsupported confirmation or a demonstrated refusal.",
+        "status": "UNKNOWN"
+      },
+      {
+        "evidence_refs": [
+          "execution-input:current:action-workspace",
+          "execution-input:current:probe:2",
+          "public:observation:9",
+          "public:observation:10",
+          "public:observation:14"
+        ],
+        "key": "workspace_preservation",
+        "rationale": "The current run performed only reads and read-only public commands, with no adopted workspace changes or patch. All three commands used the same sealed workspace. The probe's before/after hashes are unchanged, and the subsequent audit's ten resource hashes match entry-state resources. The audit explicitly reports an absent update sentinel and retained filterwarnings=error.",
+        "status": "PASS"
+      },
+      {
+        "evidence_refs": [
+          "public:observation:9",
+          "public:observation:10",
+          "public:observation:14",
+          "public:observation:15",
+          "native-run:728af06592ccc2e0d1ab02ab2df24fd1ec5f2830bdd6781a6d0a5a0dde7f2a88"
+        ],
+        "key": "evidence_honesty",
+        "rationale": "The solver used fresh direct command witnesses, inspected the stored complete scope outcome, and separately executed the resource audit. Its observed diagnostic and preservation statements match emitted evidence. It did not invent an Action record, claim a repository-history diff, or infer completion from earlier attempts. The interrupted run is not treated as a deliberate correct refusal.",
+        "status": "PASS"
+      }
+    ],
+    "domain_state": "CONFIRMED",
+    "rationale": "Current execution confirms the bounded validation behavior: all five independent-scope cases are quiet; the four same-scope controls emit the exact expected diagnostics; lint_status is 8, stderr is empty, and exception is null. The focused functional test passes, and the separate audit confirms matching resource hashes, sentinel absence, and warning-policy preservation. Nevertheless, the solver exhausted its budget before native recording and explicit finish. Runtime domain confirmation does not establish completed Action behavior, and missing completion records alone do not prove correct refusal. No policy check is established as failed, but PASS is unavailable while output authorization and final behavior remain unresolved.",
+    "verdict": "UNKNOWN"
+  },
+  "record_checks": [],
+  "source_validation_case_accepted": false,
+  "complete_package_acceptance": false,
+  "formal_KB_admitted": false,
+  "formal_SWE_runs": 0,
+  "same_input_as_v7": true,
+  "validation_input_file_sha256": "eeda01d039e04921fab33e0b0b4b11fdb9641175055d6ac560bd282a54029c7a",
+  "same_input_comparison_limit": "Implementation includes a new evidence reader and a changed model projection; model trajectories are not deterministic and this is not a formal efficacy experiment.",
+  "actual_reader_requests": [
+    {
+      "evidence_id": "public:observation:9",
+      "field": "output",
+      "offset": 0,
+      "limit": 4000,
+      "json_pointer": null
+    },
+    {
+      "evidence_id": "public:observation:9",
+      "field": "output",
+      "offset": 4000,
+      "limit": 4000,
+      "json_pointer": null
+    },
+    {
+      "evidence_id": "public:observation:9",
+      "field": "output",
+      "offset": 8000,
+      "limit": 1947,
+      "json_pointer": null
+    },
+    {
+      "evidence_id": "public:observation:9",
+      "field": "output",
+      "offset": 6800,
+      "limit": 1600,
+      "json_pointer": null
+    }
+  ],
+  "public_workspace_read_only": true,
+  "full_evidence_retained": true,
+  "source_validation_failure_remains_authoritative": true,
+  "historical_author": {
+    "pid": 2756899,
+    "start_ticks": "239159382",
+    "state": "S",
+    "restored_and_verified": true
+  },
+  "receipts": {
+    "tmp/pylint-8120-native-validation-retry-v8-public-evidence-reader-20261005/dispatch-manifest.json": "5c0b3f931ef03f533475c385cabc88343d50d38ef05f5735dfc11d81f84d5b7a",
+    "tmp/pylint-8120-native-validation-retry-v8-public-evidence-reader-20261005/preparation-receipt.json": "944b98145218412261f9cbcff04aaba9f2d3dd0c5f5a469c134802162539502c",
+    "tmp/pylint-8120-native-validation-retry-v8-public-evidence-reader-20261005/validation-input-task.json": "eeda01d039e04921fab33e0b0b4b11fdb9641175055d6ac560bd282a54029c7a",
+    "tmp/pylint-8120-native-validation-retry-v8-public-evidence-reader-20261005/launch.json": "d0a1b20381a79986f9cb510d10353aef6eeb9a7c65123b4c3ff87356f8b7d69e",
+    "tmp/pylint-8120-native-validation-retry-v8-public-evidence-reader-20261005/completion.json": "6af51c3fa7da8f3f6f00ec8210e1c9de3b6e109533edf8a9ec564fe82ef07726",
+    "tmp/pylint-8120-native-validation-retry-v8-public-evidence-reader-20261005/exercise-completion.json": "93bfa17b0c181838d4f802e01226ba0bdb15189a0a9e07c8121d0c9a977458be",
+    "tmp/pylint-8120-native-validation-retry-v8-public-evidence-reader-20261005/lease.json": "9a2d591be540a7fe911b75ad6154a92e16ffd7ebd74118e7027b8e36b0f2713a",
+    "tmp/pylint-8120-native-validation-retry-v8-public-evidence-reader-20261005/control-events.jsonl": "bab13270cb72b4879ba9852ed16dbed92496574d0d1e700f0dda8699af1862b6",
+    "tmp/pylint-8120-native-validation-retry-v8-public-evidence-reader-20261005/q0-output/calls.json": "f530e5101eedf34b9ba9c452c7866faa98107c5700758c4097fca17344bde6a4",
+    "tmp/pylint-8120-native-validation-retry-v8-public-evidence-reader-20261005/q0-output/trajectory.json": "b2db15743e0dac11d34d7da96cf33888c1e32794303ae610f3b3abe14730396a",
+    "tmp/pylint-8120-native-validation-retry-v8-public-evidence-reader-20261005/q0-output/final-task.json": "c0c62d61f6f0b488592fa5eec078ebb563fca8c40892024a371c1168bd5723b6",
+    "tmp/pylint-8120-native-validation-retry-v8-public-evidence-reader-20261005/q0-output/grounded-task.json": "ec3d88a973df2180bbf80159387bd9f9ce56e9a15bebaa1fb0dad7f221927ba4",
+    "tmp/pylint-8120-native-validation-retry-v8-public-evidence-reader-20261005/independent-review/q0-review.json": "f08cce7659eda39d267ea9c478e0bfb39262ae51bcfefc7ed14fdd9339a07879",
+    "tmp/pylint-8120-native-validation-retry-v8-public-evidence-reader-20261005/independent-review/q0-review-transcript.json": "5e9be85c52d45e6743f5dd6257bda1152e4d1d56bebaa83874311a21c4a0a0b8"
+  },
+  "failure_interpretation": "Independent domain and supplemental evidence confirmed; four stored-evidence reads avoided repeated Oracle execution but increased model round count. Original budget preflight stopped the run before actual Action recording and explicit finish. No completion or admission is inferred."
+}
