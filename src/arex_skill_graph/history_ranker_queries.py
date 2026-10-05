@@ -38,7 +38,7 @@ def pre_repair_problem(record, repair_available_at, base_committed_at):
     return problem, input_at, tuple(e["id"] for e in entries)
 
 
-def prepare_historical_query(record, verification, request, destination):
+def prepare_historical_query(record, verification, request, destination, *, environment=()):
     identity = verification["identity"]
     if (
         verification.get("verified_resolution") is not True
@@ -74,7 +74,7 @@ def prepare_historical_query(record, verification, request, destination):
         problem,
         input_at,
         (EvidenceAnchor("current:issue", "public_issue", problem, base, available_at=input_at),),
-        environment=("Python 3.12; isolated historical Pyflakes development runtime",),
+        environment=tuple(environment),
     )
     task.verify()
     audit = {
@@ -92,5 +92,7 @@ def prepare_historical_query(record, verification, request, destination):
         "only_base_git_commit_exported": True,
         "comments_and_repair_content_exported": False,
         "formal_SWE_query": False,
+        "runtime_environment": list(task.environment),
+        "runtime_environment_inferred_from_repository": False,
     }
     return task, audit

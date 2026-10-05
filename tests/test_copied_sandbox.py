@@ -48,7 +48,8 @@ def test_host_network_privileges_runtime_and_environment_denied(copied_tools, tm
     secret_control.write_text("host-only data")
     code = """import os,pathlib,socket
 assert os.getuid()==65534 and os.getgid()==65534 and os.getgroups()==[]
-assert set(os.environ)<=set(['HOME','LANG','LC_CTYPE','PATH','PYTHONDONTWRITEBYTECODE','PYTHONHASHSEED'])
+assert set(os.environ)<=set(['HOME','LANG','LC_CTYPE','PATH','LD_LIBRARY_PATH','PYTHONDONTWRITEBYTECODE','PYTHONHASHSEED'])
+assert os.environ.get('LD_LIBRARY_PATH')=='/opt/python/lib:/opt/venv/lib'
 assert not pathlib.Path(HOST_PATH).exists()
 assert pathlib.Path('/').stat().st_ino==pathlib.Path('/..').stat().st_ino
 for op in [lambda:os.setuid(0),lambda:os.chroot('/'),lambda:pathlib.Path('/usr/forbidden').write_text('x'),lambda:pathlib.Path('/opt/python/bin/python3.10').open('ab')]:
@@ -312,8 +313,10 @@ def test_scoped_actual_command_rolls_back_unrelated_files_and_permissions(copied
             [
                 "python3",
                 "-c",
-                "import pathlib,os;pathlib.Path('source.txt').write_text('unaccepted');"
-                "pathlib.Path('extra.py').write_text('outside');os.chmod('public-script',0o644)",
+                (
+                    "import pathlib,os;pathlib.Path('source.txt').write_text('unaccepted');"
+                    "pathlib.Path('extra.py').write_text('outside');os.chmod('public-script',0o644)"
+                ),
             ]
         ),
     )
@@ -335,3 +338,52 @@ def test_scoped_actual_command_retains_valid_bound_changes(copied_tools):
     )
     assert result["exit_code"] == 0 and result["write_scope_accepted"], result
     assert (copied_tools.checkout / "source.txt").read_text() == "accepted"
+
+
+def test_shared_python_runtime_loads_after_relocation(tmp_path):
+    runtime = os.environ.get("AREX_TEST_SHARED_PYTHON_RUNTIME")
+    if not runtime:
+        pytest.skip("provide an isolated virtualenv built from a shared Python interpreter")
+    if os.name != "posix" or os.geteuid() != 0:
+        pytest.skip("copied runtime verification requires a privileged Linux broker")
+    runtime = Path(runtime).resolve()
+    host = subprocess.check_output(
+        [
+            str(runtime / "bin/python"),
+            "-I",
+            "-c",
+            (
+                "import json,sys,sysconfig; print(json.dumps({'version':sys.version.split()[0],"
+                "'shared':sysconfig.get_config_var('Py_ENABLE_SHARED')}))"
+            ),
+        ],
+        text=True,
+        env={"PATH": "/usr/bin:/bin", "LANG": "C.UTF-8"},
+    )
+    expected = json.loads(host)
+    assert expected["shared"] == 1, "test requires an actual shared interpreter"
+    checkout = tmp_path / "public"
+    checkout.mkdir()
+    with make_namespace_tools(
+        checkout,
+        BudgetLedger(BudgetCaps(seconds=300, tool_calls=5)),
+        runtime,
+        backend="namespace-copy",
+    ) as tools:
+        tools.preflight()
+        result = tools.run(
+            [
+                "python3",
+                "-c",
+                (
+                    "import ctypes,sys,sysconfig; "
+                    "ctypes.CDLL(sysconfig.get_config_var('INSTSONAME') or sysconfig.get_config_var('LDLIBRARY')); "
+                    "assert sys.prefix == '/opt/venv'; "
+                    "print(sys.version.split()[0])"
+                ),
+            ],
+            readonly_workspace=True,
+        )
+    assert result["exit_code"] == 0, result
+    assert result["output"].strip() == expected["version"]
+    assert result["workspace_adopted"] is False

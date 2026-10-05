@@ -24,6 +24,12 @@ def main(argv=None):
     parser.add_argument("--text-recovery", type=Path)
     parser.add_argument("--cutoff", default="2024-01-01T00:00:00Z")
     parser.add_argument("--training-cutoff", default="2021-01-01T00:00:00Z")
+    parser.add_argument(
+        "--environment",
+        action="append",
+        default=[],
+        help="Verified runtime observation; omit when not observed.",
+    )
     args = parser.parse_args(argv)
     inventory = json.loads(args.verifications.read_text())
     requests = json.loads(args.requests.read_text())
@@ -65,7 +71,11 @@ def main(argv=None):
         case = qid.replace("/", "__").replace(":", "-")
         try:
             task, source_audit = prepare_historical_query(
-                records[qid], report, request, args.output_dir / "public-bases" / case
+                records[qid],
+                report,
+                request,
+                args.output_dir / "public-bases" / case,
+                environment=args.environment,
             )
         except (ValueError, OSError) as error:
             audits.append(

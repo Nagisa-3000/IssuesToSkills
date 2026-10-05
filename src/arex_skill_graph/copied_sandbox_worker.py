@@ -65,6 +65,7 @@ def _supervise(root, argv, libc):
             argv,
             {
                 "PATH": "/opt/venv/bin:/usr/bin:/bin",
+                "LD_LIBRARY_PATH": "/opt/python/lib:/opt/venv/lib",
                 "HOME": "/tmp",
                 "LANG": "C.UTF-8",
                 "PYTHONHASHSEED": "0",
