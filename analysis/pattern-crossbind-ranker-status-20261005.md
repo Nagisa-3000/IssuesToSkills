@@ -1,6 +1,6 @@
 **Pattern、CrossBind 与 Ranker 的实际完成度（2026-10-05）**
 
-**尚未全部完成。M0–M3 有代码、接口和工程测试；真实功能与跨项目效果的验收仍不完整。M4 没有合格的训练 Ranker，M5 尚未联合冻结，M6 的正式 SWE 运行数为 0。** 本文依据[当前机器快照 v16](results/pattern-crossbind-ranker-current-status-20261005-v16.json)。旧快照、失败实验和未审阅候选继续保留，源内演练、包准入和正式修复结果分别统计。
+**尚未全部完成。M0–M3 有代码、接口和工程测试；真实功能与跨项目效果的验收仍不完整。M4 没有合格的训练 Ranker，M5 尚未联合冻结，M6 的正式 SWE 运行数为 0。** 本文依据[当前机器快照 v17](results/pattern-crossbind-ranker-current-status-20261005-v17.json)。旧快照、失败实验和未审阅候选继续保留，源内演练、包准入和正式修复结果分别统计。
 
 | 阶段 | 已有实现或已验证能力 | 尚缺的验收 |
 | --- | --- | --- |
@@ -24,13 +24,15 @@ Pylint #8120 的来源已通过有限范围的历史因果资格；原生包是�
 
 第四版已实际结束：[终止审计](results/native-async-lifecycle-validation-terminal-audit-20261005-v4.json)。6 次执行调用、2 次独立复核，保持原 300000 token 执行预算。两个直接 Oracle 退出码均为 0；新记录为 action-result:1，两个直接见证为 public:observation:8 和 public:observation:9，未覆盖旧证据。五项记录检查全部 PASS，独立 policy 为 PASS/correct_confirmation/CONFIRMED，0 字节新增 patch。记录之后的下一次请求被预算预检拒绝，实际用量为 174458；solver_ended=false、source_validation_case_accepted=false。记录的复核通过没有被改写成正常 finish 或完整来源验收。下一步需限制重复观测进入模型上下文，保留完整封存轨迹和原预算。它仍是来源内定义演练；activation/applicability 全案例、新 Issue 泛化及跨项目组合未完成。历史作者已恢复，并以原 PID/start ticks 核实为运行状态。
 
+第五版真实验证正在运行，沿用原 300000 token 执行上限和与第四版相同的来源内保留输入。新增[模型上下文紧凑视图审计](results/compact-solver-context-engineering-audit-20261005-v1.json)：完整 broker 结果、原 TaskContext 和独立审查输入继续封存；Solver 只接收旧 Probe 与 Action 内重复见证的身份、哈希、命令结果及必要摘录。没有自动 finish、事实晋升或 Oracle 门槛放宽。相同 145000 token 的模拟协议对照中，父提交在记录后被预算预检阻止，新实现正常 finish，原失败见证仍 unreviewed。第四版末尾数据帧的共同协议测量中，请求的 UTF-8 保守 token 预留估计从 129653 降到 115328，低于当时原剩余预算 125542；这个测量不构成第五版真实通过。第五版尚未取得独立最终验收，包准入与泛化结果继续为未完成。首次监督启动在模型请求之前遇到缩进错误，失败回执已保留，修正并语法检查后重启。历史抽取仅在成功响应边界暂停，并由监督器和 watchdog 负责恢复。
+
 Ruff #5124 的依赖准备取得实质进展。[精确 Git 依赖恢复](results/ruff-5124-pinned-dependency-recovery-audit-20261005-v3-complete.json)获得原锁定的三个提交；LibCST 从上游取得相同提交，未替换 revision。[离线 vendor 审计](results/ruff-5124-offline-vendor-preparation-audit-20261005-v1.json)核对 310 个原始 registry 包、319 个 vendor 包和 16438 个文件哈希，使用官方 Cargo vendor 归一化，未手工改依赖 manifest。Cargo.lock 与历史 base 源码保持精确一致。
 
 [测试构建预检](results/ruff-5124-host-build-preflight-audit-20261005-v1.json)通过 cargo test --lib --no-run，0 次模型调用、0 个已执行测试。Rust 隔离 harness 及 base／base+regression／fixed 三阶段因果验证仍未完成，尚未抽取或准入新的 Ruff Skill，未确认跨项目 Pattern 或运行两父组合。
 
 本次源码还修复了公共 Git archive 的链接身份：保留 data_filter 的安全检查，重新检查原始目标的包含关系，并保留 contained symlink 的原始 target 文本及末尾分隔符。四项回归覆盖真实 Git tree 身份；此前错误导出和失败准备没有删除。
 
-当前完整工程检查 **636 passed、19 skipped**，耗时 97.86 秒。专项 **40 passed、5 skipped**；修改文件的 Ruff E4/E7/E9/F 与 git diff --check 通过。跳过项不计为通过，工程检查不替代原生功能、迁移或正式 SWE 验收。
+当前完整工程检查 **642 passed、19 skipped**，耗时 86.42 秒。专项 **62 passed、5 skipped**；修改文件的 Ruff E4/E7/E9/F 与 git diff --check 通过。跳过项不计为通过，工程检查不替代原生功能、迁移或正式 SWE 验收。
 
 历史人口保持 Pylint 5273、Pyflakes 501、Ruff 3582，共 9356 个 Issue。主截止 T=2024-01-01T00:00:00Z，训练截止 τ=2021-01-01T00:00:00Z，均严格排除截止时刻及以后信息；Pylint #10034 继续排除正式评价。已知时间线缺口恢复到独立版本，旧输入与旧结果不改写；仍保留三项权限受限元数据。Pylint 的 78 个合格来源是 changed-test-only 范围。完整人口存档并不等于三项目所有历史经验完成资格复验或功能准入。
 

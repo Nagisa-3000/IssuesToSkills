@@ -283,6 +283,76 @@ def request_history_view(requests):
     return result
 
 
+def _broker_observation_view(record, *, include_excerpt=False, text_limit=1000, output_limit=500):
+    """Keep broker identities and outcomes without replaying complete output bodies."""
+    result = bounded_public_view(
+        {key: item for key, item in record.items() if key != "output"}, text_limit=text_limit
+    )
+    result["full_broker_record_sha256"] = digest(record)
+    if isinstance(record.get("output"), str):
+        output = record["output"]
+        result.update(
+            output_characters=len(output),
+            output_sha256=hashlib.sha256(output.encode()).hexdigest(),
+        )
+        if include_excerpt:
+            result["output_excerpt"] = bounded_public_view(output, text_limit=output_limit)
+    result["model_view"] = "broker summary; complete evidence retained for independent review"
+    return result
+
+
+def solver_observation_view(observation):
+    """Summarize embedded Action witnesses without mutating the sealed record."""
+    record = observation.get("record") if isinstance(observation, dict) else None
+    if not isinstance(record, dict) or not isinstance(record.get("witnesses"), list):
+        return bounded_public_view(observation)
+    visible_record = bounded_public_view(
+        {key: item for key, item in record.items() if key != "witnesses"}
+    )
+    visible_record["full_action_record_sha256"] = digest(record)
+    visible_record["model_view"] = "Action receipt with witness summaries; not semantic validation"
+    visible_record["witnesses"] = []
+    for witness in record["witnesses"]:
+        visible_witness = bounded_public_view(
+            {key: item for key, item in witness.items() if key != "record"}
+        )
+        if isinstance(witness.get("record"), dict):
+            visible_witness["broker_summary"] = _broker_observation_view(witness["record"])
+        visible_record["witnesses"].append(visible_witness)
+    result = bounded_public_view(
+        {key: item for key, item in observation.items() if key != "record"}
+    )
+    result["record"] = visible_record
+    return result
+
+
+def solver_current_view(task):
+    """Expose current obligations and compact repeated probe bodies for the solver."""
+    raw = task.to_dict()
+    result = bounded_public_view(raw, text_limit=2000)
+    result.pop("root")
+    for anchor, visible in zip(raw["anchors"], result["anchors"]):
+        if anchor["kind"] != "probe":
+            continue
+        try:
+            observed = json.loads(anchor["observation"])
+        except (ValueError, TypeError):
+            continue
+        if not isinstance(observed, dict) or not isinstance(observed.get("argv"), list):
+            continue
+        visible["observation"] = (
+            "Public broker probe; full evidence retained for independent review."
+        )
+        visible["broker_summary"] = _broker_observation_view(
+            observed, include_excerpt=True, text_limit=400, output_limit=300
+        )
+        visible["full_observation_sha256"] = hashlib.sha256(
+            anchor["observation"].encode()
+        ).hexdigest()
+        visible["model_view"] = "probe excerpt; current facts and checks retain their own assurance"
+    return result
+
+
 class AdaptiveSolver:
     SYSTEM = (
         "Solve the current public software issue using current repository observations. Historical guidance is conditional, not a patch to copy. "
@@ -311,7 +381,7 @@ class AdaptiveSolver:
         "drop_guidance and finish take empty arguments. "
         "Use public commands to search source and run tests. Read current files before changing them. "
         "Long output is presented as excerpts; use focused commands and paginated file reads to inspect omitted parts. "
-        "Only recent observations are replayed. Finish once the repair and focused public checks are complete."
+        "Only recent observations are replayed. Probe and Action receipt views may summarize duplicated broker bodies; full evidence stays sealed for independent review. These views do not confirm effects or promote facts. Finish once the repair and focused public checks are complete."
     )
     SCHEMA: ClassVar[dict] = {"type": "object", "required": ["operation", "arguments", "rationale"]}
 
@@ -572,8 +642,7 @@ class AdaptiveSolver:
                     review()
                 while not ended:
                     self.ledger.check_time()
-                    public_context = bounded_public_view(current.to_dict(), text_limit=2000)
-                    public_context.pop("root")
+                    public_context = solver_current_view(current)
                     request = BudgetedTransport(self.transport, self.ledger).complete(
                         system=self.SYSTEM,
                         user=json.dumps(
@@ -599,7 +668,9 @@ class AdaptiveSolver:
                                     ),
                                     "listing_tool": "list_files",
                                 },
-                                "observations": bounded_public_view(observations[-8:]),
+                                "observations": [
+                                    solver_observation_view(o) for o in observations[-8:]
+                                ],
                                 "earlier_observations_count": max(0, len(observations) - 8),
                                 "previous_requests": request_history_view(requests),
                             }

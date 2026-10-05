@@ -531,3 +531,197 @@ def test_frozen_rebinding_retains_actions_and_rejects_tampered_contract(tmp_path
     )
     with pytest.raises(ValueError, match="authoritative"):
         rebind_frozen_plan(corrupted, updated, policy)
+
+
+def test_solver_finishes_after_large_record_without_replaying_nested_witnesses(tmp_path):
+    from dataclasses import replace
+    from arex_skill_graph.task_context import EvidenceAnchor
+
+    package, task, policy = make_fixture(tmp_path)
+    action = package.workflows[0].actions[-1]
+    output = "BEGIN public evidence\n" + "x" * 30000 + "\nEND public evidence"
+    prior = {
+        "argv": ["python3", "-V"],
+        "exit_code": 1,
+        "output": output,
+        "isolation": "test-only-projection-fixture",
+    }
+    task = replace(
+        task,
+        anchors=(
+            *task.anchors,
+            *(
+                EvidenceAnchor(
+                    "current:probe:" + str(i),
+                    "probe",
+                    json.dumps(prior),
+                    task.base_commit,
+                    exit_code=1,
+                )
+                for i in range(18)
+            ),
+        ),
+    )
+
+    class ProjectionTools:
+        isolation = "test-only-projection-fixture"
+        runtime_sha256 = "test-only"
+
+        def __init__(self, *_args):
+            pass
+
+        def preflight(self):
+            pass
+
+        def close(self):
+            pass
+
+        def run(self, argv, **_options):
+            return {**prior, "argv": argv}
+
+    class RecordingTransport:
+        def __init__(self):
+            self.frames = []
+
+        def complete(self, **kwargs):
+            frame = json.loads(kwargs["user"])
+            self.frames.append(frame)
+            if len(self.frames) == 1:
+                return {
+                    "operation": "run_public_command",
+                    "arguments": {"argv": ["python3", "-V"]},
+                    "rationale": "Observe a failed fixture command; no repair claim",
+                }
+            if len(self.frames) == 2:
+                return {
+                    "operation": "record_action_observation",
+                    "arguments": {
+                        "action_id": action.id,
+                        "context_revision": frame["current"]["revision"],
+                        "summary": "Recorded failed public evidence, not semantic success.",
+                        "outputs": [],
+                        "observation_ids": [frame["observations"][-1]["observation_id"]],
+                        "artifact_paths": [],
+                    },
+                    "rationale": "Retain actual unreviewed execution evidence",
+                }
+            return {
+                "operation": "finish",
+                "arguments": {},
+                "rationale": "Finish this broker protocol fixture without a repair claim",
+            }
+
+    transport = RecordingTransport()
+    with CatalogStore(tmp_path / "projection.sqlite") as store:
+        store.initialize()
+        result = AdaptiveSolver(
+            transport,
+            WorkflowRanker(),
+            store,
+            policy,
+            BudgetLedger(BudgetCaps(model_tokens=145000, history_tokens=200000)),
+            arm="B0",
+            tools_factory=ProjectionTools,
+        ).run(task, use_frozen_selection=True, recordable_actions=(action,))
+    assert result["solver_ended"] and not result["failure"], {
+        "failure": result["failure"],
+        "budget": result["budget"]["model_tokens"],
+        "frames": [{k: len(json.dumps(v)) for k, v in frame.items()} for frame in transport.frames],
+    }
+    assert result["budget"]["model_tokens"] <= 145000
+    assert len(transport.frames) == 3
+    record = result["action_observations"][0]
+    assert record["witnesses"][0]["record"]["output"] == output
+    assert record["witnesses"][0]["record"]["exit_code"] == 1
+    assert record["semantic_validation"] == "unreviewed"
+    assert record["repair_success_established"] is False
+    assert result["benchmark_resolved"] is None
+    assert result["public_observations"][0]["output"] == output
+
+
+def test_solver_receipt_views_preserve_failed_witnesses_and_original_hashes(tmp_path):
+    import copy
+    import hashlib
+    from dataclasses import replace
+    from test_action_observations import exercise
+    from arex_skill_graph.action_contracts import digest
+    from arex_skill_graph.action_observations import record_action_observation
+    from arex_skill_graph.adaptive_runner import solver_current_view, solver_observation_view
+    from arex_skill_graph.task_context import EvidenceAnchor
+
+    action, task, request, observations = exercise(tmp_path)
+    broker = observations["public:observation:0"]
+    broker["output"] = "BEGIN\n" + "x" * 30000 + "\nEND"
+    record = record_action_observation(
+        action, request, task, observations, record_id="action-result:0"
+    )
+    observation = {
+        "operation": "record_action_observation",
+        "observation_id": "public:observation:1",
+        "context_revision": task.revision,
+        "record": record,
+    }
+    original = copy.deepcopy(observation)
+    viewed = solver_observation_view(observation)
+    assert observation == original
+    assert viewed["record"]["full_action_record_sha256"] == digest(record)
+    assert json.dumps(viewed["record"]["outputs"]) == json.dumps(record["outputs"])
+    assert viewed["record"]["semantic_validation"] == "unreviewed"
+    assert not viewed["record"]["repair_success_established"]
+    witnesses = viewed["record"]["witnesses"]
+    tool = next(w for w in witnesses if w["kind"] == "broker_observation")
+    assert "record" not in tool
+    assert tool["record_sha256"] == digest(broker)
+    assert tool["broker_summary"]["argv"] == broker["argv"]
+    assert tool["broker_summary"]["observation_id"] == broker["observation_id"]
+    assert tool["broker_summary"]["exit_code"] == 1
+    assert "output" not in tool["broker_summary"]
+    assert (
+        tool["broker_summary"]["output_sha256"]
+        == hashlib.sha256(broker["output"].encode()).hexdigest()
+    )
+    assert len(json.dumps(viewed)) < len(json.dumps(bounded_public_view(observation))) / 2
+    task = replace(
+        task,
+        anchors=(
+            *task.anchors,
+            EvidenceAnchor(
+                "current:probe:0", "probe", json.dumps(broker), task.base_commit, exit_code=1
+            ),
+        ),
+    )
+    before = task.to_dict()
+    context = solver_current_view(task)
+    assert task.to_dict() == before
+    assert "root" not in context
+    assert json.dumps(context["facts"]) == json.dumps(before["facts"])
+    assert json.dumps(context["bindings"]) == json.dumps(before["bindings"])
+    assert json.dumps(context["oracles"]) == json.dumps(before["oracles"])
+    probe = context["anchors"][-1]["broker_summary"]
+    assert probe["argv"] == broker["argv"] and probe["exit_code"] == 1
+    assert probe["output_excerpt"].startswith("BEGIN") and probe["output_excerpt"].endswith("END")
+    assert (
+        context["anchors"][-1]["full_observation_sha256"]
+        == hashlib.sha256(json.dumps(broker).encode()).hexdigest()
+    )
+
+
+@pytest.mark.parametrize("observation", ["plain public probe", "[]", "{", '{"note":"public"}'])
+def test_solver_context_handles_non_broker_probe_evidence_without_changing_it(
+    tmp_path, observation
+):
+    from dataclasses import replace
+    from arex_skill_graph.adaptive_runner import solver_current_view
+    from arex_skill_graph.task_context import EvidenceAnchor
+
+    _, task, _ = make_fixture(tmp_path)
+    task = replace(
+        task,
+        anchors=(
+            *task.anchors,
+            EvidenceAnchor("current:probe:0", "probe", observation, task.base_commit),
+        ),
+    )
+    viewed = solver_current_view(task)
+    assert viewed["anchors"][-1]["observation"] == observation
+    assert "full_observation_sha256" not in viewed["anchors"][-1]
