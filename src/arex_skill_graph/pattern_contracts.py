@@ -25,6 +25,7 @@ from .action_contracts import (
     validate_workflow_coherence,
 )
 from .generation_context import GenerationContext, generation_context_for_packages
+from .source_support import independent_source_components
 
 V4_SCHEMA = "arex-skill-package-v4"
 
@@ -108,8 +109,7 @@ class PatternContract:
             or len({s.revision for s in records}) < 2
         ):
             raise ValueError("aliases of one bug/fix are not independent Pattern support")
-        identities = [{s.id, *s.aliases, *s.copied_from} for s in records]
-        if any(a & b for i, a in enumerate(identities) for b in identities[i + 1 :]):
+        if len(independent_source_components(records)) < 2:
             raise ValueError("copied/aliased sources are not independent Pattern support")
         if self.cross_project and len({s.repository for s in records}) < 2:
             raise ValueError("cross-project Pattern requires two repositories")
@@ -572,6 +572,7 @@ def prepare_native_pattern_authoring(
         len({s.bug_cluster_id for s in sources.values()}) < 2
         or len({s.fix_id for s in sources.values()}) < 2
         or len({s.revision for s in sources.values()}) < 2
+        or len(independent_source_components(sources.values())) < 2
     ):
         raise ValueError("insufficient independent Pattern evidence")
     supported_kind = (
