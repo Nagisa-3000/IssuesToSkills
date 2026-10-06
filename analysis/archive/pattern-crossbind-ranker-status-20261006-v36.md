@@ -2,7 +2,7 @@
 
 本轮将原始 Issue、逐题 runtime、原始快照控制和独立 evaluator 接入同一历史监督运行器。输入、注册分母、原生修复来源和精确文件 hash 都必须一致；私有资格材料不会进入 solver 输入或挂载。solver 在首个模型请求前核对实际 runtime，结束后 evaluator 重新检查来源和控制。缺少输入、控制或审查的题目保留在分母中，不转换为效用失败标签。
 
-完整工程测试为 **969 passed、20 skipped**，本轮代码 lint/format 通过。当前 registry v3 保留全部 **21 题**，其中 **18 题**有原始公开输入；只有 **#470** 满足完整控制和接受审查。其余为 **8 题待独立审查、9 题控制未通过、3 题输入缺口**。当前实现已重新执行并封存完整控制来源，旧缺失字段未被补写为 PASS。本轮新增实际 solver 运行、效用标签和正式 SWE 运行均为 0。
+完整工程测试为 **969 passed、20 skipped**，本轮代码 lint/format 通过。真实 registry 预检保留全部 **21 题**，其中 **18 题**有原始公开输入；当前冻结版本只有 **#470** 满足完整控制和接受审查。其余为 7 题旧控制来源字段不足、9 题控制未通过、1 题待审查、3 题输入缺口。本轮新增实际 solver 运行、效用标签和正式 SWE 运行均为 0。
 
 | 阶段 | 已有工程实现 | 尚未验收 |
 | --- | --- | --- |
@@ -14,12 +14,10 @@
 | M5 | 冻结与校验工具，正在准备原始题目候选池 | KB、任务并集、索引、模型、阈值、预算和协议联合冻结 |
 | M6 | 配对修复和消融入口 | 正式 SWE 修复、回归损害、成本、模块消融及冻结池排序比较 |
 
-[监督接入记录](original-query-supervision-20261006-v1/README.md)保留两版初始预检、工程测试、源 hash 和实际准备超时。[已完成准备与控制重跑](original-query-supervision-20261006-v2/README.md)保留终态：18 个原始 Issue 准备 104 个分支（18 基线、53 Workflow、33 计划），控制重跑保留 21 题并有 8 个 native 机械通过，另保留 #3737 明确的 metadata 投影通过。均无新 LLM/solver 执行或效用标签。
-
-**当前 33 个去重计划全部仍为单 Workflow，0 个带 Pattern，0 个真正的两父组合。** original、single_workflow_rewrite、crossbind_generation 的多入口标签落在重复计划上，不能计为真实内容重写或有效拼接。这些准备未建立 M1/M2 真实迁移效果，M4 仍需独立逐题机制学习、有效监督和真实 LLM Ranker 训练。冻结候选池保持 registry v2 身份；新资格 registry v3 未覆盖它，隐式混用会被拒绝。
+[本轮监督接入记录](original-query-supervision-20261006-v1/README.md)保留两版真实 registry 预检、工程测试、源 hash 和准备任务的实际失败。候选准备 v1 在实际 300 秒执行期限后终止；v2 使用新目录与较长准备期限继续。本地候选准备和当前实现的原始控制重跑都不调用 LLM、不创建修复标签，实时任务状态以快照的观察时间为准。
 
 完整主截点语料的生成依赖最晚仍为 **2023-06-18T14:43:15Z**，不能回填 pre-2021 训练或更早的逐题候选库。20 个独立接受的机制分组仍在原有串行作者任务中生成候选包；候选生成和包验证不能替代功能 eval 或正式 KB 准入。任务保持运行，未因观察超时重启或并发发起模型请求。
 
 #470 既有配对小实验的结论保持：B0/E1 均通过限定独立测试，但 E1 在生产代码修改前放弃历史 guidance，tokens 增加 **20.54%**。它未证明历史 Workflow 执行、Pattern/CrossBind 迁移或 Skill 修复收益。合格训练 Ranker仍为 0；尚无有用的非平局训练效用偏好。
 
-[机器快照 v37](results/pattern-crossbind-ranker-current-status-20261006-v37.json)及[上一版报告](archive/pattern-crossbind-ranker-status-20261006-v36.md)保留此前工作与限制。剩余工作是原生包功能资格、实际任务绑定/重写/互补组合、独立逐题机制学习和有效监督、真实 LLM Ranker 训练/校准、联合冻结及正式配对 SWE 实验。
+[机器快照 v36](results/pattern-crossbind-ranker-current-status-20261006-v36.json)及[上一版完整报告](archive/pattern-crossbind-ranker-status-20261006-v35.md)保留此前工作与限制。剩余工作是原生包功能资格、实际任务绑定/重写/互补组合、独立逐题机制学习和有效监督、真实 LLM Ranker 训练/校准、联合冻结及正式配对 SWE 实验。
