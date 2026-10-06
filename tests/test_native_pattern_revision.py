@@ -211,3 +211,23 @@ def test_invalid_revision_cannot_publish_and_terminal_failure_is_retained(tmp_pa
     assert not (tmp_path / "recovered").exists()
     audit = json.loads((tmp_path / "audit/revision-audit.json").read_text())
     assert audit["attempts"][0]["status"] == "rejected"
+
+
+@pytest.mark.parametrize("drift", ["id", "source_id", "available_at", "kind"])
+def test_immutable_evidence_drift_is_rejected_before_revision_preflight(tmp_path, drift):
+    data = list(fixture(tmp_path))
+    draft = data[2]
+    files = draft.files()
+    resource = next(path for path in files if path.startswith("references/evidence/"))
+    changed = {
+        "id": "evidence:outside-original-authority",
+        "source_id": "source:outside-original-authority",
+        "available_at": "2023-01-01T00:00:00Z",
+        "kind": "unsupported-evidence-kind",
+    }
+    files[resource] = replace_contract(files[resource], "arex-evidence-v4", {drift: changed[drift]})
+    data[2] = NativeAuthoringDraft(draft.name, tuple(sorted(files.items())))
+    with pytest.raises(ValueError, match="authored evidence"):
+        prepare(data)
+    assert not (tmp_path / "recovered").exists()
+    assert not (tmp_path / "audit").exists()

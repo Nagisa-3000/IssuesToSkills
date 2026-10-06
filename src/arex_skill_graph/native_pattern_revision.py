@@ -27,6 +27,7 @@ from .pattern_contracts import (
     native_pattern_authoring_request,
     prepare_native_pattern_authoring,
     publish_v4_bundle,
+    validate_native_evidence_authority,
     validate_native_pattern_authority,
 )
 
@@ -219,6 +220,7 @@ def prepare_native_pattern_revision(
     declared_sources = tuple(SourceRecord.from_dict(row) for row in provenance["sources"])
     if not declared_sources or any(expected_sources.get(s.id) != s for s in declared_sources):
         raise ValueError("immutable draft source differs from original authority")
+    validate_native_evidence_authority(draft.files(), sources, evidence)
     context = GenerationContext.from_dict(payload["authoritative_generation_context"])
     bundle = draft.as_bundle()
     if seal_generation_context:

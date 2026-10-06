@@ -414,6 +414,29 @@ def compile_pattern_contract(
     return patterns[0]
 
 
+def validate_native_evidence_authority(authored, sources, authoritative_evidence=None):
+    """Check immutable evidence identity and metadata before publication or revision."""
+    expected_sources = {source.id: source for source in sources}
+    if len(expected_sources) != len(sources):
+        raise ValueError("duplicate authoritative source")
+    for relative, content in authored.items():
+        if relative.startswith("references/evidence/") and relative.endswith(".md"):
+            row = read_contract(content, "arex-evidence-v4")
+            source = expected_sources.get(row["source_id"])
+            if source is None or row["id"] not in source.evidence_refs:
+                raise ValueError("authored evidence ID is outside authoritative source references")
+            if authoritative_evidence is not None:
+                expected = authoritative_evidence.get(row["id"])
+                if (
+                    expected is None
+                    or utc(row["available_at"]) != utc(expected["available_at"])
+                    or row["kind"] != expected["kind"]
+                ):
+                    raise ValueError(
+                        "authored evidence date/kind differs from its authoritative entry"
+                    )
+
+
 def publish_v4_bundle(
     response: str,
     sources: Sequence[SourceRecord],
@@ -454,6 +477,7 @@ def publish_v4_bundle(
                 expected_sources.get(s.id) != s for s in authored_sources
             ):
                 raise ValueError("authored source contradicts authoritative evidence")
+            validate_native_evidence_authority(authored, sources, authoritative_evidence)
             for relative, content in authored.items():
                 if (
                     authoritative_package_id is not None
@@ -487,23 +511,6 @@ def publish_v4_bundle(
                             f"native realization {relative} identity is outside its "
                             "authoritative package namespace"
                         )
-                if relative.startswith("references/evidence/") and relative.endswith(".md"):
-                    row = read_contract(content, "arex-evidence-v4")
-                    source = expected_sources.get(row["source_id"])
-                    if source is None or row["id"] not in source.evidence_refs:
-                        raise ValueError(
-                            "authored evidence ID is outside authoritative source references"
-                        )
-                    if authoritative_evidence is not None:
-                        expected = authoritative_evidence.get(row["id"])
-                        if (
-                            expected is None
-                            or utc(row["available_at"]) != utc(expected["available_at"])
-                            or row["kind"] != expected["kind"]
-                        ):
-                            raise ValueError(
-                                "authored evidence date/kind differs from its authoritative entry"
-                            )
             manifest = {
                 "schema_version": V4_SCHEMA,
                 "authorship": "model_direct",
