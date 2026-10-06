@@ -619,12 +619,20 @@ class AdaptiveSolver:
         *,
         arm="E2",
         dependency_root=None,
+        required_runtime_sha256=None,
         tools_factory=None,
         sandbox_backend="namespace-bind",
     ):
         self.transport, self.ranker, self.store = transport, ranker, store
         self.policy, self.ledger, self.arm = resource_policy, ledger, arm
         self.dependency_root = dependency_root
+        if required_runtime_sha256 is not None and (
+            not isinstance(required_runtime_sha256, str)
+            or len(required_runtime_sha256) != 64
+            or any(c not in "0123456789abcdef" for c in required_runtime_sha256)
+        ):
+            raise ValueError("required solver runtime hash is malformed")
+        self.required_runtime_sha256 = required_runtime_sha256
         self.tools_factory = tools_factory
         if sandbox_backend not in TOOL_BACKENDS:
             raise ValueError("unknown sandbox backend")
@@ -733,6 +741,11 @@ class AdaptiveSolver:
             cleanup.callback(getattr(tools, "close", lambda: None))
             self.ledger.charge("tool_calls", 1, "enforced namespace preflight")
             tools.preflight()
+            if (
+                self.required_runtime_sha256 is not None
+                and tools.runtime_sha256 != self.required_runtime_sha256
+            ):
+                raise ValueError("original supervised solver runtime mismatch before model request")
             policy = replace(self.policy, verify_head=False)
             selected = None
             prerequisite_probes = 0

@@ -27,6 +27,7 @@ from arex_skill_graph.historical_plan_pool import (
 )
 from arex_skill_graph.historical_solver_evaluator import historical_evaluator
 from arex_skill_graph.history_census import fingerprint, write_json
+from arex_skill_graph.original_supervision_registry import OriginalSupervisionRegistry
 from arex_skill_graph.plan_validation import ResourcePolicy, TaskWorkflowPlan, validate_task_plan
 from arex_skill_graph.store import CatalogStore
 from arex_skill_graph.task_context import TaskContext
@@ -45,12 +46,17 @@ def main(argv=None):
         "queries",
         "query-register",
         "references",
-        "verifications",
-        "dependency-root",
         "embedding-model",
         "output-dir",
     ):
         parser.add_argument("--" + option, type=Path, required=True)
+    parser.add_argument("--verifications", type=Path)
+    parser.add_argument("--dependency-root", type=Path)
+    parser.add_argument(
+        "--original-supervision-registry",
+        type=Path,
+        help="Use sealed per-original-Issue runtimes and independently reviewed controls",
+    )
     parser.add_argument("--causal-isolation", type=Path)
     parser.add_argument("--model", required=True)
     parser.add_argument("--base-url", required=True)
@@ -71,6 +77,17 @@ def main(argv=None):
         help="Execute existing frozen Plan pools without regenerating candidates",
     )
     args = parser.parse_args(argv)
+    if args.workers < 1 or (args.workers != 1 and not args.prepare_only):
+        parser.error("actual model requests must run serially: --workers 1")
+    if args.original_supervision_registry:
+        if args.verifications or args.dependency_root:
+            parser.error(
+                "original supervision binds per-query authority and runtime; omit legacy roots"
+            )
+    elif not args.verifications or not args.dependency_root:
+        parser.error(
+            "legacy native-parent supervision requires --verifications and --dependency-root"
+        )
     isolation = HistoricalIsolation.load(args.causal_isolation) if args.causal_isolation else None
     if args.prepared_dir and (args.prepare_only or args.candidate_kind != "plan"):
         parser.error("--prepared-dir requires --candidate-kind plan and excludes --prepare-only")
@@ -81,12 +98,30 @@ def main(argv=None):
     register = json.loads(args.query_register.read_text())
     if register["queries_sha256"] != fingerprint(raw_queries):
         raise ValueError("historical public query population changed")
+    registry = (
+        OriginalSupervisionRegistry(
+            args.original_supervision_registry, args.queries, args.query_register
+        )
+        if args.original_supervision_registry
+        else None
+    )
+    if registry:
+        registry.assert_private_destination(args.output_dir)
+    policy_register = registry.payload if registry else register
+    training_cutoff, main_cutoff = (
+        policy_register["training_cutoff"],
+        policy_register["main_cutoff"],
+    )
     references = read_references(args.references)
-    qualified = {
-        (r["issue_id"], r["fix_id"]): r
-        for r in json.loads(args.verifications.read_text())["results"]
-        if r["verified_resolution"]
-    }
+    qualified = (
+        {}
+        if registry
+        else {
+            (r["issue_id"], r["fix_id"]): r
+            for r in json.loads(args.verifications.read_text())["results"]
+            if r["verified_resolution"]
+        }
+    )
     encoder = TransformerEncoder(str(args.embedding_model))
     queries = [
         HistoricalQuery(
@@ -101,6 +136,8 @@ def main(argv=None):
     ]
     identity = {
         "queries_sha256": fingerprint(raw_queries),
+        "evaluation_route": "original_query" if registry else "native_repair_parent",
+        "original_supervision_registry_sha256": registry.sha256 if registry else None,
         "causal_isolation_sha256": isolation.sha256 if isolation else None,
         "references_sha256": fingerprint(references),
         "model": args.model,
@@ -121,6 +158,8 @@ def main(argv=None):
                     "src/arex_skill_graph/copied_sandbox.py",
                     "src/arex_skill_graph/copied_sandbox_worker.py",
                     "src/arex_skill_graph/historical_solver_evaluator.py",
+                    "src/arex_skill_graph/original_query_evaluator.py",
+                    "src/arex_skill_graph/original_supervision_registry.py",
                     "src/arex_skill_graph/temporal_ranker_data.py",
                     "src/arex_skill_graph/guidance_attribution.py",
                     "src/arex_skill_graph/public_task_state.py",
@@ -131,8 +170,8 @@ def main(argv=None):
                 )
             }
         ),
-        "training_cutoff": register["training_cutoff"],
-        "main_cutoff": register["main_cutoff"],
+        "training_cutoff": training_cutoff,
+        "main_cutoff": main_cutoff,
         "sampling": "top two embedding candidates; add best hard-gate survivors until two runnable; one uniform remaining candidate; no-match retained",
         "initial_plan_policy": "current unknown conditions authorize probes only",
         "development_population": True,
@@ -147,13 +186,22 @@ def main(argv=None):
     if checkpoint.exists() and json.loads(checkpoint.read_text()) != identity:
         raise ValueError("controlled historical study identity changed; use a new version")
     write_json(checkpoint, identity)
+    population_coverage = (
+        registry.coverage()
+        if registry
+        else [
+            {"query_id": query.task.task_id, "evaluation_route": "native_repair_parent"}
+            for query in queries
+        ]
+    )
+    write_json(args.output_dir / "query-population.json", population_coverage)
     scheduled, coverage, plan_pools = [], [], {}
     for query in queries:
         policy, eligible, catalog_hash, rejected = eligible_catalog(
             query,
             references,
-            training_cutoff=register["training_cutoff"],
-            main_cutoff=register["main_cutoff"],
+            training_cutoff=training_cutoff,
+            main_cutoff=main_cutoff,
             isolation=isolation,
         )
         resources = ResourcePolicy(policy, eligible)
@@ -326,6 +374,7 @@ def main(argv=None):
             json.dumps(
                 {
                     "prepared_queries": len(queries),
+                    "registered_queries": len(population_coverage),
                     "scheduled_branches": len(scheduled),
                     "llm_calls": 0,
                     "embedding_batches": len(queries),
@@ -342,6 +391,21 @@ def main(argv=None):
         )
         directory = args.output_dir / relative
         saved_path = directory / "run.json"
+        route = registry.route(query, sandbox_backend=args.sandbox_backend) if registry else None
+        if registry and route is None:
+            row = {
+                "query_id": query.task.task_id,
+                "candidate_id": candidate_id,
+                "candidate_kind": candidate_kind,
+                "status": "qualification_pending_unrun",
+                "qualification_status": registry.entries[query.task.task_id]["readiness"],
+                "evaluation_route": "original_query",
+                "live_calls": 0,
+                "failure_label_created": False,
+                "label": None,
+            }
+            write_json(saved_path, row)
+            return row
         if saved_path.exists():
             return json.loads(saved_path.read_text())
         transport = transport_from_args(args)
@@ -365,7 +429,9 @@ def main(argv=None):
                     "live_calls": transport.calls,
                 }
             else:
-                verification = qualified[(query.task.task_id, query.fix_id)]
+                verification = (
+                    qualified[(query.task.task_id, query.fix_id)] if route is None else None
+                )
                 result = AdaptiveSolver(
                     transport,
                     WorkflowRanker(transport, model=args.model),
@@ -377,11 +443,14 @@ def main(argv=None):
                     else "E1"
                     if initial
                     else "B0",
-                    dependency_root=args.dependency_root,
+                    dependency_root=route.dependency_root if route else args.dependency_root,
+                    required_runtime_sha256=route.required_runtime_sha256 if route else None,
                     sandbox_backend=args.sandbox_backend,
                 ).run(
                     query.task,
-                    evaluator=historical_evaluator(
+                    evaluator=route.evaluator
+                    if route
+                    else historical_evaluator(
                         verification["verification_path"],
                         args.dependency_root,
                         sandbox_backend=args.sandbox_backend,
@@ -395,6 +464,8 @@ def main(argv=None):
                     "candidate_id": candidate_id,
                     "candidate_kind": candidate_kind,
                     "status": "executed",
+                    "evaluation_route": identity["evaluation_route"],
+                    "original_supervision_registry_sha256": registry.sha256 if registry else None,
                     "run": result,
                     "live_calls": transport.calls,
                     "sampling_probability": probability,
@@ -457,6 +528,9 @@ def main(argv=None):
                 {
                     "results": results,
                     "scheduled_count": len(scheduled),
+                    "registered_query_count": len(population_coverage),
+                    "query_population": population_coverage,
+                    "evaluation_route": identity["evaluation_route"],
                     "completed_count": len(results),
                     "real_ranker_training_completed": False,
                     "full_history_qualified": False,

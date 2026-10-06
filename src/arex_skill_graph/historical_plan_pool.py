@@ -173,6 +173,8 @@ def load_prepared_plan_study(directory, expected_identity):
     source_identity = documents["study-identity.json"]
     for key in (
         "queries_sha256",
+        "evaluation_route",
+        "original_supervision_registry_sha256",
         "references_sha256",
         "causal_isolation_sha256",
         "training_cutoff",
